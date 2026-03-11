@@ -1242,53 +1242,73 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
 // ═══ MATCHMAKING ═══════════════════════════════════════════════════════
 function MatchmakingScreen({ user, onMatch, onCancel }) {
   const [status, setStatus] = useState("waiting");
+  const [dots, setDots] = useState(0);
+  useEffect(() => { const id = setInterval(() => setDots(d => (d + 1) % 4), 500); return () => clearInterval(id); }, []);
   useEffect(() => {
-    let rowId = null; let channel = null;
+    let rowId = null; let channel = null; let matched = false; let poll = null;
+
+    const doMatch = (matchId, opponentId, opponentName) => {
+      if (matched) return;
+      matched = true;
+      if (poll) clearInterval(poll);
+      setStatus("matched");
+      setTimeout(() => onMatch({ matchId, opponentId, opponentName }), 900);
+    };
+
     const enter = async () => {
-      const { data, error } = await supabase.from("matchmaking").insert({ user_id: user.id, display_name: user.name, status: "waiting" }).select().single();
+      // 1. Delete any stale rows for this user first (prevents ghost matches)
+      await supabase.from("matchmaking").delete().eq("user_id", user.id);
+
+      // 2. Insert fresh row
+      const { data, error } = await supabase.from("matchmaking")
+        .insert({ user_id: user.id, display_name: user.name, status: "waiting" })
+        .select().single();
       if (error || !data) { setStatus("error"); return; }
       rowId = data.id;
+
+      // 3. Subscribe to Realtime updates on our own row
       channel = supabase.channel("mm_" + rowId)
         .on("postgres_changes", { event: "UPDATE", schema: "public", table: "matchmaking", filter: `id=eq.${rowId}` }, (payload) => {
-          if (payload.new.status === "matched" && !matched) {
-            matched = true;
-            setStatus("matched");
-            setTimeout(() => onMatch({ matchId: payload.new.match_id, opponentId: payload.new.opponent_id, opponentName: payload.new.opponent_name }), 800);
+          if (payload.new.status === "matched") {
+            doMatch(payload.new.match_id, payload.new.opponent_id, payload.new.opponent_name);
           }
         }).subscribe();
-      const { data: waiting } = await supabase.from("matchmaking").select("*").eq("status", "waiting").neq("user_id", user.id).order("created_at").limit(1);
-      if (waiting && waiting.length > 0) {
+
+      // 4. Look for someone already waiting (only entries from last 3 minutes)
+      const cutoff = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+      const { data: waiting } = await supabase.from("matchmaking")
+        .select("*").eq("status", "waiting").neq("user_id", user.id)
+        .gte("created_at", cutoff).order("created_at").limit(1);
+
+      if (waiting && waiting.length > 0 && !matched) {
         const opp = waiting[0];
         const matchId = crypto.randomUUID();
+        // Update both rows atomically
         await supabase.from("matchmaking").update({ status: "matched", match_id: matchId, opponent_id: user.id, opponent_name: user.name }).eq("id", opp.id);
         await supabase.from("matchmaking").update({ status: "matched", match_id: matchId, opponent_id: opp.user_id, opponent_name: opp.display_name }).eq("id", rowId);
         await supabase.from("matches").insert({ id: matchId, player1_id: opp.user_id, player2_id: user.id, status: "active", game_state: null });
-        // Player B calls onMatch directly — no need to wait for own subscription
-        matched = true;
-        setStatus("matched");
-        setTimeout(() => onMatch({ matchId, opponentId: opp.user_id, opponentName: opp.display_name }), 800);
+        doMatch(matchId, opp.user_id, opp.display_name);
       }
-    };
-    let poll = null; let matched = false;
-    enter().then(() => {
+
+      // 5. Poll as reliable fallback (every 1s)
       if (!matched) {
         poll = setInterval(async () => {
           if (matched || !rowId) return;
           try {
-            const { data } = await supabase.from("matchmaking").select("*").eq("id", rowId).single();
-            if (data && data.status === "matched") {
-              matched = true; clearInterval(poll);
-              setStatus("matched");
-              setTimeout(() => onMatch({ matchId: data.match_id, opponentId: data.opponent_id, opponentName: data.opponent_name }), 800);
+            const { data: row } = await supabase.from("matchmaking").select("*").eq("id", rowId).single();
+            if (row?.status === "matched") {
+              doMatch(row.match_id, row.opponent_id, row.opponent_name);
             }
-          } catch (e) {}
-        }, 2000);
+          } catch (_) {}
+        }, 1000);
       }
-    });
+    };
+
+    enter();
     return () => {
       if (poll) clearInterval(poll);
       if (channel) supabase.removeChannel(channel);
-      if (rowId) supabase.from("matchmaking").delete().eq("id", rowId).then(() => {});
+      if (rowId && !matched) supabase.from("matchmaking").delete().eq("id", rowId).then(() => {});
     };
   }, []);
   return (<div style={{ maxWidth:480, margin:"0 auto", padding:"80px 24px", textAlign:"center" }}>
@@ -1296,10 +1316,10 @@ function MatchmakingScreen({ user, onMatch, onCancel }) {
       {status==="matched" ? "⚔" : status==="error" ? "⚠" : "🔍"}
     </div>
     <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:24, color:"#e8c060", margin:"0 0 8px" }}>
-      {status==="matched" ? "Match Found!" : status==="error" ? "Connection Error" : "Finding Opponent..."}
+      {status==="matched" ? "Match Found!" : status==="error" ? "Connection Error" : `Searching${".".repeat(dots)}`}
     </h2>
     <p style={{ fontSize:13, color:"#a09070", marginBottom:28 }}>
-      {status==="matched" ? "Entering the arena..." : status==="error" ? "Could not connect. See setup instructions below." : "Waiting in the queue — this may take a moment."}
+      {status==="matched" ? "Entering the arena..." : status==="error" ? "Could not connect. Try again." : "Waiting in the queue — this may take a moment."}
     </p>
     {status==="waiting" && <div style={{ display:"flex", gap:4, justifyContent:"center", marginBottom:24 }}>{[0,1,2].map((i) => (<div key={i} style={{ width:8, height:8, borderRadius:"50%", background:"#e8c060", animation:`pulse 1.2s ${i*0.4}s ease-in-out infinite` }} />))}</div>}
     {status!=="matched" && <button onClick={onCancel} style={{ padding:"10px 28px", background:"transparent", border:"1px solid #3a2010", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:"#806040", cursor:"pointer" }}>CANCEL</button>}
@@ -1674,8 +1694,24 @@ function CollectionScreen({ user, onUpdateUser }) {
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px 60px" }} onClick={() => { if(artPicker) setArtPicker(null); }}>
       {showDeckBuilder && <DeckBuilderModal user={user} onSave={saveDeck} onClose={() => setShowDeckBuilder(false)} />}
-      <h2 style={{ fontFamily: "'Cinzel',serif", fontSize: 24, fontWeight: 700, color: "#e8c060", margin: "0 0 4px" }}>Collection ({owned.length}/{POOL.length})</h2>
-      <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap", marginTop: 16 }}>
+      {/* Header row: title + deck builder CTA */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <h2 style={{ fontFamily: "'Cinzel',serif", fontSize: 24, fontWeight: 700, color: "#e8c060", margin: 0 }}>Collection</h2>
+          <div style={{ fontSize: 11, color: "#806040", marginTop: 3 }}>{owned.length} / {POOL.length} cards owned</div>
+        </div>
+        <button onClick={() => setShowDeckBuilder(true)}
+          style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 22px", background: "linear-gradient(135deg,#1a1608,#2a2010)", border: "2px solid #e8c06055", borderRadius: 12, cursor: "pointer", fontFamily: "'Cinzel',serif", color: "#e8c060", transition: "all .2s" }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor="#e8c060aa"; e.currentTarget.style.background="linear-gradient(135deg,#2a2010,#3a3018)"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor="#e8c06055"; e.currentTarget.style.background="linear-gradient(135deg,#1a1608,#2a2010)"; }}>
+          <span style={{ fontSize: 22 }}>🗂</span>
+          <div style={{ textAlign: "left" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1 }}>DECK BUILDER</div>
+            <div style={{ fontSize: 9, color: "#a08040", marginTop: 1 }}>{decks.length} deck{decks.length !== 1 ? "s" : ""} saved</div>
+          </div>
+        </button>
+      </div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." style={{ flex: 1, minWidth: 120, padding: "8px 12px", background: "#100e08", border: "1px solid #2a2010", borderRadius: 7, color: "#f0e8d8", fontSize: 12, outline: "none" }} />
         <select value={regFilter} onChange={(e) => setRegFilter(e.target.value)} style={{ padding: "8px", background: "#100e08", border: "1px solid #2a2010", borderRadius: 7, color: "#f0e8d8", fontFamily: "'Cinzel',serif", fontSize: 10, outline: "none" }}>
           <option value="all">All</option>{[...REGIONS, "Bloodpact"].map((r) => (<option key={r} value={r}>{r}</option>))}
@@ -1693,26 +1729,21 @@ function CollectionScreen({ user, onUpdateUser }) {
           </div>
         </>
       )}
-      {/* ── DECK BUILDER SECTION ── */}
-      <div style={{ marginTop: 48, borderTop: "1px solid #2a2010", paddingTop: 28 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, color: "#c09848", fontWeight: 700, letterSpacing: 2 }}>DECKS ({decks.length})</div>
-          <button onClick={() => setShowDeckBuilder(true)} style={{ padding: "8px 20px", background: "rgba(232,192,96,0.08)", border: "1px solid #3a3020", borderRadius: 8, fontFamily: "'Cinzel',serif", fontSize: 10, color: "#c09848", cursor: "pointer", letterSpacing: 2 }}>✦ BUILD A DECK</button>
-        </div>
-        {decks.length > 0 ? (
+      {/* ── SAVED DECKS ── */}
+      {decks.length > 0 && (
+        <div style={{ marginTop: 48, borderTop: "1px solid #2a2010", paddingTop: 24 }}>
+          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#c09848", fontWeight: 700, letterSpacing: 2, marginBottom: 14 }}>SAVED DECKS</div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             {decks.map((d, i) => (
-              <div key={i} style={{ background: "#0e0c08", border: "1px solid #2a2010", borderRadius: 10, padding: "12px 16px", minWidth: 150, position: "relative" }}>
-                <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, color: "#e8c060", fontWeight: 700, marginBottom: 4 }}>{d.name}</div>
-                <div style={{ fontSize: 9, color: "#806040", marginBottom: 8 }}>{d.cards?.length || 0} cards</div>
-                <button onClick={() => deleteDeck(i)} style={{ fontSize: 8, color: "#804040", background: "none", border: "1px solid #3a1818", borderRadius: 4, padding: "2px 7px", cursor: "pointer", fontFamily: "'Cinzel',serif" }}>DELETE</button>
+              <div key={i} style={{ background: "#0e0c08", border: "1px solid #2a2010", borderRadius: 10, padding: "12px 16px", minWidth: 150 }}>
+                <div style={{ fontFamily: "'Cinzel',serif", fontSize: 12, color: "#e8c060", fontWeight: 700, marginBottom: 4 }}>{d.name}</div>
+                <div style={{ fontSize: 10, color: "#806040", marginBottom: 10 }}>{d.cards?.length || 0} cards</div>
+                <button onClick={() => deleteDeck(i)} style={{ fontSize: 9, color: "#904040", background: "none", border: "1px solid #3a1818", borderRadius: 4, padding: "3px 8px", cursor: "pointer", fontFamily: "'Cinzel',serif" }}>DELETE</button>
               </div>
             ))}
           </div>
-        ) : (
-          <div style={{ fontSize: 11, color: "#504030", fontStyle: "italic", textAlign: "center", padding: "20px 0" }}>No decks yet — build one to use in battle!</div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1964,7 +1995,15 @@ function CommunityScreen() {
 }
 
 // ═══ APP ══════════════════════════════════════════════════════════════════════
-const NAV = [{ id: "home", label: "Home" }, { id: "play", label: "Battle" }, { id: "store", label: "Store" }, { id: "collection", label: "Cards" }, { id: "forge", label: "Forge" }, { id: "community", label: "Hub" }, { id: "howto", label: "Guide" }];
+const NAV = [
+  { id: "home",       label: "Home",    icon: "🏠" },
+  { id: "play",       label: "Battle",  icon: "⚔️" },
+  { id: "store",      label: "Store",   icon: "🛒" },
+  { id: "collection", label: "Cards",   icon: "🃏" },
+  { id: "forge",      label: "Forge",   icon: "🔨" },
+  { id: "community",  label: "Hub",     icon: "🌐" },
+  { id: "howto",      label: "Guide",   icon: "📖" },
+];
 
 export default function App() {
   const [tab, setTab] = useState("home"); const { user, loading, login, logout, update, completeProfile } = useAuth(); const [showProfile, setShowProfile] = useState(false); const [showPatchNotes, setShowPatchNotes] = useState(true);
@@ -1987,8 +2026,10 @@ export default function App() {
       @keyframes foilShimmer{0%{background-position:200% center}100%{background-position:-200% center}}
       @keyframes dupeToast{0%{opacity:0;transform:translateY(20px) scale(0.8)}15%{opacity:1;transform:translateY(0) scale(1)}75%{opacity:1}100%{opacity:0;transform:translateY(-30px) scale(0.9)}}
       @media(max-width:768px){
-        nav{height:48px!important;padding:0 8px!important}
-        nav button span{font-size:7px!important}
+        nav{height:56px!important;padding:0 6px!important}
+        nav button{padding:4px 8px!important;min-width:44px!important}
+        nav button span:first-child{font-size:14px!important}
+        nav button span:last-child{font-size:7px!important}
         h1{font-size:36px!important}
         h2{font-size:20px!important}
         .home-grid{grid-template-columns:1fr!important;gap:24px!important}
@@ -2008,9 +2049,24 @@ export default function App() {
     {(!user || user.__needsProfile) && <LoginModal needsProfile={!!user?.__needsProfile} userId={user?.id} userEmail={user?.email} onSignOut={logout} onProfileCreated={completeProfile} />}
     {user && showPatchNotes && <PatchNotesModal onDismiss={() => setShowPatchNotes(false)} />}
     <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "radial-gradient(ellipse at 15% 15%,rgba(200,140,20,0.06) 0%,transparent 50%),radial-gradient(ellipse at 85% 85%,rgba(30,120,200,0.04) 0%,transparent 50%)" }} />
-    <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(8,6,4,0.97)", backdropFilter: "blur(16px)", borderBottom: "1px solid #2c2410", padding: "0 16px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 52 }} onClick={(e) => e.stopPropagation()}>
-      <button onClick={() => setTab("home")} style={{ display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}><div><div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 900, color: "#e8c060", lineHeight: 1 }}>Forge {"&"} Fable</div><div style={{ fontSize: 7, color: "#806030", letterSpacing: 2, fontFamily: "'Cinzel',serif" }}>v14 ACCOUNTS · MULTIPLAYER</div></div></button>
-      <div style={{ display: "flex", gap: 2 }}>{NAV.map((t) => (<button key={t.id} onClick={() => setTab(t.id)} style={{ padding: "6px 12px", background: tab === t.id ? "rgba(232,192,96,0.12)" : "transparent", border: `1px solid ${tab === t.id ? "#e8c06044" : "transparent"}`, borderRadius: 8, cursor: "pointer" }}><span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, fontWeight: tab === t.id ? 700 : 500, color: tab === t.id ? "#e8c060" : "#806040" }}>{t.label}</span></button>))}</div>
+    <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(8,6,4,0.98)", backdropFilter: "blur(20px)", borderBottom: "1px solid #3a2c10", padding: "0 16px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64 }} onClick={(e) => e.stopPropagation()}>
+      <button onClick={() => setTab("home")} style={{ display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}>
+        <div>
+          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 15, fontWeight: 900, color: "#e8c060", lineHeight: 1, letterSpacing: 1 }}>Forge {"&"} Fable</div>
+          <div style={{ fontSize: 8, color: "#706030", letterSpacing: 2, fontFamily: "'Cinzel',serif", marginTop: 3 }}>v15 · ALPHA</div>
+        </div>
+      </button>
+      <div style={{ display: "flex", gap: 1 }}>
+        {NAV.map((t) => {
+          const active = tab === t.id;
+          return (
+            <button key={t.id} onClick={() => setTab(t.id)} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "6px 14px", gap: 3, background: active ? "rgba(232,192,96,0.14)" : "transparent", border: `1px solid ${active ? "#e8c06055" : "transparent"}`, borderRadius: 10, cursor: "pointer", minWidth: 58, transition: "all .18s", boxShadow: active ? `0 0 16px rgba(232,192,96,0.15)` : "none" }}>
+              <span style={{ fontSize: 16, lineHeight: 1 }}>{t.icon}</span>
+              <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, fontWeight: active ? 700 : 500, color: active ? "#e8c060" : "#907050", letterSpacing: 0.5, lineHeight: 1 }}>{t.label}</span>
+            </button>
+          );
+        })}
+      </div>
       {user && (<div style={{ position: "relative", flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
         <button onClick={() => setShowProfile((p) => !p)} style={{ background:"none", border:"2px solid #e8c06044", borderRadius:"50%", padding:0, cursor:"pointer", width:36, height:36, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:"#e8c060" }}>{user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user.name||"?").slice(0,2).toUpperCase()}</button>
         {showProfile && (<div style={{ position:"absolute", top:44, right:0, background:"linear-gradient(160deg,#1e1c10,#12100a)", border:"1px solid #3a3018", borderRadius:14, padding:16, width:230, zIndex:200, boxShadow:"0 20px 60px rgba(0,0,0,0.95)", animation:"fadeIn 0.2s ease-out" }}>
@@ -2034,15 +2090,18 @@ export default function App() {
             }} />
           </label>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:10 }}>{[["Battles",user.battlesPlayed||0],["Wins",user.battlesWon||0],["Cards",Object.values(user.collection||{}).filter((v)=>v>0).length],["Shards",user.shards||0]].map(([l,v],i) => (<div key={i} style={{ background:"rgba(0,0,0,0.3)", borderRadius:6, padding:6, textAlign:"center" }}><div style={{ fontSize:7, color:"#806040" }}>{l}</div><div style={{ fontFamily:"'Cinzel',serif", fontSize:14, fontWeight:700, color:"#e8c060" }}>{v}</div></div>))}</div>
-          {(user.matchHistory||[]).length > 0 && (<div style={{ marginBottom:10 }}>
+          <div style={{ marginBottom:10 }}>
             <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#806040", letterSpacing:1, marginBottom:5, fontWeight:700 }}>RECENT MATCHES</div>
-            {(user.matchHistory||[]).slice(0,5).map((m,i) => (
-              <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"3px 7px", marginBottom:3, background:"rgba(0,0,0,0.25)", borderRadius:5, borderLeft:`2px solid ${m.result==="W"?"#48a028":"#c03030"}` }}>
-                <span style={{ fontSize:9, color:"#c0a870", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", maxWidth:130 }}>vs {m.opponent}</span>
-                <span style={{ fontSize:9, fontWeight:700, fontFamily:"'Cinzel',serif", color:m.result==="W"?"#78cc45":"#e05050", flexShrink:0, marginLeft:4 }}>{m.result}</span>
-              </div>
-            ))}
-          </div>)}
+            {(user.matchHistory||[]).length === 0
+              ? <div style={{ fontSize:9, color:"#504030", fontStyle:"italic", padding:"4px 0" }}>No battles yet — play one!</div>
+              : (user.matchHistory||[]).slice(0,5).map((m,i) => (
+                <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"4px 8px", marginBottom:3, background:"rgba(0,0,0,0.3)", borderRadius:5, borderLeft:`2px solid ${m.result==="W"?"#48a028":"#c03030"}` }}>
+                  <span style={{ fontSize:10, color:"#c0a870", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", maxWidth:130 }}>vs {m.opponent}</span>
+                  <span style={{ fontSize:10, fontWeight:700, fontFamily:"'Cinzel',serif", color:m.result==="W"?"#78cc45":"#e05050", flexShrink:0, marginLeft:4 }}>{m.result}</span>
+                </div>
+              ))
+            }
+          </div>
           <button onClick={() => { logout(); setShowProfile(false); }} style={{ width:"100%", padding:"7px", background:"rgba(180,30,30,0.12)", border:"1px solid #5a1818", borderRadius:6, color:"#c07060", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer" }}>SIGN OUT</button>
         </div>)}
       </div>)}
