@@ -124,7 +124,7 @@ const CFG = { startHP: 20, startHand: 3, maxHand: 7, maxBoard: 5, startEnergy: 2
 
 // ═══ CONSTANTS ═══════════════════════════════════════════════════════════════
 const RC = { Common: "#8a8a7a", Uncommon: "#c0922a", Rare: "#5090ff", Epic: "#a860d8", Legendary: "#f0b818" };
-const RARITY_GLOW = { Rare: "#3070d0", Epic: "#9040c0", Legendary: "#e8c060", Champion: "#f0a020" };
+const RARITY_GLOW = { Rare: "#3070d0", Epic: "#9040c0", Legendary: "#e8c060", Champion: "#f0a020", Prismatic: "#ffffff" };
 const KW = [
   { name: "Swift", icon: "\u26A1", color: "#5a9a28", desc: "Attacks the turn it's played" },
   { name: "Fracture", icon: "\u2727", color: "#a060d0", desc: "A Fragment copy enters alongside" },
@@ -461,24 +461,32 @@ function Card({ card, size = "md", onClick, animDelay = 0 }) {
   const isBP = card.bloodpact || card.region === "Bloodpact";
   const isEnv = card.type === "environment";
   const border = card.border || "#e8c060";
-  const rarityGlow = RARITY_GLOW[card.rarity] || null;
-  const handleClick = () => { if (onClick) onClick(card); else setFlip((f) => !f); };
+  const isPrismatic = card.rarity === "Prismatic" || card.altSetId === "prismatic";
+  const isAnimeIsland = !isPrismatic && (card.altSetId === "anime_island" || (card.imageUrl && card.imageUrl.includes("anime-island")));
+  const rarityGlow = isPrismatic ? "#ffffff" : (RARITY_GLOW[card.rarity] || null);
+  const handleClick = () => { if (onClick) onClick(card); else { SFX.play("flip"); setFlip((f) => !f); } };
   return (
-    <div style={{ perspective: 1000, width: W, flexShrink: 0, animation: animDelay ? `cardReveal 0.6s ease-out ${animDelay}s both` : undefined, filter: rarityGlow ? `drop-shadow(0 0 7px ${rarityGlow}99)` : undefined }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}>
-      <div onClick={handleClick} style={{ width: W, transformStyle: "preserve-3d", transition: "transform .5s cubic-bezier(.4,0,.2,1)", transform: flip ? "rotateY(180deg)" : hov ? "translateY(-8px) scale(1.02)" : "none", cursor: "pointer", filter: hov ? `drop-shadow(0 12px 28px ${border}88)` : "none" }}>
-        <div style={{ backfaceVisibility: "hidden", border: `2px solid ${rarityGlow || border}`, borderRadius: 14, overflow: "hidden", position: "relative", height: H, width: W }}>
+    <div style={{ perspective: 1000, width: W, flexShrink: 0, animation: animDelay ? `cardReveal 0.6s ease-out ${animDelay}s both` : undefined, filter: isPrismatic ? undefined : rarityGlow ? `drop-shadow(0 0 7px ${rarityGlow}99)` : undefined, ...(isPrismatic ? { animation: `prismPulse 3s ease-in-out infinite` } : {}) }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}>
+      <div onClick={handleClick} style={{ width: W, transformStyle: "preserve-3d", transition: "transform .5s cubic-bezier(.4,0,.2,1)", transform: flip ? "rotateY(180deg)" : hov ? "translateY(-8px) scale(1.02)" : "none", cursor: "pointer", filter: hov ? `drop-shadow(0 12px 28px ${isPrismatic ? "#ffffff" : border}88)` : "none" }}>
+        <div style={{ backfaceVisibility: "hidden", border: isPrismatic ? "2px solid transparent" : `2px solid ${rarityGlow || border}`, borderRadius: 14, overflow: "hidden", position: "relative", height: H, width: W, ...(isPrismatic ? { backgroundImage: "linear-gradient(#0a0806,#0a0806), linear-gradient(135deg,#ff0080,#ff8000,#ffff00,#00ff80,#0080ff,#8000ff,#ff0080)", backgroundOrigin: "border-box", backgroundClip: "padding-box, border-box", borderWidth: 3 } : {}) }}>
           {/* Full-bleed art */}
           <div style={{ position: "absolute", inset: 0 }}><CardArt card={card} /></div>
-          {/* Foil shimmer for Rare+ */}
-          {["Rare","Epic","Legendary"].includes(card.rarity) && (
+          {/* Prismatic rainbow shimmer */}
+          {isPrismatic && (
+            <div style={{ position:"absolute", inset:0, borderRadius:14, background:"linear-gradient(135deg,#ff008020,#ff800030,#ffff0020,#00ff8030,#0080ff20,#8000ff30,#ff008020)", backgroundSize:"400% 400%", animation:"prismShimmer 4s linear infinite", pointerEvents:"none", zIndex:3, mixBlendMode:"screen" }} />
+          )}
+          {/* Foil shimmer for Rare+ (non-prismatic) */}
+          {!isPrismatic && ["Rare","Epic","Legendary"].includes(card.rarity) && (
             <div style={{ position: "absolute", inset: 0, borderRadius: 14, background: `linear-gradient(105deg,transparent 20%,${RC[card.rarity]}22 40%,${RC[card.rarity]}44 50%,${RC[card.rarity]}22 60%,transparent 80%)`, backgroundSize: "400% 100%", animation: "foilShimmer 4s linear infinite", pointerEvents: "none", zIndex: 3, mixBlendMode: "screen" }} />
           )}
           {/* Bottom gradient overlay */}
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(4,2,0,0.97) 0%, rgba(4,2,0,0.90) 28%, rgba(4,2,0,0.55) 52%, transparent 74%)", zIndex: 1 }} />
           {/* Top row: cost badge + type tags */}
           <div style={{ position: "absolute", top: 8, left: 8, right: 8, display: "flex", justifyContent: "space-between", alignItems: "flex-start", zIndex: 4 }}>
-            <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, background: isBP ? "radial-gradient(#ff3050,#a00018)" : isEnv ? "radial-gradient(#40c0e0,#1a6888)" : "radial-gradient(#ffe040,#d09000)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontWeight: 900, fontSize: 15, color: isBP ? "#fff" : "#1a1000", boxShadow: isBP ? "0 0 10px #ff305088, 0 2px 6px rgba(0,0,0,0.8)" : isEnv ? "0 0 10px #40c0e088, 0 2px 6px rgba(0,0,0,0.8)" : "0 0 10px #ffe04088, 0 2px 6px rgba(0,0,0,0.8)" }}>{isBP ? "B" : isEnv ? "E" : card.cost}</div>
+            <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, background: isBP ? "radial-gradient(#ff3050,#a00018)" : isEnv ? "radial-gradient(#40c0e0,#1a6888)" : isPrismatic ? "radial-gradient(#ffffff,#c0a0ff)" : "radial-gradient(#ffe040,#d09000)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontWeight: 900, fontSize: 15, color: isBP ? "#fff" : "#1a1000", boxShadow: isPrismatic ? "0 0 14px #ffffff88, 0 2px 6px rgba(0,0,0,0.8)" : isBP ? "0 0 10px #ff305088, 0 2px 6px rgba(0,0,0,0.8)" : isEnv ? "0 0 10px #40c0e088, 0 2px 6px rgba(0,0,0,0.8)" : "0 0 10px #ffe04088, 0 2px 6px rgba(0,0,0,0.8)" }}>{isBP ? "B" : isEnv ? "E" : card.cost}</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 3, alignItems: "flex-end" }}>
+              {isPrismatic && <div style={{ fontSize: 7, background: "linear-gradient(135deg,rgba(0,0,0,0.85),rgba(0,0,0,0.75))", color: "#ffffff", border: "1px solid rgba(255,255,255,0.6)", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700, backgroundImage:"linear-gradient(135deg,#ff008088,#8000ff88)", animation:"prismShimmer 4s linear infinite", backgroundSize:"400% 400%" }}>✦ PRISMATIC</div>}
+              {isAnimeIsland && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.8)", color: "#ff80c0", border: "1px solid #ff80c055", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>🏝 AI</div>}
               {isEnv && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.75)", color: "#28c0cc", border: "1px solid #28a0cc66", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>ENV</div>}
               {card.type === "spell" && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.75)", color: "#d090d0", border: "1px solid #d090d066", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>SPELL</div>}
               {card.type === "champion" && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.75)", color: "#e8c060", border: "1px solid #e8c06066", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>CHAMPION</div>}
@@ -705,6 +713,50 @@ function resolveEffects(trigger, card, state, side, vfx) {
 }
 
 // ═══ ENEMY AI ════════════════════════════════════════════════════════════════
+// Phase 1: draw + play cards only (no attacks, no end-of-turn)
+function computeEnemyPlayPhase(g, vfx) {
+  let s = { ...g, playerBoard: g.playerBoard.map((c) => ({ ...c })), enemyBoard: g.enemyBoard.map((c) => ({ ...c })), playerHand: [...g.playerHand], enemyHand: [...g.enemyHand], enemyDeck: [...g.enemyDeck], playerDeck: [...g.playerDeck], log: [...g.log] };
+  const L = (m) => { s.log = [...s.log.slice(-20), m]; };
+  if (s.environment) s = resolveEffects("onTurnStart", s.environment, s, s.environment.owner, vfx);
+  if (s.enemyDeck.length > 0 && s.enemyHand.length < 6) { s.enemyHand = [...s.enemyHand, makeInst(s.enemyDeck[0], "e")]; s.enemyDeck = s.enemyDeck.slice(1); L("Enemy draws."); }
+  let en = s.maxEnergy;
+  [...s.enemyHand].sort((a, b) => b.cost - a.cost).forEach((card) => {
+    if (card.type === "environment") { if (!card.bloodpact && card.cost <= en) { en -= card.cost; s.environment = { ...card, owner: "enemy" }; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid); L(`Enemy: ${card.name}!`); s = resolveEffects("onPlay", card, s, "enemy", vfx); } return; }
+    if (card.type === "spell") { if (card.bloodpact ? card.cost < s.enemyHP : card.cost <= en) { if (card.bloodpact) s.enemyHP -= card.cost; else en -= card.cost; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid); L(`Enemy casts ${card.name}!`); s = resolveEffects("onPlay", card, s, "enemy", vfx); } return; }
+    if (s.enemyBoard.length >= CFG.maxBoard) return;
+    const ec = card.bloodpact ? 0 : card.cost; if (ec > en) return;
+    const inst = { ...makeInst(card, "eb"), canAttack: (card.keywords || []).includes("Swift") };
+    if (card.bloodpact) { s.enemyHP -= card.cost; L(`Enemy blood-plays ${card.name}!`); } else { en -= ec; L(`Enemy plays ${card.name}!`); }
+    s.enemyBoard = [...s.enemyBoard, inst]; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid);
+    if ((card.keywords || []).includes("Fracture") && s.enemyBoard.length < CFG.maxBoard) s.enemyBoard = [...s.enemyBoard, { ...inst, uid: uid("ef"), currentHp: Math.ceil(card.hp / 2), maxHp: Math.ceil(card.hp / 2), currentAtk: Math.ceil(card.atk / 2), name: card.name + " Frag", keywords: [], levelUp: [], effects: [] }];
+    s = resolveEffects("onPlay", card, s, "enemy", vfx);
+  });
+  return s;
+}
+// Phase 2: attacks + end-of-turn (bleed, levelup, echo, draw)
+function computeEnemyAttackPhase(g, vfx) {
+  let s = { ...g, playerBoard: g.playerBoard.map((c) => ({ ...c })), enemyBoard: g.enemyBoard.map((c) => ({ ...c })), playerHand: [...g.playerHand], enemyHand: [...g.enemyHand], playerDeck: [...g.playerDeck], log: [...g.log] };
+  const L = (m) => { s.log = [...s.log.slice(-20), m]; };
+  s.enemyBoard.filter((c) => c.canAttack && !c.hasAttacked).forEach((att) => {
+    if (s.playerHP <= 0) return;
+    const av = att.currentAtk + ((att.keywords || []).includes("Resonate") ? s.playerHand.length : 0);
+    if (s.playerBoard.length > 0) { const tgt = [...s.playerBoard].sort((a, b) => a.currentHp - b.currentHp)[0]; let nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av; let nAHP = att.currentHp - tgt.currentAtk; if (tgt.shielded) L(`${tgt.name} shield absorbs!`); s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP } : c).filter((c) => c.currentHp > 0); s.playerBoard = s.playerBoard.map((c) => c.uid === tgt.uid ? { ...c, currentHp: nTHP, shielded: false, bleed: (c.bleed || 0) + ((att.keywords || []).includes("Bleed") ? 1 : 0) } : c).filter((c) => c.currentHp > 0); if (nTHP <= 0) { L(`${tgt.name} falls!`); s = resolveEffects("onDeath", tgt, s, "player", vfx); } if (nAHP <= 0) s = resolveEffects("onDeath", att, s, "enemy", vfx);
+    } else { s.playerHP -= av; s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c); L(`${att.name} hits you for ${av}!`); }
+  });
+  if (s.playerHP <= 0) return { ...s, phase: "gameover", winner: "enemy", log: [...s.log, "Defeated..."] };
+  const newTurn = g.turn + 1, newMax = Math.min(CFG.maxEnergy, newTurn + 1);
+  s.playerBoard = s.playerBoard.map((c) => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter((c) => c.currentHp > 0);
+  s.enemyBoard = s.enemyBoard.map((c) => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter((c) => c.currentHp > 0);
+  s.playerBoard.forEach((c) => { if (c.effects && c.effects.length) s = resolveEffects("onTurnStart", c, s, "player", vfx); });
+  s.playerBoard = s.playerBoard.map((c) => { const lv = levelUp({ ...c, xp: c.xp + 1 }); if (lv.level > c.level) L(`${c.name} leveled to ${lv.levelLabel}!`); return { ...lv, canAttack: true, hasAttacked: false }; });
+  s.enemyBoard = s.enemyBoard.map((c) => ({ ...levelUp({ ...c, xp: c.xp + 1 }), canAttack: true, hasAttacked: false }));
+  s.playerBoard.filter((c) => (c.keywords || []).includes("Echo") && !c.echoQueued).forEach((src) => { if (s.playerBoard.length < CFG.maxBoard) { s.playerBoard = [...s.playerBoard, { ...makeInst({ ...src, id: src.id + "_e", hp: 1, atk: 1, keywords: [], levelUp: [], effects: [] }, "pe"), uid: uid("echo"), currentHp: 1, maxHp: 1, currentAtk: 1, name: src.name + " Echo", canAttack: true }]; L(`Echo of ${src.name}!`); } });
+  s.playerBoard = s.playerBoard.map((c) => (c.keywords || []).includes("Echo") ? { ...c, echoQueued: true } : c);
+  if (s.playerDeck.length > 0 && s.playerHand.length < CFG.maxHand) { s.playerHand = [...s.playerHand, makeInst(s.playerDeck[0], "p")]; s.playerDeck = s.playerDeck.slice(1); }
+  if (s.enemyHP <= 0) return { ...s, phase: "gameover", winner: "player", log: [...s.log, "Victory!"] };
+  L(`Turn ${newTurn}`);
+  return { ...s, turn: newTurn, phase: "player", playerEnergy: newMax, maxEnergy: newMax };
+}
 function computeEnemyTurn(g, vfx) {
   let s = { ...g, playerBoard: g.playerBoard.map((c) => ({ ...c })), enemyBoard: g.enemyBoard.map((c) => ({ ...c })), playerHand: [...g.playerHand], enemyHand: [...g.enemyHand], enemyDeck: [...g.enemyDeck], playerDeck: [...g.playerDeck], log: [...g.log] };
   const L = (m) => { s.log = [...s.log.slice(-20), m]; };
@@ -2051,22 +2103,46 @@ function StoreScreen({ user, onUpdateUser }) {
 
   const buyPack = (pack) => {
     if (pack.cost > 0 && shards < pack.cost) { SFX.play("defeat"); return; }
+    const newShards = shards - pack.cost;
+
+    if (pack.altPack) {
+      // Alt art pack — rolls alt art unlocks, updates altOwned
+      const cards = rollAltArtPack(pack);
+      const ao = { ...(user.altOwned || {}) };
+      let dupeShards = 0;
+      cards.forEach((c) => {
+        if (!c?.altSetId) return;
+        const alreadyOwned = (ao[c.id] || []).includes(c.altSetId);
+        if (alreadyOwned) {
+          // Dupe alt art → refund shards
+          dupeShards += c.rarity === "Prismatic" ? 500 : c.rarity === "Legendary" ? 40 : c.rarity === "Epic" ? 20 : c.rarity === "Rare" ? 10 : c.rarity === "Uncommon" ? 5 : 3;
+        } else {
+          ao[c.id] = [...(ao[c.id] || []), c.altSetId];
+        }
+      });
+      const finalShards = newShards + dupeShards;
+      if (dupeShards > 0) { SFX.play("rare_reveal"); showDupeToast(dupeShards); }
+      onUpdateUser({ shards: finalShards, altOwned: ao });
+      setOpening({ pack, cards });
+      setRevealed([]); setRevIdx(-1);
+      SFX.play("pack_open");
+      return;
+    }
+
+    // Regular card pack
     const cards = rollPack(pack);
-    let newShards = shards - pack.cost;
     const col = { ...(user.collection || {}) };
     let dupeShards = 0;
     cards.forEach((c) => {
       const max = CFG.deck.copies[c.rarity] || 1;
       if ((col[c.id] || 0) >= max + 1) {
         const gain = c.rarity === "Common" ? 2 : c.rarity === "Uncommon" ? 5 : c.rarity === "Rare" ? 10 : c.rarity === "Epic" ? 20 : 40;
-        dupeShards += gain;
-        SFX.play("flip");
+        dupeShards += gain; SFX.play("flip");
       } else { col[c.id] = (col[c.id] || 0) + 1; }
     });
-    newShards += dupeShards;
+    const finalShards = newShards + dupeShards;
     if (dupeShards > 0) { SFX.play("rare_reveal"); showDupeToast(dupeShards); }
-    onUpdateUser({ shards: newShards, collection: col });
-    // Open the pack visually
+    onUpdateUser({ shards: finalShards, collection: col });
     setOpening({ pack, cards });
     setRevealed([]); setRevIdx(-1);
     SFX.play("pack_open");
@@ -2079,14 +2155,17 @@ function StoreScreen({ user, onUpdateUser }) {
     setTimeout(() => {
       setRevIdx(next); setRevealed((p) => [...p, next]);
       const card = opening.cards[next];
-      if (["Rare","Epic","Legendary"].includes(card.rarity)) SFX.play("rare_reveal"); else SFX.play("flip");
+      if (card.rarity === "Prismatic") { SFX.play("victory"); }
+      else if (["Rare","Epic","Legendary"].includes(card.rarity)) SFX.play("rare_reveal");
+      else SFX.play("flip");
       setShakeCard(-1);
     }, 400);
   };
   const revealAll = () => {
     if (!opening) return;
     setRevealed(opening.cards.map((_, i) => i)); setRevIdx(opening.cards.length - 1);
-    SFX.play("rare_reveal");
+    const hasPrismatic = opening.cards.some(c => c.rarity === "Prismatic");
+    SFX.play(hasPrismatic ? "victory" : "rare_reveal");
   };
 
   return (
@@ -2242,6 +2321,8 @@ export default function App() {
       @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
       @keyframes turnBannerIn{0%{opacity:0;transform:translate(-50%,-50%) scale(0.7)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}25%{transform:translate(-50%,-50%) scale(1)}75%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.1)}}
       @keyframes foilShimmer{0%{background-position:200% center}100%{background-position:-200% center}}
+      @keyframes prismShimmer{0%{background-position:0% 50%;filter:hue-rotate(0deg) brightness(1.2)}50%{background-position:100% 50%;filter:hue-rotate(180deg) brightness(1.5)}100%{background-position:0% 50%;filter:hue-rotate(360deg) brightness(1.2)}}
+      @keyframes prismPulse{0%,100%{box-shadow:0 0 18px #ff808088,0 0 36px #8080ff66,0 0 54px #80ff8044}33%{box-shadow:0 0 18px #80ff8088,0 0 36px #ff808066,0 0 54px #8080ff44}66%{box-shadow:0 0 18px #8080ff88,0 0 36px #80ff8066,0 0 54px #ff808044}}
       @keyframes nebulaDrift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
       @keyframes starTwinkle{0%,100%{opacity:0.2}50%{opacity:0.9}}
       @keyframes floatBadge{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
