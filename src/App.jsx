@@ -792,8 +792,84 @@ function logIcon(line) {
   if (/reshapes/.test(l)) return "\uD83C\uDF3F ";
   return "\u00B7 ";
 }
+// ═══ BATTLE CHAT (GIF) ════════════════════════════════════════════════════════
+const GIPHY_KEY = "dc6zaTOxFJmzC"; // Public beta key — replace with your own for production
+const AI_REACTIONS = ["nice","reaction","wow","gaming","card game","epic","gg","celebrate"];
+function BattleChat({ user, aiMode }) {
+  const [messages, setMessages] = useState([{ from: "System", text: "Battle chat active. Search GIFs to react!", id: 0 }]);
+  const [gifQuery, setGifQuery] = useState("");
+  const [gifs, setGifs] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [showGifPanel, setShowGifPanel] = useState(false);
+  const msgRef = useRef(null);
+  useEffect(() => { if (msgRef.current) msgRef.current.scrollTop = msgRef.current.scrollHeight; }, [messages]);
+  const searchGifs = async () => {
+    if (!gifQuery.trim()) return;
+    setSearching(true);
+    try {
+      const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_KEY}&q=${encodeURIComponent(gifQuery)}&limit=12&rating=g`);
+      const data = await res.json();
+      setGifs(data.data || []);
+    } catch (_) { setGifs([]); }
+    setSearching(false);
+  };
+  const sendGif = (gif) => {
+    const url = gif?.images?.fixed_height_small?.url || gif?.images?.downsized?.url;
+    if (!url) return;
+    setMessages(m => [...m, { from: user?.name || "You", gif: url, id: Date.now() }]);
+    setShowGifPanel(false); setGifQuery(""); setGifs([]);
+    if (aiMode) {
+      setTimeout(async () => {
+        const rq = AI_REACTIONS[Math.floor(Math.random() * AI_REACTIONS.length)];
+        try {
+          const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_KEY}&q=${encodeURIComponent(rq)}&limit=10&rating=g`);
+          const data = await res.json();
+          const picks = data.data || [];
+          if (picks.length > 0) {
+            const pick = picks[Math.floor(Math.random() * picks.length)];
+            const aUrl = pick?.images?.fixed_height_small?.url || pick?.images?.downsized?.url;
+            if (aUrl) setMessages(m => [...m, { from: "AI", gif: aUrl, id: Date.now() + 1 }]);
+          }
+        } catch (_) {}
+      }, 1200 + Math.random() * 1800);
+    }
+  };
+  return (
+    <div style={{ display:"flex", flexDirection:"column", height:"100%", background:"#080604", border:"1px solid #1e1a0e", borderRadius:12, overflow:"hidden" }}>
+      <div style={{ padding:"8px 12px", borderBottom:"1px solid #1e1808", flexShrink:0, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+        <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#c09048", letterSpacing:2, fontWeight:700 }}>CHAT</span>
+        <button onClick={()=>setShowGifPanel(v=>!v)} style={{ padding:"4px 10px", background:showGifPanel?"linear-gradient(135deg,#c89010,#f0c040)":"rgba(232,192,96,0.1)", border:"1px solid #3a2c10", borderRadius:6, fontSize:10, cursor:"pointer", color:showGifPanel?"#1a1000":"#a09060", fontFamily:"'Cinzel',serif", fontWeight:600 }}>GIF</button>
+      </div>
+      {showGifPanel && (
+        <div style={{ padding:"8px 10px", borderBottom:"1px solid #1e1808", flexShrink:0, background:"#0a0806" }}>
+          <div style={{ display:"flex", gap:6, marginBottom:6 }}>
+            <input value={gifQuery} onChange={e=>setGifQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&searchGifs()} placeholder="Search GIFs..." style={{ flex:1, padding:"5px 8px", background:"#100e08", border:"1px solid #2a2010", borderRadius:6, color:"#f0e8d8", fontSize:11, outline:"none" }} />
+            <button onClick={searchGifs} disabled={searching} style={{ padding:"5px 10px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:6, fontSize:10, cursor:"pointer", color:"#1a1000", fontWeight:700 }}>{searching?"...":"GO"}</button>
+          </div>
+          {gifs.length > 0 && (
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:4, maxHeight:140, overflowY:"auto" }}>
+              {gifs.map((g,i) => {
+                const url = g?.images?.fixed_height_small?.url;
+                return url ? (<img key={i} src={url} alt="" onClick={()=>sendGif(g)} style={{ width:"100%", height:60, objectFit:"cover", borderRadius:4, cursor:"pointer", border:"1px solid #2a2010" }} />) : null;
+              })}
+            </div>
+          )}
+        </div>
+      )}
+      <div ref={msgRef} style={{ flex:1, overflowY:"auto", padding:"8px 10px", display:"flex", flexDirection:"column", gap:6 }}>
+        {messages.map((m) => (
+          <div key={m.id} style={{ display:"flex", flexDirection:"column", alignItems:m.from==="You"||m.from===user?.name?"flex-end":"flex-start" }}>
+            <div style={{ fontSize:8, color: m.from==="AI"?"#c04040":m.from==="System"?"#806040":"#4a9020", fontFamily:"'Cinzel',serif", marginBottom:2, letterSpacing:1 }}>{m.from}</div>
+            {m.gif ? (<img src={m.gif} alt="" style={{ maxWidth:120, borderRadius:6, border:`1px solid ${m.from==="AI"?"#3a1010":"#1a3a10"}` }} />) : (<div style={{ background:m.from==="System"?"rgba(100,80,20,0.15)":m.from==="AI"?"rgba(80,20,20,0.3)":"rgba(20,60,10,0.3)", border:`1px solid ${m.from==="AI"?"#3a1010":m.from==="System"?"#3a3010":"#1a3a10"}`, borderRadius:8, padding:"5px 9px", fontSize:10, color:"#c0a870", maxWidth:180, lineHeight:1.5 }}>{m.text}</div>)}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
-  const initGame = () => { const fallback = [...POOL, ...POOL, ...POOL.slice(0, 5)]; const pd = shuf(matchConfig?.playerDeck?.length >= CFG.deck.min ? [...matchConfig.playerDeck] : [...fallback]); const ed = shuf([...fallback]); return { matchId: uid("m"), turn: 1, phase: "opening", winner: null, playerHP: CFG.startHP, playerEnergy: CFG.startEnergy, maxEnergy: CFG.startEnergy, playerHand: pd.slice(0, CFG.startHand).map((c) => makeInst(c, "p")), playerDeck: pd.slice(CFG.startHand), playerBoard: [], enemyHP: CFG.startHP, enemyHand: ed.slice(0, CFG.startHand).map((c) => makeInst(c, "e")), enemyDeck: ed.slice(CFG.startHand), enemyBoard: [], environment: null, log: ["Draw for priority!"] }; };
+  const initGame = () => { const fallback = [...POOL, ...POOL, ...POOL.slice(0, 5)]; const pd = shuf(matchConfig?.playerDeck?.length >= CFG.deck.min ? [...matchConfig.playerDeck] : [...fallback]); const ed = shuf([...fallback]); return { matchId: uid("m"), turn: 1, phase: "opening", winner: null, playerHP: CFG.startHP, playerEnergy: CFG.startEnergy, maxEnergy: CFG.startEnergy, playerHand: pd.slice(0, CFG.startHand).map((c) => makeInst(c, "p")), playerDeck: pd.slice(CFG.startHand), playerBoard: [], enemyHP: CFG.startHP, enemyHand: ed.slice(0, CFG.startHand).map((c) => makeInst(c, "e")), enemyDeck: ed.slice(CFG.startHand), enemyBoard: [], environment: null, envLastTurn: null, log: ["Draw for priority!"] }; };
   const [game, setGame] = useState(initGame);
   const [attacker, setAttacker] = useState(null);
   const [aiThink, setAiThink] = useState(false);
@@ -801,9 +877,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   const [timerKey, setTimerKey] = useState(0);
   const [turnBanner, setTurnBanner] = useState(null); // "YOUR TURN" | "ENEMY TURN"
   const logRef = useRef(null);
-  const [showEmotes, setShowEmotes] = useState(false);
   const [liveAction, setLiveAction] = useState(null);
-  const [floatingEmote, setFloatingEmote] = useState(null);
   const vfx = useVFX();
   // Start battle music when component mounts, home music on unmount
   useEffect(() => { MusicCtx.play("battle"); return () => MusicCtx.play("home"); }, []);
@@ -823,7 +897,9 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
 
   const playCard = (card) => {
     if (g.phase !== "player" || aiThink) return;
-    if (card.type === "environment") { if (card.bloodpact ? card.cost >= g.playerHP : card.cost > g.playerEnergy) return; SFX.play("env_play"); setAttacker(null); setGame((prev) => { let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= card.cost; s.log = [...s.log, `${card.name} reshapes the field!`]; } s.environment = { ...card, owner: "player" }; s = resolveEffects("onPlay", card, s, "player", vfx); vfx.add("environment", { color: card.border, duration: 2000 }); return s; }); return; }
+    if (card.type === "environment") {
+      if (g.envLastTurn && g.turn - g.envLastTurn < 2) return; // 2-round cooldown
+      if (card.bloodpact ? card.cost >= g.playerHP : card.cost > g.playerEnergy) return; SFX.play("env_play"); setAttacker(null); setGame((prev) => { let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= card.cost; s.log = [...s.log, `${card.name} reshapes the field!`]; } s.environment = { ...card, owner: "player" }; s.envLastTurn = prev.turn; s = resolveEffects("onPlay", card, s, "player", vfx); vfx.add("environment", { color: card.border, duration: 2000 }); return s; }); return; }
     if (card.type === "spell") { if (card.bloodpact ? card.cost >= g.playerHP : card.cost > g.playerEnergy) return; SFX.play("ability"); setAttacker(null); setGame((prev) => { let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= card.cost; s.log = [...s.log, `Cast ${card.name}!`]; } s = resolveEffects("onPlay", card, s, "player", vfx); return s; }); return; }
     if (g.playerBoard.length >= CFG.maxBoard) return;
     if (card.bloodpact ? card.cost >= g.playerHP : card.cost > g.playerEnergy) return;
@@ -836,7 +912,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   const atkFace = () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); const dmg = att.currentAtk + ((att.keywords || []).includes("Resonate") ? g.enemyHand.length : 0); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if (nHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); };
   const attCard = attacker ? g.playerBoard.find((c) => c.uid === attacker) : null;
 
-  return (<div style={{ maxWidth: 1180, margin: "0 auto", padding: "0 16px 60px" }} onClick={() => { SFX.init(); if(showEmotes)setShowEmotes(false); }}>
+  return (<div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 16px 60px" }} onClick={() => { SFX.init(); }}>
     {previewCard && <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />}
     {/* Live Action Ticker */}
     {liveAction && (
@@ -844,26 +920,6 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         <div style={{ background:"rgba(10,8,4,0.92)", border:`2px solid ${logColor(liveAction)}`, borderRadius:12, padding:"12px 28px", fontFamily:"'Cinzel',serif", fontSize:16, fontWeight:700, color:logColor(liveAction), letterSpacing:1, whiteSpace:"nowrap", boxShadow:`0 4px 28px ${logColor(liveAction)}55` }}>
           {logIcon(liveAction)}{liveAction}
         </div>
-      </div>
-    )}
-    {/* Emote panel */}
-    <div style={{ position:"fixed", bottom:16, right:16, zIndex:150 }}>
-      {showEmotes && (
-        <div style={{ position:"absolute", bottom:"100%", right:0, marginBottom:8, background:"#0e0c08", border:"1px solid #3a2810", borderRadius:12, padding:10, display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6, boxShadow:"0 8px 28px rgba(0,0,0,0.8)" }} onClick={(e)=>e.stopPropagation()}>
-          {EMOTES.map(e=>(<button key={e.id} onClick={()=>{ setShowEmotes(false); setFloatingEmote({emoji:e.emoji,text:e.text,isMine:true}); setTimeout(()=>setFloatingEmote(null),2500); }} style={{ background:"rgba(255,255,255,0.04)", border:"1px solid #2a2010", borderRadius:8, padding:"6px 8px", cursor:"pointer", textAlign:"center" }}>
-            <div style={{ fontSize:20 }}>{e.emoji}</div>
-            <div style={{ fontSize:8, color:"#a09060", marginTop:2, fontFamily:"'Cinzel',serif" }}>{e.text}</div>
-          </button>))}
-        </div>
-      )}
-      <button onClick={(e)=>{e.stopPropagation();setShowEmotes(v=>!v);}} style={{ width:58, height:58, borderRadius:"50%", background:showEmotes?"linear-gradient(135deg,#c89010,#f0c040)":"linear-gradient(135deg,#2a1e08,#1a1408)", border:showEmotes?"2px solid #e8c060":"2px solid #5a3810", cursor:"pointer", fontSize:26, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:showEmotes?"0 0 20px #e8c06066, 0 6px 18px rgba(0,0,0,0.8)":"0 4px 18px rgba(0,0,0,0.7)", transition:"all .2s" }}>😄</button>
-    </div>
-    {/* Floating emote AI */}
-    {floatingEmote && (
-      <div style={{ position:"fixed", bottom:120, left:"50%", transform:"translateX(-50%)", zIndex:200, background:"rgba(20,30,20,0.95)", border:"1px solid #4a9020", borderRadius:16, padding:"10px 22px", textAlign:"center", animation:"fadeIn 0.2s", pointerEvents:"none", boxShadow:"0 8px 32px rgba(0,0,0,0.7)" }}>
-        <div style={{ fontSize:32 }}>{floatingEmote.emoji}</div>
-        <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#78cc45", fontWeight:700, marginTop:4 }}>You</div>
-        <div style={{ fontSize:11, color:"#c0a870", marginTop:2 }}>{floatingEmote.text}</div>
       </div>
     )}
     {/* Turn Banner */}
@@ -885,8 +941,12 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         <button onClick={onExit} style={{ padding: "11px 22px", background: "transparent", border: "1px solid #3a2c10", borderRadius: 8, fontFamily: "'Cinzel',serif", fontSize: 11, color: "#a09058", cursor: "pointer" }}>EXIT</button>
       </div>
     </div>)}
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 270px", gap: 14 }}>
-      <div style={{ background: envTheme ? envTheme.bg : "#0c0a08", border: `1px solid ${envTheme ? envTheme.glow + "44" : "#242010"}`, borderRadius: 14, overflow: "hidden", position: "relative", transition: "background 1.5s ease, border-color 1s ease" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "250px 1fr 270px", gap: 14 }}>
+      {/* Chat panel — LEFT */}
+      <div style={{ display:"flex", flexDirection:"column", minHeight:500 }}>
+        <BattleChat user={user} aiMode={true} />
+      </div>
+      <div style={{ background: envTheme ? envTheme.bg : "#0f0d0a", border: `1px solid ${envTheme ? envTheme.glow + "44" : "#242010"}`, borderRadius: 14, overflow: "hidden", position: "relative", transition: "background 1.5s ease, border-color 1s ease" }}>
         {g.phase === "opening" && <OpeningDraw onResult={handleOpeningResult} />}
         <VFXOverlay effects={vfx.effects} />
         {/* Environment particles */}
@@ -898,7 +958,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
           <span style={{ fontSize: 9, color: "#a09068", flex: 1 }}>{g.environment.ability}</span>
         </div>)}
         {/* Enemy zone */}
-        <div style={{ background: "rgba(180,40,40,0.04)", borderBottom: "1px solid #241010", padding: "10px 14px", position: "relative", zIndex: 2 }}>
+        <div style={{ background: "rgba(180,40,40,0.09)", borderBottom: "1px solid #3a1818", padding: "10px 14px", position: "relative", zIndex: 2 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ width: 28, height: 28, borderRadius: "50%", background: "linear-gradient(135deg,#3a0c0c,#200808)", border: "2px solid #a0202044", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#cc6666", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>AI</div>
@@ -912,21 +972,21 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
             </div>
           </div>
           <div style={{ minHeight: 105, display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", alignItems: "center" }}>
-            {g.enemyBoard.length === 0 ? <span style={{ fontSize: 10, color: "#241010", letterSpacing: 3 }}>---</span> : g.enemyBoard.map((c) => (<Token key={c.uid} c={c} isTarget={!!attacker} canSelect={false} onClick={() => { if (attacker) atkCreature(c); else setPreviewCard(c); }} />))}
+            {g.enemyBoard.length === 0 ? <span style={{ fontSize: 10, color: "#241010", letterSpacing: 3 }}>---</span> : g.enemyBoard.map((c) => (<Token key={c.uid} c={c} isTarget={!!attacker} canSelect={false} onClick={() => { if (attacker) atkCreature(c); else { SFX.play("flip"); setPreviewCard(c); } }} />))}
           </div>
         </div>
         {/* Centre divider */}
-        <div style={{ padding: "6px 14px", background: envTheme ? "rgba(0,0,0,0.3)" : "#080608", borderBottom: "1px solid #181010", borderTop: "1px solid #181010", display: "flex", alignItems: "center", justifyContent: "center", gap: 14, position: "relative", zIndex: 2 }}>
+        <div style={{ padding: "6px 14px", background: envTheme ? "rgba(0,0,0,0.2)" : "#1a1510", borderBottom: "1px solid #181010", borderTop: "1px solid #181010", display: "flex", alignItems: "center", justifyContent: "center", gap: 14, position: "relative", zIndex: 2 }}>
           <div style={{ flex: 1, height: 1, background: "linear-gradient(to right,transparent,#382e18)" }} />
           {attCard ? (<button onClick={g.enemyBoard.length === 0 ? atkFace : undefined} style={{ padding: "5px 16px", background: g.enemyBoard.length === 0 ? "linear-gradient(135deg,#6a0808,#a01010)" : "rgba(255,255,255,0.04)", border: `1px solid ${g.enemyBoard.length === 0 ? "#e04040" : "#2a1a10"}`, borderRadius: 20, color: g.enemyBoard.length === 0 ? "#ffaaaa" : "#604030", fontFamily: "'Cinzel',serif", fontSize: 9, cursor: g.enemyBoard.length === 0 ? "pointer" : "default" }}>{g.enemyBoard.length === 0 ? "STRIKE HERO" : "SELECT TARGET"}</button>) : (<span style={{ fontSize: 9, color: envTheme ? envTheme.glow + "88" : "#241a08", letterSpacing: 3, fontFamily: "'Cinzel',serif" }}>TURN {g.turn}</span>)}
           <div style={{ flex: 1, height: 1, background: "linear-gradient(to left,transparent,#382e18)" }} />
         </div>
         {/* Player zone */}
-        <div style={{ background: "rgba(40,100,20,0.04)", padding: "10px 14px", position: "relative", zIndex: 2 }}>
+        <div style={{ background: "rgba(40,100,20,0.09)", padding: "10px 14px", position: "relative", zIndex: 2 }}>
           <div style={{ minHeight: 105, display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", alignItems: "center", marginBottom: 10 }}>
-            {g.playerBoard.length === 0 ? <span style={{ fontSize: 10, color: "#181408", letterSpacing: 3 }}>PLAY A CARD</span> : g.playerBoard.map((c) => (<Token key={c.uid} c={c} selected={attacker === c.uid} isTarget={false} canSelect={g.phase === "player" && c.canAttack && !c.hasAttacked && !aiThink} onClick={() => selectAtt(c)} onRightClick={() => setPreviewCard(c)} />))}
+            {g.playerBoard.length === 0 ? <span style={{ fontSize: 10, color: "#181408", letterSpacing: 3 }}>PLAY A CARD</span> : g.playerBoard.map((c) => (<Token key={c.uid} c={c} selected={attacker === c.uid} isTarget={false} canSelect={g.phase === "player" && c.canAttack && !c.hasAttacked && !aiThink} onClick={() => selectAtt(c)} onRightClick={() => { SFX.play("flip"); setPreviewCard(c); }} />))}
           </div>
-          <div style={{ borderTop: "1px solid #181408", paddingTop: 10, marginBottom: 10 }}>
+          <div style={{ borderTop: "1px solid #2a2010", paddingTop: 10, marginBottom: 10 }}>
             <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap" }}>
               {g.playerHand.map((card) => { const isEnv = card.type === "environment"; const isSpl = card.type === "spell"; const cp = g.phase === "player" && !aiThink && (isEnv || isSpl || g.playerBoard.length < CFG.maxBoard) && (card.bloodpact ? card.cost < g.playerHP : card.cost <= g.playerEnergy); return (<HandCard key={card.uid} card={card} playable={cp} onClick={() => playCard(card)} />); })}
             </div>
@@ -941,7 +1001,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
                 <span style={{ fontSize: 8, color: "#c0a060", fontFamily: "'Cinzel',serif" }}>ENERGY</span>
-                <div style={{ display: "flex", gap: 2 }}>{Array.from({ length: g.maxEnergy }).map((_, i) => (<div key={i} style={{ width: 9, height: 9, borderRadius: "50%", background: i < g.playerEnergy ? "#e8b828" : "#241a08", border: `1px solid ${i < g.playerEnergy ? "#e89a10" : "#14100a"}`, transition: "background .3s" }} />))}</div>
+                <div style={{ display: "flex", gap: 3 }}>{Array.from({ length: g.maxEnergy }).map((_, i) => (<div key={i} style={{ width: 18, height: 18, borderRadius: "50%", background: i < g.playerEnergy ? "radial-gradient(circle at 35% 35%,#ffe860,#e89a10,#a06000)" : "radial-gradient(circle at 35% 35%,#2a2010,#160e04)", border: `1px solid ${i < g.playerEnergy ? "#f0c040" : "#1e1608"}`, transition: "all .3s", boxShadow: i < g.playerEnergy ? "0 0 6px #e8b82866" : "none" }} />))}</div>
                 <span style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#e8b828", fontWeight: 700 }}>{g.playerEnergy}/{g.maxEnergy}</span>
               </div>
               <button onClick={endTurn} disabled={g.phase !== "player" || aiThink} style={{ padding: "8px 16px", background: g.phase === "player" && !aiThink ? "linear-gradient(135deg,#c89010,#f0c040)" : "rgba(255,255,255,0.04)", border: "none", borderRadius: 7, fontFamily: "'Cinzel',serif", fontSize: 10, fontWeight: 700, letterSpacing: 2, color: g.phase === "player" && !aiThink ? "#1a1000" : "#404030", cursor: g.phase === "player" && !aiThink ? "pointer" : "not-allowed" }}>{aiThink ? "THINKING..." : "END TURN"}</button>
@@ -954,7 +1014,27 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         {attCard && (<div style={{ background: `${attCard.border}15`, border: `1px solid ${attCard.border}55`, borderRadius: 10, padding: 10 }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, color: attCard.border, fontWeight: 600 }}>ATTACKING</div><div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#f0e8d8", fontWeight: 700 }}>{attCard.name}</div><div style={{ fontSize: 12, color: "#ff7050", fontWeight: 700 }}>ATK {attCard.currentAtk}</div><button onClick={() => setAttacker(null)} style={{ marginTop: 6, width: "100%", padding: "3px", background: "transparent", border: "1px solid #241408", borderRadius: 4, color: "#806040", fontFamily: "'Cinzel',serif", fontSize: 8, cursor: "pointer" }}>Cancel</button></div>)}
         <div style={{ flex: 1, background: "#080604", border: "1px solid #161408", borderRadius: 10, overflow: "hidden", display: "flex", flexDirection: "column" }}>
           <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, color: "#c09048", letterSpacing: 3, padding: "8px 12px", borderBottom: "1px solid #281e08", fontWeight: 700 }}>BATTLE LOG</div>
-          <div ref={logRef} style={{ overflowY: "auto", padding: "8px 12px", flex: 1, maxHeight: 460 }}>{g.log.map((l, i) => (<div key={i} style={{ fontSize: 11, lineHeight: 1.65, marginBottom: 4, color: logColor(l), borderLeft: i === g.log.length-1 ? `2px solid ${logColor(l)}` : "2px solid transparent", paddingLeft: 6, fontFamily: "'Cinzel',serif", fontWeight: i === g.log.length-1 ? 700 : 400 }}>{logIcon(l)}{l}</div>))}</div>
+          <div ref={logRef} style={{ overflowY: "auto", padding: "8px 12px", flex: 1, maxHeight: 460 }}>{g.log.map((l, i) => {
+            const col = logColor(l);
+            const isLast = i === g.log.length - 1;
+            // Highlight card names in log
+            const parts = [];
+            let remaining = l;
+            for (const card of POOL) {
+              if (remaining.includes(card.name)) {
+                const idx = remaining.indexOf(card.name);
+                if (idx > 0) parts.push({ text: remaining.slice(0, idx) });
+                parts.push({ card });
+                remaining = remaining.slice(idx + card.name.length);
+              }
+            }
+            if (remaining) parts.push({ text: remaining });
+            const rendered = parts.length > 1 ? parts.map((p, pi) => p.card
+              ? <span key={pi} onClick={(e) => { e.stopPropagation(); SFX.play("flip"); setPreviewCard(p.card); }} style={{ color: p.card.border, textDecoration: "underline", cursor: "pointer", fontWeight: 700 }}>{p.card.name}</span>
+              : <span key={pi}>{p.text}</span>
+            ) : l;
+            return (<div key={i} style={{ fontSize: 11, lineHeight: 1.65, marginBottom: 4, color: col, borderLeft: isLast ? `2px solid ${col}` : "2px solid transparent", paddingLeft: 6, fontFamily: "'Cinzel',serif", fontWeight: isLast ? 700 : 400 }}>{logIcon(l)}{rendered}</div>);
+          })}</div>
         </div>
       </div>
     </div>
@@ -1863,50 +1943,79 @@ function HomeScreen({ setTab, user }) {
   const [entered, setEntered] = useState(false);
   useEffect(() => { MusicCtx.play("home"); setEntered(true); const id = setInterval(() => setActive((c) => (c + 1) % HOME_CARDS.length), 4000); return () => clearInterval(id); }, []);
 
+  const REGION_ICONS = { Thornwood: "🌿", "Shattered Expanse": "💎", "Azure Deep": "🌊", Ashfen: "🔥", Ironmarch: "⚙", Sunveil: "☀", Bloodpact: "🩸" };
   return (<>
-    {/* Hero section */}
-    <section style={{ position: "relative", minHeight: 520, overflow: "hidden" }}>
-      <FloatingParticles count={40} color="#e8c060" speed={0.8} />
-      {/* Radial glows */}
-      <div style={{ position: "absolute", top: -100, left: -100, width: 500, height: 500, background: "radial-gradient(circle,rgba(200,140,20,0.08),transparent 70%)", pointerEvents: "none" }} />
-      <div style={{ position: "absolute", bottom: -100, right: -100, width: 400, height: 400, background: "radial-gradient(circle,rgba(80,40,200,0.06),transparent 70%)", pointerEvents: "none" }} />
+    {/* HERO — space nebula background */}
+    <section style={{ position: "relative", minHeight: 580, overflow: "hidden" }}>
+      {/* Nebula animated background */}
+      <div style={{ position:"absolute", inset:0, background:"linear-gradient(120deg,#0a0420 0%,#10062a 25%,#060818 50%,#1a0828 75%,#060c1e 100%)", backgroundSize:"400% 400%", animation:"nebulaDrift 18s ease infinite", zIndex:0 }} />
+      {/* Purple/blue nebula clouds */}
+      <div style={{ position:"absolute", top:"-20%", left:"-10%", width:"70%", height:"140%", background:"radial-gradient(ellipse at center,rgba(80,20,160,0.25) 0%,rgba(40,0,120,0.15) 40%,transparent 70%)", pointerEvents:"none", zIndex:1 }} />
+      <div style={{ position:"absolute", top:"10%", right:"-5%", width:"60%", height:"120%", background:"radial-gradient(ellipse at center,rgba(180,100,20,0.12) 0%,rgba(120,60,0,0.08) 40%,transparent 70%)", pointerEvents:"none", zIndex:1 }} />
+      <div style={{ position:"absolute", bottom:"0", left:"30%", width:"50%", height:"80%", background:"radial-gradient(ellipse at center,rgba(20,60,160,0.18) 0%,rgba(0,30,100,0.1) 50%,transparent 70%)", pointerEvents:"none", zIndex:1 }} />
+      {/* Star field */}
+      {Array.from({length:30}).map((_,i) => (<div key={i} style={{ position:"absolute", width:i%5===0?3:2, height:i%5===0?3:2, borderRadius:"50%", background:"#fff", top:`${(i*37)%90}%`, left:`${(i*61)%95}%`, opacity:0.3+((i*13)%6)*0.1, animation:`starTwinkle ${2+(i%4)*0.8}s ease-in-out ${(i*0.3)%3}s infinite`, zIndex:1 }} />))}
+      <FloatingParticles count={20} color="#a060ff" speed={0.4} />
 
-      <div style={{ maxWidth: 1080, margin: "0 auto", padding: "60px 28px 44px", display: "grid", gridTemplateColumns: "1fr 420px", gap: 48, alignItems: "center", position: "relative", zIndex: 2 }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "56px 28px 44px", display: "grid", gridTemplateColumns: "1fr 400px", gap: 52, alignItems: "center", position: "relative", zIndex: 2 }}>
+        {/* LEFT: Title + CTA */}
         <div style={{ animation: entered ? "slideInLeft 0.8s ease-out" : undefined }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(220,160,30,0.12)", border: "1px solid #d8a02044", borderRadius: 30, padding: "5px 16px", marginBottom: 20 }}>
-            <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#e8c060", boxShadow: "0 0 8px #e8c06088", animation: "pulse 2s infinite" }} />
-            <span style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#d8a838", letterSpacing: 2, fontWeight: 600 }}>PATCH 1.4 - ACCOUNTS & MULTIPLAYER</span>
+          {/* Patch badge */}
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(220,160,30,0.14)", border: "1px solid #d8a03055", borderRadius: 30, padding: "5px 18px", marginBottom: 22 }}>
+            <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#e8c060", boxShadow: "0 0 10px #e8c060cc", animation: "pulse 2s infinite" }} />
+            <span style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#d8a838", letterSpacing: 3, fontWeight: 700 }}>PATCH 1.6 · ANIME ISLAND UPDATE</span>
           </div>
-          <h1 style={{ fontFamily: "'Cinzel',serif", fontSize: "clamp(44px,6vw,72px)", fontWeight: 900, lineHeight: 1, color: "#e8c060", margin: "0 0 16px", textShadow: "0 0 60px #c89020aa, 0 2px 4px rgba(0,0,0,0.8)" }}>
-            Forge<br />{"&"} Fable
+          {/* Title */}
+          <h1 style={{ fontFamily: "'Cinzel',serif", fontSize: "clamp(48px,6.5vw,80px)", fontWeight: 900, lineHeight: 0.95, color: "#f0d878", margin: "0 0 6px", textShadow: "0 0 80px #c89020bb, 0 0 140px #c8902055, 0 4px 8px rgba(0,0,0,0.9), 0 2px 2px rgba(0,0,0,1)" }}>
+            Forge
           </h1>
-          <p style={{ fontSize: 16, lineHeight: 2, color: "#c8b888", margin: "0 0 12px", maxWidth: 440 }}>32 cards across 7 regions. Real abilities. Environment cards that reshape the battlefield. Your creatures level up, bleed, and echo.</p>
-          <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-            {[{ label: "32", sub: "Cards" }, { label: "7", sub: "Regions" }, { label: "7", sub: "Keywords" }].map((s) => (<div key={s.sub} style={{ background: "rgba(232,192,96,0.06)", border: "1px solid #e8c06022", borderRadius: 10, padding: "10px 16px", textAlign: "center" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 20, fontWeight: 900, color: "#e8c060" }}>{s.label}</div><div style={{ fontSize: 8, color: "#806040", letterSpacing: 1, fontFamily: "'Cinzel',serif" }}>{s.sub}</div></div>))}
+          <h1 style={{ fontFamily: "'Cinzel',serif", fontSize: "clamp(48px,6.5vw,80px)", fontWeight: 900, lineHeight: 0.95, color: "#f0d878", margin: "0 0 22px", textShadow: "0 0 80px #c89020bb, 0 0 140px #c8902055, 0 4px 8px rgba(0,0,0,0.9)" }}>
+            {"&"} Fable
+          </h1>
+          <p style={{ fontSize: 15, lineHeight: 1.9, color: "#b8aad0", margin: "0 0 24px", maxWidth: 420, textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>32 cards across 7 regions. Real abilities. Environment cards that reshape the battlefield. Your creatures level up, bleed, and echo.</p>
+          {/* Stat boxes */}
+          <div style={{ display: "flex", gap: 10, marginBottom: 28 }}>
+            {[{ label: "32", sub: "ATC" }, { label: "7", sub: "LEGIONS" }, { label: "7", sub: "COLUMNS" }].map((s) => (<div key={s.sub} style={{ background: "rgba(232,192,96,0.08)", border: "1px solid rgba(232,192,96,0.2)", borderRadius: 10, padding: "12px 20px", textAlign: "center", backdropFilter:"blur(4px)" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 22, fontWeight: 900, color: "#e8c060", textShadow:"0 0 20px #e8c06066" }}>{s.label}</div><div style={{ fontSize: 8, color: "#806040", letterSpacing: 2, fontFamily: "'Cinzel',serif", marginTop: 2 }}>{s.sub}</div></div>))}
           </div>
-          {user && (<div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button onClick={() => setTab("play")} style={{ padding: "14px 26px", background: "linear-gradient(135deg,#8a1010,#c02020)", border: "none", borderRadius: 10, color: "#ffd0d0", fontFamily: "'Cinzel',serif", fontSize: 12, fontWeight: 700, letterSpacing: 2, cursor: "pointer", boxShadow: "0 6px 24px rgba(200,30,30,0.3)", transition: "all .2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "none"}>BATTLE</button>
-            <button onClick={() => setTab("store")} style={{ padding: "14px 26px", background: "linear-gradient(135deg,#5a3808,#8a5810)", border: "none", borderRadius: 10, color: "#f0d880", fontFamily: "'Cinzel',serif", fontSize: 12, fontWeight: 700, letterSpacing: 2, cursor: "pointer", transition: "all .2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "none"}>STORE</button>
-            <button onClick={() => setTab("collection")} style={{ padding: "14px 26px", background: "transparent", border: "1px solid #e8c06055", borderRadius: 10, color: "#e8c060", fontFamily: "'Cinzel',serif", fontSize: 12, letterSpacing: 2, cursor: "pointer", fontWeight: 600, transition: "all .2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "none"}>COLLECTION</button>
-            <button style={{ padding: "14px 26px", background: "transparent", border: "1px solid #40404044", borderRadius: 10, color: "#505050", fontFamily: "'Cinzel',serif", fontSize: 10, letterSpacing: 2, cursor: "default" }}>MATCHMAKING — SOON</button>
+          {/* CTA Buttons */}
+          {user && (<div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <button onClick={() => setTab("play")} style={{ padding: "14px 32px", background: "linear-gradient(135deg,#7a0808,#c82020)", border: "1px solid #e84040aa", borderRadius: 8, color: "#ffe0e0", fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, letterSpacing: 3, cursor: "pointer", boxShadow: "0 6px 28px rgba(200,30,30,0.5), 0 0 40px rgba(200,30,30,0.2)", transition: "all .2s" }} onMouseEnter={(e) => { e.currentTarget.style.transform="translateY(-3px)"; e.currentTarget.style.boxShadow="0 10px 36px rgba(200,30,30,0.6), 0 0 50px rgba(200,30,30,0.3)"; }} onMouseLeave={(e) => { e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="0 6px 28px rgba(200,30,30,0.5), 0 0 40px rgba(200,30,30,0.2)"; }}>BATTLE</button>
+            <button onClick={() => setTab("store")} style={{ padding: "14px 28px", background: "linear-gradient(135deg,#503006,#8a5010)", border: "1px solid #d8901055", borderRadius: 8, color: "#f0d880", fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, letterSpacing: 3, cursor: "pointer", boxShadow: "0 6px 24px rgba(180,120,0,0.3)", transition: "all .2s" }} onMouseEnter={(e) => { e.currentTarget.style.transform="translateY(-3px)"; }} onMouseLeave={(e) => { e.currentTarget.style.transform="none"; }}>STORE</button>
+            <button onClick={() => setTab("collection")} style={{ padding: "14px 28px", background: "rgba(232,192,96,0.06)", border: "1px solid #e8c06066", borderRadius: 8, color: "#e8c060", fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: 3, cursor: "pointer", fontWeight: 600, backdropFilter:"blur(4px)", transition: "all .2s" }} onMouseEnter={(e) => { e.currentTarget.style.transform="translateY(-3px)"; e.currentTarget.style.background="rgba(232,192,96,0.12)"; }} onMouseLeave={(e) => { e.currentTarget.style.transform="none"; e.currentTarget.style.background="rgba(232,192,96,0.06)"; }}>COLLECTION</button>
           </div>)}
+          {!user && (<div style={{ padding:"16px 22px", background:"rgba(232,192,96,0.06)", border:"1px solid #e8c06033", borderRadius:10, fontSize:12, color:"#a09060", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>Sign in to start your journey ⚔</div>)}
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, animation: entered ? "slideInRight 0.8s ease-out" : undefined }}>
+        {/* RIGHT: Featured card */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, animation: entered ? "slideInRight 0.8s ease-out" : undefined }}>
           <div style={{ position: "relative" }}>
-            <div style={{ position: "absolute", inset: -20, background: `radial-gradient(circle,${HOME_CARDS[active]?.border || "#e8c060"}18,transparent 70%)`, transition: "background 1s ease", pointerEvents: "none" }} />
+            {/* Outer nebula glow */}
+            <div style={{ position: "absolute", inset: -40, background: `radial-gradient(circle,${HOME_CARDS[active]?.border || "#9060ff"}30,rgba(60,20,120,0.2) 50%,transparent 70%)`, transition: "background 1.2s ease", pointerEvents: "none", borderRadius:"50%" }} />
+            <div style={{ position: "absolute", inset: -10, background: `radial-gradient(circle,${HOME_CARDS[active]?.border || "#9060ff"}22,transparent 70%)`, transition: "background 1.2s ease", pointerEvents: "none" }} />
             {HOME_CARDS[active] && <Card card={HOME_CARDS[active]} size="lg" key={HOME_CARDS[active].id + active} />}
           </div>
-          <div style={{ display: "flex", gap: 10 }}>{HOME_CARDS.map((c, i) => (<button key={i} onClick={() => setActive(i)} style={{ width: 10, height: 10, borderRadius: "50%", background: active === i ? c.border : "#282010", border: `1px solid ${c.border}`, cursor: "pointer", padding: 0, transition: "all .3s", boxShadow: active === i ? `0 0 10px ${c.border}66` : "none" }} />))}</div>
+          <div style={{ display: "flex", gap: 8 }}>{HOME_CARDS.map((c, i) => (<button key={i} onClick={() => setActive(i)} style={{ width: 12, height: 12, borderRadius: "50%", background: active === i ? c.border : "rgba(255,255,255,0.06)", border: `1px solid ${active === i ? c.border : "rgba(255,255,255,0.15)"}`, cursor: "pointer", padding: 0, transition: "all .3s", boxShadow: active === i ? `0 0 14px ${c.border}88` : "none" }} />))}</div>
         </div>
       </div>
     </section>
 
-    {/* Region strip */}
-    <section style={{ maxWidth: 1080, margin: "0 auto", padding: "0 28px 40px" }}>
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
-        {[...REGIONS, "Bloodpact"].map((r, i) => (<div key={r} style={{ padding: "10px 18px", background: `${GLOW[r]}08`, border: `1px solid ${GLOW[r]}22`, borderRadius: 10, fontFamily: "'Cinzel',serif", fontSize: 10, color: GLOW[r], fontWeight: 600, letterSpacing: 1, animation: `cardReveal 0.4s ease-out ${i * 0.06}s both`, cursor: "pointer", transition: "all .2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = GLOW[r] + "18"; e.currentTarget.style.borderColor = GLOW[r] + "55"; }} onMouseLeave={(e) => { e.currentTarget.style.background = GLOW[r] + "08"; e.currentTarget.style.borderColor = GLOW[r] + "22"; }} onClick={() => setTab("collection")}>{r}</div>))}
+    {/* Region/faction badge strip */}
+    <section style={{ borderTop:"1px solid rgba(255,255,255,0.06)", padding: "28px 28px 40px", background:"rgba(0,0,0,0.3)", backdropFilter:"blur(8px)" }}>
+      <div style={{ maxWidth:1100, margin:"0 auto" }}>
+        <div style={{ textAlign:"center", fontFamily:"'Cinzel',serif", fontSize:9, color:"#504038", letterSpacing:3, marginBottom:18, fontWeight:700 }}>FACTIONS & REGIONS</div>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+          {[...REGIONS, "Bloodpact"].map((r, i) => (<div key={r} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6, padding: "14px 20px", background: `linear-gradient(180deg,${GLOW[r]}0e,transparent)`, border: `1px solid ${GLOW[r]}25`, borderRadius: 12, fontFamily: "'Cinzel',serif", fontSize: 11, color: GLOW[r], fontWeight: 700, letterSpacing: 1, animation: `cardReveal 0.4s ease-out ${i * 0.07}s both`, cursor: "pointer", transition: "all .25s", minWidth:100, textAlign:"center", backdropFilter:"blur(4px)" }} onMouseEnter={(e) => { e.currentTarget.style.background = `linear-gradient(180deg,${GLOW[r]}20,${GLOW[r]}08)`; e.currentTarget.style.borderColor = GLOW[r] + "55"; e.currentTarget.style.transform="translateY(-4px)"; e.currentTarget.style.boxShadow=`0 8px 24px ${GLOW[r]}22`; }} onMouseLeave={(e) => { e.currentTarget.style.background = `linear-gradient(180deg,${GLOW[r]}0e,transparent)`; e.currentTarget.style.borderColor = GLOW[r] + "25"; e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="none"; }} onClick={() => setTab("collection")}>
+            <div style={{ fontSize:22 }}>{REGION_ICONS[r] || "⬡"}</div>
+            {r}
+          </div>))}
+        </div>
       </div>
     </section>
+    {/* Bottom info bar */}
+    <div style={{ background:"rgba(0,0,0,0.5)", borderTop:"1px solid rgba(255,255,255,0.05)", padding:"10px 28px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#504038", letterSpacing:2 }}>FORGE {"&"} FABLE</div>
+      <div style={{ fontSize:9, color:"#3a3028", letterSpacing:2, fontFamily:"'Cinzel',serif" }}>PATCH 1.6 · {Object.values(HOME_CARDS[0]?.id||{}).length||32} CARDS · SHATTERED REGION · {user ? "ALPHA" : "GUEST"}</div>
+      <div style={{ fontSize:9, color:"#3a3028", letterSpacing:1 }}>v16 · ALPHA</div>
+    </div>
   </>);
 }
 
@@ -2133,6 +2242,9 @@ export default function App() {
       @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
       @keyframes turnBannerIn{0%{opacity:0;transform:translate(-50%,-50%) scale(0.7)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}25%{transform:translate(-50%,-50%) scale(1)}75%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.1)}}
       @keyframes foilShimmer{0%{background-position:200% center}100%{background-position:-200% center}}
+      @keyframes nebulaDrift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+      @keyframes starTwinkle{0%,100%{opacity:0.2}50%{opacity:0.9}}
+      @keyframes floatBadge{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
       @keyframes dupeToast{0%{opacity:0;transform:translateY(20px) scale(0.8)}15%{opacity:1;transform:translateY(0) scale(1)}75%{opacity:1}100%{opacity:0;transform:translateY(-30px) scale(0.9)}}
       @media(max-width:768px){
         nav{height:60px!important;padding:0 6px!important}
