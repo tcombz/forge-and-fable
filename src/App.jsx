@@ -243,53 +243,55 @@ function CardPreview({ card, onClose }) {
 
 // ═══ PATCH NOTES MODAL ═══════════════════════════════════════════════════════
 const PATCH_NOTES = {
-  version: "v15",
-  title: "Quality & Multiplayer Update",
+  version: "v16",
+  title: "Anime Island Update",
   sections: [
     {
-      heading: "🎮 Multiplayer",
+      heading: "🏝 Anime Island — 32 New Alt Arts",
+      color: "#ff80c0",
+      items: [
+        "All 32 cards now have a full Anime Island alt art — collect them via the new Anime Island Pack",
+        "Prismatic Sun Strike (☀ 0.1% drop rate) — an ultra-rare holographic alt art, 1-in-1000",
+        "Anime Island Pack in the Store: 5 alt art unlocks per pack · 300 shards · gorgeous anime style",
+        "Alpha Founders (sncombz@gmail.com) automatically unlock all 32 Anime Island arts + Prismatic",
+      ]
+    },
+    {
+      heading: "🎮 Multiplayer & Matchmaking",
       color: "#60a8e8",
       items: [
-        "PvP moves now validated server-side via Supabase Edge Function — no more cheating",
-        "Matchmaking reliability improved with polling fallback alongside Realtime",
-        "Emote system works in both AI and PvP battles",
+        "Matchmaking fully rewritten — pure polling loop eliminates ghost-row stale match bugs",
+        "Both players now reliably transition to battle together with no stuck searching states",
+        "PvP moves validated server-side via Supabase Edge Function — cheat-proof",
+        "Emote system active in both AI and PvP battles",
       ]
     },
     {
-      heading: "🃏 Cards & Collection",
+      heading: "🃏 Cards & Store",
       color: "#e8c060",
       items: [
-        "Full-art card redesign — artwork fills the entire card face edge-to-edge",
-        "Card art renders at 2× resolution on HiDPI / Retina screens",
-        "Rarity shown by border glow only: Rare = blue, Epic = purple, Legendary = gold",
-        "Alt Art system — collect alternate artwork per card and select your preferred style",
-        "Velrun: Anime Island alt art available (Legendary glow) — check your Collection",
-        "Card text now has stronger contrast shadow for readability over any art",
+        "Updated gacha odds: Common 35% · Uncommon 35% · Rare 20% · Epic 8% · Legendary 2%",
+        "New alpha perk: all new accounts start with 1,000 shards",
+        "Full-art cards with 2× HiDPI rendering — crystal clear on all screens",
+        "Alt Art selector in Collection — pick your preferred art per card",
       ]
     },
     {
-      heading: "📖 Deck Builder",
+      heading: "📖 UI Improvements",
       color: "#78cc78",
       items: [
-        "Deck Builder moved to the Cards tab — build and manage all in one place",
-        "Saved decks now show with a delete option in the Collection screen",
-      ]
-    },
-    {
-      heading: "👤 Profile",
-      color: "#c080e0",
-      items: [
-        "Match history tracked for every battle — win/loss, opponent, turn count",
-        "Last 5 matches shown in your profile dropdown with W / L badge",
+        "Deck Builder upgraded to full-screen panel with clearly visible card previews",
+        "Navigation bar redesigned — larger tabs, card-game iconography, gold active indicator",
+        "Match history tracked: last 20 PvP battles with W/L, opponent, and turn count",
       ]
     },
     {
       heading: "⚡ Coming Next",
       color: "#806040",
       items: [
-        "Anime Island full card set — 32 anime-style alt arts, one per card",
-        "Leaderboard and ELO ranking system",
+        "Leaderboard and ELO ranking",
         "The Forge — card crafting and upgrades",
+        "Thornwood Expansion — new card set",
       ]
     },
   ]
@@ -399,21 +401,53 @@ const HOME_CARDS = [POOL.find((c) => c.id === "velrun"), POOL.find((c) => c.id =
 
 // ═══ PACKS ═══════════════════════════════════════════════════════════════════
 const PACKS = [
-  { id: "starter", name: "Starter Pack", desc: "5 cards. Guaranteed Uncommon+", cost: 0, count: 5, color: "#e8c060", pool: "all", guarantees: [{ rarity: "Uncommon", count: 1 }] },
-  { id: "thornwood", name: "Thornwood Pack", desc: "5 forest cards", cost: 100, count: 5, color: "#4a9020", pool: "Thornwood", guarantees: [] },
-  { id: "expanse", name: "Expanse Pack", desc: "5 crystal cards", cost: 100, count: 5, color: "#9050d8", pool: "Shattered Expanse", guarantees: [] },
-  { id: "ashfen", name: "Ashfen Pack", desc: "5 volcanic cards", cost: 100, count: 5, color: "#c04810", pool: "Ashfen", guarantees: [] },
-  { id: "premium", name: "Rift Pack", desc: "5 cards. Guaranteed Rare+", cost: 250, count: 5, color: "#f0b818", pool: "all", guarantees: [{ rarity: "Rare", count: 1 }] },
+  { id: "starter",      name: "Starter Pack",       desc: "5 cards. Guaranteed Uncommon+",               cost: 0,   count: 5, color: "#e8c060", pool: "all",              guarantees: [{ rarity: "Uncommon", count: 1 }] },
+  { id: "thornwood",    name: "Thornwood Pack",      desc: "5 forest cards",                               cost: 100, count: 5, color: "#4a9020", pool: "Thornwood",        guarantees: [] },
+  { id: "expanse",      name: "Expanse Pack",        desc: "5 crystal cards",                              cost: 100, count: 5, color: "#9050d8", pool: "Shattered Expanse", guarantees: [] },
+  { id: "ashfen",       name: "Ashfen Pack",         desc: "5 volcanic cards",                             cost: 100, count: 5, color: "#c04810", pool: "Ashfen",           guarantees: [] },
+  { id: "premium",      name: "Rift Pack",           desc: "5 cards. Guaranteed Rare+",                    cost: 250, count: 5, color: "#f0b818", pool: "all",              guarantees: [{ rarity: "Rare", count: 1 }] },
+  { id: "anime_island", name: "Anime Island Pack",   desc: "5 anime alt art unlocks. 0.1% Prismatic ☀",   cost: 300, count: 5, color: "#ff80c0", pool: "all",              guarantees: [], altPack: true },
 ];
 function rollPack(pack) {
   const pool = pack.pool === "all" ? POOL : POOL.filter((c) => c.region === pack.pool);
-  const weights = { Common: 50, Uncommon: 30, Rare: 15, Epic: 4, Legendary: 1 };
+  const weights = { Common: 35, Uncommon: 35, Rare: 20, Epic: 8, Legendary: 2 };
   const totalW = 100;
   const rollOne = () => { let r = Math.random() * totalW, acc = 0; for (const [rar, w] of Object.entries(weights)) { acc += w; if (r <= acc) { const opts = pool.filter((c) => c.rarity === rar); return opts.length > 0 ? opts[Math.floor(Math.random() * opts.length)] : pool[Math.floor(Math.random() * pool.length)]; } } return pool[0]; };
   const cards = [];
   for (const g of (pack.guarantees || [])) { const rarIdx = ["Common","Uncommon","Rare","Epic","Legendary"].indexOf(g.rarity); const eligible = pool.filter((c) => ["Common","Uncommon","Rare","Epic","Legendary"].indexOf(c.rarity) >= rarIdx); for (let i = 0; i < g.count; i++) cards.push(eligible[Math.floor(Math.random() * eligible.length)] || pool[0]); }
   while (cards.length < pack.count) cards.push(rollOne());
   return cards;
+}
+function rollAltArtPack(pack) {
+  // Rolls 5 Anime Island alt art unlocks (weighted by alt art rarity)
+  const altPool = { Common:[], Uncommon:[], Rare:[], Epic:[], Legendary:[] };
+  for (const [cardId, alts] of Object.entries(ALT_ARTS)) {
+    for (const alt of alts) {
+      if (alt.setId === "anime_island" && altPool[alt.rarity]) altPool[alt.rarity].push({ cardId, alt });
+    }
+  }
+  const rollOne = () => {
+    const r = Math.random() * 1000;
+    // 0.1% Prismatic = 1 in 1000
+    if (r < 1) {
+      const base = POOL.find(c => c.id === "sun_strike");
+      const pAlt = ALT_ARTS.sun_strike?.find(a => a.setId === "prismatic");
+      if (base && pAlt) return { ...base, imageUrl: pAlt.imageUrl, altSetId: "prismatic", _altLabel: pAlt.label, rarity: "Prismatic" };
+    }
+    // weights: Common 350, Uncommon 349, Rare 200, Epic 80, Legendary 20 (of 999)
+    const buckets = [["Legendary",20],["Epic",80],["Rare",200],["Uncommon",349],["Common",350]];
+    let acc = 1; // start after prismatic range
+    for (const [rar, w] of buckets) {
+      acc += w; if (r < acc) {
+        const opts = altPool[rar] || [];
+        if (opts.length) { const { cardId, alt } = opts[Math.floor(Math.random() * opts.length)]; const base = POOL.find(c => c.id === cardId); return base ? { ...base, imageUrl: alt.imageUrl, altSetId: "anime_island", _altLabel: alt.label, rarity: base.rarity } : null; }
+      }
+    }
+    const fallback = altPool.Common[0];
+    if (fallback) { const base = POOL.find(c => c.id === fallback.cardId); return base ? { ...base, imageUrl: fallback.alt.imageUrl, altSetId: "anime_island" } : null; }
+    return null;
+  };
+  return Array.from({ length: pack.count }, rollOne).filter(Boolean);
 }
 
 // ═══ CARD COMPONENT ══════════════════════════════════════════════════════════
@@ -491,17 +525,41 @@ function Card({ card, size = "md", onClick, animDelay = 0 }) {
 // imageUrl points to /public/alt-art/<filename>.
 // "owned: true" means all players get it free; otherwise requires alt-art pack pull.
 const ALT_ARTS = {
-  velrun: [
-    {
-      setId: "anime_island",
-      setName: "Anime Island",
-      label: "Anime Island · Legendary",
-      imageUrl: "/alt-art/velrun-anime-island.jpg",
-      rarity: "Legendary",
-      freeForOwners: true,   // available to anyone who owns the base card
-    },
+  wolf:       [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Common",    imageUrl:"/alt-art/stonefang-anime-island.png", rarity:"Common" }],
+  guard:      [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Common",    imageUrl:"/alt-art/guard-anime-island.png",     rarity:"Common" }],
+  druid:      [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Uncommon",  imageUrl:"/alt-art/druid-anime-island.png",     rarity:"Uncommon" }],
+  tangle:     [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Rare",      imageUrl:"/alt-art/tangle-anime-island.png",    rarity:"Rare" }],
+  env_grove:  [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Uncommon",  imageUrl:"/alt-art/env_grove-anime-island.png", rarity:"Uncommon" }],
+  wisp:       [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Uncommon",  imageUrl:"/alt-art/wisp-anime-island.png",      rarity:"Uncommon" }],
+  shard:      [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Common",    imageUrl:"/alt-art/shard-anime-island.jpg",     rarity:"Common" }],
+  weaver:     [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Rare",      imageUrl:"/alt-art/weaver-anime-island.png",    rarity:"Rare" }],
+  velrun:     [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Legendary", imageUrl:"/alt-art/velrun-anime-island.jpg",    rarity:"Legendary", freeForOwners: true }],
+  env_rift:   [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Rare",      imageUrl:"/alt-art/env_rift-anime-island.png",  rarity:"Rare" }],
+  tide:       [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Rare",      imageUrl:"/alt-art/tide-anime-island.png",      rarity:"Rare" }],
+  shellguard: [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Common",    imageUrl:"/alt-art/shellguard-anime-island.jpg",rarity:"Common" }],
+  current:    [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Common",    imageUrl:"/alt-art/current-anime-island.png",   rarity:"Common" }],
+  kraken:     [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Epic",      imageUrl:"/alt-art/kraken-anime-island.png",    rarity:"Epic" }],
+  env_depths: [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Uncommon",  imageUrl:"/alt-art/env_depths-anime-island.png",rarity:"Uncommon" }],
+  sprite:     [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Common",    imageUrl:"/alt-art/sprite-anime-island.png",    rarity:"Common" }],
+  imp:        [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Common",    imageUrl:"/alt-art/imp-anime-island.png",       rarity:"Common" }],
+  pyro:       [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Uncommon",  imageUrl:"/alt-art/pyro-anime-island.png",      rarity:"Uncommon" }],
+  eruption:   [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Rare",      imageUrl:"/alt-art/eruption-anime-island.png",  rarity:"Rare" }],
+  env_volcano:[{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Rare",      imageUrl:"/alt-art/env_volcano-anime-island.png",rarity:"Rare" }],
+  sentinel:   [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Uncommon",  imageUrl:"/alt-art/sentinel-anime-island.jpg",  rarity:"Uncommon" }],
+  forgebot:   [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Common",    imageUrl:"/alt-art/forgebot-anime-island.png",  rarity:"Common" }],
+  shield_wall:[{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Common",    imageUrl:"/alt-art/shield_wall-anime-island.png",rarity:"Common" }],
+  colossus:   [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Legendary", imageUrl:"/alt-art/colossus-anime-island.png",  rarity:"Legendary" }],
+  falcon:     [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Common",    imageUrl:"/alt-art/falcon-anime-island.png",    rarity:"Common" }],
+  oracle:     [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Uncommon",  imageUrl:"/alt-art/oracle-anime-island.jpg",    rarity:"Uncommon" }],
+  sun_strike: [
+    { setId:"anime_island", setName:"Anime Island", label:"Anime Island · Rare",      imageUrl:"/alt-art/sun_strike-anime-island.jpg",  rarity:"Rare" },
+    { setId:"prismatic",    setName:"Prismatic",    label:"☀ Prismatic Sun Strike ✦", imageUrl:"/alt-art/sun_strike2-anime-island.jpg", rarity:"Prismatic" },
   ],
-  // Future cards added here...
+  env_dunes:  [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Uncommon",  imageUrl:"/alt-art/env_dunes-anime-island.png", rarity:"Uncommon" }],
+  siphon:     [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Rare",      imageUrl:"/alt-art/siphon-anime-island.jpg",    rarity:"Rare" }],
+  martyr:     [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Uncommon",  imageUrl:"/alt-art/martyr-anime-island.png",    rarity:"Uncommon" }],
+  bloodmage:  [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Epic",      imageUrl:"/alt-art/bloodmage-anime-island.png", rarity:"Epic" }],
+  blood_pact: [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Uncommon",  imageUrl:"/alt-art/blood_pact-anime-island.png",rarity:"Uncommon" }],
 };
 
 /** Returns the card with the correct imageUrl applied based on selectedArts map */
@@ -798,7 +856,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
           </button>))}
         </div>
       )}
-      <button onClick={(e)=>{e.stopPropagation();setShowEmotes(v=>!v);}} style={{ width:44, height:44, borderRadius:"50%", background:"linear-gradient(135deg,#1a1610,#0e0c08)", border:"1px solid #3a2810", cursor:"pointer", fontSize:22, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 4px 14px rgba(0,0,0,0.5)" }}>😄</button>
+      <button onClick={(e)=>{e.stopPropagation();setShowEmotes(v=>!v);}} style={{ width:58, height:58, borderRadius:"50%", background:showEmotes?"linear-gradient(135deg,#c89010,#f0c040)":"linear-gradient(135deg,#2a1e08,#1a1408)", border:showEmotes?"2px solid #e8c060":"2px solid #5a3810", cursor:"pointer", fontSize:26, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:showEmotes?"0 0 20px #e8c06066, 0 6px 18px rgba(0,0,0,0.8)":"0 4px 18px rgba(0,0,0,0.7)", transition:"all .2s" }}>😄</button>
     </div>
     {/* Floating emote AI */}
     {floatingEmote && (
@@ -926,47 +984,76 @@ function DeckBuilderModal({ user, onSave, onClose }) {
   };
   const removeCard = (idx) => setDeck((d) => d.filter((_, i) => i !== idx));
   const save = () => { if (deck.length < 10) return; onSave({ name: deckName, cards: deck }); onClose(); };
-  return (<div style={{ position:"fixed", inset:0, zIndex:500, background:"rgba(0,0,0,0.92)", display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
-    <div style={{ background:"linear-gradient(160deg,#1e1c10,#0e0c08)", border:"1px solid #3a3020", borderRadius:16, padding:24, width:"100%", maxWidth:820, maxHeight:"90vh", overflow:"auto" }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-        <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:20, color:"#e8c060", margin:0 }}>Deck Builder</h3>
-        <button onClick={onClose} style={{ background:"transparent", border:"1px solid #3a2010", borderRadius:6, color:"#806040", fontFamily:"'Cinzel',serif", fontSize:10, padding:"5px 12px", cursor:"pointer" }}>CLOSE</button>
-      </div>
-      <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap" }}>
-        <input value={deckName} onChange={(e) => setDeckName(e.target.value)} placeholder="Deck name..." style={{ flex:1, minWidth:120, padding:"8px 12px", background:"#100e08", border:"1px solid #2a2010", borderRadius:7, color:"#f0e8d8", fontSize:12, outline:"none" }} />
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search cards..." style={{ flex:2, minWidth:140, padding:"8px 12px", background:"#100e08", border:"1px solid #2a2010", borderRadius:7, color:"#f0e8d8", fontSize:12, outline:"none" }} />
-        <button onClick={save} disabled={deck.length < 10} style={{ padding:"8px 20px", background:deck.length>=10?"linear-gradient(135deg,#c89010,#f0c040)":"rgba(255,255,255,0.05)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:deck.length>=10?"#1a1000":"#504030", cursor:deck.length>=10?"pointer":"not-allowed" }}>SAVE ({deck.length}/20)</button>
-        <div style={{ fontSize:8, color:"#604028", marginLeft:4 }}><span style={{ color: legendaryCount>=2?"#e8c060":"#604028" }}>Leg:{legendaryCount}/2</span> <span style={{ color: envCount>=3?"#60c0a0":"#604028" }}>Env:{envCount}/3</span> <span style={{ color: spellCount>=6?"#8080e0":"#604028" }}>Spl:{spellCount}/6</span></div>
-      </div>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 200px", gap:12 }}>
-        <div>
-          <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#806040", marginBottom:8, letterSpacing:2 }}>YOUR CARDS — click to add</div>
-          <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>{filtered.length === 0 ? <p style={{ color:"#604028", fontSize:12 }}>Win battles and open packs to grow your collection!</p> : filtered.map((c, i) => (
-            <div key={i} onClick={() => addCard(c)} title={countInDeck(c) >= (CFG.deck.copies[c.rarity]||1) ? "Copy limit reached" : c.rarity==="Legendary"&&legendaryCount>=2 ? "Max 2 legendaries" : c.type==="environment"&&envCount>=3 ? "Max 3 environments" : c.type==="spell"&&spellCount>=6 ? "Max 6 spells" : ""}
-              style={{ width:80, cursor: countInDeck(c) >= (CFG.deck.copies[c.rarity]||1) || (c.rarity==="Legendary"&&legendaryCount>=2) || (c.type==="environment"&&envCount>=3) || (c.type==="spell"&&spellCount>=6) || deck.length>=20 ? "not-allowed" : "pointer", background:"linear-gradient(160deg,#1a1610,#0e0c08)", border:`1px solid ${c.border}55`, borderRadius:8, overflow:"hidden", opacity: countInDeck(c) >= (CFG.deck.copies[c.rarity]||1) || deck.length>=20 ? 0.35 : 1, transition:"opacity .2s", position:"relative" }}>
-              {countInDeck(c) > 0 && <div style={{ position:"absolute", top:2, right:2, zIndex:2, background:"#e8b828", borderRadius:"50%", width:14, height:14, display:"flex", alignItems:"center", justifyContent:"center", fontSize:8, fontWeight:700, color:"#1a1000" }}>{countInDeck(c)}</div>}
-              <div style={{ height:44, overflow:"hidden" }}><CardArt card={c} /></div>
-              <div style={{ padding:"3px 5px", fontFamily:"'Cinzel',serif", fontSize:7, color:"#f0e0c8", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{c.name}</div>
-              <div style={{ display:"flex", justifyContent:"space-between", padding:"2px 6px 3px", fontSize:8 }}>
-                <span style={{ color:"#e8b828", fontWeight:700 }}>{c.cost}</span>
-                {c.atk != null && <span style={{ color:"#a09060" }}>{c.atk}/{c.hp}</span>}
-              </div>
-            </div>
-          ))}</div>
+  return (<div style={{ position:"fixed", inset:0, zIndex:500, background:"rgba(2,1,0,0.97)", display:"flex", flexDirection:"column" }}>
+    {/* Header bar */}
+    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"16px 24px", borderBottom:"2px solid #3a2c10", background:"linear-gradient(180deg,#1a1608,#0e0c06)", flexShrink:0 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+        <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:22, color:"#e8c060", margin:0, letterSpacing:2 }}>⚒ DECK BUILDER</h3>
+        <div style={{ display:"flex", gap:10, fontSize:10, color:"#604028" }}>
+          <span style={{ color: legendaryCount>=2?"#e8c060":"#604028", fontFamily:"'Cinzel',serif" }}>👑 {legendaryCount}/2</span>
+          <span style={{ color: envCount>=3?"#60c0a0":"#604028", fontFamily:"'Cinzel',serif" }}>🌿 {envCount}/3</span>
+          <span style={{ color: spellCount>=6?"#8080e0":"#604028", fontFamily:"'Cinzel',serif" }}>✦ {spellCount}/6</span>
         </div>
-        <div>
-          <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#806040", marginBottom:8, letterSpacing:2 }}>DECK ({deck.length}/20)</div>
-          {deck.length < 10 && <div style={{ fontSize:9, color:"#604028", marginBottom:8 }}>Need {10-deck.length} more cards (min 10)</div>}
-          <div style={{ display:"flex", flexDirection:"column", gap:4 }}>{deck.map((c, i) => (
-            <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", background:"rgba(0,0,0,0.3)", borderRadius:5, padding:"4px 8px", border:`1px solid ${c.border}33` }}>
+      </div>
+      <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+        <input value={deckName} onChange={(e) => setDeckName(e.target.value)} placeholder="Deck name..." style={{ padding:"9px 14px", background:"#100e08", border:"1px solid #3a2810", borderRadius:8, color:"#f0e8d8", fontSize:13, outline:"none", fontFamily:"'Cinzel',serif", width:200 }} />
+        <button onClick={save} disabled={deck.length < 10} style={{ padding:"9px 24px", background:deck.length>=10?"linear-gradient(135deg,#c89010,#f0c040)":"rgba(255,255,255,0.06)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, letterSpacing:1, color:deck.length>=10?"#1a1000":"#403020", cursor:deck.length>=10?"pointer":"not-allowed" }}>
+          SAVE DECK ({deck.length}/20)
+        </button>
+        <button onClick={onClose} style={{ padding:"9px 18px", background:"transparent", border:"1px solid #4a2010", borderRadius:8, color:"#806040", fontFamily:"'Cinzel',serif", fontSize:11, cursor:"pointer" }}>✕ CLOSE</button>
+      </div>
+    </div>
+
+    {/* Main content */}
+    <div style={{ display:"grid", gridTemplateColumns:"1fr 300px", flex:1, overflow:"hidden" }}>
+      {/* Card pool */}
+      <div style={{ display:"flex", flexDirection:"column", overflow:"hidden", borderRight:"1px solid #2a2010" }}>
+        <div style={{ padding:"12px 20px", borderBottom:"1px solid #2a1808", flexShrink:0, display:"flex", gap:10, alignItems:"center" }}>
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search your cards..." style={{ flex:1, padding:"9px 14px", background:"#100e08", border:"1px solid #2a2010", borderRadius:8, color:"#f0e8d8", fontSize:13, outline:"none" }} />
+          <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#605030" }}>{filtered.length} cards available</span>
+        </div>
+        <div style={{ overflowY:"auto", padding:"16px 20px", flex:1 }}>
+          {filtered.length === 0
+            ? <p style={{ color:"#604028", fontSize:13, textAlign:"center", marginTop:40 }}>Open packs and win battles to grow your collection!</p>
+            : <div style={{ display:"flex", flexWrap:"wrap", gap:12 }}>
+              {filtered.map((c, i) => {
+                const maxCop = CFG.deck.copies[c.rarity]||1;
+                const inDeck = countInDeck(c);
+                const blocked = inDeck>=maxCop || (c.rarity==="Legendary"&&legendaryCount>=2) || (c.type==="environment"&&envCount>=3) || (c.type==="spell"&&spellCount>=6) || deck.length>=20;
+                return (
+                  <div key={i} onClick={() => !blocked && addCard(c)} style={{ position:"relative", cursor:blocked?"not-allowed":"pointer", opacity:blocked?0.35:1, transition:"all .2s", transform:"none" }}
+                    onMouseEnter={e => { if (!blocked) e.currentTarget.style.transform="translateY(-4px)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform="none"; }}>
+                    {inDeck > 0 && <div style={{ position:"absolute", top:-6, right:-6, zIndex:10, background:"#e8b828", borderRadius:"50%", width:20, height:20, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:900, color:"#1a1000", boxShadow:"0 2px 8px #e8b82888", border:"2px solid #1a1000" }}>{inDeck}</div>}
+                    <Card card={c} size="sm" />
+                  </div>
+                );
+              })}
+            </div>
+          }
+        </div>
+      </div>
+
+      {/* Deck list */}
+      <div style={{ display:"flex", flexDirection:"column", overflow:"hidden", background:"linear-gradient(180deg,#0e0c06,#0a0806)" }}>
+        <div style={{ padding:"14px 18px", borderBottom:"1px solid #2a2010", flexShrink:0 }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#c09848", letterSpacing:2, fontWeight:700 }}>YOUR DECK — {deck.length}/20</div>
+          {deck.length < 10 && <div style={{ fontSize:10, color:"#604028", marginTop:4 }}>Need {10-deck.length} more to save</div>}
+          <div style={{ marginTop:8, height:4, background:"#1a1408", borderRadius:2, overflow:"hidden" }}>
+            <div style={{ height:"100%", width:`${(deck.length/20)*100}%`, background:"linear-gradient(90deg,#c89010,#f0c040)", transition:"width .3s", borderRadius:2 }} />
+          </div>
+        </div>
+        <div style={{ overflowY:"auto", flex:1, padding:"10px 14px", display:"flex", flexDirection:"column", gap:5 }}>
+          {deck.length === 0 && <p style={{ color:"#504030", fontSize:11, textAlign:"center", marginTop:30, fontStyle:"italic" }}>Click cards on the left to add them</p>}
+          {deck.map((c, i) => (
+            <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", background:"rgba(0,0,0,0.3)", borderRadius:7, padding:"7px 10px", border:`1px solid ${c.border}33` }}>
               <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#f0e0c8", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:120 }}>{c.name}</span>
               <button onClick={() => removeCard(i)} style={{ background:"transparent", border:"none", color:"#c07060", fontSize:14, cursor:"pointer", lineHeight:1, flexShrink:0 }}>×</button>
             </div>
           ))}</div>
         </div>
       </div>
-    </div>
-  </div>);
+    </div>);
 }
 
 // ═══ PVP BATTLE SCREEN ═══════════════════════════════════════════════
@@ -1156,7 +1243,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
           </button>))}
         </div>
       )}
-      <button onClick={(e)=>{e.stopPropagation();setShowEmotes(v=>!v);}} style={{ width:44, height:44, borderRadius:"50%", background:"linear-gradient(135deg,#1a1610,#0e0c08)", border:"1px solid #3a2810", cursor:"pointer", fontSize:22, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 4px 14px rgba(0,0,0,0.5)" }}>😄</button>
+      <button onClick={(e)=>{e.stopPropagation();setShowEmotes(v=>!v);}} style={{ width:58, height:58, borderRadius:"50%", background:showEmotes?"linear-gradient(135deg,#c89010,#f0c040)":"linear-gradient(135deg,#2a1e08,#1a1408)", border:showEmotes?"2px solid #e8c060":"2px solid #5a3810", cursor:"pointer", fontSize:26, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:showEmotes?"0 0 20px #e8c06066, 0 6px 18px rgba(0,0,0,0.8)":"0 4px 18px rgba(0,0,0,0.7)", transition:"all .2s" }}>😄</button>
     </div>
     {/* Turn banner */}
     {!gs.winner && (<div style={{ textAlign:"center", padding:"6px 0 2px", fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, letterSpacing:3, color: isMyTurn ? "#78cc45" : "#e8c060", animation: "fadeIn 0.3s" }}>{isMyTurn ? "YOUR TURN" : `${opponentName || "OPPONENT"}'S TURN`}{syncing && <span style={{ fontSize:8, color:"#806040", marginLeft:8 }}>syncing...</span>}</div>)}
@@ -1244,70 +1331,75 @@ function MatchmakingScreen({ user, onMatch, onCancel }) {
   const [status, setStatus] = useState("waiting");
   const [dots, setDots] = useState(0);
   useEffect(() => { const id = setInterval(() => setDots(d => (d + 1) % 4), 500); return () => clearInterval(id); }, []);
+
   useEffect(() => {
-    let rowId = null; let channel = null; let matched = false; let poll = null;
+    let rowId = null;
+    let matched = false;
+    let active = true;
 
-    const doMatch = (matchId, opponentId, opponentName) => {
-      if (matched) return;
-      matched = true;
-      if (poll) clearInterval(poll);
-      setStatus("matched");
-      setTimeout(() => onMatch({ matchId, opponentId, opponentName }), 900);
-    };
-
-    const enter = async () => {
-      // 1. Delete any stale rows for this user first (prevents ghost matches)
+    const go = async () => {
+      // 1. Purge any stale rows for this user
       await supabase.from("matchmaking").delete().eq("user_id", user.id);
+      if (!active) return;
 
-      // 2. Insert fresh row
+      // 2. Insert a fresh waiting row
       const { data, error } = await supabase.from("matchmaking")
         .insert({ user_id: user.id, display_name: user.name, status: "waiting" })
         .select().single();
+      if (!active) return;
       if (error || !data) { setStatus("error"); return; }
       rowId = data.id;
 
-      // 3. Subscribe to Realtime updates on our own row
-      channel = supabase.channel("mm_" + rowId)
-        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "matchmaking", filter: `id=eq.${rowId}` }, (payload) => {
-          if (payload.new.status === "matched") {
-            doMatch(payload.new.match_id, payload.new.opponent_id, payload.new.opponent_name);
+      // 3. Poll loop — check own row AND look for opponents each cycle
+      while (active && !matched) {
+        await new Promise(r => setTimeout(r, 1200));
+        if (!active || matched) break;
+
+        try {
+          // Check if someone already matched us
+          const { data: myRow } = await supabase.from("matchmaking")
+            .select("match_id,opponent_id,opponent_name,status").eq("id", rowId).single();
+          if (myRow?.status === "matched") {
+            matched = true;
+            setStatus("matched");
+            setTimeout(() => onMatch({ matchId: myRow.match_id, opponentId: myRow.opponent_id, opponentName: myRow.opponent_name }), 800);
+            break;
           }
-        }).subscribe();
 
-      // 4. Look for someone already waiting (only entries from last 3 minutes)
-      const cutoff = new Date(Date.now() - 3 * 60 * 1000).toISOString();
-      const { data: waiting } = await supabase.from("matchmaking")
-        .select("*").eq("status", "waiting").neq("user_id", user.id)
-        .gte("created_at", cutoff).order("created_at").limit(1);
+          // Look for a waiting opponent (entries from last 5 min)
+          const cutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+          const { data: waiting } = await supabase.from("matchmaking")
+            .select("*").eq("status", "waiting").neq("user_id", user.id)
+            .gte("created_at", cutoff).order("created_at").limit(1);
+          if (!waiting?.length || !active || matched) continue;
 
-      if (waiting && waiting.length > 0 && !matched) {
-        const opp = waiting[0];
-        const matchId = crypto.randomUUID();
-        // Update both rows atomically
-        await supabase.from("matchmaking").update({ status: "matched", match_id: matchId, opponent_id: user.id, opponent_name: user.name }).eq("id", opp.id);
-        await supabase.from("matchmaking").update({ status: "matched", match_id: matchId, opponent_id: opp.user_id, opponent_name: opp.display_name }).eq("id", rowId);
-        await supabase.from("matches").insert({ id: matchId, player1_id: opp.user_id, player2_id: user.id, status: "active", game_state: null });
-        doMatch(matchId, opp.user_id, opp.display_name);
-      }
+          const opp = waiting[0];
+          const matchId = crypto.randomUUID();
 
-      // 5. Poll as reliable fallback (every 1s)
-      if (!matched) {
-        poll = setInterval(async () => {
-          if (matched || !rowId) return;
-          try {
-            const { data: row } = await supabase.from("matchmaking").select("*").eq("id", rowId).single();
-            if (row?.status === "matched") {
-              doMatch(row.match_id, row.opponent_id, row.opponent_name);
-            }
-          } catch (_) {}
-        }, 1000);
+          // Atomically claim opponent — only succeeds if they're still "waiting"
+          const { data: claimed } = await supabase.from("matchmaking")
+            .update({ status: "matched", match_id: matchId, opponent_id: user.id, opponent_name: user.name })
+            .eq("id", opp.id).eq("status", "waiting").select();
+          if (!claimed?.length) continue; // race lost — try again next tick
+
+          // Update our own row and create the match record
+          await supabase.from("matchmaking")
+            .update({ status: "matched", match_id: matchId, opponent_id: opp.user_id, opponent_name: opp.display_name })
+            .eq("id", rowId);
+          await supabase.from("matches").insert({
+            id: matchId, player1_id: opp.user_id, player2_id: user.id, status: "active", game_state: null
+          });
+
+          matched = true;
+          setStatus("matched");
+          setTimeout(() => onMatch({ matchId, opponentId: opp.user_id, opponentName: opp.display_name }), 800);
+        } catch (_) {}
       }
     };
 
-    enter();
+    go();
     return () => {
-      if (poll) clearInterval(poll);
-      if (channel) supabase.removeChannel(channel);
+      active = false;
       if (rowId && !matched) supabase.from("matchmaking").delete().eq("id", rowId).then(() => {});
     };
   }, []);
@@ -1366,7 +1458,17 @@ function PackOpening({ user, onUpdateUser }) {
   const [revIdx, setRevIdx] = useState(-1);
   const [shakeCard, setShakeCard] = useState(-1);
 
-  const openPack = (pack) => { setOpening({ pack, cards: rollPack(pack) }); setRevealed([]); setRevIdx(-1); SFX.play("pack_open"); };
+  const openPack = (pack) => { setOpening({ pack, cards: pack.altPack ? rollAltArtPack(pack) : rollPack(pack) }); setRevealed([]); setRevIdx(-1); SFX.play("pack_open"); };
+  const applyCard = (card, isAlt) => {
+    if (!onUpdateUser || !user) return;
+    if (isAlt) {
+      const ao = { ...(user.altOwned || {}) };
+      ao[card.id] = [...new Set([...(ao[card.id] || []), card.altSetId])];
+      onUpdateUser({ altOwned: ao });
+    } else {
+      const col = { ...(user.collection || {}) }; col[card.id] = (col[card.id] || 0) + 1; onUpdateUser({ collection: col });
+    }
+  };
   const revealNext = () => {
     if (!opening) return;
     const next = revIdx + 1; if (next >= opening.cards.length) return;
@@ -1374,12 +1476,12 @@ function PackOpening({ user, onUpdateUser }) {
     setTimeout(() => {
       setRevIdx(next); setRevealed((p) => [...p, next]);
       const card = opening.cards[next];
-      if (["Rare","Epic","Legendary"].includes(card.rarity)) SFX.play("rare_reveal"); else SFX.play("flip");
-      if (onUpdateUser && user) { const col = { ...(user.collection || {}) }; col[card.id] = (col[card.id] || 0) + 1; onUpdateUser({ collection: col }); }
+      if (["Rare","Epic","Legendary","Prismatic"].includes(card.rarity)) SFX.play("rare_reveal"); else SFX.play("flip");
+      applyCard(card, !!opening.pack.altPack);
       setShakeCard(-1);
     }, 400);
   };
-  const revealAll = () => { if (!opening) return; setRevealed(opening.cards.map((_, i) => i)); setRevIdx(opening.cards.length - 1); SFX.play("rare_reveal"); if (onUpdateUser && user) { const col = { ...(user.collection || {}) }; opening.cards.forEach((c) => { col[c.id] = (col[c.id] || 0) + 1; }); onUpdateUser({ collection: col }); } };
+  const revealAll = () => { if (!opening) return; setRevealed(opening.cards.map((_, i) => i)); setRevIdx(opening.cards.length - 1); SFX.play("rare_reveal"); opening.cards.forEach((c) => applyCard(c, !!opening.pack.altPack)); };
 
   return (<div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 24px 60px" }}>
     <div style={{ textAlign: "center", marginBottom: 28 }}><h2 style={{ fontFamily: "'Cinzel',serif", fontSize: 28, fontWeight: 700, color: "#e8c060", margin: "0 0 8px" }}>Card Packs</h2><p style={{ fontSize: 13, color: "#a09070", margin: 0 }}>Discover new cards for your collection</p></div>
@@ -1444,7 +1546,7 @@ const toAppUser = (p, email) => ({
   lastShardReset: p.last_shard_reset, battlesPlayed: p.battles_played ?? 0,
   battlesWon: p.battles_won ?? 0, cardsForged: p.cards_forged ?? 0,
   collection: p.collection || {}, decks: p.decks || [], avatarUrl: p.avatar_url || null,
-  selectedArts: p.selected_arts || {}, matchHistory: p.match_history || [],
+  selectedArts: p.selected_arts || {}, matchHistory: p.match_history || [], altOwned: p.alt_owned || {},
   joined: p.joined || new Date().toLocaleDateString(),
 });
 function useAuth() {
@@ -1488,7 +1590,7 @@ function useAuth() {
     completeProfile: (row, email) => { setUser(toAppUser(row, email)); setLoading(false); },
     update: async (delta) => {
       const updated = { ...user, ...delta };
-      const dbMap = { battlesPlayed: "battles_played", battlesWon: "battles_won", shards: "shards", collection: "collection", decks: "decks", avatarUrl: "avatar_url", selectedArts: "selected_arts", matchHistory: "match_history" };
+      const dbMap = { battlesPlayed: "battles_played", battlesWon: "battles_won", shards: "shards", collection: "collection", decks: "decks", avatarUrl: "avatar_url", selectedArts: "selected_arts", matchHistory: "match_history", altOwned: "alt_owned" };
       const dbDelta = {};
       Object.entries(delta).forEach(([k, v]) => { if (dbMap[k]) dbDelta[dbMap[k]] = v; });
       if (Object.keys(dbDelta).length > 0) {
@@ -1532,10 +1634,13 @@ function LoginModal({ needsProfile = false, userId, userEmail, onSignOut, onProf
     if (error) { setErr(error.message); setBusy(false); return; }
     if (data.user) {
       const starter = getStarterCollection();
+      const isFounder = email.trim().toLowerCase() === "sncombz@gmail.com";
+      const founderAltOwned = isFounder ? Object.fromEntries(Object.entries(ALT_ARTS).map(([id, alts]) => [id, alts.map(a => a.setId)])) : {};
       await supabase.from("profiles").upsert({
-        id: data.user.id, name: name.trim(), alpha_key: k, shards: 30,
+        id: data.user.id, name: name.trim(), alpha_key: k, shards: 1000,
         last_shard_reset: new Date().toISOString(), battles_played: 0, battles_won: 0,
         cards_forged: 0, collection: starter, decks: [], joined: new Date().toLocaleDateString(),
+        alt_owned: founderAltOwned,
       });
       setSent(true);
     }
@@ -1551,17 +1656,21 @@ function LoginModal({ needsProfile = false, userId, userEmail, onSignOut, onProf
     const uid = userId || (await supabase.auth.getUser()).data?.user?.id;
     if (!uid) { setErr("Session expired. Please sign in again."); setBusy(false); return; }
     const starter = getStarterCollection();
+    const isFounder = (userEmail || email || "").trim().toLowerCase() === "sncombz@gmail.com";
+    const founderAltOwned = isFounder ? Object.fromEntries(Object.entries(ALT_ARTS).map(([id, alts]) => [id, alts.map(a => a.setId)])) : {};
     const { error } = await supabase.from("profiles").upsert({
-      id: uid, name: name.trim(), alpha_key: k, shards: 30,
+      id: uid, name: name.trim(), alpha_key: k, shards: 1000,
       last_shard_reset: new Date().toISOString(), battles_played: 0, battles_won: 0,
       cards_forged: 0, collection: starter, decks: [], joined: new Date().toLocaleDateString(),
+      alt_owned: founderAltOwned,
     });
     if (error) { setErr(error.message); setBusy(false); return; }
     // Directly update user state — no need for refreshSession or onAuthStateChange
     const profileRow = {
-      id: uid, name: name.trim(), alpha_key: k, shards: 30,
+      id: uid, name: name.trim(), alpha_key: k, shards: 1000,
       last_shard_reset: new Date().toISOString(), battles_played: 0, battles_won: 0,
       cards_forged: 0, collection: starter, decks: [], joined: new Date().toLocaleDateString(),
+      alt_owned: founderAltOwned,
     };
     if (onProfileCreated) onProfileCreated(profileRow, userEmail);
     setBusy(false);
@@ -1996,13 +2105,13 @@ function CommunityScreen() {
 
 // ═══ APP ══════════════════════════════════════════════════════════════════════
 const NAV = [
-  { id: "home",       label: "Home",    icon: "🏠" },
-  { id: "play",       label: "Battle",  icon: "⚔️" },
-  { id: "store",      label: "Store",   icon: "🛒" },
-  { id: "collection", label: "Cards",   icon: "🃏" },
-  { id: "forge",      label: "Forge",   icon: "🔨" },
-  { id: "community",  label: "Hub",     icon: "🌐" },
-  { id: "howto",      label: "Guide",   icon: "📖" },
+  { id: "home",       label: "Home",    icon: "⬡" },
+  { id: "play",       label: "Battle",  icon: "⚔" },
+  { id: "store",      label: "Store",   icon: "◈" },
+  { id: "collection", label: "Cards",   icon: "❖" },
+  { id: "forge",      label: "Forge",   icon: "⚒" },
+  { id: "community",  label: "Hub",     icon: "✦" },
+  { id: "howto",      label: "Guide",   icon: "◉" },
 ];
 
 export default function App() {
@@ -2026,10 +2135,10 @@ export default function App() {
       @keyframes foilShimmer{0%{background-position:200% center}100%{background-position:-200% center}}
       @keyframes dupeToast{0%{opacity:0;transform:translateY(20px) scale(0.8)}15%{opacity:1;transform:translateY(0) scale(1)}75%{opacity:1}100%{opacity:0;transform:translateY(-30px) scale(0.9)}}
       @media(max-width:768px){
-        nav{height:56px!important;padding:0 6px!important}
-        nav button{padding:4px 8px!important;min-width:44px!important}
-        nav button span:first-child{font-size:14px!important}
-        nav button span:last-child{font-size:7px!important}
+        nav{height:60px!important;padding:0 6px!important}
+        nav button{padding:6px 8px!important;min-width:44px!important}
+        nav button span:first-child{font-size:16px!important}
+        nav button span:last-child{font-size:8px!important}
         h1{font-size:36px!important}
         h2{font-size:20px!important}
         .home-grid{grid-template-columns:1fr!important;gap:24px!important}
@@ -2049,35 +2158,43 @@ export default function App() {
     {(!user || user.__needsProfile) && <LoginModal needsProfile={!!user?.__needsProfile} userId={user?.id} userEmail={user?.email} onSignOut={logout} onProfileCreated={completeProfile} />}
     {user && showPatchNotes && <PatchNotesModal onDismiss={() => setShowPatchNotes(false)} />}
     <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "radial-gradient(ellipse at 15% 15%,rgba(200,140,20,0.06) 0%,transparent 50%),radial-gradient(ellipse at 85% 85%,rgba(30,120,200,0.04) 0%,transparent 50%)" }} />
-    <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(8,6,4,0.98)", backdropFilter: "blur(20px)", borderBottom: "1px solid #3a2c10", padding: "0 16px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64 }} onClick={(e) => e.stopPropagation()}>
-      <button onClick={() => setTab("home")} style={{ display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}>
+    <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "linear-gradient(180deg,#0e0b06 0%,#0a0806 100%)", backdropFilter: "blur(20px)", borderBottom: "2px solid #3a2c10", padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 72, boxShadow: "0 4px 24px rgba(0,0,0,0.6)" }} onClick={(e) => e.stopPropagation()}>
+      <button onClick={() => setTab("home")} style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}>
+        <div style={{ width: 36, height: 36, borderRadius: 8, background: "linear-gradient(135deg,#e8c060,#a07820)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontSize: 16, fontWeight: 900, color: "#1a1000", boxShadow: "0 2px 12px #e8c06044" }}>F</div>
         <div>
-          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 15, fontWeight: 900, color: "#e8c060", lineHeight: 1, letterSpacing: 1 }}>Forge {"&"} Fable</div>
-          <div style={{ fontSize: 8, color: "#706030", letterSpacing: 2, fontFamily: "'Cinzel',serif", marginTop: 3 }}>v15 · ALPHA</div>
+          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 16, fontWeight: 900, color: "#e8c060", lineHeight: 1, letterSpacing: 1 }}>Forge {"&"} Fable</div>
+          <div style={{ fontSize: 8, color: "#6a5028", letterSpacing: 3, fontFamily: "'Cinzel',serif", marginTop: 3 }}>v16 · ALPHA</div>
         </div>
       </button>
-      <div style={{ display: "flex", gap: 1 }}>
+      <div style={{ display: "flex", gap: 2 }}>
         {NAV.map((t) => {
           const active = tab === t.id;
           return (
-            <button key={t.id} onClick={() => setTab(t.id)} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "6px 14px", gap: 3, background: active ? "rgba(232,192,96,0.14)" : "transparent", border: `1px solid ${active ? "#e8c06055" : "transparent"}`, borderRadius: 10, cursor: "pointer", minWidth: 58, transition: "all .18s", boxShadow: active ? `0 0 16px rgba(232,192,96,0.15)` : "none" }}>
-              <span style={{ fontSize: 16, lineHeight: 1 }}>{t.icon}</span>
-              <span style={{ fontFamily: "'Cinzel',serif", fontSize: 9, fontWeight: active ? 700 : 500, color: active ? "#e8c060" : "#907050", letterSpacing: 0.5, lineHeight: 1 }}>{t.label}</span>
+            <button key={t.id} onClick={() => setTab(t.id)}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8px 16px", gap: 4, background: active ? "linear-gradient(180deg,rgba(232,192,96,0.18) 0%,rgba(232,192,96,0.06) 100%)" : "transparent", border: "none", borderBottom: active ? "3px solid #e8c060" : "3px solid transparent", cursor: "pointer", minWidth: 68, transition: "all .18s", position: "relative" }}
+              onMouseEnter={e => { if (!active) e.currentTarget.style.background = "rgba(232,192,96,0.07)"; }}
+              onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}>
+              <span style={{ fontFamily: "'Cinzel',serif", fontSize: 18, fontWeight: 900, color: active ? "#e8c060" : "#5a4020", lineHeight: 1, textShadow: active ? "0 0 20px #e8c06088" : "none", transition: "all .18s" }}>{t.icon}</span>
+              <span style={{ fontFamily: "'Cinzel',serif", fontSize: 10, fontWeight: active ? 700 : 400, color: active ? "#e8c060" : "#7a5830", letterSpacing: 1, lineHeight: 1, transition: "all .18s" }}>{t.label}</span>
             </button>
           );
         })}
       </div>
       {user && (<div style={{ position: "relative", flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
         <button onClick={() => setShowProfile((p) => !p)} style={{ background:"none", border:"2px solid #e8c06044", borderRadius:"50%", padding:0, cursor:"pointer", width:36, height:36, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:"#e8c060" }}>{user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user.name||"?").slice(0,2).toUpperCase()}</button>
-        {showProfile && (<div style={{ position:"absolute", top:44, right:0, background:"linear-gradient(160deg,#1e1c10,#12100a)", border:"1px solid #3a3018", borderRadius:14, padding:16, width:230, zIndex:200, boxShadow:"0 20px 60px rgba(0,0,0,0.95)", animation:"fadeIn 0.2s ease-out" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
-            <div style={{ width:44, height:44, borderRadius:"50%", overflow:"hidden", border:"2px solid #e8c06044", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", background:"#1a1610", fontFamily:"'Cinzel',serif", fontSize:14, color:"#e8c060" }}>
+        {showProfile && (<div style={{ position:"absolute", top:50, right:0, background:"linear-gradient(160deg,#1e1c10,#12100a)", border:"1px solid #3a3018", borderRadius:16, padding:20, width:310, zIndex:200, boxShadow:"0 24px 70px rgba(0,0,0,0.97)", animation:"fadeIn 0.2s ease-out" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:16 }}>
+            <div style={{ width:56, height:56, borderRadius:"50%", overflow:"hidden", border:"2px solid #e8c06066", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", background:"#1a1610", fontFamily:"'Cinzel',serif", fontSize:18, color:"#e8c060" }}>
               {user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user.name||"?").slice(0,2).toUpperCase()}
             </div>
-            <div><div style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#e8c060", fontWeight:700 }}>{user.name}</div><div style={{ fontSize:9, color:"#604030", overflow:"hidden", textOverflow:"ellipsis", maxWidth:130 }}>{user.email}</div></div>
+            <div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:15, color:"#e8c060", fontWeight:700, marginBottom:2 }}>{user.name}</div>
+              <div style={{ fontSize:10, color:"#604030", overflow:"hidden", textOverflow:"ellipsis", maxWidth:180 }}>{user.email}</div>
+              <div style={{ fontSize:9, color:"#503828", marginTop:1, fontFamily:"'Cinzel',serif" }}>Joined {user.joined}</div>
+            </div>
           </div>
-          <label style={{ display:"block", width:"100%", padding:"6px", background:"rgba(232,192,96,0.08)", border:"1px solid #3a3018", borderRadius:6, color:"#a09060", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer", textAlign:"center", marginBottom:10, letterSpacing:1, boxSizing:"border-box" }}>
-            CHANGE PHOTO
+          <label style={{ display:"block", width:"100%", padding:"7px", background:"rgba(232,192,96,0.08)", border:"1px solid #3a3018", borderRadius:7, color:"#a09060", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer", textAlign:"center", marginBottom:14, letterSpacing:1, boxSizing:"border-box" }}>
+            📷 CHANGE PHOTO
             <input type="file" accept="image/*" style={{ display:"none" }} onChange={async (e) => {
               const file = e.target.files[0]; if (!file) return;
               if (file.size > 2 * 1024 * 1024) { alert("Image must be under 2MB"); return; }
@@ -2089,20 +2206,23 @@ export default function App() {
               if (urlData?.publicUrl) await update({ avatarUrl: urlData.publicUrl + "?t=" + Date.now() });
             }} />
           </label>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:10 }}>{[["Battles",user.battlesPlayed||0],["Wins",user.battlesWon||0],["Cards",Object.values(user.collection||{}).filter((v)=>v>0).length],["Shards",user.shards||0]].map(([l,v],i) => (<div key={i} style={{ background:"rgba(0,0,0,0.3)", borderRadius:6, padding:6, textAlign:"center" }}><div style={{ fontSize:7, color:"#806040" }}>{l}</div><div style={{ fontFamily:"'Cinzel',serif", fontSize:14, fontWeight:700, color:"#e8c060" }}>{v}</div></div>))}</div>
-          <div style={{ marginBottom:10 }}>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#806040", letterSpacing:1, marginBottom:5, fontWeight:700 }}>RECENT MATCHES</div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6, marginBottom:14 }}>{[["Battles",user.battlesPlayed||0],["Wins",user.battlesWon||0],["Cards",Object.values(user.collection||{}).filter((v)=>v>0).length],["Shards",user.shards||0]].map(([l,v],i) => (<div key={i} style={{ background:"rgba(0,0,0,0.35)", borderRadius:7, padding:"8px 4px", textAlign:"center" }}><div style={{ fontSize:7, color:"#806040", letterSpacing:1, marginBottom:3 }}>{l}</div><div style={{ fontFamily:"'Cinzel',serif", fontSize:16, fontWeight:700, color:"#e8c060" }}>{v}</div></div>))}</div>
+          <div style={{ marginBottom:14 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#e8a020", letterSpacing:2, marginBottom:8, fontWeight:700, borderBottom:"1px solid #2a2010", paddingBottom:5 }}>⚔ RECENT BATTLES</div>
             {(user.matchHistory||[]).length === 0
-              ? <div style={{ fontSize:9, color:"#504030", fontStyle:"italic", padding:"4px 0" }}>No battles yet — play one!</div>
-              : (user.matchHistory||[]).slice(0,5).map((m,i) => (
-                <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"4px 8px", marginBottom:3, background:"rgba(0,0,0,0.3)", borderRadius:5, borderLeft:`2px solid ${m.result==="W"?"#48a028":"#c03030"}` }}>
-                  <span style={{ fontSize:10, color:"#c0a870", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", maxWidth:130 }}>vs {m.opponent}</span>
-                  <span style={{ fontSize:10, fontWeight:700, fontFamily:"'Cinzel',serif", color:m.result==="W"?"#78cc45":"#e05050", flexShrink:0, marginLeft:4 }}>{m.result}</span>
+              ? <div style={{ fontSize:11, color:"#504030", fontStyle:"italic", padding:"8px 0", textAlign:"center" }}>No battles yet — fight someone!</div>
+              : (user.matchHistory||[]).slice(0,8).map((m,i) => (
+                <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"6px 10px", marginBottom:4, background:`rgba(0,0,0,0.35)`, borderRadius:7, borderLeft:`3px solid ${m.result==="W"?"#48a028":"#c03030"}` }}>
+                  <div>
+                    <div style={{ fontSize:11, color:"#c0a870", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", maxWidth:160 }}>vs {m.opponent}</div>
+                    <div style={{ fontSize:9, color:"#504030", marginTop:1 }}>{m.turns} turns · {m.date ? new Date(m.date).toLocaleDateString() : ""}</div>
+                  </div>
+                  <span style={{ fontSize:13, fontWeight:900, fontFamily:"'Cinzel',serif", color:m.result==="W"?"#78cc45":"#e05050", flexShrink:0, marginLeft:8 }}>{m.result}</span>
                 </div>
               ))
             }
           </div>
-          <button onClick={() => { logout(); setShowProfile(false); }} style={{ width:"100%", padding:"7px", background:"rgba(180,30,30,0.12)", border:"1px solid #5a1818", borderRadius:6, color:"#c07060", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer" }}>SIGN OUT</button>
+          <button onClick={() => { logout(); setShowProfile(false); }} style={{ width:"100%", padding:"9px", background:"rgba(180,30,30,0.12)", border:"1px solid #5a1818", borderRadius:7, color:"#c07060", fontFamily:"'Cinzel',serif", fontSize:10, cursor:"pointer", letterSpacing:1 }}>SIGN OUT</button>
         </div>)}
       </div>)}
     </nav>
@@ -2114,7 +2234,7 @@ export default function App() {
       {tab === "forge" && <ForgeScreen />}
       {tab === "community" && <CommunityScreen />}
       {tab === "howto" && <GuideScreen />}
-      <footer style={{ borderTop: "1px solid #1e1a0e", padding: 22, textAlign: "center" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, color: "#40301a" }}>Forge {"&"} Fable</div><p style={{ fontSize: 9, color: "#30280e", margin: "4px 0 0", letterSpacing: 1 }}>PATCH 1.5: ALT ART · ANIME ISLAND COMING SOON · 32 CARDS · v15</p></footer>
+      <footer style={{ borderTop: "1px solid #1e1a0e", padding: 22, textAlign: "center" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, color: "#40301a" }}>Forge {"&"} Fable</div><p style={{ fontSize: 9, color: "#30280e", margin: "4px 0 0", letterSpacing: 1 }}>PATCH 1.6: ANIME ISLAND · 32 ALT ARTS · PRISMATIC SUN STRIKE · v16</p></footer>
     </div>
     <MusicPlayer />
   </div>);
