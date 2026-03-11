@@ -788,6 +788,267 @@ function DeckBuilderModal({ user, onSave, onClose }) {
   </div>);
 }
 
+// ═══ PVP BATTLE SCREEN ═══════════════════════════════════════════════
+function PvpBattleScreen({ user, matchConfig, onExit }) {
+  const { matchId, opponentName } = matchConfig;
+  const [gs, setGs] = useState(null);
+  const [myRole, setMyRole] = useState(null);
+  const [attacker, setAttacker] = useState(null);
+  const [previewCard, setPreviewCard] = useState(null);
+  const [timerKey, setTimerKey] = useState(0);
+  const [syncing, setSyncing] = useState(false);
+  const vfx = useVFX();
+  const logRef = useRef(null);
+
+  // Convert DB state (p1/p2) to AI state format (player/enemy) from my perspective
+  const toAI = (g, role) => {
+    const me = role === "p1" ? "p1" : "p2", op = role === "p1" ? "p2" : "p1";
+    return {
+      turn: g.turn, winner: g.winner ? (g.winner === role ? "player" : "enemy") : null,
+      phase: g.phase === role ? "player" : "enemy",
+      playerHP: g[me+"HP"], playerEnergy: g[me+"Energy"], maxEnergy: g[me+"Max"],
+      playerHand: g[me+"Hand"]||[], playerDeck: g[me+"Deck"]||[], playerBoard: g[me+"Board"]||[],
+      enemyHP: g[op+"HP"], enemyHand: g[op+"Hand"]||[], enemyDeck: g[op+"Deck"]||[], enemyBoard: g[op+"Board"]||[],
+      environment: g.env, log: g.log||[]
+    };
+  };
+
+  // Convert AI state back to DB state from my perspective
+  const fromAI = (ai, old, role) => {
+    const me = role === "p1" ? "p1" : "p2", op = role === "p1" ? "p2" : "p1";
+    const dbWinner = ai.winner === "player" ? role : ai.winner === "enemy" ? op : null;
+    return {
+      ...old, turn: ai.turn, winner: dbWinner,
+      phase: ai.phase === "player" ? role : op,
+      [me+"HP"]: ai.playerHP, [me+"Energy"]: ai.playerEnergy, [me+"Max"]: ai.maxEnergy,
+      [me+"Hand"]: ai.playerHand, [me+"Deck"]: ai.playerDeck, [me+"Board"]: ai.playerBoard,
+      [op+"HP"]: ai.enemyHP, [op+"Hand"]: ai.enemyHand, [op+"Deck"]: ai.enemyDeck, [op+"Board"]: ai.enemyBoard,
+      env: ai.environment, log: ai.log
+    };
+  };
+
+  useEffect(() => {
+    MusicCtx.play("battle");
+    let channel = null;
+    const setup = async () => {
+      const { data: match } = await supabase.from("matches").select("*").eq("id", matchId).single();
+      if (!match) { onExit(); return; }
+      const role = match.player1_id === user.id ? "p1" : "p2";
+      setMyRole(role);
+      channel = supabase.channel("pvp_" + matchId)
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "matches", filter: `id=eq.${matchId}` }, (payload) => {
+          if (payload.new.game_state) setGs(payload.new.game_state);
+        }).subscribe();
+      if (match.game_state) { setGs(match.game_state); return; }
+      if (role === "p1") {
+        const fb = [...POOL, ...POOL, ...POOL.slice(0, 5)];
+        const d1 = shuf([...fb]), d2 = shuf([...fb]);
+        const init = {
+          turn: 1, phase: "p1", winner: null,
+          p1HP: CFG.startHP, p1Energy: CFG.startEnergy, p1Max: CFG.startEnergy,
+          p1Hand: d1.slice(0, CFG.startHand).map((c) => makeInst(c, "p1")),
+          p1Deck: d1.slice(CFG.startHand), p1Board: [],
+          p2HP: CFG.startHP, p2Energy: CFG.startEnergy, p2Max: CFG.startEnergy,
+          p2Hand: d2.slice(0, CFG.startHand).map((c) => makeInst(c, "p2")),
+          p2Deck: d2.slice(CFG.startHand), p2Board: [],
+          env: null, log: ["Match started! Your turn."]
+        };
+        await supabase.from("matches").update({ game_state: init }).eq("id", matchId);
+        setGs(init);
+      }
+    };
+    setup();
+    return () => { if (channel) supabase.removeChannel(channel); MusicCtx.play("home"); };
+  }, [matchId]);
+
+  useEffect(() => { if (logRef.current) logRef.current.scrollTo({ top: 99999, behavior: "smooth" }); }, [gs?.log]);
+
+  const push = async (newGs) => {
+    setSyncing(true); setGs(newGs);
+    await supabase.from("matches").update({ game_state: newGs }).eq("id", matchId);
+    setSyncing(false);
+  };
+
+  const isMyTurn = gs && myRole && gs.phase === myRole && !gs.winner;
+
+  const playCard = (card) => {
+    if (!isMyTurn || syncing) return;
+    const ai = toAI(gs, myRole);
+    const canAfford = card.bloodpact ? card.cost < ai.playerHP : card.cost <= ai.playerEnergy;
+    if (!canAfford) return;
+    if (card.type !== "spell" && card.type !== "environment" && ai.playerBoard.length >= CFG.maxBoard) return;
+    SFX.play(card.type === "environment" ? "env_play" : card.type === "spell" ? "ability" : "card");
+    setAttacker(null);
+    let s = { ...ai, playerHand: ai.playerHand.filter((c) => c.uid !== card.uid), log: [...ai.log.slice(-20)] };
+    if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; }
+    else { s.playerEnergy -= card.cost; }
+    if (card.type === "environment") { s.environment = { ...card, owner: "player" }; s.log = [...s.log, `${card.name} reshapes the field!`]; vfx.add("environment", { color: card.border, duration: 2000 }); }
+    else if (card.type === "spell") { s.log = [...s.log, `Cast ${card.name}!`]; }
+    else { const inst = { ...makeInst(card, "pb"), canAttack: (card.keywords||[]).includes("Swift") }; s.playerBoard = [...s.playerBoard, inst]; s.log = [...s.log, `Play ${card.name}!`]; }
+    s = resolveEffects("onPlay", card, s, "player", vfx);
+    if (s.enemyHP <= 0) s.winner = "player";
+    push(fromAI(s, gs, myRole));
+  };
+
+  const selectAtt = (c) => { if (!isMyTurn || syncing) return; setAttacker(attacker === c.uid ? null : (c.canAttack && !c.hasAttacked ? c.uid : attacker)); };
+
+  const atkCreature = (tgt) => {
+    if (!attacker || !isMyTurn) return;
+    const ai = toAI(gs, myRole);
+    const att = ai.playerBoard.find((c) => c.uid === attacker);
+    if (!att) return;
+    SFX.play("attack");
+    const av = att.currentAtk + ((att.keywords||[]).includes("Resonate") ? ai.enemyHand.length : 0);
+    let s = { ...ai, log: [...ai.log.slice(-20)] };
+    const nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av;
+    const nAHP = att.currentHp - tgt.currentAtk;
+    if (tgt.shielded) s.log = [...s.log, `${tgt.name} shield absorbs!`];
+    s.enemyBoard = ai.enemyBoard.map((c) => c.uid===tgt.uid ? {...c,currentHp:nTHP,shielded:false,bleed:(c.bleed||0)+((att.keywords||[]).includes("Bleed")?1:0)}:c).filter((c)=>c.currentHp>0);
+    s.playerBoard = ai.playerBoard.map((c) => c.uid===att.uid ? {...c,hasAttacked:true,currentHp:nAHP}:c).filter((c)=>c.currentHp>0);
+    s.log = [...s.log, `${att.name}(${av}) attacks ${tgt.name}`];
+    if (nTHP <= 0) { SFX.play("kill"); s.log=[...s.log,`${tgt.name} destroyed!`]; s=resolveEffects("onDeath",tgt,s,"enemy",vfx); }
+    if (nAHP <= 0) { s.log=[...s.log,`${att.name} falls.`]; s=resolveEffects("onDeath",att,s,"player",vfx); }
+    if (s.enemyHP <= 0) s.winner = "player";
+    setAttacker(null);
+    push(fromAI(s, gs, myRole));
+  };
+
+  const atkFace = () => {
+    if (!attacker || !isMyTurn) return;
+    const ai = toAI(gs, myRole);
+    const att = ai.playerBoard.find((c) => c.uid === attacker);
+    if (!att) return;
+    SFX.play("attack");
+    const dmg = att.currentAtk + ((att.keywords||[]).includes("Resonate") ? ai.enemyHand.length : 0);
+    let s = { ...ai, enemyHP: ai.enemyHP - dmg, playerBoard: ai.playerBoard.map((c)=>c.uid===att.uid?{...c,hasAttacked:true}:c), log: [...ai.log.slice(-20), `${att.name} deals ${dmg} direct!`] };
+    if (s.enemyHP <= 0) { s.winner = "player"; s.log=[...s.log,"Victory!"]; }
+    setAttacker(null);
+    push(fromAI(s, gs, myRole));
+  };
+
+  const endTurn = () => {
+    if (!isMyTurn || syncing) return;
+    SFX.play("timer_end"); setAttacker(null);
+    const op = myRole === "p1" ? "p2" : "p1";
+    const newTurn = myRole === "p2" ? gs.turn + 1 : gs.turn;
+    const newMax = Math.min(CFG.maxEnergy, newTurn + 1);
+    // Bleed, draw for opponent, flip phase, refresh opponent energy, reset my board attacked
+    let newGs = { ...gs, phase: op, turn: newTurn,
+      [op+"Energy"]: newMax, [op+"Max"]: newMax,
+      [myRole+"Board"]: (gs[myRole+"Board"]||[]).map((c) => ({ ...c, hasAttacked: false, canAttack: true })),
+      log: [...(gs.log||[]).slice(-20), `Turn ${gs.turn} ended.`]
+    };
+    // Bleed on opponent board
+    newGs[op+"Board"] = (newGs[op+"Board"]||[]).map((c) => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter((c) => c.currentHp > 0);
+    // Draw for opponent
+    if ((newGs[op+"Deck"]||[]).length > 0) {
+      const [drawn, ...rest] = newGs[op+"Deck"];
+      newGs[op+"Hand"] = [...(newGs[op+"Hand"]||[]), drawn];
+      newGs[op+"Deck"] = rest;
+    }
+    push(newGs);
+    setTimerKey((k) => k + 1);
+  };
+
+  if (!gs || !myRole) return (
+    <div style={{ maxWidth:480, margin:"0 auto", padding:"80px 24px", textAlign:"center" }}>
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, color:"#e8c060", animation:"pulse 1.5s infinite" }}>CONNECTING...</div>
+      <p style={{ fontSize:12, color:"#a09070", marginTop:12, lineHeight:1.7 }}>
+        {myRole === "p2" || !myRole ? "Waiting for Player 1 to initialize the match..." : "Setting up the board..."}
+      </p>
+      <button onClick={onExit} style={{ marginTop:24, padding:"8px 20px", background:"transparent", border:"1px solid #3a2010", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, color:"#806040", cursor:"pointer" }}>CANCEL</button>
+    </div>
+  );
+
+  const ai = toAI(gs, myRole);
+  const attCard = attacker ? ai.playerBoard.find((c) => c.uid === attacker) : null;
+  const envTheme = gs.env ? ENV_THEMES[gs.env.region] || null : null;
+  const myWon = gs.winner === myRole;
+  const oppWon = gs.winner && gs.winner !== myRole;
+
+  return (<div style={{ maxWidth:980, margin:"0 auto", padding:"0 16px 60px" }} onClick={() => SFX.init()}>
+    {previewCard && <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />}
+    {/* Turn banner */}
+    {!gs.winner && (<div style={{ textAlign:"center", padding:"6px 0 2px", fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, letterSpacing:3, color: isMyTurn ? "#78cc45" : "#e8c060", animation: "fadeIn 0.3s" }}>{isMyTurn ? "YOUR TURN" : `${opponentName || "OPPONENT"}'S TURN`}{syncing && <span style={{ fontSize:8, color:"#806040", marginLeft:8 }}>syncing...</span>}</div>)}
+    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+      <button onClick={onExit} style={{ padding:"7px 16px", background:"transparent", border:"1px solid #3a2c10", borderRadius:7, color:"#806040", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer" }}>EXIT</button>
+      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:16, fontWeight:700, color:"#e8c060", margin:0 }}>PvP Battle</h2>
+      {isMyTurn && !gs.winner ? <TurnTimer key={timerKey} active={true} onExpire={endTurn} /> : <div style={{ width:110 }} />}
+    </div>
+    {gs.winner && (<div style={{ textAlign:"center", background: myWon?"linear-gradient(135deg,#060e04,#0e0c08)":"linear-gradient(135deg,#120404,#0e0c08)", border:`1px solid ${myWon?"#4a9020":"#b83030"}`, borderRadius:14, padding:36, marginBottom:20, animation:"fadeIn 0.5s" }}>
+      <div style={{ fontSize:56, marginBottom:10 }}>{myWon?"✨":"💀"}</div>
+      <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:28, color:myWon?"#78cc45":"#e05050", margin:"0 0 18px" }}>{myWon?"VICTORY":"DEFEATED"}</h3>
+      <p style={{ fontSize:13, color:"#a09070" }}>{myWon?`You defeated ${opponentName}!`:`${opponentName} wins this round.`}</p>
+      <button onClick={onExit} style={{ marginTop:16, padding:"11px 28px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontWeight:700, fontSize:12, letterSpacing:2, color:"#1a1000", cursor:"pointer" }}>EXIT</button>
+    </div>)}
+    <div style={{ display:"grid", gridTemplateColumns:"1fr 180px", gap:12 }}>
+      <div style={{ background: envTheme?envTheme.bg:"#0c0a08", border:`1px solid ${envTheme?envTheme.glow+"44":"#242010"}`, borderRadius:14, overflow:"hidden", position:"relative", transition:"background 1.5s, border-color 1s" }}>
+        <VFXOverlay effects={vfx.effects} />
+        {/* Opponent zone */}
+        <div style={{ background:"rgba(180,40,40,0.04)", borderBottom:"1px solid #241010", padding:"10px 14px" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <div style={{ width:28, height:28, borderRadius:"50%", background:"linear-gradient(135deg,#3a0c0c,#200808)", border:"2px solid #a0202044", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:"#cc6666", fontFamily:"'Cinzel',serif", fontWeight:700 }}>{(opponentName||"?").slice(0,2).toUpperCase()}</div>
+              <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#cc4848", letterSpacing:2, fontWeight:700 }}>{(opponentName||"OPPONENT").toUpperCase()}</span>
+              <div style={{ display:"flex", gap:2 }}>{Array.from({length:ai.enemyHand.length}).map((_,i)=>(<div key={i} style={{ width:14, height:20, background:"linear-gradient(135deg,#240c0c,#180808)", border:"1px solid #341818", borderRadius:2 }}/>))}</div>
+              <span style={{ fontSize:8, color:"#604040" }}>Deck:{ai.enemyDeck.length}</span>
+            </div>
+            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <div style={{ width:60, height:6, background:"#180808", borderRadius:3, overflow:"hidden" }}><div style={{ height:"100%", width:`${Math.max(0,(ai.enemyHP/CFG.startHP)*100)}%`, background:hpCol(ai.enemyHP), transition:"width .4s" }}/></div>
+              <span style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:700, color:hpCol(ai.enemyHP) }}>{ai.enemyHP}</span>
+            </div>
+          </div>
+          <div style={{ minHeight:105, display:"flex", gap:8, flexWrap:"wrap", justifyContent:"center", alignItems:"center" }}>
+            {ai.enemyBoard.length===0?<span style={{ fontSize:10, color:"#241010", letterSpacing:3 }}>---</span>:ai.enemyBoard.map((c)=>(<Token key={c.uid} c={c} isTarget={!!attacker} canSelect={false} onClick={()=>{ if(attacker)atkCreature(c); else setPreviewCard(c); }}/>))}
+          </div>
+        </div>
+        {/* Divider */}
+        <div style={{ padding:"6px 14px", background:"#080608", borderBottom:"1px solid #181010", borderTop:"1px solid #181010", display:"flex", alignItems:"center", justifyContent:"center", gap:14 }}>
+          <div style={{ flex:1, height:1, background:"linear-gradient(to right,transparent,#382e18)" }}/>
+          {attCard?(<button onClick={ai.enemyBoard.length===0?atkFace:undefined} style={{ padding:"5px 16px", background:ai.enemyBoard.length===0?"linear-gradient(135deg,#6a0808,#a01010)":"rgba(255,255,255,0.04)", border:`1px solid ${ai.enemyBoard.length===0?"#e04040":"#2a1a10"}`, borderRadius:20, color:ai.enemyBoard.length===0?"#ffaaaa":"#604030", fontFamily:"'Cinzel',serif", fontSize:9, cursor:ai.enemyBoard.length===0?"pointer":"default" }}>{ai.enemyBoard.length===0?"STRIKE HERO":"SELECT TARGET"}</button>):(<span style={{ fontSize:9, color:"#241a08", letterSpacing:3, fontFamily:"'Cinzel',serif" }}>TURN {gs.turn}</span>)}
+          <div style={{ flex:1, height:1, background:"linear-gradient(to left,transparent,#382e18)" }}/>
+        </div>
+        {/* My zone */}
+        <div style={{ background:"rgba(40,100,20,0.04)", padding:"10px 14px" }}>
+          <div style={{ minHeight:105, display:"flex", gap:8, flexWrap:"wrap", justifyContent:"center", alignItems:"center", marginBottom:10 }}>
+            {ai.playerBoard.length===0?<span style={{ fontSize:10, color:"#181408", letterSpacing:3 }}>{isMyTurn?"PLAY A CARD":"WAITING..."}</span>:ai.playerBoard.map((c)=>(<Token key={c.uid} c={c} selected={attacker===c.uid} isTarget={false} canSelect={isMyTurn&&c.canAttack&&!c.hasAttacked&&!syncing} onClick={()=>selectAtt(c)} onRightClick={()=>setPreviewCard(c)}/>))}
+          </div>
+          <div style={{ borderTop:"1px solid #181408", paddingTop:10, marginBottom:10 }}>
+            <div style={{ display:"flex", gap:6, justifyContent:"center", flexWrap:"wrap" }}>
+              {ai.playerHand.map((card)=>{const cp=isMyTurn&&!syncing&&(card.type==="environment"||card.type==="spell"||ai.playerBoard.length<CFG.maxBoard)&&(card.bloodpact?card.cost<ai.playerHP:card.cost<=ai.playerEnergy);return(<HandCard key={card.uid} card={card} playable={cp} onClick={()=>playCard(card)}/>);})}
+            </div>
+          </div>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <div style={{ width:28, height:28, borderRadius:"50%", background:"linear-gradient(135deg,#4a9020,#6aab3a)", border:"2px solid #e8c06055", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:"#fff" }}>
+                {user?.avatarUrl?<img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>:(user?.name||"?").slice(0,2).toUpperCase()}
+              </div>
+              <span style={{ fontSize:8, color:"#e8c060", fontFamily:"'Cinzel',serif" }}>Deck:{ai.playerDeck.length}</span>
+              <span style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:700, color:hpCol(ai.playerHP) }}>{ai.playerHP}</span>
+              <span style={{ fontSize:9, color:"#806040" }}>HP</span>
+            </div>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:3 }}>
+                <span style={{ fontSize:8, color:"#c0a060", fontFamily:"'Cinzel',serif" }}>ENERGY</span>
+                <div style={{ display:"flex", gap:2 }}>{Array.from({length:ai.maxEnergy}).map((_,i)=>(<div key={i} style={{ width:9, height:9, borderRadius:"50%", background:i<ai.playerEnergy?"#e8b828":"#241a08", border:`1px solid ${i<ai.playerEnergy?"#e89a10":"#14100a"}`, transition:"background .3s" }}/>))}</div>
+              </div>
+              <button onClick={endTurn} disabled={!isMyTurn||syncing} style={{ padding:"8px 16px", background:isMyTurn&&!syncing?"linear-gradient(135deg,#c89010,#f0c040)":"rgba(255,255,255,0.04)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, letterSpacing:2, color:isMyTurn&&!syncing?"#1a1000":"#404030", cursor:isMyTurn&&!syncing?"pointer":"not-allowed" }}>{syncing?"SYNCING...":"END TURN"}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Log */}
+      <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+        {attCard&&(<div style={{ background:`${attCard.border}15`, border:`1px solid ${attCard.border}55`, borderRadius:10, padding:10 }}><div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:attCard.border, fontWeight:600 }}>ATTACKING</div><div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#f0e8d8", fontWeight:700 }}>{attCard.name}</div><div style={{ fontSize:12, color:"#ff7050", fontWeight:700 }}>ATK {attCard.currentAtk}</div><button onClick={()=>setAttacker(null)} style={{ marginTop:6, width:"100%", padding:"3px", background:"transparent", border:"1px solid #241408", borderRadius:4, color:"#806040", fontFamily:"'Cinzel',serif", fontSize:8, cursor:"pointer" }}>Cancel</button></div>)}
+        <div style={{ flex:1, background:"#080604", border:"1px solid #161408", borderRadius:10, overflow:"hidden", display:"flex", flexDirection:"column" }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#705028", letterSpacing:2, padding:"6px 8px", borderBottom:"1px solid #161408", fontWeight:600 }}>LOG</div>
+          <div ref={logRef} style={{ overflowY:"auto", padding:"6px 8px", flex:1, maxHeight:300 }}>{(gs.log||[]).map((l,i)=>(<div key={i} style={{ fontSize:9, lineHeight:1.5, marginBottom:1, color:"#a09060" }}>{l}</div>))}</div>
+        </div>
+      </div>
+    </div>
+  </div>);
+}
+
 // ═══ MATCHMAKING ═══════════════════════════════════════════════════════
 function MatchmakingScreen({ user, onMatch, onCancel }) {
   const [status, setStatus] = useState("waiting");
@@ -811,6 +1072,9 @@ function MatchmakingScreen({ user, onMatch, onCancel }) {
         await supabase.from("matchmaking").update({ status: "matched", match_id: matchId, opponent_id: user.id, opponent_name: user.name }).eq("id", opp.id);
         await supabase.from("matchmaking").update({ status: "matched", match_id: matchId, opponent_id: opp.user_id, opponent_name: opp.display_name }).eq("id", rowId);
         await supabase.from("matches").insert({ id: matchId, player1_id: opp.user_id, player2_id: user.id, status: "active", game_state: null });
+        // Player B calls onMatch directly — no need to wait for own subscription
+        setStatus("matched");
+        setTimeout(() => onMatch({ matchId, opponentId: opp.user_id, opponentName: opp.display_name }), 800);
       }
     };
     enter();
@@ -869,6 +1133,7 @@ function GameTab({ user, onUpdateUser }) {
       <button onClick={() => setShowDeckBuilder(true)} style={{ padding:"10px 24px", background:"rgba(255,255,255,0.04)", border:"1px solid #3a3020", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:"#c09848", cursor:"pointer", letterSpacing:2 }}>✦ BUILD A DECK ({decks.length} saved)</button>
     </div>
   </div>);
+  if (matchConfig?.mode === "pvp") return (<PvpBattleScreen user={user} matchConfig={matchConfig} onExit={() => setMatchConfig(null)} />);
   return (<BattleScreen user={user} onUpdateUser={onUpdateUser} matchConfig={matchConfig} onExit={() => setMatchConfig(null)} />);
 }
 // ═══ PACK OPENING ════════════════════════════════════════════════════════════
