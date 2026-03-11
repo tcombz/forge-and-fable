@@ -793,7 +793,7 @@ function logIcon(line) {
   return "\u00B7 ";
 }
 // ═══ BATTLE CHAT (GIF) ════════════════════════════════════════════════════════
-const GIPHY_KEY = "dc6zaTOxFJmzC"; // Public beta key — replace with your own for production
+const GIPHY_KEY = "6HnQE0960QsP5zT7DWHbow94frssuHfS";
 const AI_REACTIONS = ["nice","reaction","wow","gaming","card game","epic","gg","celebrate"];
 function BattleChat({ user, aiMode }) {
   const [messages, setMessages] = useState([{ from: "System", text: "Battle chat active. Search GIFs to react!", id: 0 }]);
