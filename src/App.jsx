@@ -505,7 +505,7 @@ function CardArt({ card }) {
   if (card.imageUrl && !imgFailed) return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
       <ArtCanvas card={card} style={{ position: "absolute", inset: 0 }} />
-      <img src={card.imageUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", zIndex: 1 }} referrerPolicy="no-referrer" onError={() => setImgFailed(true)} />
+      <img src={card.imageUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", zIndex: 1, imageRendering: "high-quality", transform: "translateZ(0)", willChange: "transform" }} referrerPolicy="no-referrer" onError={() => setImgFailed(true)} />
     </div>
   );
   return (<div style={{ position: "relative", width: "100%", height: "100%" }}><ArtCanvas card={card} style={{ position: "absolute", inset: 0 }} /></div>);
@@ -2953,9 +2953,8 @@ function HomeScreen({ setTab, user }) {
           </div>)}
           {!user && (<div style={{ padding:"16px 22px", background:"rgba(232,192,96,0.06)", border:"1px solid #e8c06033", borderRadius:10, fontSize:12, color:"#a09060", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>Sign in to start your journey ⚔</div>)}
         </div>
-        {/* RIGHT: Book teaser + featured card */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, animation: entered ? "slideInRight 0.8s ease-out" : undefined }}>
-          <ForgeAndFableTeaser inline={true} />
+        {/* RIGHT: Featured card */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, animation: entered ? "slideInRight 0.8s ease-out" : undefined }}>
           <div style={{ position: "relative" }}>
             <div style={{ position: "absolute", inset: -40, background: `radial-gradient(circle,${HOME_CARDS[active]?.border || "#9060ff"}30,rgba(60,20,120,0.2) 50%,transparent 70%)`, transition: "background 1.2s ease", pointerEvents: "none", borderRadius:"50%" }} />
             <div style={{ position: "absolute", inset: -10, background: `radial-gradient(circle,${HOME_CARDS[active]?.border || "#9060ff"}22,transparent 70%)`, transition: "background 1.2s ease", pointerEvents: "none" }} />
@@ -2966,9 +2965,26 @@ function HomeScreen({ setTab, user }) {
       </div>
     </section>
 
+    {/* The Fables — book teaser section */}
+    <section style={{ background:"linear-gradient(180deg,#080610 0%,#0a0818 100%)", borderTop:"1px solid #1a1228", borderBottom:"1px solid #1a1228", padding:"32px 28px" }}>
+      <div style={{ maxWidth:1100, margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"center", gap:48 }}>
+        <ForgeAndFableTeaser inline={true} />
+        <div style={{ maxWidth:340 }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#6040a0", letterSpacing:5, fontWeight:700, marginBottom:8 }}>COMING SOON</div>
+          <div style={{ fontFamily:"'Palatino Linotype',Palatino,'Book Antiqua',Georgia,serif", fontSize:32, fontStyle:"italic", color:"#c8a0e8", marginBottom:12, lineHeight:1.2 }}>The Fables</div>
+          <p style={{ fontSize:12, color:"#6050a0", lineHeight:1.8, margin:"0 0 16px" }}>A standalone narrative expansion built on the Forge {"&"} Fable engine. New mechanics, new realms, and legends that reshape the world.</p>
+          <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+            {["Story Mode","New Factions","Campaign Deck","Legendary Bosses"].map(t => (
+              <span key={t} style={{ fontSize:8, padding:"3px 10px", background:"rgba(160,80,240,0.08)", border:"1px solid #6040a033", borderRadius:20, color:"#8060b0", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>{t}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+
     {/* Card showcase strip — alt art spotlight */}
     {(() => {
-      // Show 4 rare/epic picks + 1 legendary as the "ultra rare"
+      // Show 4 anime island alts + 1 legendary + 1 prismatic
       const SHOWCASE = ["tangle","weaver","kraken","bloodmage","velrun"];
       const showcaseCards = SHOWCASE.map(id => {
         const arts = ALT_ARTS[id]; if (!arts) return null;
@@ -2976,20 +2992,30 @@ function HomeScreen({ setTab, user }) {
         const base = POOL.find(c=>c.id===id); if (!base) return null;
         return { ...base, imageUrl: altArt.imageUrl, _altRarity: altArt.rarity };
       }).filter(Boolean);
+      // Add prismatic to the end
+      const pAlt = ALT_ARTS["sun_strike"]?.find(a => a.rarity === "Prismatic");
+      const pBase = POOL.find(c=>c.id==="sun_strike");
+      if (pAlt && pBase) showcaseCards.push({ ...pBase, imageUrl: pAlt.imageUrl, altSetId:"prismatic", rarity:"Prismatic", _altRarity:"Prismatic" });
       return (
-      <section style={{ background:"linear-gradient(180deg,rgba(0,0,0,0.7) 0%,rgba(8,6,4,0.98) 100%)", borderTop:"1px solid #2a2010", padding:"36px 28px 28px", overflow:"hidden" }}>
+      <section style={{ background:"linear-gradient(180deg,rgba(0,0,0,0.7) 0%,rgba(8,6,4,0.98) 100%)", borderTop:"1px solid #2a2010", padding:"40px 28px 36px", overflow:"hidden" }}>
         <div style={{ maxWidth:1100, margin:"0 auto" }}>
-          <div style={{ textAlign:"center", marginBottom:22 }}>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#604838", letterSpacing:4, fontWeight:700 }}>ANIME ISLAND · FEATURED CARDS</div>
-            <div style={{ fontSize:9, color:"#3a2820", marginTop:4 }}>4 rares · 1 ultra rare legendary · collect from the store</div>
+          <div style={{ textAlign:"center", marginBottom:28 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#705040", letterSpacing:4, fontWeight:700 }}>🏝 ANIME ISLAND · FEATURED CARDS</div>
+            <div style={{ fontSize:9, color:"#3a2820", marginTop:6, letterSpacing:2 }}>Rares · Legendary · 1 Prismatic — hunt them in the Store</div>
           </div>
-          <div style={{ display:"flex", gap:18, justifyContent:"center", flexWrap:"nowrap", overflowX:"auto", paddingBottom:8, alignItems:"flex-end" }}>
+          <div style={{ display:"flex", gap:22, justifyContent:"center", flexWrap:"nowrap", overflowX:"auto", paddingBottom:8, alignItems:"flex-end", paddingTop:28 }}>
             {showcaseCards.map((card, i) => {
-              const isLegendary = card._altRarity === "Legendary" || card.rarity === "Legendary";
+              const isPrismatic = card._altRarity === "Prismatic" || card.rarity === "Prismatic";
+              const isLegendary = !isPrismatic && (card._altRarity === "Legendary" || card.rarity === "Legendary");
               return (
-                <div key={card.id} style={{ flexShrink:0, animation:`cardReveal 0.5s ease-out ${i*0.1}s both`, filter:`drop-shadow(0 8px 28px ${card.border}66)`, transform: isLegendary ? "scale(1.14) translateY(-8px)" : "none", position:"relative" }}>
+                <div key={card.id+i} style={{ flexShrink:0, animation:`cardReveal 0.5s ease-out ${i*0.1}s both`, filter: isPrismatic ? "drop-shadow(0 0 32px #c080ffaa) drop-shadow(0 8px 20px #8040ff66)" : `drop-shadow(0 8px 28px ${card.border}66)`, transform: isPrismatic ? "scale(1.2) translateY(-14px)" : isLegendary ? "scale(1.12) translateY(-8px)" : "none", position:"relative" }}>
+                  {isPrismatic && (
+                    <div style={{ position:"absolute", top:-24, left:"50%", transform:"translateX(-50%)", background:"linear-gradient(90deg,#ff0080,#8000ff,#0080ff,#ff0080)", backgroundSize:"300% 100%", animation:"prismShimmer 2s linear infinite", borderRadius:20, padding:"4px 14px", fontFamily:"'Cinzel',serif", fontSize:8, fontWeight:900, color:"#fff", letterSpacing:2, whiteSpace:"nowrap", boxShadow:"0 2px 18px #c080ffaa", zIndex:5 }}>
+                      ✦ PRISMATIC
+                    </div>
+                  )}
                   {isLegendary && (
-                    <div style={{ position:"absolute", top:-18, left:"50%", transform:"translateX(-50%)", background:"linear-gradient(135deg,#e8c060,#c89020)", borderRadius:20, padding:"3px 10px", fontFamily:"'Cinzel',serif", fontSize:7, fontWeight:900, color:"#1a1000", letterSpacing:2, whiteSpace:"nowrap", boxShadow:"0 2px 10px #e8c06066", zIndex:5 }}>
+                    <div style={{ position:"absolute", top:-20, left:"50%", transform:"translateX(-50%)", background:"linear-gradient(135deg,#e8c060,#c89020)", borderRadius:20, padding:"3px 10px", fontFamily:"'Cinzel',serif", fontSize:7, fontWeight:900, color:"#1a1000", letterSpacing:2, whiteSpace:"nowrap", boxShadow:"0 2px 10px #e8c06066", zIndex:5 }}>
                       ✦ ULTRA RARE
                     </div>
                   )}
@@ -3944,102 +3970,98 @@ export default function App() {
           const deckCount = (user.decks||[]).length;
           const rank = getRank(user.rankedRating);
           return (
-          <div style={{ position:"absolute", top:50, right:0, background:"linear-gradient(160deg,#1e1c10,#12100a)", border:"1px solid #3a3018", borderRadius:16, width:330, zIndex:200, boxShadow:"0 24px 70px rgba(0,0,0,0.97)", animation:"fadeIn 0.2s ease-out", overflow:"hidden" }}>
-            {/* Hero banner */}
-            <div style={{ background:"linear-gradient(135deg,#1a1608,#100e04)", borderBottom:"1px solid #2a2010", padding:"18px 20px 14px" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-                <label style={{ flexShrink:0, cursor:"pointer", position:"relative" }}>
-                  <div style={{ width:60, height:60, borderRadius:"50%", overflow:"hidden", border:"2px solid #e8c06066", display:"flex", alignItems:"center", justifyContent:"center", background:"#1a1610", fontFamily:"'Cinzel',serif", fontSize:18, color:"#e8c060" }}>
-                    {user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user.name||"?").slice(0,2).toUpperCase()}
-                  </div>
-                  <div style={{ position:"absolute", bottom:0, right:0, width:18, height:18, background:"#2a2010", border:"1px solid #4a3820", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:9 }}>📷</div>
-                  <input type="file" accept="image/*" style={{ display:"none" }} onChange={async (e) => {
-                    const file = e.target.files[0]; if (!file) return;
-                    setAvatarErr("");
-                    if (file.size > 2*1024*1024) { setAvatarErr("Image must be under 2MB"); return; }
-                    const ext = file.name.split(".").pop().toLowerCase();
-                    const path = `avatars/${user.id}.${ext}`;
-                    const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert:true, contentType:file.type });
-                    if (upErr) { setAvatarErr("Upload failed: " + upErr.message); return; }
-                    const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
-                    if (urlData?.publicUrl) await update({ avatarUrl: urlData.publicUrl + "?t=" + Date.now() });
-                  }} />
-                </label>
-                <div style={{ flex:1, minWidth:0 }}>
-                  {avatarErr && <div style={{ fontSize:9, color:"#e05050", marginBottom:4, fontFamily:"'Cinzel',serif" }}>{avatarErr}</div>}
-                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:16, color:"#e8c060", fontWeight:900, letterSpacing:1 }}>{user.name}</div>
-                  <div style={{ fontSize:9, color:"#604030", overflow:"hidden", textOverflow:"ellipsis", marginTop:2 }}>{user.email}</div>
-                  <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:5 }}>
-                    <div style={{ padding:"2px 8px", background:"rgba(232,192,96,0.1)", border:"1px solid #e8c06033", borderRadius:10, fontSize:8, color:"#e8a020", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>
-                      {totalBattles >= 50 ? "⚔ VETERAN" : totalBattles >= 20 ? "🗡 DUELIST" : totalBattles >= 5 ? "🛡 FIGHTER" : "🌱 RECRUIT"}
-                    </div>
-                    <div style={{ padding:"2px 8px", background:`${rank.color}18`, border:`1px solid ${rank.color}44`, borderRadius:10, fontSize:8, color:rank.color, fontFamily:"'Cinzel',serif", letterSpacing:1, fontWeight:700 }}>
-                      {rank.icon} {rank.name} {user.rankedRating||1000}
-                    </div>
-                    <div style={{ fontSize:8, color:"#503828", fontFamily:"'Cinzel',serif" }}>since {user.joined}</div>
+          <div style={{ position:"absolute", top:50, right:0, background:"#0e0c08", border:"1px solid #2a2010", borderRadius:18, width:360, zIndex:200, boxShadow:"0 32px 80px rgba(0,0,0,0.98), 0 0 0 1px #1a1408", animation:"fadeIn 0.2s ease-out", overflow:"hidden" }}>
+            {/* Hero header — full-width avatar banner */}
+            <div style={{ position:"relative", height:110, background:"linear-gradient(160deg,#1a1208,#0e0a04,#181208)", overflow:"hidden" }}>
+              {/* Ambient glow behind avatar */}
+              <div style={{ position:"absolute", top:"50%", left:30, transform:"translateY(-50%)", width:100, height:100, borderRadius:"50%", background:`radial-gradient(circle, ${rank.color}22 0%, transparent 70%)`, pointerEvents:"none" }} />
+              {/* Avatar */}
+              <label style={{ position:"absolute", top:"50%", left:20, transform:"translateY(-50%)", cursor:"pointer", flexShrink:0 }}>
+                <div style={{ width:72, height:72, borderRadius:"50%", overflow:"hidden", border:`3px solid ${rank.color}88`, display:"flex", alignItems:"center", justifyContent:"center", background:"#1a1408", fontFamily:"'Cinzel',serif", fontSize:20, color:"#e8c060", boxShadow:`0 0 20px ${rank.color}44` }}>
+                  {user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user.name||"?").slice(0,2).toUpperCase()}
+                </div>
+                <div style={{ position:"absolute", bottom:2, right:2, width:20, height:20, background:"#1a1408", border:`1px solid ${rank.color}55`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10 }}>📷</div>
+                <input type="file" accept="image/*" style={{ display:"none" }} onChange={async (e) => {
+                  const file = e.target.files[0]; if (!file) return;
+                  setAvatarErr("");
+                  if (file.size > 2*1024*1024) { setAvatarErr("Image must be under 2MB"); return; }
+                  const ext = file.name.split(".").pop().toLowerCase();
+                  const path = `avatars/${user.id}.${ext}`;
+                  const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert:true, contentType:file.type });
+                  if (upErr) { setAvatarErr("Upload failed: " + upErr.message); return; }
+                  const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+                  if (urlData?.publicUrl) await update({ avatarUrl: urlData.publicUrl + "?t=" + Date.now() });
+                }} />
+              </label>
+              {/* Name + info right of avatar */}
+              <div style={{ position:"absolute", top:"50%", left:106, transform:"translateY(-50%)", right:16 }}>
+                {avatarErr && <div style={{ fontSize:8, color:"#e05050", marginBottom:3, fontFamily:"'Cinzel',serif" }}>{avatarErr}</div>}
+                <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, color:"#f0d878", fontWeight:900, letterSpacing:1, lineHeight:1, marginBottom:4 }}>{user.name}</div>
+                <div style={{ fontSize:8, color:"#504030", marginBottom:6, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user.email}</div>
+                <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
+                  <div style={{ padding:"3px 8px", background:`${rank.color}20`, border:`1px solid ${rank.color}55`, borderRadius:8, fontSize:9, color:rank.color, fontFamily:"'Cinzel',serif", fontWeight:700 }}>{rank.icon} {rank.name} · {user.rankedRating||1000}</div>
+                  <div style={{ padding:"3px 8px", background:"rgba(232,192,96,0.08)", border:"1px solid #e8c06033", borderRadius:8, fontSize:8, color:"#e8a020", fontFamily:"'Cinzel',serif" }}>
+                    {totalBattles >= 50 ? "⚔ VETERAN" : totalBattles >= 20 ? "🗡 DUELIST" : totalBattles >= 5 ? "🛡 FIGHTER" : "🌱 RECRUIT"}
                   </div>
                 </div>
               </div>
             </div>
-            {/* Stats grid */}
-            <div style={{ padding:"12px 20px 0" }}>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:6, marginBottom:10 }}>
-                {[["WIN RATE", winRate+"%", winRate>=50?"#78cc45":"#e8a020"],["WINS",wins,"#78cc45"],["LOSSES",losses,"#e05050"]].map(([l,v,c],i)=>(
-                  <div key={i} style={{ background:"rgba(0,0,0,0.35)", borderRadius:7, padding:"8px 4px", textAlign:"center" }}>
-                    <div style={{ fontSize:6, color:"#806040", letterSpacing:1, marginBottom:2, fontFamily:"'Cinzel',serif" }}>{l}</div>
-                    <div style={{ fontFamily:"'Cinzel',serif", fontSize:17, fontWeight:700, color:c }}>{v}</div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:6, marginBottom:12 }}>
-                {[["CARDS",cardCount,"#e8c060"],["DECKS",deckCount,"#c0a870"],["SHARDS",user.shards||0,"#60c8ff"]].map(([l,v,c],i)=>(
-                  <div key={i} style={{ background:"rgba(0,0,0,0.25)", borderRadius:7, padding:"7px 4px", textAlign:"center", border:"1px solid #1e1c10" }}>
-                    <div style={{ fontSize:6, color:"#604030", letterSpacing:1, marginBottom:2, fontFamily:"'Cinzel',serif" }}>{l}</div>
-                    <div style={{ fontFamily:"'Cinzel',serif", fontSize:15, fontWeight:700, color:c }}>{v}</div>
-                  </div>
-                ))}
-              </div>
-              {/* Recent Battles */}
-              <div style={{ marginBottom:12 }}>
-                <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#e8a020", letterSpacing:2, marginBottom:7, fontWeight:700, borderBottom:"1px solid #2a2010", paddingBottom:5 }}>⚔ RECENT BATTLES</div>
-                {(user.matchHistory||[]).length === 0
-                  ? <div style={{ fontSize:11, color:"#504030", fontStyle:"italic", padding:"6px 0", textAlign:"center" }}>No battles yet — fight someone!</div>
-                  : <div style={{ maxHeight:220, overflowY:"auto", paddingRight:2, display:"flex", flexDirection:"column", gap:4 }}>
-                      {(user.matchHistory||[]).map((m,i) => {
-                        const won = m.result==="W"; const ff = m.result==="FF" || m.forfeit;
-                        const rc = won?"#78cc45":ff?"#e8a020":"#e05050";
-                        const oppInitials = (m.opponent||"??").slice(0,2).toUpperCase();
-                        return (
-                          <div key={i} style={{ display:"flex", alignItems:"center", gap:7, padding:"6px 8px", background:"rgba(0,0,0,0.4)", borderRadius:8, border:`1px solid ${rc}22` }}>
-                            {/* My avatar */}
-                            <div style={{ width:28, height:28, borderRadius:"50%", overflow:"hidden", border:`1.5px solid ${rc}66`, flexShrink:0, background:"#1a1408", display:"flex", alignItems:"center", justifyContent:"center", fontSize:7, color:"#e8c060", fontFamily:"'Cinzel',serif", fontWeight:700 }}>
-                              {user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (user.name||"?").slice(0,2).toUpperCase()}
-                            </div>
-                            <span style={{ fontSize:8, color:"#504030", fontFamily:"'Cinzel',serif", flexShrink:0 }}>VS</span>
-                            {/* Opponent avatar placeholder */}
-                            <div style={{ width:28, height:28, borderRadius:"50%", border:`1.5px solid #40302055`, flexShrink:0, background:"#0e0c08", display:"flex", alignItems:"center", justifyContent:"center", fontSize:7, color:"#604030", fontFamily:"'Cinzel',serif", fontWeight:700 }}>{oppInitials}</div>
-                            {/* Opponent name + meta */}
-                            <div style={{ flex:1, minWidth:0 }}>
-                              <div style={{ fontSize:10, color:"#c0a870", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{m.opponent||"Unknown"}</div>
-                              <div style={{ fontSize:7, color:"#3a2a10" }}>{m.turns||0}T · {m.date ? new Date(m.date).toLocaleDateString() : ""}</div>
-                            </div>
-                            {/* Result + MMR */}
-                            <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:2, flexShrink:0 }}>
-                              <span style={{ fontSize:9, fontWeight:900, fontFamily:"'Cinzel',serif", color:rc, padding:"2px 7px", background:`${rc}18`, borderRadius:5, border:`1px solid ${rc}44`, letterSpacing:1 }}>{won?"WIN":ff?"FF":"LOSS"}</span>
-                              {m.ranked && m.ratingDelta != null && <span style={{ fontSize:7, color:m.ratingDelta>=0?"#78cc45":"#e05050", fontFamily:"'Cinzel',serif" }}>{m.ratingDelta>=0?"+":""}{m.ratingDelta} MMR</span>}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                }
-              </div>
+            {/* Stats row */}
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", borderBottom:"1px solid #1a1408" }}>
+              {[
+                ["W%", winRate+"%", winRate>=50?"#78cc45":"#e8a020"],
+                ["WIN", wins, "#78cc45"],
+                ["LOSS", losses, "#e05050"],
+                ["CARDS", cardCount, "#e8c060"],
+                ["DECKS", deckCount, "#c0a870"],
+                ["SHARDS", user.shards||0, "#60c8ff"],
+              ].map(([l,v,c],i) => (
+                <div key={i} style={{ padding:"10px 4px", textAlign:"center", borderRight: i<5?"1px solid #1a1408":"none", background: i%2===0?"rgba(0,0,0,0.2)":"transparent" }}>
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:6, color:"#503828", letterSpacing:1, marginBottom:3 }}>{l}</div>
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:14, fontWeight:900, color:c, lineHeight:1 }}>{v}</div>
+                </div>
+              ))}
             </div>
-            {/* Admin panel + sign out */}
-            <div style={{ padding:"0 20px 16px" }}>
+            {/* Match history */}
+            <div style={{ padding:"12px 14px 10px" }}>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#604030", letterSpacing:3, marginBottom:8, fontWeight:700 }}>⚔ RECENT BATTLES</div>
+              {(user.matchHistory||[]).length === 0
+                ? <div style={{ fontSize:11, color:"#3a2810", fontStyle:"italic", textAlign:"center", padding:"12px 0" }}>No battles yet — fight someone!</div>
+                : <div style={{ maxHeight:200, overflowY:"auto", display:"flex", flexDirection:"column", gap:3 }}>
+                    {(user.matchHistory||[]).map((m,i) => {
+                      const won = m.result==="W"; const ff = m.result==="FF" || m.forfeit;
+                      const rc = won?"#78cc45":ff?"#e8a020":"#e05050";
+                      const resultLabel = won ? "WIN" : ff ? "FF" : "LOSS";
+                      return (
+                        <div key={i} style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 8px", background: i%2===0?"rgba(255,255,255,0.02)":"transparent", borderRadius:7, borderLeft:`3px solid ${rc}55` }}>
+                          {/* My avatar */}
+                          <div style={{ width:26, height:26, borderRadius:"50%", overflow:"hidden", border:`1.5px solid ${rc}44`, flexShrink:0, background:"#1a1408", display:"flex", alignItems:"center", justifyContent:"center", fontSize:6, color:"#e8c060", fontFamily:"'Cinzel',serif", fontWeight:700 }}>
+                            {user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (user.name||"?").slice(0,2).toUpperCase()}
+                          </div>
+                          <span style={{ fontSize:7, color:"#3a2a10", fontFamily:"'Cinzel',serif" }}>VS</span>
+                          {/* Opp placeholder */}
+                          <div style={{ width:26, height:26, borderRadius:"50%", border:"1.5px solid #2a1a0855", flexShrink:0, background:"#0a0806", display:"flex", alignItems:"center", justifyContent:"center", fontSize:6, color:"#503020", fontFamily:"'Cinzel',serif", fontWeight:700 }}>{(m.opponent||"??").slice(0,2).toUpperCase()}</div>
+                          {/* Name + date */}
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ fontSize:10, color:"#b09060", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:600 }}>{m.opponent||"Unknown"}</div>
+                            <div style={{ fontSize:7, color:"#2a1a08" }}>{m.turns||0}T · {m.date ? new Date(m.date).toLocaleDateString() : ""}</div>
+                          </div>
+                          {/* Badge + MMR */}
+                          <div style={{ flexShrink:0, textAlign:"right" }}>
+                            <div style={{ fontSize:9, fontWeight:900, fontFamily:"'Cinzel',serif", color:rc, padding:"2px 8px", background:`${rc}14`, borderRadius:5, border:`1px solid ${rc}33`, letterSpacing:1, display:"inline-block" }}>{resultLabel}</div>
+                            {m.ranked && m.ratingDelta != null && <div style={{ fontSize:7, color:m.ratingDelta>=0?"#78cc45":"#e05050", fontFamily:"'Cinzel',serif", marginTop:2 }}>{m.ratingDelta>=0?"+":""}{m.ratingDelta} MMR</div>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+              }
+            </div>
+            {/* Footer actions */}
+            <div style={{ padding:"8px 14px 14px", borderTop:"1px solid #1a1408", display:"flex", flexDirection:"column", gap:5 }}>
               {user.name?.toLowerCase() === "tcombz" && <AlphaKeyAdminPanel />}
-              <button onClick={()=>{ localStorage.removeItem(`patchSeen_${user.id}`); update({ lastPatchSeen: null }); setShowPatchNotes(true); setShowProfile(false); }} style={{ width:"100%", padding:"7px", background:"rgba(232,192,96,0.05)", border:"1px solid #3a3018", borderRadius:7, color:"#706040", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer", letterSpacing:1, marginBottom:6 }}>📋 VIEW PATCH NOTES</button>
-              <button onClick={() => { logout(); setShowProfile(false); }} style={{ width:"100%", padding:"9px", background:"rgba(180,30,30,0.12)", border:"1px solid #5a1818", borderRadius:7, color:"#c07060", fontFamily:"'Cinzel',serif", fontSize:10, cursor:"pointer", letterSpacing:1 }}>SIGN OUT</button>
+              <button onClick={()=>{ localStorage.removeItem(`patchSeen_${user.id}`); update({ lastPatchSeen: null }); setShowPatchNotes(true); setShowProfile(false); }} style={{ width:"100%", padding:"7px", background:"transparent", border:"1px solid #2a2010", borderRadius:7, color:"#504028", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer", letterSpacing:1 }}>📋 PATCH NOTES</button>
+              <button onClick={() => { logout(); setShowProfile(false); }} style={{ width:"100%", padding:"8px", background:"rgba(160,20,20,0.1)", border:"1px solid #4a1010", borderRadius:7, color:"#a05040", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer", letterSpacing:1 }}>SIGN OUT</button>
             </div>
           </div>
           );
