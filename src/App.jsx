@@ -23,19 +23,22 @@ const SFX = (() => {
     init,
     play(t) {
       switch (t) {
-        case "card": tone(280,"sine",0.12,0,0.1); tone(560,"sine",0.06,0.07,0.12); break;
-        case "attack": tone(110,"sawtooth",0.06,0.02,0.14); tone(80,"square",0.03,0,0.08); break;
-        case "kill": [220,170,130].forEach((f,i) => tone(f,"sawtooth",0.06,i*0.09,0.22)); break;
-        case "victory": [400,500,600,500,800].forEach((f,i) => tone(f,"sine",0.08,i*0.13,0.3)); break;
-        case "defeat": [350,280,200].forEach((f,i) => tone(f,"sine",0.08,i*0.22,0.38)); break;
+        case "card": tone(320,"sine",0.1,0,0.08); tone(480,"sine",0.06,0.05,0.1); tone(640,"sine",0.03,0.1,0.08); break;
+        case "attack": tone(90,"sawtooth",0.08,0,0.06); tone(130,"square",0.05,0.04,0.12); tone(70,"sawtooth",0.04,0.08,0.1); break;
+        case "kill": [240,180,130,90].forEach((f,i) => tone(f,"sawtooth",0.07,i*0.08,0.2)); break;
+        case "victory": [400,500,640,500,640,800,1000].forEach((f,i) => tone(f,"sine",0.07,i*0.11,0.28)); tone(600,"sine",0.04,0.5,0.6); break;
+        case "defeat": [400,300,220,160].forEach((f,i) => tone(f,"sine",0.08,i*0.2,0.36)); break;
         case "draw": tone(400,"sine",0.05,0,0.08); break;
-        case "ability": [440,660,880].forEach((f,i) => tone(f,"sine",0.07,i*0.06,0.15)); break;
+        case "ability": [440,660,880,660,880].forEach((f,i) => tone(f,"sine",0.06,i*0.055,0.14)); tone(1100,"sine",0.03,0.22,0.2); break;
+        case "spell_cast": [300,400,600,900,1200,900,600].forEach((f,i) => tone(f,"triangle",0.05,i*0.065,0.25)); tone(800,"sine",0.04,0.3,0.55); break;
+        case "heal": [440,528,660,784,880,1056].forEach((f,i) => tone(f,"sine",0.05,i*0.055,0.22)); tone(660,"sine",0.04,0.28,0.5); break;
+        case "env_rise": [120,180,240,360,480,640].forEach((f,i) => tone(f,"sine",0.06,i*0.09,0.38)); tone(320,"sine",0.05,0.5,0.7); tone(480,"sine",0.03,0.6,0.5); break;
         case "pack_open": [200,300,400,500,600,800].forEach((f,i) => tone(f,"triangle",0.06,i*0.08,0.3)); break;
-        case "rare_reveal": [400,600,800,1000,1200].forEach((f,i) => tone(f,"sine",0.1,i*0.1,0.4)); break;
+        case "rare_reveal": [400,600,800,1000,1200,1600].forEach((f,i) => tone(f,"sine",0.09,i*0.09,0.38)); break;
         case "flip": tone(500,"sine",0.05,0,0.08); tone(700,"sine",0.03,0.05,0.06); break;
         case "timer_warn": tone(800,"square",0.08,0,0.1); tone(800,"square",0.08,0.2,0.1); break;
         case "timer_end": [600,400,200].forEach((f,i) => tone(f,"sawtooth",0.1,i*0.1,0.2)); break;
-        case "env_play": [200,300,250,400,500].forEach((f,i) => tone(f,"sine",0.06,i*0.12,0.4)); break;
+        case "env_play": [180,260,220,360,480,600].forEach((f,i) => tone(f,"sine",0.055,i*0.11,0.38)); tone(360,"sine",0.04,0.5,0.6); break;
         case "prismatic": [600,900,1200,1600,2000,1600,1200].forEach((f,i) => tone(f,"sine",0.035,i*0.07,0.3)); tone(800,"sine",0.02,0.3,0.6); break;
       }
     }
@@ -251,7 +254,12 @@ function VFXOverlay({ effects }) {
           {fx.amount > 0 && <div style={{ position:"absolute", top:"38%", left:"50%", transform:"translate(-50%,-50%)", animation:"vfxShake .35s ease-out, vfxFloat 0.9s 0.1s ease-out forwards", fontSize:42, fontFamily:"'Cinzel',serif", fontWeight:900, color:"#ff3030", textShadow:"0 0 40px #ff0000cc, 0 0 80px #ff000055", letterSpacing:2 }}>-{fx.amount}</div>}
           <div style={{ position:"absolute", top:"38%", left:"50%", transform:"translate(-50%,-50%)", width:180, height:180, borderRadius:"50%", animation:"vfxRingBurst 0.5s ease-out forwards", border:"3px solid #ff404088" }} />
         </Fragment>);
-        if (fx.type === "heal") return (<div key={fx.id} style={{ position:"absolute", top:fx.side==="player"?"72%":"18%", left:"50%", transform:"translate(-50%,-50%)", animation:"vfxFloat 1s ease-out forwards", fontSize:32, fontFamily:"'Cinzel',serif", fontWeight:900, color:"#40ff70", textShadow:"0 0 30px #00ff4499, 0 0 60px #00ff4433" }}>+{fx.amount}</div>);
+        if (fx.type === "heal") return (<Fragment key={fx.id}>
+          <div style={{ position:"absolute", inset:0, animation:"vfxHealFlash 0.5s ease-out forwards", background:"rgba(30,200,80,0.12)", borderRadius:"inherit" }} />
+          <div style={{ position:"absolute", top:"50%", left:"50%", width:200, height:200, borderRadius:"50%", animation:"vfxRingBurst 0.7s ease-out forwards", border:"2px solid #40ff7088" }} />
+          <div style={{ position:"absolute", top:"50%", left:"50%", width:120, height:120, borderRadius:"50%", animation:"vfxRingBurst 0.5s 0.1s ease-out forwards", border:"1px solid #40ff7055" }} />
+          {fx.amount > 0 && <div style={{ position:"absolute", top:"38%", left:"50%", transform:"translate(-50%,-50%)", animation:"vfxFloat 1.1s ease-out forwards", fontSize:38, fontFamily:"'Cinzel',serif", fontWeight:900, color:"#40ff70", textShadow:"0 0 30px #00ff44cc, 0 0 60px #00ff4455", letterSpacing:2 }}>+{fx.amount}</div>}
+        </Fragment>);
         if (fx.type === "ability") return (<Fragment key={fx.id}>
           <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", animation:"vfxPulse .9s ease-out forwards", background:`radial-gradient(circle,${fx.color||"#e8c060"}55,transparent)`, width:300, height:300, borderRadius:"50%" }} />
           <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:200, height:200, borderRadius:"50%", animation:"vfxRingBurst 0.6s ease-out forwards", border:`2px solid ${fx.color||"#e8c060"}88` }} />
@@ -1073,8 +1081,31 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     )}
     {/* Turn Banner */}
     {turnBanner && (
-      <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", zIndex: 300, pointerEvents: "none", animation: "turnBannerIn 1.1s ease-out forwards" }}>
-        <div style={{ background: turnBanner === "YOUR TURN" ? "linear-gradient(135deg,rgba(60,140,20,0.95),rgba(40,100,10,0.95))" : "linear-gradient(135deg,rgba(160,20,20,0.95),rgba(100,10,10,0.95))", border: `2px solid ${turnBanner === "YOUR TURN" ? "#78cc45" : "#e05050"}`, borderRadius: 14, padding: "18px 52px", fontFamily: "'Cinzel',serif", fontSize: 28, fontWeight: 900, color: "#fff", letterSpacing: 6, textShadow: `0 0 30px ${turnBanner === "YOUR TURN" ? "#78cc4566" : "#e0505066"}`, boxShadow: `0 8px 40px ${turnBanner === "YOUR TURN" ? "rgba(78,200,50,0.4)" : "rgba(220,50,50,0.4)"}`, whiteSpace: "nowrap" }}>{turnBanner}</div>
+      <div style={{ position:"fixed", inset:0, display:"flex", alignItems:"center", justifyContent:"center", zIndex:300, pointerEvents:"none" }}>
+        <div style={{ animation:"turnStamp 1.3s ease-out forwards", display:"flex", flexDirection:"column", alignItems:"center", gap:0 }}>
+          {/* decorative top bar */}
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:4 }}>
+            <div style={{ height:1, width:80, background:`linear-gradient(90deg,transparent,${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"})` }} />
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, letterSpacing:5, color:turnBanner==="YOUR TURN"?"#78cc4588":"#e0505088" }}>FORGE {"&"} FABLE</span>
+            <div style={{ height:1, width:80, background:`linear-gradient(270deg,transparent,${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"})` }} />
+          </div>
+          {/* main announcement */}
+          <div style={{ background:turnBanner==="YOUR TURN"?"linear-gradient(135deg,#071a02 0%,#0d2804 50%,#071a02 100%)":"linear-gradient(135deg,#1a0202 0%,#280404 50%,#1a0202 100%)", border:`2px solid ${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"}`, borderRadius:4, padding:"16px 64px", textAlign:"center", position:"relative", overflow:"hidden", boxShadow:`0 0 80px ${turnBanner==="YOUR TURN"?"#78cc4555":"#e0505055"}, inset 0 0 40px ${turnBanner==="YOUR TURN"?"#78cc4510":"#e0505010"}` }}>
+            {/* Corner ornaments */}
+            <span style={{ position:"absolute", top:4, left:8, fontSize:10, color:turnBanner==="YOUR TURN"?"#78cc4566":"#e0505066" }}>✦</span>
+            <span style={{ position:"absolute", top:4, right:8, fontSize:10, color:turnBanner==="YOUR TURN"?"#78cc4566":"#e0505066" }}>✦</span>
+            <span style={{ position:"absolute", bottom:4, left:8, fontSize:10, color:turnBanner==="YOUR TURN"?"#78cc4566":"#e0505066" }}>✦</span>
+            <span style={{ position:"absolute", bottom:4, right:8, fontSize:10, color:turnBanner==="YOUR TURN"?"#78cc4566":"#e0505066" }}>✦</span>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:36, fontWeight:900, color:turnBanner==="YOUR TURN"?"#78cc45":"#e05050", letterSpacing:8, textShadow:`0 0 40px ${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"}, 0 2px 4px rgba(0,0,0,0.9)`, lineHeight:1 }}>{turnBanner}</div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, letterSpacing:5, color:turnBanner==="YOUR TURN"?"#78cc4599":"#e0505099", marginTop:6 }}>{turnBanner==="YOUR TURN"?"— PLAY YOUR CARDS —":"— ENEMY IS THINKING —"}</div>
+          </div>
+          {/* bottom bar */}
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginTop:4 }}>
+            <div style={{ height:1, width:80, background:`linear-gradient(90deg,transparent,${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"})` }} />
+            <div style={{ width:6, height:6, borderRadius:"50%", background:turnBanner==="YOUR TURN"?"#78cc45":"#e05050", boxShadow:`0 0 12px ${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"}`, animation:"pulse 0.8s infinite" }} />
+            <div style={{ height:1, width:80, background:`linear-gradient(270deg,transparent,${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"})` }} />
+          </div>
+        </div>
       </div>
     )}
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
@@ -1304,7 +1335,7 @@ function DeckBuilderModal({ user, onSave, onClose }) {
 // ═══ PVP BATTLE SCREEN ═══════════════════════════════════════════════
 
 // ═══ EMOTES ══════════════════════════════════════════════════════════════════
-function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
+function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatch }) {
   const { matchId, opponentName } = matchConfig;
   const [gs, setGs] = useState(null);
   const [myRole, setMyRole] = useState(null);
@@ -1323,6 +1354,12 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
   const [animUids, setAnimUids] = useState({});
   const vfx = useVFX();
   const logRef = useRef(null);
+
+  // Mark nav as in-match so tabs are blocked
+  useEffect(() => {
+    setInPvpMatch?.(true);
+    return () => setInPvpMatch?.(false);
+  }, []); // eslint-disable-line
 
   // Save match history and stats when PvP ends
   useEffect(() => {
@@ -1508,41 +1545,76 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       prevAi.enemyBoard.forEach(c => { if (!currAi.enemyBoard.find(n => n.uid === c.uid)) anims[c.uid] = "dying"; });
       prevAi.playerBoard.forEach(c => { if (!currAi.playerBoard.find(n => n.uid === c.uid)) anims[c.uid] = "dying"; });
       prevAi.playerBoard.forEach(c => { const cur = currAi.playerBoard.find(n => n.uid === c.uid); if (cur && cur.currentHp < c.currentHp && !anims[c.uid]) anims[c.uid] = "hit"; });
-      // Opponent VFX: environment change
-      if (gs.env?.id !== prev.env?.id && gs.env) { vfx.add("envchange", { color: gs.env.border||"#40a020" }); vfx.add("environment", { color: gs.env.border, duration:2000 }); SFX.play("env_play"); }
-      // Opponent VFX: spell cast (detect from new log entries)
+
       const newEntries = (gs.log||[]).slice((prev.log||[]).length);
-      if (newEntries.some(l => l.includes("casts ") || l.includes("Cast "))) { vfx.add("spell", { color:"#c090d0" }); SFX.play("ability"); }
-      // Opponent attack animation: parse "X(N) attacks Y" from log, sequence full attack arc
+
+      // Opponent VFX: environment change
+      if (gs.env?.id !== prev.env?.id && gs.env) { vfx.add("envchange", { color: gs.env.border||"#40a020" }); vfx.add("environment", { color: gs.env.border, duration:2200 }); SFX.play("env_play"); }
+
+      // Opponent VFX: spell cast
+      if (newEntries.some(l => l.includes("casts ") || l.includes("Cast ") || l.includes("spell"))) { vfx.add("spell", { color:"#c090d0", duration:1000 }); SFX.play("ability"); }
+
+      // Opponent VFX: heal (detect HP gain)
+      const opHPKey = (myRole==="p1"?"p2":"p1")+"HP";
+      if (gs[opHPKey] > prev[opHPKey]) { vfx.add("heal", { amount: gs[opHPKey]-prev[opHPKey] }); SFX.play("heal"); }
+
+      // Opponent attack sequence: parse creature attacks and face attacks
       const atkEntries = newEntries.filter(l => / attacks /.test(l));
-      if (atkEntries.length > 0) {
-        let delay = 0;
-        atkEntries.forEach(atkEntry => {
-          const m = atkEntry.match(/^(.+?)\(\d+\) attacks (.+?)(?:\s|$)/);
-          if (!m) return;
-          const atkName = m[1].trim(), tgtName = m[2].trim();
-          const atkCard = prevAi.enemyBoard.find(c => c.name === atkName);
-          const tgtCard = prevAi.playerBoard.find(c => c.name === tgtName);
+      const directEntries = newEntries.filter(l => / deals .* direct/.test(l));
+      const allAtkEntries = [...atkEntries, ...directEntries];
+
+      let delay = 0;
+      allAtkEntries.forEach(atkEntry => {
+        const isFace = / deals .* direct/.test(atkEntry);
+        const m = isFace
+          ? atkEntry.match(/^(.+?) deals/)
+          : atkEntry.match(/^(.+?)\(\d+\) attacks (.+?)(?:\s|$)/);
+        if (!m) return;
+        const atkName = m[1].trim();
+        const tgtName = isFace ? null : m[2].trim();
+        const atkCard = prevAi.enemyBoard.find(c => c.name === atkName);
+        const tgtCard = tgtName ? prevAi.playerBoard.find(c => c.name === tgtName) : null;
+        setTimeout(() => {
+          SFX.play("attack");
+          if (atkCard) setAnimUids(p => ({ ...p, [atkCard.uid]: "attacking" }));
           setTimeout(() => {
-            SFX.play("attack");
-            if (atkCard) setAnimUids(p => ({ ...p, [atkCard.uid]: "attacking" }));
+            if (tgtCard) {
+              setAnimUids(p => ({ ...p, ...(atkCard?{[atkCard.uid]:"attacking"}:{}), [tgtCard.uid]: "hit" }));
+              vfx.add("attackImpact", { duration:500 });
+            } else {
+              // face attack — screen flash + damage number shown by HP diff
+              vfx.add("damage", { amount: 0, flash: true, duration:600 });
+            }
             setTimeout(() => {
-              if (tgtCard) { setAnimUids(p => ({ ...p, ...(atkCard?{[atkCard.uid]:"attacking"}:{}), [tgtCard.uid]: "hit" })); vfx.add("damage", { amount: 0, flash: true }); }
-              else { vfx.add("damage", { amount: 0, flash: true }); } // face attack
-            }, 240);
-          }, delay);
-          delay += 600;
-        });
-      }
+              if (atkCard) setAnimUids(p => { const n={...p}; delete n[atkCard.uid]; return n; });
+              if (tgtCard) setAnimUids(p => { const n={...p}; delete n[tgtCard.uid]; return n; });
+            }, 350);
+          }, 230);
+        }, delay);
+        delay += 700;
+      });
+
       if (Object.keys(anims).length > 0) {
         const hasDying = Object.values(anims).includes("dying");
         if (hasDying) SFX.play("kill");
-        const atkDelay = atkEntries.length * 600;
-        setTimeout(() => { setAnimUids(p => ({ ...p, ...anims })); setTimeout(() => setAnimUids({}), 700); }, atkDelay);
+        const atkDelay = allAtkEntries.length * 700;
+        setTimeout(() => {
+          setAnimUids(p => ({ ...p, ...anims }));
+          setTimeout(() => setAnimUids(p => {
+            const n = {...p};
+            Object.keys(anims).forEach(k => delete n[k]);
+            return n;
+          }), 700);
+        }, atkDelay);
       }
-      // VFX: my face was hit (HP loss)
+
+      // VFX: my face was hit (HP loss on my side)
       const myHPKey = myRole+"HP";
-      if (gs[myHPKey] < prev[myHPKey]) { vfx.add("damage", { amount: prev[myHPKey]-gs[myHPKey] }); SFX.play("attack"); }
+      if (gs[myHPKey] < prev[myHPKey]) { vfx.add("damage", { amount: prev[myHPKey]-gs[myHPKey], duration:1000 }); SFX.play("attack"); }
+
+      // VFX: my creature healed
+      const myHealedCard = currAi.playerBoard.find(c => { const prev = prevAi.playerBoard.find(p=>p.uid===c.uid); return prev && c.currentHp > prev.currentHp; });
+      if (myHealedCard) { SFX.play("heal"); }
     }
     prevGsRef.current = gs;
   }, [gs]); // eslint-disable-line
@@ -1681,14 +1753,29 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       <div style={{ fontFamily:"'Cinzel',serif", fontSize:20, fontWeight:700, color:gs.drawAnim.first===myRole?"#78cc45":"#e05050", letterSpacing:2, marginBottom:18, animation:"pulse 0.8s infinite" }}>{gs.drawAnim.first===myRole?"YOU GO FIRST!":"OPPONENT GOES FIRST"}</div>
       <button onClick={() => { drawDismissedRef.current = true; setGs(g => ({ ...g, drawAnim: null })); }} style={{ padding:"10px 28px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, color:"#1a1000", cursor:"pointer", letterSpacing:2 }}>BEGIN BATTLE</button>
     </div>)}
-    {/* Fullscreen turn banner — animated center overlay */}
-    {turnBanner && (<div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, display:"flex", alignItems:"center", justifyContent:"center", zIndex:300, pointerEvents:"none" }}>
-      <div style={{ animation:"turnBannerIn 1.4s ease-out forwards", display:"flex", flexDirection:"column", alignItems:"center", gap:10 }}>
-        <div style={{ background:turnBanner==="YOUR TURN"?"linear-gradient(135deg,rgba(20,60,8,0.97),rgba(10,40,5,0.97))":"linear-gradient(135deg,rgba(60,10,10,0.97),rgba(40,5,5,0.97))", border:`2px solid ${turnBanner==="YOUR TURN"?"#78cc45":"#cc4848"}`, borderRadius:16, padding:"18px 56px", fontFamily:"'Cinzel',serif", fontSize:28, fontWeight:900, color:turnBanner==="YOUR TURN"?"#78cc45":"#e05050", letterSpacing:6, whiteSpace:"nowrap", boxShadow:`0 0 60px ${turnBanner==="YOUR TURN"?"#78cc4555":"#cc484855"}, 0 8px 40px rgba(0,0,0,0.8)`, textShadow:`0 0 30px ${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"}` }}>
-          {turnBanner}
+    {/* Fullscreen turn announcement */}
+    {turnBanner && (<div style={{ position:"fixed", inset:0, display:"flex", alignItems:"center", justifyContent:"center", zIndex:300, pointerEvents:"none" }}>
+      <div style={{ animation:"turnStamp 1.5s ease-out forwards", display:"flex", flexDirection:"column", alignItems:"center", gap:0 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:4 }}>
+          <div style={{ height:1, width:100, background:`linear-gradient(90deg,transparent,${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"})` }} />
+          <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, letterSpacing:5, color:turnBanner==="YOUR TURN"?"#78cc4588":"#e0505088" }}>FORGE {"&"} FABLE</span>
+          <div style={{ height:1, width:100, background:`linear-gradient(270deg,transparent,${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"})` }} />
         </div>
-        {turnBanner==="YOUR TURN" && <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#78cc4599", letterSpacing:4 }}>CHOOSE YOUR ACTION</div>}
-        {turnBanner==="OPPONENT'S TURN" && <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#cc484899", letterSpacing:4 }}>WAIT FOR OPPONENT</div>}
+        <div style={{ background:turnBanner==="YOUR TURN"?"linear-gradient(135deg,#071a02 0%,#0d2804 50%,#071a02 100%)":"linear-gradient(135deg,#1a0202 0%,#280404 50%,#1a0202 100%)", border:`2px solid ${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"}`, borderRadius:4, padding:"18px 72px", textAlign:"center", position:"relative", overflow:"hidden", boxShadow:`0 0 100px ${turnBanner==="YOUR TURN"?"#78cc4566":"#e0505066"}, inset 0 0 50px ${turnBanner==="YOUR TURN"?"#78cc4510":"#e0505010"}` }}>
+          <span style={{ position:"absolute", top:5, left:10, fontSize:11, color:turnBanner==="YOUR TURN"?"#78cc4555":"#e0505055" }}>✦</span>
+          <span style={{ position:"absolute", top:5, right:10, fontSize:11, color:turnBanner==="YOUR TURN"?"#78cc4555":"#e0505055" }}>✦</span>
+          <span style={{ position:"absolute", bottom:5, left:10, fontSize:11, color:turnBanner==="YOUR TURN"?"#78cc4555":"#e0505055" }}>✦</span>
+          <span style={{ position:"absolute", bottom:5, right:10, fontSize:11, color:turnBanner==="YOUR TURN"?"#78cc4555":"#e0505055" }}>✦</span>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:40, fontWeight:900, color:turnBanner==="YOUR TURN"?"#78cc45":"#e05050", letterSpacing:10, textShadow:`0 0 50px ${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"}, 0 2px 6px rgba(0,0,0,0.95)`, lineHeight:1 }}>{turnBanner}</div>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, letterSpacing:6, color:turnBanner==="YOUR TURN"?"#78cc4588":"#e0505088", marginTop:8 }}>
+            {turnBanner==="YOUR TURN"?"— COMMAND YOUR FORCES —":`— ${(opponentName||"OPPONENT").toUpperCase()} IS MOVING —`}
+          </div>
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:12, marginTop:4 }}>
+          <div style={{ height:1, width:100, background:`linear-gradient(90deg,transparent,${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"})` }} />
+          <div style={{ width:6, height:6, borderRadius:"50%", background:turnBanner==="YOUR TURN"?"#78cc45":"#e05050", boxShadow:`0 0 12px ${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"}`, animation:"pulse 0.8s infinite" }} />
+          <div style={{ height:1, width:100, background:`linear-gradient(270deg,transparent,${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"})` }} />
+        </div>
       </div>
     </div>)}
     {/* Inline turn status bar */}
@@ -2061,7 +2148,7 @@ function MatchmakingScreen({ user, onMatch, onCancel }) {
   );
 }
 // ═══ MATCH SETUP ═════════════════════════════════════════════
-function GameTab({ user, onUpdateUser }) {
+function GameTab({ user, onUpdateUser, setInPvpMatch }) {
   const [matchConfig, setMatchConfig] = useState(null);
   const [selectedDeck, setSelectedDeck] = useState(null);
   const [matchmaking, setMatchmaking] = useState(false);
@@ -2090,7 +2177,7 @@ function GameTab({ user, onUpdateUser }) {
     </div>
     <p style={{ fontSize:10, color:"#504030", textAlign:"center", margin:0 }}>Build and manage decks in the <strong style={{ color:"#806040" }}>Cards</strong> tab.</p>
   </div>);
-  if (matchConfig?.mode === "pvp") return (<PvpBattleScreen user={user} matchConfig={matchConfig} onExit={() => setMatchConfig(null)} onUpdateUser={onUpdateUser} />);
+  if (matchConfig?.mode === "pvp") return (<PvpBattleScreen user={user} matchConfig={matchConfig} onExit={() => { setMatchConfig(null); setInPvpMatch?.(false); }} onUpdateUser={onUpdateUser} setInPvpMatch={setInPvpMatch} />);
   return (<BattleScreen user={user} onUpdateUser={onUpdateUser} matchConfig={matchConfig} onExit={() => setMatchConfig(null)} />);
 }
 // ═══ PACK OPENING ════════════════════════════════════════════════════════════
@@ -2592,27 +2679,41 @@ function HomeScreen({ setTab, user }) {
     </section>
 
     {/* Card showcase strip — alt art spotlight */}
-    <section style={{ background:"linear-gradient(180deg,rgba(0,0,0,0.7) 0%,rgba(8,6,4,0.98) 100%)", borderTop:"1px solid #2a2010", padding:"36px 28px 28px", overflow:"hidden" }}>
-      <div style={{ maxWidth:1100, margin:"0 auto" }}>
-        <div style={{ textAlign:"center", marginBottom:22 }}>
-          <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#604838", letterSpacing:4, fontWeight:700 }}>ANIME ISLAND ALT ART SHOWCASE</div>
-          <div style={{ fontSize:9, color:"#3a2820", marginTop:4 }}>Collect exclusive alt arts from the store</div>
+    {(() => {
+      // Show 4 rare/epic picks + 1 legendary as the "ultra rare"
+      const SHOWCASE = ["tangle","weaver","kraken","bloodmage","velrun"];
+      const showcaseCards = SHOWCASE.map(id => {
+        const arts = ALT_ARTS[id]; if (!arts) return null;
+        const altArt = arts.find(a=>a.setId==="anime_island"); if (!altArt) return null;
+        const base = POOL.find(c=>c.id===id); if (!base) return null;
+        return { ...base, imageUrl: altArt.imageUrl, _altRarity: altArt.rarity };
+      }).filter(Boolean);
+      return (
+      <section style={{ background:"linear-gradient(180deg,rgba(0,0,0,0.7) 0%,rgba(8,6,4,0.98) 100%)", borderTop:"1px solid #2a2010", padding:"36px 28px 28px", overflow:"hidden" }}>
+        <div style={{ maxWidth:1100, margin:"0 auto" }}>
+          <div style={{ textAlign:"center", marginBottom:22 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#604838", letterSpacing:4, fontWeight:700 }}>ANIME ISLAND · FEATURED CARDS</div>
+            <div style={{ fontSize:9, color:"#3a2820", marginTop:4 }}>4 rares · 1 ultra rare legendary · collect from the store</div>
+          </div>
+          <div style={{ display:"flex", gap:18, justifyContent:"center", flexWrap:"nowrap", overflowX:"auto", paddingBottom:8, alignItems:"flex-end" }}>
+            {showcaseCards.map((card, i) => {
+              const isLegendary = card._altRarity === "Legendary" || card.rarity === "Legendary";
+              return (
+                <div key={card.id} style={{ flexShrink:0, animation:`cardReveal 0.5s ease-out ${i*0.1}s both`, filter:`drop-shadow(0 8px 28px ${card.border}66)`, transform: isLegendary ? "scale(1.14) translateY(-8px)" : "none", position:"relative" }}>
+                  {isLegendary && (
+                    <div style={{ position:"absolute", top:-18, left:"50%", transform:"translateX(-50%)", background:"linear-gradient(135deg,#e8c060,#c89020)", borderRadius:20, padding:"3px 10px", fontFamily:"'Cinzel',serif", fontSize:7, fontWeight:900, color:"#1a1000", letterSpacing:2, whiteSpace:"nowrap", boxShadow:"0 2px 10px #e8c06066", zIndex:5 }}>
+                      ✦ ULTRA RARE
+                    </div>
+                  )}
+                  <Card card={card} size="sm" />
+                </div>
+              );
+            })}
+          </div>
         </div>
-        <div style={{ display:"flex", gap:14, justifyContent:"center", flexWrap:"nowrap", overflowX:"auto", paddingBottom:8 }}>
-          {Object.entries(ALT_ARTS).filter(([id, arts]) => arts.some(a=>a.setId==="anime_island")).slice(0,7).map(([cardId, arts], i) => {
-            const baseCard = POOL.find(c=>c.id===cardId);
-            const altArt = arts.find(a=>a.setId==="anime_island");
-            if (!baseCard || !altArt) return null;
-            const displayCard = { ...baseCard, imageUrl: altArt.imageUrl };
-            return (
-              <div key={cardId} style={{ flexShrink:0, animation:`cardReveal 0.5s ease-out ${i*0.09}s both`, filter:`drop-shadow(0 8px 24px ${baseCard.border}55)` }}>
-                <Card card={displayCard} size="sm" />
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
+      </section>
+      );
+    })()}
 
     {/* Anime Island Banner */}
     <section style={{ background:"linear-gradient(135deg,#0e0620,#140830)", borderTop:"2px solid #ff80c033", borderBottom:"1px solid #ff80c022", padding:"18px 28px" }}>
@@ -2639,45 +2740,65 @@ function HomeScreen({ setTab, user }) {
         </div>
       </div>
     </section>
-    {/* Recent Battles Feed */}
-    {recentBattles.length > 0 && (
-    <section style={{ background:"linear-gradient(180deg,#080608,#060408)", borderTop:"1px solid #1a1218", padding:"28px 28px 32px" }}>
+    {/* Live Arena Feed — 8-bit arcade style */}
+    <section style={{ background:"#020402", borderTop:"2px solid #1a2a10", borderBottom:"1px solid #0a1208", padding:"24px 28px 28px", fontFamily:"monospace" }}>
       <div style={{ maxWidth:1100, margin:"0 auto" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:18 }}>
-          <div style={{ width:7, height:7, borderRadius:"50%", background:"#78cc45", boxShadow:"0 0 10px #78cc4599", animation:"pulse 2s infinite" }} />
-          <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#78cc45", letterSpacing:4, fontWeight:700 }}>RECENT BATTLES</span>
+        {/* Header */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <div style={{ width:8, height:8, background:"#00ff41", boxShadow:"0 0 10px #00ff41", animation:"pulse 1s infinite" }} />
+            <span style={{ fontSize:11, color:"#00ff41", letterSpacing:4, fontWeight:700 }}>▶ LIVE ARENA FEED</span>
+          </div>
+          <span style={{ fontSize:9, color:"#1a3a10", letterSpacing:2 }}>FORGE {"&"} FABLE NETWORK</span>
         </div>
-        <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
-          {recentBattles.map((b,i) => {
-            const p1Won = b.winner === "p1";
-            return (
-              <div key={b.id} style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.03)", border:"1px solid #201818", borderRadius:10, padding:"10px 14px", animation:`cardReveal 0.4s ease-out ${i*0.06}s both`, minWidth:240, flex:"0 0 auto" }}>
-                {/* P1 */}
-                <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
-                  <div style={{ width:32, height:32, borderRadius:"50%", overflow:"hidden", border:`2px solid ${p1Won?"#78cc45":"#604040"}`, display:"flex", alignItems:"center", justifyContent:"center", background:"#1a1010", fontSize:11, fontFamily:"'Cinzel',serif", color:p1Won?"#78cc45":"#806060", fontWeight:700 }}>
-                    {b.p1.avatar_url ? <img src={b.p1.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (b.p1.name||"?").slice(0,2).toUpperCase()}
+        {/* Pixel border box */}
+        <div style={{ border:"1px solid #0f2a08", background:"#010301", padding:"12px 0", position:"relative", overflow:"hidden" }}>
+          {/* Scanlines overlay */}
+          <div style={{ position:"absolute", inset:0, backgroundImage:"repeating-linear-gradient(0deg,rgba(0,255,65,0.02) 0px,rgba(0,255,65,0.02) 1px,transparent 1px,transparent 3px)", pointerEvents:"none", zIndex:1 }} />
+          {recentBattles.length === 0 ? (
+            <div style={{ padding:"20px 20px", textAlign:"center" }}>
+              <div style={{ fontSize:10, color:"#1a4010", letterSpacing:3, marginBottom:6 }}>NO BATTLES RECORDED YET</div>
+              <div style={{ fontSize:9, color:"#0f2a08", letterSpacing:2 }}>BE THE FIRST TO FIGHT</div>
+            </div>
+          ) : (
+            <div style={{ display:"flex", flexDirection:"column", gap:0, position:"relative", zIndex:2 }}>
+              {recentBattles.map((b, i) => {
+                const p1Won = b.winner === "p1";
+                const winnerName = p1Won ? b.p1.name : b.p2.name;
+                const loserName = p1Won ? b.p2.name : b.p1.name;
+                const minutesAgo = b.date ? Math.round((Date.now() - new Date(b.date).getTime()) / 60000) : null;
+                const timeStr = minutesAgo === null ? "" : minutesAgo < 1 ? "just now" : minutesAgo < 60 ? `${minutesAgo}m ago` : `${Math.round(minutesAgo/60)}h ago`;
+                return (
+                  <div key={b.id} style={{ display:"flex", alignItems:"center", padding:"8px 16px", borderBottom: i < recentBattles.length-1 ? "1px solid #0a1a08" : "none", gap:8, animation:`fadeIn 0.3s ease-out ${i*0.04}s both` }}>
+                    {/* Row number */}
+                    <span style={{ fontSize:8, color:"#0f3008", minWidth:16, textAlign:"right" }}>{String(i+1).padStart(2,"0")}</span>
+                    <span style={{ fontSize:8, color:"#0f2208", margin:"0 4px" }}>│</span>
+                    {/* Winner */}
+                    <span style={{ fontSize:10, color:"#00ff41", fontWeight:700, minWidth:90, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", textShadow:"0 0 8px #00ff4155" }}>{(winnerName||"???").toUpperCase()}</span>
+                    {/* VS arrow */}
+                    <span style={{ fontSize:9, color:"#c8a020", fontWeight:700, minWidth:24, textAlign:"center" }}>⚔</span>
+                    {/* Loser */}
+                    <span style={{ fontSize:10, color:"#c04040", minWidth:90, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{(loserName||"???").toUpperCase()}</span>
+                    {/* Spacer */}
+                    <span style={{ flex:1 }} />
+                    {/* Turn count */}
+                    <span style={{ fontSize:8, color:"#1a4010", letterSpacing:1 }}>{b.turns}T</span>
+                    <span style={{ fontSize:8, color:"#0f2208", margin:"0 4px" }}>│</span>
+                    {/* Time */}
+                    <span style={{ fontSize:8, color:"#1a3010", minWidth:52, textAlign:"right" }}>{timeStr}</span>
                   </div>
-                  <span style={{ fontSize:8, color:p1Won?"#78cc45":"#604040", fontFamily:"'Cinzel',serif", fontWeight:700 }}>{p1Won?"WIN":"LOSS"}</span>
-                </div>
-                {/* VS + turns */}
-                <div style={{ textAlign:"center", flex:1 }}>
-                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#403030", letterSpacing:2, marginBottom:2 }}>VS</div>
-                  <div style={{ fontSize:8, color:"#504038" }}>{b.turns} turns</div>
-                  <div style={{ fontSize:7, color:"#302820", marginTop:2 }}>{b.date ? new Date(b.date).toLocaleDateString() : ""}</div>
-                </div>
-                {/* P2 */}
-                <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
-                  <div style={{ width:32, height:32, borderRadius:"50%", overflow:"hidden", border:`2px solid ${!p1Won?"#78cc45":"#604040"}`, display:"flex", alignItems:"center", justifyContent:"center", background:"#1a1010", fontSize:11, fontFamily:"'Cinzel',serif", color:!p1Won?"#78cc45":"#806060", fontWeight:700 }}>
-                    {b.p2.avatar_url ? <img src={b.p2.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (b.p2.name||"?").slice(0,2).toUpperCase()}
-                  </div>
-                  <span style={{ fontSize:8, color:!p1Won?"#78cc45":"#604040", fontFamily:"'Cinzel',serif", fontWeight:700 }}>{!p1Won?"WIN":"LOSS"}</span>
-                </div>
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          )}
+        </div>
+        {/* Pixel footer */}
+        <div style={{ display:"flex", justifyContent:"space-between", marginTop:6, padding:"0 2px" }}>
+          <span style={{ fontSize:7, color:"#0a1a08", letterSpacing:2 }}>UPDATED LIVE</span>
+          <span style={{ fontSize:7, color:"#0a1a08", letterSpacing:2 }}>{recentBattles.length}/10 MATCHES</span>
         </div>
       </div>
-    </section>)}
+    </section>
     {/* Bottom info bar */}
     <div style={{ background:"rgba(0,0,0,0.5)", borderTop:"1px solid rgba(255,255,255,0.05)", padding:"10px 28px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
       <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#504038", letterSpacing:2 }}>FORGE {"&"} FABLE</div>
@@ -2905,21 +3026,246 @@ function ForgeScreen() {
     </div>
   );
 }
-function CommunityScreen() {
+// ─── AI Card Forge (rule-based generator, no external API key needed) ─────────
+function generateCardConcept(idea) {
+  const factions = ["Thornwood","Shattered Expanse","Azure Deep","Ashfen","Ironmarch","Sunveil","Bloodpact"];
+  const types = ["Creature","Spell","Environment"];
+  const keywords = ["Swift","Shield","Echo","Bleed","Fracture","Resonate","Anchor"];
+  const idea_lower = idea.toLowerCase();
+  // Faction heuristics
+  let faction = factions[Math.floor(Math.random() * factions.length)];
+  if (/fire|flame|ash|burn|ember/.test(idea_lower)) faction = "Ashfen";
+  else if (/water|ocean|sea|tide|wave|deep/.test(idea_lower)) faction = "Azure Deep";
+  else if (/shadow|void|rift|crystal|shard/.test(idea_lower)) faction = "Shattered Expanse";
+  else if (/iron|steel|forge|war|march|machine/.test(idea_lower)) faction = "Ironmarch";
+  else if (/sun|gold|light|veil|dawn|glow/.test(idea_lower)) faction = "Sunveil";
+  else if (/blood|death|pact|sacrifice|dark/.test(idea_lower)) faction = "Bloodpact";
+  else if (/forest|grove|leaf|vine|thorn|wolf|beast/.test(idea_lower)) faction = "Thornwood";
+  // Type heuristics
+  let type = "Creature";
+  if (/spell|cast|magic|curse|bolt|wave|blast/.test(idea_lower)) type = "Spell";
+  else if (/zone|field|terrain|land|realm|enviro/.test(idea_lower)) type = "Environment";
+  // Keywords
+  const pickedKws = keywords.filter(k => {
+    const n = k.toLowerCase();
+    if (n === "swift" && /fast|quick|swift|speed|dash/.test(idea_lower)) return true;
+    if (n === "shield" && /shield|guard|protect|defend|armor/.test(idea_lower)) return true;
+    if (n === "echo" && /echo|ghost|copy|mirror/.test(idea_lower)) return true;
+    if (n === "bleed" && /bleed|wound|poison|drain|rot/.test(idea_lower)) return true;
+    if (n === "fracture" && /split|fracture|clone|two|double/.test(idea_lower)) return true;
+    return false;
+  }).slice(0, 2);
+  if (pickedKws.length === 0 && Math.random() > 0.4) pickedKws.push(keywords[Math.floor(Math.random() * keywords.length)]);
+  // Stats
+  const atk = type === "Creature" ? 1 + Math.floor(Math.random() * 5) : null;
+  const hp  = type === "Creature" ? 1 + Math.floor(Math.random() * 6) : null;
+  const cost = 1 + Math.floor(Math.random() * 5);
+  // Name construction
+  const prefixes = { Thornwood:["Thorn","Grove","Wild","Root","Bark"], "Shattered Expanse":["Rift","Void","Shard","Echo","Prism"], "Azure Deep":["Tide","Coral","Deep","Wave","Shell"], Ashfen:["Ash","Ember","Scorch","Pyre","Char"], Ironmarch:["Iron","Steel","Forge","March","Bolt"], Sunveil:["Sun","Dawn","Veil","Gilded","Radiant"], Bloodpact:["Blood","Dread","Soul","Hex","Vile"] };
+  const suffixes = { Creature:["Walker","Warden","Stalker","Herald","Caller","Kin"], Spell:["Strike","Bolt","Surge","Wave","Pulse","Rend"], Environment:["Hollow","Expanse","Depths","Wastes","Fields","Fen"] };
+  const px = prefixes[faction]||[]; const sx = suffixes[type]||[];
+  const name = `${px[Math.floor(Math.random()*px.length)]||""}${sx[Math.floor(Math.random()*sx.length)]||""}`;
+  // Ability text
+  const abilityTemplates = {
+    Creature: [
+      `When ${name} enters the battlefield, deal 1 damage to the lowest-HP enemy.`,
+      `${name} gains +${Math.ceil(atk/2)} ATK for each friendly creature on the board.`,
+      `At the start of your turn, restore 1 HP to your hero.`,
+      `When ${name} is destroyed, draw a card.`,
+      `${pickedKws[0]||"Swift"}. ${name} cannot be targeted by spells.`,
+    ],
+    Spell: [
+      `Deal ${2+Math.floor(Math.random()*3)} damage to a target creature.`,
+      `Restore ${2+Math.floor(Math.random()*3)} HP to your hero.`,
+      `Give all friendly creatures +1/+1 until the end of your turn.`,
+      `Destroy a creature with ${Math.ceil(cost/2)} or less ATK.`,
+    ],
+    Environment: [
+      `While active, all creatures enter with +1 HP. Revert on opponent's third turn.`,
+      `At the start of each turn, deal 1 damage to the enemy hero.`,
+      `All spells cost 1 less energy while this environment is in play.`,
+    ],
+  };
+  const tmpl = abilityTemplates[type]||abilityTemplates.Creature;
+  const ability = tmpl[Math.floor(Math.random()*tmpl.length)];
+  const rarity = Math.random() < 0.08 ? "Legendary" : Math.random() < 0.2 ? "Epic" : Math.random() < 0.4 ? "Rare" : Math.random() < 0.6 ? "Uncommon" : "Common";
+  return { name, faction, type, cost, atk, hp, ability, keywords: pickedKws, rarity };
+}
+
+function CommunityScreen({ user }) {
+  const [idea, setIdea] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [generated, setGenerated] = useState(null);
+  const [communityCards, setCommunityCards] = useState([]);
+  const [posting, setPosting] = useState(false);
+  const [myVotes, setMyVotes] = useState({});
+  const [activeTab, setActiveTab] = useState("forge"); // "forge" | "wall"
+
+  useEffect(() => { loadCards(); }, []);
+
+  const loadCards = async () => {
+    try {
+      const { data } = await supabase.from("community_cards").select("*").order("votes", { ascending: false }).limit(30);
+      if (data) setCommunityCards(data);
+    } catch(_) {}
+  };
+
+  const forge = () => {
+    if (!idea.trim() || generating) return;
+    setGenerating(true);
+    SFX.play("ability");
+    setTimeout(() => {
+      const concept = generateCardConcept(idea);
+      setGenerated(concept);
+      setGenerating(false);
+      SFX.play("rare_reveal");
+    }, 1200 + Math.random() * 600);
+  };
+
+  const postToWall = async () => {
+    if (!generated || !user || posting) return;
+    setPosting(true);
+    try {
+      await supabase.from("community_cards").insert([{
+        user_id: user.id, user_name: user.name || "Anonymous",
+        name: generated.name, faction: generated.faction, type: generated.type,
+        cost: generated.cost, atk: generated.atk, hp: generated.hp,
+        ability: generated.ability, keywords: generated.keywords, rarity: generated.rarity,
+        original_idea: idea, votes: 0,
+      }]);
+      SFX.play("victory");
+      setGenerated(null); setIdea("");
+      await loadCards();
+      setActiveTab("wall");
+    } catch(e) { alert("Could not post — make sure community_cards table exists in Supabase."); }
+    setPosting(false);
+  };
+
+  const vote = async (cardId) => {
+    if (!user || myVotes[cardId]) return;
+    setMyVotes(p => ({ ...p, [cardId]: true }));
+    SFX.play("card");
+    try {
+      await supabase.rpc("increment_votes", { card_id: cardId }).catch(() =>
+        supabase.from("community_cards").update({ votes: (communityCards.find(c=>c.id===cardId)?.votes||0)+1 }).eq("id", cardId)
+      );
+      setCommunityCards(p => p.map(c => c.id===cardId ? { ...c, votes: (c.votes||0)+1 } : c));
+    } catch(_) {}
+  };
+
+  const rarityColor = { Common:"#8a8a7a", Uncommon:"#c0922a", Rare:"#5090ff", Epic:"#a860d8", Legendary:"#f0b818" };
+
   return (
-    <div style={{ maxWidth: 700, margin: "0 auto", padding: "60px 24px", textAlign: "center" }}>
-      <div style={{ width: 80, height: 80, borderRadius: "50%", background: "radial-gradient(circle,#5090d022,transparent)", border: "2px solid #5090d033", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontFamily: "'Cinzel',serif", fontSize: 32, color: "#5090d0" }}>C</div>
-      <h2 style={{ fontFamily: "'Cinzel',serif", fontSize: 28, fontWeight: 700, color: "#5090d0", margin: "0 0 12px" }}>Community Hub</h2>
-      <p style={{ fontSize: 14, color: "#a09060", lineHeight: 1.8, maxWidth: 400, margin: "0 auto 24px" }}>Share decks, vote on card designs, view leaderboards, and connect with other players.</p>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, maxWidth: 360, margin: "0 auto 28px" }}>
-        {[["Leaderboard", "Ranked ELO standings"], ["Deck Share", "Share and copy deck builds"], ["Card Vote", "Vote on community card designs"], ["Chat", "In-game messaging"]].map(([t, d]) => (
-          <div key={t} style={{ background: "#121008", border: "1px solid #242010", borderRadius: 10, padding: 14 }}>
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, color: "#5090d0", fontWeight: 700, marginBottom: 4 }}>{t}</div>
-            <div style={{ fontSize: 8, color: "#706040", lineHeight: 1.5 }}>{d}</div>
-          </div>
+    <div style={{ maxWidth:900, margin:"0 auto", padding:"32px 24px 60px" }}>
+      {/* Header */}
+      <div style={{ textAlign:"center", marginBottom:28 }}>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#504038", letterSpacing:4, marginBottom:8 }}>COMMUNITY HUB</div>
+        <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:26, fontWeight:900, color:"#e8c060", margin:"0 0 6px", textShadow:"0 0 40px #e8c06044" }}>Card Forge</h2>
+        <p style={{ fontSize:12, color:"#806040", maxWidth:460, margin:"0 auto", lineHeight:1.8 }}>Describe your card idea. The forge generates a full card — name, abilities, faction, stats. Post it to the community for votes.</p>
+      </div>
+      {/* Tab switcher */}
+      <div style={{ display:"flex", justifyContent:"center", gap:0, marginBottom:24, border:"1px solid #3a2c10", borderRadius:10, overflow:"hidden", maxWidth:320, margin:"0 auto 28px" }}>
+        {[["forge","⚗ FORGE"],["wall","🗳 VOTE WALL"]].map(([id,label])=>(
+          <button key={id} onClick={()=>setActiveTab(id)} style={{ flex:1, padding:"10px 0", fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, letterSpacing:2, color:activeTab===id?"#1a1000":"#806040", background:activeTab===id?"linear-gradient(135deg,#c89010,#f0c040)":"transparent", border:"none", cursor:"pointer", transition:"all .18s" }}>{label}</button>
         ))}
       </div>
-      <div style={{ padding: "12px 28px", background: "rgba(255,255,255,0.04)", border: "1px solid #303020", borderRadius: 8, fontFamily: "'Cinzel',serif", fontSize: 12, color: "#606050", letterSpacing: 3, display: "inline-block" }}>COMING SOON</div>
+
+      {activeTab === "forge" && (
+        <div style={{ display:"grid", gridTemplateColumns: generated ? "1fr 1fr" : "1fr", gap:24, alignItems:"start" }}>
+          {/* Input panel */}
+          <div style={{ background:"linear-gradient(160deg,#141008,#0e0c06)", border:"1px solid #3a2c10", borderRadius:14, padding:24 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#e8a020", letterSpacing:3, marginBottom:12, fontWeight:700 }}>✦ DESCRIBE YOUR CARD IDEA</div>
+            <textarea value={idea} onChange={e=>setIdea(e.target.value)} placeholder="e.g. A shadow wolf that bleeds enemies and hunts in packs..." style={{ width:"100%", minHeight:100, background:"rgba(0,0,0,0.5)", border:"1px solid #2a2010", borderRadius:8, padding:"10px 12px", color:"#e0d8c0", fontFamily:"'Lora',Georgia,serif", fontSize:12, lineHeight:1.7, outline:"none", resize:"vertical", boxSizing:"border-box" }} />
+            <div style={{ display:"flex", gap:10, marginTop:12, flexWrap:"wrap" }}>
+              {["A healing spirit","Fire beast with shield","Echo spell that copies","Iron war golem"].map(hint=>(
+                <button key={hint} onClick={()=>setIdea(hint)} style={{ padding:"4px 10px", background:"rgba(232,192,96,0.06)", border:"1px solid #3a2c1044", borderRadius:20, fontSize:9, color:"#806040", fontFamily:"'Cinzel',serif", cursor:"pointer" }}>{hint}</button>
+              ))}
+            </div>
+            <button onClick={forge} disabled={!idea.trim() || generating} style={{ marginTop:16, width:"100%", padding:"13px", background: generating ? "rgba(200,144,16,0.3)" : "linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:13, fontWeight:700, letterSpacing:3, color: generating ? "#806020" : "#1a1000", cursor: idea.trim() && !generating ? "pointer" : "default", boxShadow: generating ? "none" : "0 4px 20px rgba(200,144,16,0.4)", transition:"all .2s" }}>
+              {generating ? "⚗ FORGING..." : "⚗ FORGE CARD"}
+            </button>
+            {generating && <div style={{ textAlign:"center", marginTop:10, fontFamily:"'Cinzel',serif", fontSize:9, color:"#806040", letterSpacing:3, animation:"pulse 1s infinite" }}>CHANNELING THE ARCANE...</div>}
+          </div>
+          {/* Generated card result */}
+          {generated && (
+            <div style={{ background:"linear-gradient(160deg,#12100a,#0c0a06)", border:"1px solid #4a3818", borderRadius:14, padding:24, animation:"fadeIn 0.4s ease-out" }}>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#e8a020", letterSpacing:3, marginBottom:14, fontWeight:700 }}>✦ FORGED CARD</div>
+              {/* Card preview */}
+              <div style={{ background:"linear-gradient(160deg,#1a1408,#0e0c06)", border:`2px solid ${rarityColor[generated.rarity]||"#e8c060"}`, borderRadius:12, padding:16, marginBottom:14, position:"relative" }}>
+                {/* Rarity badge */}
+                <div style={{ position:"absolute", top:8, right:10, fontSize:8, color:rarityColor[generated.rarity], background:"rgba(0,0,0,0.7)", padding:"2px 8px", borderRadius:10, border:`1px solid ${rarityColor[generated.rarity]}44`, fontFamily:"'Cinzel',serif", fontWeight:700 }}>{(generated.rarity||"Common").toUpperCase()}</div>
+                {/* Cost */}
+                <div style={{ position:"absolute", top:8, left:10, width:28, height:28, borderRadius:"50%", background:"radial-gradient(#ffe040,#d09000)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontWeight:900, fontSize:13, color:"#1a1000" }}>{generated.cost}</div>
+                <div style={{ paddingTop:8 }}>
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:900, color:"#f0e8d0", margin:"0 0 2px", textAlign:"center" }}>{generated.name}</div>
+                  <div style={{ fontSize:9, color:"#806040", textAlign:"center", marginBottom:10 }}>{generated.type} · <span style={{ color:GLOW[generated.faction]||"#e8c060" }}>{generated.faction}</span></div>
+                  {generated.keywords.length > 0 && (
+                    <div style={{ display:"flex", gap:5, flexWrap:"wrap", justifyContent:"center", marginBottom:10 }}>
+                      {generated.keywords.map(kw=>{ const kd=KW.find(k=>k.name===kw); return (<span key={kw} style={{ fontSize:9, padding:"2px 8px", borderRadius:12, background:(kd?.color||"#e8c060")+"22", color:kd?.color||"#e8c060", border:"1px solid "+(kd?.color||"#e8c060")+"44" }}>{kd?.icon||"◆"} {kw}</span>); })}
+                    </div>
+                  )}
+                  {generated.type==="Creature" && <div style={{ display:"flex", gap:16, justifyContent:"center", marginBottom:10 }}>
+                    <span style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#e05050" }}>⚔ {generated.atk}</span>
+                    <span style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#50c060" }}>♥ {generated.hp}</span>
+                  </div>}
+                  <div style={{ fontSize:11, color:"#c0b890", lineHeight:1.7, borderTop:"1px solid #2a2010", paddingTop:8 }}>{generated.ability}</div>
+                </div>
+              </div>
+              {/* Actions */}
+              {user ? (
+                <button onClick={postToWall} disabled={posting} style={{ width:"100%", padding:"11px", background:"linear-gradient(135deg,#204080,#3060c0)", border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, letterSpacing:2, color:"#e0f0ff", cursor: posting?"default":"pointer", boxShadow:"0 4px 18px rgba(50,100,220,0.35)" }}>
+                  {posting ? "POSTING..." : "POST TO COMMUNITY ✦"}
+                </button>
+              ) : <div style={{ fontSize:10, color:"#504030", textAlign:"center", fontFamily:"'Cinzel',serif", letterSpacing:2 }}>SIGN IN TO POST</div>}
+              <button onClick={forge} style={{ marginTop:8, width:"100%", padding:"8px", background:"transparent", border:"1px solid #3a2c10", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, color:"#806040", cursor:"pointer" }}>RE-FORGE</button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === "wall" && (
+        <div>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#504038", letterSpacing:3, fontWeight:700 }}>COMMUNITY CARDS · SORTED BY VOTES</div>
+            <button onClick={loadCards} style={{ padding:"5px 12px", background:"transparent", border:"1px solid #3a2010", borderRadius:7, fontSize:9, color:"#806040", fontFamily:"'Cinzel',serif", cursor:"pointer" }}>REFRESH</button>
+          </div>
+          {communityCards.length === 0 ? (
+            <div style={{ textAlign:"center", padding:"48px 24px", background:"rgba(0,0,0,0.3)", borderRadius:12, border:"1px solid #1a1810" }}>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:14, color:"#3a3020", marginBottom:8 }}>No cards forged yet</div>
+              <div style={{ fontSize:11, color:"#2a2010" }}>Be the first to forge and post a card!</div>
+            </div>
+          ) : (
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))", gap:14 }}>
+              {communityCards.map((card, i) => (
+                <div key={card.id} style={{ background:"linear-gradient(160deg,#12100a,#0c0a06)", border:`1px solid ${rarityColor[card.rarity]||"#3a2810"}55`, borderRadius:12, padding:16, animation:`cardReveal 0.35s ease-out ${i*0.04}s both`, position:"relative" }}>
+                  {/* Rarity bar */}
+                  <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,transparent,${rarityColor[card.rarity]||"#e8c060"},transparent)`, borderRadius:"12px 12px 0 0" }} />
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
+                    <div>
+                      <div style={{ fontFamily:"'Cinzel',serif", fontSize:14, fontWeight:900, color:"#f0e8d0" }}>{card.name}</div>
+                      <div style={{ fontSize:9, color:"#604030", marginTop:1 }}>{card.type} · <span style={{ color:GLOW[card.faction]||"#e8c060" }}>{card.faction}</span></div>
+                    </div>
+                    <div style={{ textAlign:"right" }}>
+                      <div style={{ fontSize:8, color:rarityColor[card.rarity], fontFamily:"'Cinzel',serif", fontWeight:700 }}>{card.rarity}</div>
+                      {card.type==="Creature" && <div style={{ fontSize:9, color:"#a08060", marginTop:2 }}><span style={{ color:"#e05050" }}>⚔{card.atk}</span> <span style={{ color:"#50c060" }}>♥{card.hp}</span></div>}
+                    </div>
+                  </div>
+                  {card.keywords?.length > 0 && <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginBottom:6 }}>
+                    {card.keywords.map(kw=>{ const kd=KW.find(k=>k.name===kw); return (<span key={kw} style={{ fontSize:8, padding:"1px 6px", borderRadius:10, background:(kd?.color||"#e8c060")+"18", color:kd?.color||"#e8c060", border:"1px solid "+(kd?.color||"#e8c060")+"33" }}>{kw}</span>); })}
+                  </div>}
+                  <div style={{ fontSize:10, color:"#a09070", lineHeight:1.6, marginBottom:10, borderTop:"1px solid #1a1810", paddingTop:8 }}>{card.ability}</div>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <span style={{ fontSize:9, color:"#3a2a18" }}>by {card.user_name}</span>
+                    <button onClick={()=>vote(card.id)} disabled={!!myVotes[card.id] || !user} style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 12px", background: myVotes[card.id] ? "rgba(80,180,80,0.15)" : "rgba(232,192,96,0.08)", border:`1px solid ${myVotes[card.id]?"#50c06055":"#3a2c1055"}`, borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:myVotes[card.id]?"#50c060":"#806040", cursor: !myVotes[card.id] && user ? "pointer" : "default" }}>
+                      {myVotes[card.id]?"✓":""} ▲ {card.votes||0}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -2935,7 +3281,7 @@ const NAV = [
 ];
 
 export default function App() {
-  const [tab, setTab] = useState("home"); const { user, loading, login, logout, update, completeProfile } = useAuth(); const [showProfile, setShowProfile] = useState(false); const [showPatchNotes, setShowPatchNotes] = useState(true);
+  const [tab, setTab] = useState("home"); const { user, loading, login, logout, update, completeProfile } = useAuth(); const [showProfile, setShowProfile] = useState(false); const [showPatchNotes, setShowPatchNotes] = useState(true); const [inPvpMatch, setInPvpMatch] = useState(false);
   if (loading) return (<div style={{ minHeight: "100vh", background: "#161210", display: "flex", alignItems: "center", justifyContent: "center" }}><div style={{ fontFamily: "'Cinzel',serif", color: "#e8c060", fontSize: 16, letterSpacing: 4, animation: "pulse 1.5s ease-in-out infinite" }}>FORGING...</div></div>);
   return (<div style={{ minHeight: "100vh", background: "#161210", color: "#e8e0d0", fontFamily: "'Lora',Georgia,serif", overflowX: "hidden" }} onClick={() => setShowProfile(false)}>
     <style>{`
@@ -2953,6 +3299,7 @@ export default function App() {
       @keyframes slideDown{0%{opacity:0;transform:translateY(-10px)}100%{opacity:1;transform:translateY(0)}}
       @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
       @keyframes turnBannerIn{0%{opacity:0;transform:translate(-50%,-50%) scale(0.7)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}25%{transform:translate(-50%,-50%) scale(1)}75%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.1)}}
+      @keyframes turnStamp{0%{opacity:0;transform:scale(1.4)}8%{opacity:1;transform:scale(0.94)}16%{transform:scale(1.02)}22%{transform:scale(1)}70%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.05)}}
       @keyframes cardLunge{0%{transform:translateY(0) scale(1)}35%{transform:translateY(-38px) scale(1.06)}65%{transform:translateY(-30px) scale(1.03)}100%{transform:translateY(0) scale(1)}}
       @keyframes cardHit{0%{transform:translate(0,0);filter:none}12%{transform:translate(-10px,5px);filter:brightness(4) saturate(0) drop-shadow(0 0 14px #ff2020)}28%{transform:translate(9px,4px);filter:brightness(2.8) saturate(0.15) drop-shadow(0 0 9px #ff3030)}46%{transform:translate(-6px,2px);filter:brightness(2) drop-shadow(0 0 5px #ff4040)}64%{transform:translate(5px,1px);filter:brightness(1.5)}80%{transform:translate(-3px,0);filter:none}100%{transform:translate(0,0);filter:none}}
       @keyframes cardDie{0%{opacity:1;transform:scale(1) rotate(0deg)}40%{opacity:.7;transform:scale(0.88) rotate(-6deg)}100%{opacity:0;transform:scale(0.55) rotate(-18deg) translateY(20px)}}
@@ -2968,6 +3315,7 @@ export default function App() {
       @keyframes floatBadge{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
       @keyframes dupeToast{0%{opacity:0;transform:translateY(20px) scale(0.8)}15%{opacity:1;transform:translateY(0) scale(1)}75%{opacity:1}100%{opacity:0;transform:translateY(-30px) scale(0.9)}}
       @keyframes vfxHitFlash{0%{opacity:0}10%{opacity:1}100%{opacity:0}}
+      @keyframes vfxHealFlash{0%{opacity:0}15%{opacity:1}60%{opacity:.7}100%{opacity:0}}
       @keyframes vfxRingBurst{0%{opacity:0.9;transform:translate(-50%,-50%) scale(0.1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
       @keyframes vfxSpellFlash{0%{opacity:0}15%{opacity:1}100%{opacity:0}}
       @keyframes cardLunge{0%{transform:translateY(0) scale(1)}30%{transform:translateY(-44px) scale(1.1) rotate(-3deg)}55%{transform:translateY(-36px) scale(1.06) rotate(-1deg)}100%{transform:translateY(0) scale(1) rotate(0deg)}}
@@ -3004,12 +3352,24 @@ export default function App() {
           <div style={{ fontSize: 8, color: "#6a5028", letterSpacing: 3, fontFamily: "'Cinzel',serif", marginTop: 3 }}>v17 · ALPHA</div>
         </div>
       </button>
-      <div style={{ display: "flex", gap: 2 }}>
+      <div style={{ display: "flex", gap: 2, alignItems: "center" }}>
+        {inPvpMatch && (
+          <button onClick={() => setTab("play")} style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 14px", background:"rgba(120,204,69,0.15)", border:"1px solid #78cc4566", borderRadius:8, cursor:"pointer", fontFamily:"'Cinzel',serif", fontSize:9, color:"#78cc45", letterSpacing:2, fontWeight:700, animation:"pulse 2s infinite", marginRight:6 }}>
+            <span style={{ fontSize:12 }}>⚔</span> RETURN TO MATCH
+          </button>
+        )}
         {NAV.map((t) => {
           const active = tab === t.id;
+          const locked = inPvpMatch && t.id !== "play";
           return (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8px 16px", gap: 4, background: active ? "linear-gradient(180deg,rgba(232,192,96,0.18) 0%,rgba(232,192,96,0.06) 100%)" : "transparent", border: "none", borderBottom: active ? "3px solid #e8c060" : "3px solid transparent", cursor: "pointer", minWidth: 68, transition: "all .18s", position: "relative" }}
+            <button key={t.id} onClick={() => {
+              if (locked) {
+                if (!window.confirm("Leave your active PvP match? You'll forfeit if you don't return.")) return;
+                setInPvpMatch(false);
+              }
+              setTab(t.id);
+            }}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8px 16px", gap: 4, background: active ? "linear-gradient(180deg,rgba(232,192,96,0.18) 0%,rgba(232,192,96,0.06) 100%)" : "transparent", border: "none", borderBottom: active ? "3px solid #e8c060" : "3px solid transparent", cursor: "pointer", minWidth: 68, transition: "all .18s", position: "relative", opacity: locked ? 0.45 : 1 }}
               onMouseEnter={e => { if (!active) e.currentTarget.style.background = "rgba(232,192,96,0.07)"; }}
               onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}>
               <span style={{ fontFamily: "'Cinzel',serif", fontSize: 18, fontWeight: 900, color: active ? "#e8c060" : "#b09458", lineHeight: 1, textShadow: active ? "0 0 20px #e8c06088" : "none", transition: "all .18s" }}>{t.icon}</span>
@@ -3066,11 +3426,11 @@ export default function App() {
     </nav>
     <div style={{ position: "relative", zIndex: 1 }} onClick={() => setShowProfile(false)}>
       {tab === "home" && <HomeScreen setTab={setTab} user={user} />}
-      {tab === "play" && <GameTab user={user} onUpdateUser={update} />}
+      {tab === "play" && <GameTab user={user} onUpdateUser={update} setInPvpMatch={setInPvpMatch} />}
       {tab === "store" && <StoreScreen user={user} onUpdateUser={update} />}
       {tab === "collection" && <CollectionScreen user={user} onUpdateUser={update} />}
       {tab === "forge" && <ForgeScreen />}
-      {tab === "community" && <CommunityScreen />}
+      {tab === "community" && <CommunityScreen user={user} />}
       {tab === "howto" && <GuideScreen />}
       <footer style={{ borderTop: "1px solid #1e1a0e", padding: 22, textAlign: "center" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, color: "#40301a" }}>Forge {"&"} Fable</div><p style={{ fontSize: 9, color: "#30280e", margin: "4px 0 0", letterSpacing: 1 }}>PATCH 1.6: ANIME ISLAND · 32 ALT ARTS · PRISMATIC SUN STRIKE · v16</p></footer>
     </div>
