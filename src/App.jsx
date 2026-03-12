@@ -1277,7 +1277,6 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
   const prevGsRef = useRef(null);
   const pvpBcRef = useRef(null);
   const [turnBanner, setTurnBanner] = useState(null);
-  const [logHoverCard, setLogHoverCard] = useState(null);
   const [forfeitConfirm, setForfeitConfirm] = useState(false);
   const showTurnBanner = (type) => { setTurnBanner(type); setTimeout(() => setTurnBanner(null), 1400); };
   const [animUids, setAnimUids] = useState({});
@@ -1468,12 +1467,29 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       prevAi.enemyBoard.forEach(c => { if (!currAi.enemyBoard.find(n => n.uid === c.uid)) anims[c.uid] = "dying"; });
       prevAi.playerBoard.forEach(c => { if (!currAi.playerBoard.find(n => n.uid === c.uid)) anims[c.uid] = "dying"; });
       prevAi.playerBoard.forEach(c => { const cur = currAi.playerBoard.find(n => n.uid === c.uid); if (cur && cur.currentHp < c.currentHp && !anims[c.uid]) anims[c.uid] = "hit"; });
-      if (Object.keys(anims).length > 0) { if (Object.values(anims).includes("dying")) SFX.play("kill"); setAnimUids(anims); setTimeout(() => setAnimUids({}), 700); }
       // Opponent VFX: environment change
       if (gs.env?.id !== prev.env?.id && gs.env) { vfx.add("envchange", { color: gs.env.border||"#40a020" }); vfx.add("environment", { color: gs.env.border, duration:2000 }); SFX.play("env_play"); }
       // Opponent VFX: spell cast (detect from new log entries)
       const newEntries = (gs.log||[]).slice((prev.log||[]).length);
       if (newEntries.some(l => l.includes("casts ") || l.includes("Cast "))) { vfx.add("spell", { color:"#c090d0" }); SFX.play("ability"); }
+      // Opponent attack animation: parse "X(N) attacks Y" from log
+      const atkEntry = newEntries.find(l => / attacks /.test(l));
+      if (atkEntry) {
+        const m = atkEntry.match(/^(.+?)\(\d+\) attacks (.+?)(?:\s|$)/);
+        if (m) {
+          const atkName = m[1].trim(), tgtName = m[2].trim();
+          const atkCard = prevAi.enemyBoard.find(c => c.name === atkName);
+          const tgtCard = prevAi.playerBoard.find(c => c.name === tgtName);
+          if (atkCard) {
+            SFX.play("attack");
+            setAnimUids(p => ({ ...p, [atkCard.uid]: "attacking" }));
+            setTimeout(() => {
+              if (tgtCard) setAnimUids(p => ({ ...p, [atkCard.uid]: "attacking", [tgtCard.uid]: "hit" }));
+            }, 220);
+          }
+        }
+      }
+      if (Object.keys(anims).length > 0) { if (Object.values(anims).includes("dying")) SFX.play("kill"); setAnimUids(p => ({ ...p, ...anims })); setTimeout(() => setAnimUids({}), 700); }
       // VFX: my face was hit
       const myHPKey = myRole+"HP";
       if (gs[myHPKey] < prev[myHPKey]) { vfx.add("damage", { amount: prev[myHPKey]-gs[myHPKey] }); }
@@ -1584,7 +1600,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       let found=false;
       for (const nm of CARD_NAMES_SORTED) {
         const idx=rem.indexOf(nm);
-        if (idx!==-1) { if(idx>0) parts.push(<span key={ki++}>{rem.slice(0,idx)}</span>); const cd=POOL.find(c=>c.name===nm); parts.push(<span key={ki++} style={{color:cd?.border||"#c0a040",fontWeight:700,cursor:"pointer",borderBottom:"1px dotted currentColor"}} onMouseEnter={()=>setLogHoverCard(cd)} onMouseLeave={()=>setLogHoverCard(null)}>{nm}</span>); rem=rem.slice(idx+nm.length); found=true; break; }
+        if (idx!==-1) { if(idx>0) parts.push(<span key={ki++}>{rem.slice(0,idx)}</span>); const cd=POOL.find(c=>c.name===nm); parts.push(<span key={ki++} style={{color:cd?.border||"#c0a040",fontWeight:700,cursor:"pointer",borderBottom:"1px dotted currentColor"}} onMouseEnter={()=>cd&&setPreviewCard(cd)} onMouseLeave={()=>setPreviewCard(null)}>{nm}</span>); rem=rem.slice(idx+nm.length); found=true; break; }
       }
       if (!found) { parts.push(<span key={ki++}>{rem}</span>); rem=""; }
     }
@@ -1661,6 +1677,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
         {/* Divider */}
         <div style={{ padding:"6px 14px", background:"#080608", borderBottom:"1px solid #181010", borderTop:"1px solid #181010", display:"flex", alignItems:"center", justifyContent:"center", gap:14 }}>
           <div style={{ flex:1, height:1, background:"linear-gradient(to right,transparent,#382e18)" }}/>
+          {gs.env && (<button onClick={()=>setPreviewCard(gs.env)} style={{ padding:"3px 12px", background:`${gs.env.border||"#40a020"}18`, border:`1px solid ${gs.env.border||"#40a020"}55`, borderRadius:14, color:gs.env.border||"#60c040", fontFamily:"'Cinzel',serif", fontSize:8, letterSpacing:2, cursor:"pointer", display:"flex", alignItems:"center", gap:5 }} title="Click to view environment card"><span>🌍</span><span>{gs.env.name}</span></button>)}
           {attCard?(<button onClick={ai.enemyBoard.length===0?atkFace:undefined} style={{ padding:"5px 16px", background:ai.enemyBoard.length===0?"linear-gradient(135deg,#6a0808,#a01010)":"rgba(255,255,255,0.04)", border:`1px solid ${ai.enemyBoard.length===0?"#e04040":"#2a1a10"}`, borderRadius:20, color:ai.enemyBoard.length===0?"#ffaaaa":"#604030", fontFamily:"'Cinzel',serif", fontSize:9, cursor:ai.enemyBoard.length===0?"pointer":"default" }}>{ai.enemyBoard.length===0?"STRIKE HERO":"SELECT TARGET"}</button>):(<span style={{ fontSize:9, color:"#241a08", letterSpacing:3, fontFamily:"'Cinzel',serif" }}>TURN {gs.turn}</span>)}
           <div style={{ flex:1, height:1, background:"linear-gradient(to left,transparent,#382e18)" }}/>
         </div>
@@ -1701,7 +1718,6 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       {/* Log */}
       <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
         {attCard&&(<div style={{ background:`${attCard.border}15`, border:`1px solid ${attCard.border}55`, borderRadius:10, padding:10 }}><div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:attCard.border, fontWeight:600 }}>ATTACKING</div><div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#f0e8d8", fontWeight:700 }}>{attCard.name}</div><div style={{ fontSize:12, color:"#ff7050", fontWeight:700 }}>ATK {attCard.currentAtk}</div><button onClick={()=>setAttacker(null)} style={{ marginTop:6, width:"100%", padding:"3px", background:"transparent", border:"1px solid #241408", borderRadius:4, color:"#806040", fontFamily:"'Cinzel',serif", fontSize:8, cursor:"pointer" }}>Cancel</button></div>)}
-        {logHoverCard && <div style={{ background:`${logHoverCard.border}12`, border:`1px solid ${logHoverCard.border}44`, borderRadius:8, padding:"8px 10px", marginBottom:4 }}><div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:logHoverCard.border, fontWeight:700 }}>{logHoverCard.name}</div><div style={{ fontSize:9, color:"#a09060", marginTop:2, lineHeight:1.5 }}>{logHoverCard.type} · {logHoverCard.rarity}</div>{logHoverCard.atk!==undefined&&<div style={{ fontSize:9, color:"#ff8060", marginTop:1 }}>{logHoverCard.atk}/{logHoverCard.hp}</div>}</div>}
         <div style={{ flex:1, background:"#080604", border:"1px solid #161408", borderRadius:10, overflow:"hidden", display:"flex", flexDirection:"column", minHeight:400 }}>
           <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#c09048", letterSpacing:3, padding:"8px 12px", borderBottom:"1px solid #281e08", fontWeight:700, display:"flex", justifyContent:"space-between", alignItems:"center" }}><span>BATTLE LOG</span><span style={{ fontSize:8, color:"#403828" }}>TURN {gs.turn}</span></div>
           <div ref={logRef} style={{ overflowY:"auto", padding:"8px 12px", flex:1, maxHeight:560 }}>{(gs.log||[]).map((l,i)=>{const isLast=i===(gs.log||[]).length-1;return(<div key={i} style={{ fontSize:10, lineHeight:1.7, marginBottom:5, color:logColor(l), borderLeft:isLast?`2px solid ${logColor(l)}`:"2px solid #1a160e", paddingLeft:6, fontFamily:"'Cinzel',serif", fontWeight:isLast?700:400, display:"flex", alignItems:"flex-start", gap:4 }}><span style={{ opacity:0.5, flexShrink:0 }}>{logIcon(l)}</span>{renderLogLine(l, i)}</div>);})}</div>
@@ -2143,7 +2159,7 @@ function useAuth() {
     completeProfile: (row, email) => { setUser(toAppUser(row, email)); setLoading(false); },
     update: async (delta) => {
       const updated = { ...user, ...delta };
-      const dbMap = { battlesPlayed: "battles_played", battlesWon: "battles_won", shards: "shards", collection: "collection", decks: "decks", avatarUrl: "avatar_url", selectedArts: "selected_arts", matchHistory: "match_history", altOwned: "alt_owned" };
+      const dbMap = { battlesPlayed: "battles_played", battlesWon: "battles_won", shards: "shards", collection: "collection", decks: "decks", avatarUrl: "avatar_url", selectedArts: "selected_arts", matchHistory: "match_history", altOwned: "alt_owned", freePackUsed: "free_pack_used" };
       const dbDelta = {};
       Object.entries(delta).forEach(([k, v]) => { if (dbMap[k]) dbDelta[dbMap[k]] = v; });
       if (Object.keys(dbDelta).length > 0) {
@@ -2541,7 +2557,10 @@ function StoreScreen({ user, onUpdateUser }) {
     if (pack.cost > 0 && shards < pack.cost) { SFX.play("defeat"); return; }
     if (pack.cost === 0) {
       const today = new Date().toDateString();
-      if (user?.freePackUsed === today) { SFX.play("defeat"); return; }
+      const lsKey = "freePackUsed_" + (user?.id || "anon");
+      const storedDay = user?.freePackUsed || localStorage.getItem(lsKey);
+      if (storedDay === today) { SFX.play("defeat"); return; }
+      localStorage.setItem(lsKey, today);
       onUpdateUser({ freePackUsed: today });
     }
     const newShards = shards - pack.cost;
