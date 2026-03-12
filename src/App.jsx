@@ -9,7 +9,19 @@ const store = {
 };
 
 // ═══ ALPHA KEYS ══════════════════════════════════════════════════════════════
-const ALPHA_KEYS = new Set(["VELRUN-ASCENDS","WOLF-RUNS-FREE","TIDE-CALLS-YOU","ECHO-WISP-RISE","IRON-HOLDS-ALL","ASH-AND-EMBER","SUN-VEILED-ONE","BLOOD-IS-PAID","RIFT-HERALD-01","RIFT-HERALD-02","RIFT-HERALD-03","RIFT-HERALD-04","THORNWOOD-001","THORNWOOD-002","THORNWOOD-003","THORNWOOD-004","FORGE-FOUNDER","AZURE-DEEP-01","VOID-STALKER-1","ALPHA-KEY-0001"]);
+// Supabase: run once to create the used_keys tracking table —
+//   CREATE TABLE used_alpha_keys (key TEXT PRIMARY KEY, used_by_name TEXT, used_at TIMESTAMPTZ DEFAULT NOW());
+//   ALTER TABLE used_alpha_keys ENABLE ROW LEVEL SECURITY;
+//   CREATE POLICY "read" ON used_alpha_keys FOR SELECT USING (true);
+//   CREATE POLICY "claim" ON used_alpha_keys FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+const ALPHA_KEYS_LIST = [
+  "VELRUN-ASCENDS","WOLF-RUNS-FREE","TIDE-CALLS-YOU","ECHO-WISP-RISE","IRON-HOLDS-ALL",
+  "ASH-AND-EMBER","SUN-VEILED-ONE","BLOOD-IS-PAID","RIFT-HERALD-01","RIFT-HERALD-02",
+  "RIFT-HERALD-03","RIFT-HERALD-04","THORNWOOD-001","THORNWOOD-002","THORNWOOD-003",
+  "THORNWOOD-004","FORGE-FOUNDER","AZURE-DEEP-01","VOID-STALKER-1","ALPHA-KEY-0001",
+  "FLAME-WARDEN-2","DUSK-HERALD-05","BONE-TIDE-RISE","STAR-FORGED-01","KRAKEN-WAKES-1",
+];
+const ALPHA_KEYS = new Set(ALPHA_KEYS_LIST);
 
 // ═══ AUDIO ═══════════════════════════════════════════════════════════════════
 const SFX = (() => {
@@ -2356,8 +2368,11 @@ function LoginModal({ needsProfile = false, userId, userEmail, onSignOut, onProf
     if (name.trim().length < 2) { setErr("Name must be at least 2 characters."); return; }
     if (password.length < 6) { setErr("Password must be at least 6 characters."); return; }
     const k = key.trim().toUpperCase();
-    if (!ALPHA_KEYS.has(k)) { setErr("Invalid alpha key. Try: FORGE-FOUNDER"); return; }
+    if (!ALPHA_KEYS.has(k)) { setErr("Invalid alpha key."); return; }
     setBusy(true); setErr("");
+    // Check if key already used
+    const { data: usedRow } = await supabase.from("used_alpha_keys").select("key").eq("key", k).maybeSingle();
+    if (usedRow) { setErr("That alpha key has already been claimed."); setBusy(false); return; }
     const { data, error } = await supabase.auth.signUp({ email: email.trim(), password });
     if (error) { setErr(error.message); setBusy(false); return; }
     if (data.user) {
@@ -2370,6 +2385,8 @@ function LoginModal({ needsProfile = false, userId, userEmail, onSignOut, onProf
         cards_forged: 0, collection: starter, decks: [], joined: new Date().toLocaleDateString(),
         alt_owned: founderAltOwned,
       });
+      // Mark key as used
+      await supabase.from("used_alpha_keys").upsert({ key: k, used_by_name: name.trim(), used_at: new Date().toISOString() });
       setSent(true);
     }
     setBusy(false);
@@ -2379,8 +2396,11 @@ function LoginModal({ needsProfile = false, userId, userEmail, onSignOut, onProf
     if (!name.trim() || !key.trim()) { setErr("Name and alpha key required."); return; }
     if (name.trim().length < 2) { setErr("Name must be at least 2 characters."); return; }
     const k = key.trim().toUpperCase();
-    if (!ALPHA_KEYS.has(k)) { setErr("Invalid alpha key. Try: FORGE-FOUNDER"); return; }
+    if (!ALPHA_KEYS.has(k)) { setErr("Invalid alpha key."); return; }
     setBusy(true); setErr("");
+    // Check if key already used
+    const { data: usedRow2 } = await supabase.from("used_alpha_keys").select("key").eq("key", k).maybeSingle();
+    if (usedRow2) { setErr("That alpha key has already been claimed."); setBusy(false); return; }
     const uid = userId || (await supabase.auth.getUser()).data?.user?.id;
     if (!uid) { setErr("Session expired. Please sign in again."); setBusy(false); return; }
     const starter = getStarterCollection();
@@ -2393,6 +2413,8 @@ function LoginModal({ needsProfile = false, userId, userEmail, onSignOut, onProf
       alt_owned: founderAltOwned,
     });
     if (error) { setErr(error.message); setBusy(false); return; }
+    // Mark key as used
+    await supabase.from("used_alpha_keys").upsert({ key: k, used_by_name: name.trim(), used_at: new Date().toISOString() });
     // Directly update user state — no need for refreshSession or onAuthStateChange
     const profileRow = {
       id: uid, name: name.trim(), alpha_key: k, shards: 1000,
@@ -2436,7 +2458,7 @@ function LoginModal({ needsProfile = false, userId, userEmail, onSignOut, onProf
           </>)}
           {err && <div style={{ fontSize:11, color:"#e04040", marginBottom:10, padding:"6px 10px", background:"rgba(200,30,30,0.1)", borderRadius:6 }}>{err}</div>}
           <button onClick={mode==="signin" ? handleSignIn : handleSignUp} disabled={busy} style={{ width:"100%", padding:"13px", background:busy?"rgba(255,255,255,0.05)":"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:13, fontWeight:700, letterSpacing:2, color:busy?"#806040":"#1a1000", cursor:busy?"not-allowed":"pointer" }}>{busy?"FORGING...":mode==="signin"?"ENTER THE FORGE":"CREATE ACCOUNT"}</button>
-          {mode==="signup" && <p style={{ fontSize:10, color:"#3a3010", marginTop:12 }}>Alpha keys: FORGE-FOUNDER · RIFT-HERALD-01</p>}
+          {mode==="signup" && <p style={{ fontSize:10, color:"#3a3010", marginTop:12 }}>Alpha access required — request a key from the community.</p>}
         </>)}
       </div>
     </div>
@@ -3276,6 +3298,58 @@ const NAV = [
   { id: "howto",      label: "Guide",   icon: "◉" },
 ];
 
+// ═══ ALPHA KEY ADMIN PANEL (tcombz only) ═════════════════════════════════════
+function AlphaKeyAdminPanel() {
+  const [usedKeys, setUsedKeys] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(null);
+
+  const load = async () => {
+    setLoading(true);
+    const { data } = await supabase.from("used_alpha_keys").select("key,used_by_name,used_at");
+    setUsedKeys(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const usedSet = new Set((usedKeys || []).map(r => r.key));
+  const unused = ALPHA_KEYS_LIST.filter(k => !usedSet.has(k));
+
+  const copy = (k) => {
+    navigator.clipboard?.writeText(k).catch(() => {});
+    setCopied(k);
+    setTimeout(() => setCopied(null), 1800);
+  };
+
+  return (
+    <div style={{ marginBottom:14, padding:"10px 12px", background:"rgba(0,30,60,0.4)", border:"1px solid #102840", borderRadius:9 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+        <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#40c8ff", letterSpacing:2, fontWeight:700 }}>⚿ ALPHA KEYS</span>
+        <button onClick={load} disabled={loading} style={{ fontSize:8, color:"#406080", background:"transparent", border:"none", cursor:"pointer", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>{loading ? "loading…" : `↻ ${unused.length} / ${ALPHA_KEYS_LIST.length} unused`}</button>
+      </div>
+      {usedKeys === null
+        ? <div style={{ fontSize:9, color:"#406080", textAlign:"center", padding:6 }}>Loading…</div>
+        : unused.length === 0
+          ? <div style={{ fontSize:9, color:"#e05050", textAlign:"center", padding:6 }}>All keys have been claimed!</div>
+          : <div style={{ display:"flex", flexDirection:"column", gap:3, maxHeight:200, overflowY:"auto" }}>
+              {unused.map(k => (
+                <div key={k} onClick={() => copy(k)} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"5px 8px", background:"rgba(0,40,80,0.35)", border:`1px solid ${copied===k?"#40c8ff33":"#102840"}`, borderRadius:6, cursor:"pointer", transition:"border-color .15s" }}>
+                  <span style={{ fontFamily:"monospace", fontSize:10, color:"#60c8ff", letterSpacing:1 }}>{k}</span>
+                  <span style={{ fontSize:8, fontFamily:"'Cinzel',serif", color: copied===k ? "#78cc45" : "#406080", flexShrink:0, marginLeft:6 }}>{copied===k ? "✓ COPIED" : "COPY"}</span>
+                </div>
+              ))}
+            </div>
+      }
+      {usedKeys?.length > 0 && (
+        <div style={{ fontSize:7, color:"#304050", marginTop:6, textAlign:"right", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>
+          {usedKeys.length} claimed · {usedKeys.map(r => r.used_by_name).join(", ")}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function App() {
   const [tab, setTab] = useState("home"); const { user, loading, login, logout, update, completeProfile } = useAuth(); const [showProfile, setShowProfile] = useState(false); const [showPatchNotes, setShowPatchNotes] = useState(true); const [inPvpMatch, setInPvpMatch] = useState(false);
   if (loading) return (<div style={{ minHeight: "100vh", background: "#161210", display: "flex", alignItems: "center", justifyContent: "center" }}><div style={{ fontFamily: "'Cinzel',serif", color: "#e8c060", fontSize: 16, letterSpacing: 4, animation: "pulse 1.5s ease-in-out infinite" }}>FORGING...</div></div>);
@@ -3424,6 +3498,7 @@ export default function App() {
                 })}</div>
             }
           </div>
+          {user.name?.toLowerCase() === "tcombz" && <AlphaKeyAdminPanel />}
           <button onClick={() => { logout(); setShowProfile(false); }} style={{ width:"100%", padding:"9px", background:"rgba(180,30,30,0.12)", border:"1px solid #5a1818", borderRadius:7, color:"#c07060", fontFamily:"'Cinzel',serif", fontSize:10, cursor:"pointer", letterSpacing:1 }}>SIGN OUT</button>
         </div>)}
       </div>)}
