@@ -23,7 +23,7 @@ const ALPHA_KEYS_LIST = [
   "FLAME-WARDEN-2","DUSK-HERALD-05","BONE-TIDE-RISE","STAR-FORGED-01","KRAKEN-WAKES-1",
 ];
 const ALPHA_KEYS = new Set(ALPHA_KEYS_LIST);
-const CURRENT_PATCH = "v18";
+const CURRENT_PATCH = "v19";
 
 // ═══ AUDIO ═══════════════════════════════════════════════════════════════════
 const SFX = (() => {
@@ -436,17 +436,17 @@ function PatchNotesModal({ onDismiss }) {
     <span style={{ marginLeft:6, padding:"1px 6px", background:"rgba(120,204,69,0.18)", border:"1px solid #78cc4555", borderRadius:8, fontSize:8, color:"#78cc45", fontFamily:"'Cinzel',serif", fontWeight:700, letterSpacing:1, verticalAlign:"middle" }}>NEW</span>
   );
   const rows = [
-    { icon:"🏆", label:<>Ranked Mode — ELO rating, rank tiers from Iron to Grandmaster<NEW /></> },
-    { icon:"🌍", label:<>Per-player environments — each player owns their own, lasts 2 rounds<NEW /></> },
-    { icon:"⚔", label:<>Death VFX overhaul — dying cards animate out, face attacks flash screen<NEW /></> },
-    { icon:"🎵", label:<>All sounds redesigned — euphoric, no more screeching end-turn<NEW /></> },
-    { icon:"🚪", label:<>Leave-battle modal — STAY & FIGHT or FORFEIT & LEAVE<NEW /></> },
-    { icon:"📷", label:<>Click player avatars in battle to view profile stats<NEW /></> },
-    { icon:"📖", label:<>The Fables teaser — animated book on home screen<NEW /></> },
-    { icon:"📺", label:<>Arena feed shows player avatars from match history<NEW /></> },
-    { icon:"⚔", label:"PvP Matchmaking · community card forge · alpha key system" },
+    { icon:"⚔", label:<>PvP turn-start effects now fire correctly — Ironmarch Colossus self-buff, Fractured Rift keyword aura<NEW /></> },
+    { icon:"🩸", label:<>Bleed no longer freezes the match — winner resolves immediately after bleed ticks<NEW /></> },
+    { icon:"⚡", label:<>Opponent energy visible during PvP battles<NEW /></> },
+    { icon:"💀", label:<>Deck fatigue — empty deck deals stacking damage each turn until someone falls<NEW /></> },
+    { icon:"🃏", label:<>New deck starts empty · Starter Deck always pinned · Clear All button<NEW /></> },
+    { icon:"🗳", label:<>Community upvotes persist across sessions<NEW /></> },
+    { icon:"📊", label:<>Home stats corrected — 32 CARDS · 7 FACTIONS · 7 KEYWORDS<NEW /></> },
+    { icon:"🔊", label:"Volume set to 10% — heard but not blasting" },
+    { icon:"🏆", label:"Ranked Mode · ELO rating · Iron to Grandmaster tiers" },
+    { icon:"🌍", label:"Per-player environments · PvP matchmaking · alpha key system" },
     { icon:"🏝", label:"Anime Island: 32 alt arts · 0.1% Prismatic Sun Strike" },
-    { icon:"🃏", label:"Free daily pack · alt art selector in collection" },
     { icon:"⚗", label:"Coming next: Leaderboard · Thornwood Expansion · Draft Mode", dim:true },
   ];
   return (
@@ -1697,6 +1697,11 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       s.turn = newTurn; s.phase = op;
       s[op+"Max"] = newMax; s[op+"Energy"] = newMax;
       s.log = [...(s.log||[]).slice(-20), `Turn ${newTurn}`];
+      // Fire onTurnStart effects for the new active player (op)
+      let opAi = toAI(s, op);
+      opAi.playerBoard.forEach(c => { if ((c.effects||[]).some(e => e.trigger === "onTurnStart")) opAi = resolveEffects("onTurnStart", c, opAi, "player", null); });
+      if (opAi.environment) opAi = resolveEffects("onTurnStart", opAi.environment, opAi, "player", null);
+      s = fromAI(opAi, op, s);
       return s;
     }
     return gs;
@@ -2757,7 +2762,7 @@ function LoginModal({ needsProfile = false, userId, userEmail, onSignOut, onProf
       <div style={{ position:"absolute", inset:0, pointerEvents:"none" }}><FloatingParticles count={15} color="#e8c060" speed={0.3} /></div>
       <div style={{ position:"relative", zIndex:1 }}>
         <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:26, fontWeight:900, color:"#e8c060", margin:"0 0 4px", textShadow:"0 0 40px #c89020aa" }}>Forge {"&"} Fable</h2>
-        <div style={{ fontSize:9, background:"rgba(200,100,20,0.2)", border:"1px solid #c0600844", color:"#c07030", borderRadius:10, padding:"3px 14px", fontFamily:"'Cinzel',serif", letterSpacing:2, display:"inline-block", marginBottom:20 }}>PATCH 1.4 - ACCOUNTS & MULTIPLAYER</div>
+        <div style={{ fontSize:9, background:"rgba(200,100,20,0.2)", border:"1px solid #c0600844", color:"#c07030", borderRadius:10, padding:"3px 14px", fontFamily:"'Cinzel',serif", letterSpacing:2, display:"inline-block", marginBottom:20 }}>v19 · ALPHA — PLAY WITH FRIENDS</div>
         {mode === "complete" ? (<>
           <p style={{ fontSize:13, color:"#e8c060", marginBottom:16 }}>Your email is confirmed! Complete your profile to enter.</p>
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Display name (2+ chars)"
@@ -3034,7 +3039,7 @@ function HomeScreen({ setTab, user }) {
           <p style={{ fontSize: 15, lineHeight: 1.9, color: "#b8aad0", margin: "0 0 24px", maxWidth: 420, textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>32 cards across 7 regions. Real abilities. Environment cards that reshape the battlefield. Your creatures level up, bleed, and echo.</p>
           {/* Stat boxes */}
           <div style={{ display: "flex", gap: 10, marginBottom: 28 }}>
-            {[{ label: "32", sub: "ATC" }, { label: "7", sub: "LEGIONS" }, { label: "7", sub: "COLUMNS" }].map((s) => (<div key={s.sub} style={{ background: "rgba(232,192,96,0.08)", border: "1px solid rgba(232,192,96,0.2)", borderRadius: 10, padding: "12px 20px", textAlign: "center", backdropFilter:"blur(4px)" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 22, fontWeight: 900, color: "#e8c060", textShadow:"0 0 20px #e8c06066" }}>{s.label}</div><div style={{ fontSize: 8, color: "#806040", letterSpacing: 2, fontFamily: "'Cinzel',serif", marginTop: 2 }}>{s.sub}</div></div>))}
+            {[{ label: "32", sub: "CARDS" }, { label: "7", sub: "FACTIONS" }, { label: "7", sub: "KEYWORDS" }].map((s) => (<div key={s.sub} style={{ background: "rgba(232,192,96,0.08)", border: "1px solid rgba(232,192,96,0.2)", borderRadius: 10, padding: "12px 20px", textAlign: "center", backdropFilter:"blur(4px)" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 22, fontWeight: 900, color: "#e8c060", textShadow:"0 0 20px #e8c06066" }}>{s.label}</div><div style={{ fontSize: 8, color: "#806040", letterSpacing: 2, fontFamily: "'Cinzel',serif", marginTop: 2 }}>{s.sub}</div></div>))}
           </div>
           {/* CTA Buttons */}
           {user && (<div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
@@ -3619,7 +3624,7 @@ function CommunityScreen({ user }) {
   const [generated, setGenerated] = useState(null);
   const [communityCards, setCommunityCards] = useState([]);
   const [posting, setPosting] = useState(false);
-  const [myVotes, setMyVotes] = useState({});
+  const [myVotes, setMyVotes] = useState(() => { try { return JSON.parse(localStorage.getItem("community_votes")||"{}"); } catch(_) { return {}; } });
   const [activeTab, setActiveTab] = useState("forge"); // "forge" | "wall"
   const [tableError, setTableError] = useState(null);
   const [postError, setPostError] = useState(null);
@@ -3684,7 +3689,7 @@ CREATE POLICY "vote" ON community_cards FOR UPDATE USING (true);`;
 
   const vote = async (cardId) => {
     if (!user || myVotes[cardId]) return;
-    setMyVotes(p => ({ ...p, [cardId]: true }));
+    setMyVotes(p => { const n = { ...p, [cardId]: true }; try { localStorage.setItem("community_votes", JSON.stringify(n)); } catch(_) {} return n; });
     SFX.play("card");
     try {
       await supabase.rpc("increment_votes", { card_id: cardId }).catch(() =>
@@ -4116,7 +4121,7 @@ export default function App() {
       {tab === "collection" && <CollectionScreen user={user} onUpdateUser={update} />}
       {tab === "community" && <CommunityScreen user={user} />}
       {tab === "howto" && <GuideScreen />}
-      <footer style={{ borderTop: "1px solid #1e1a0e", padding: 22, textAlign: "center" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, color: "#40301a" }}>Forge {"&"} Fable</div><p style={{ fontSize: 9, color: "#30280e", margin: "4px 0 0", letterSpacing: 1 }}>{CURRENT_PATCH}: RANKED MODE · PER-PLAYER ENVIRONMENTS · VFX OVERHAUL · EUPHORIC SFX</p></footer>
+      <footer style={{ borderTop: "1px solid #1e1a0e", padding: 22, textAlign: "center" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, color: "#40301a" }}>Forge {"&"} Fable</div><p style={{ fontSize: 9, color: "#30280e", margin: "4px 0 0", letterSpacing: 1 }}>{CURRENT_PATCH}: PVP FIXES · DECK FATIGUE · BUFF SYSTEM · ALPHA READY</p></footer>
     </div>
     <MusicPlayer />
   </div>);
