@@ -3511,6 +3511,7 @@ function CommunityScreen({ user }) {
   const [myVotes, setMyVotes] = useState({});
   const [activeTab, setActiveTab] = useState("forge"); // "forge" | "wall"
   const [tableError, setTableError] = useState(null);
+  const [postError, setPostError] = useState(null);
 
   useEffect(() => { loadCards(); }, []);
 
@@ -3529,7 +3530,7 @@ CREATE POLICY "vote" ON community_cards FOR UPDATE USING (true);`;
   const loadCards = async () => {
     try {
       const { data, error } = await supabase.from("community_cards").select("*").order("votes", { ascending: false }).limit(30);
-      if (error) { if (error.message?.includes("does not exist") || error.message?.includes("relation")) { setTableError(SQL_SETUP); } return; }
+      if (error) { if (error.message?.includes("does not exist") || error.message?.includes("relation") || error.message?.includes("schema cache") || error.code === "42P01") { setTableError(SQL_SETUP); } return; }
       if (data) { setCommunityCards(data); setTableError(null); }
     } catch(_) {}
   };
@@ -3564,10 +3565,8 @@ CREATE POLICY "vote" ON community_cards FOR UPDATE USING (true);`;
       setActiveTab("wall");
     } catch(e) {
       const msg = e?.message || String(e);
-      const needsTable = msg.includes("does not exist") || msg.includes("relation");
-      alert(needsTable
-        ? "community_cards table missing. Run in Supabase SQL editor:\n\nCREATE TABLE community_cards (\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  user_id UUID, user_name TEXT, name TEXT, faction TEXT, type TEXT,\n  cost INT, atk INT, hp INT, ability TEXT, keywords TEXT[],\n  rarity TEXT, original_idea TEXT, votes INT DEFAULT 0,\n  created_at TIMESTAMPTZ DEFAULT NOW()\n);\nALTER TABLE community_cards ENABLE ROW LEVEL SECURITY;\nCREATE POLICY \"read\" ON community_cards FOR SELECT USING (true);\nCREATE POLICY \"insert\" ON community_cards FOR INSERT WITH CHECK (auth.role()=\'authenticated\');\nCREATE POLICY \"vote\" ON community_cards FOR UPDATE USING (true);"
-        : `Post failed: ${msg}`);
+      const needsTable = msg.includes("does not exist") || msg.includes("relation") || msg.includes("schema cache");
+      if (needsTable) { setTableError(SQL_SETUP); } else { setPostError(`Post failed: ${msg}`); }
     }
     setPosting(false);
   };
@@ -3644,9 +3643,12 @@ CREATE POLICY "vote" ON community_cards FOR UPDATE USING (true);`;
               </div>
               {/* Actions */}
               {user ? (
-                <button onClick={postToWall} disabled={posting} style={{ width:"100%", padding:"11px", background:"linear-gradient(135deg,#204080,#3060c0)", border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, letterSpacing:2, color:"#e0f0ff", cursor: posting?"default":"pointer", boxShadow:"0 4px 18px rgba(50,100,220,0.35)" }}>
-                  {posting ? "POSTING..." : "POST TO COMMUNITY ✦"}
-                </button>
+                <>
+                  <button onClick={() => { setPostError(null); postToWall(); }} disabled={posting} style={{ width:"100%", padding:"11px", background:"linear-gradient(135deg,#204080,#3060c0)", border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, letterSpacing:2, color:"#e0f0ff", cursor: posting?"default":"pointer", boxShadow:"0 4px 18px rgba(50,100,220,0.35)" }}>
+                    {posting ? "POSTING..." : "POST TO COMMUNITY ✦"}
+                  </button>
+                  {postError && <div style={{ marginTop:6, fontSize:10, color:"#e05050", fontFamily:"'Cinzel',serif", textAlign:"center" }}>{postError}</div>}
+                </>
               ) : <div style={{ fontSize:10, color:"#504030", textAlign:"center", fontFamily:"'Cinzel',serif", letterSpacing:2 }}>SIGN IN TO POST</div>}
               <button onClick={forge} style={{ marginTop:8, width:"100%", padding:"8px", background:"transparent", border:"1px solid #3a2c10", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, color:"#806040", cursor:"pointer" }}>RE-FORGE</button>
             </div>
