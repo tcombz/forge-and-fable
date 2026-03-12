@@ -587,6 +587,9 @@ const POOL = [
   { id: "silver_arrow",       name: "Silver Arrow",       type: "spell",    region: "Fables",     rarity: "Common",   cost: 2, atk: null, hp: null, keywords: [],            border: "#9070ff", seed: 312, bloodpact: false, imageUrl: "", ability: "Deal 3 damage to a random enemy.", effects: [{ trigger: "onPlay", effect: "damage_random_enemy", amount: 3 }] },
   { id: "enchanted_blade",    name: "Enchanted Blade",    type: "spell",    region: "Fables",     rarity: "Epic",     cost: 3, atk: null, hp: null, keywords: [],            border: "#9070ff", seed: 313, bloodpact: false, imageUrl: "", ability: "Give all creatures +1 ATK and heal hero 2.", effects: [{ trigger: "onPlay", effect: "buff_allies", atk: 1, hp: 0 }, { trigger: "onPlay", effect: "heal_hero", amount: 2 }] },
 ];
+// Cards locked from all gameplay until art/tuning is complete
+const LOCKED_REGIONS = new Set(["Food Fight", "Fables"]);
+const GAMEPLAY_POOL = POOL.filter(c => !LOCKED_REGIONS.has(c.region));
 const HOME_CARDS = [POOL.find((c) => c.id === "velrun"), POOL.find((c) => c.id === "kraken"), POOL.find((c) => c.id === "colossus"), POOL.find((c) => c.id === "bloodmage"), POOL.find((c) => c.id === "weaver")].filter(Boolean);
 
 // ═══ PACKS ═══════════════════════════════════════════════════════════════════
@@ -1164,7 +1167,7 @@ function BattleChat({ user, aiMode, matchId }) {
 }
 
 function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
-  const initGame = () => { const fallback = [...POOL, ...POOL, ...POOL.slice(0, 5)]; const pd = shuf(matchConfig?.playerDeck?.length >= CFG.deck.min ? [...matchConfig.playerDeck] : [...fallback]); const ed = shuf([...fallback]); return { matchId: uid("m"), turn: 1, phase: "opening", winner: null, playerHP: CFG.startHP, playerEnergy: CFG.startEnergy, maxEnergy: CFG.startEnergy, playerHand: pd.slice(0, CFG.startHand).map((c) => makeInst(c, "p")), playerDeck: pd.slice(CFG.startHand), playerBoard: [], enemyHP: CFG.startHP, enemyHand: ed.slice(0, CFG.startHand).map((c) => makeInst(c, "e")), enemyDeck: ed.slice(CFG.startHand), enemyBoard: [], environment: null, envLastTurn: null, mapTheme: "default", log: ["Draw for priority!"] }; };
+  const initGame = () => { const fallback = [...GAMEPLAY_POOL, ...GAMEPLAY_POOL, ...GAMEPLAY_POOL.slice(0, 5)]; const pd = shuf(matchConfig?.playerDeck?.length >= CFG.deck.min ? [...matchConfig.playerDeck] : [...fallback]); const ed = shuf([...fallback]); return { matchId: uid("m"), turn: 1, phase: "opening", winner: null, playerHP: CFG.startHP, playerEnergy: CFG.startEnergy, maxEnergy: CFG.startEnergy, playerHand: pd.slice(0, CFG.startHand).map((c) => makeInst(c, "p")), playerDeck: pd.slice(CFG.startHand), playerBoard: [], enemyHP: CFG.startHP, enemyHand: ed.slice(0, CFG.startHand).map((c) => makeInst(c, "e")), enemyDeck: ed.slice(CFG.startHand), enemyBoard: [], environment: null, envLastTurn: null, mapTheme: "default", log: ["Draw for priority!"] }; };
   const [game, setGame] = useState(initGame);
   const [animUids, setAnimUids] = useState({});
   const [attacker, setAttacker] = useState(null);
@@ -1419,7 +1422,7 @@ const STARTER_DECK = (() => {
 function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
   const col = user?.collection || {};
   const selectedArts = user?.selectedArts || {};
-  const owned = POOL.filter((c) => (col[c.id] || 0) > 0);
+  const owned = GAMEPLAY_POOL.filter((c) => (col[c.id] || 0) > 0);
   const isNew = !editDeck;
   const [deck, setDeck] = useState(() => editDeck ? [...editDeck.cards] : []);
   const [dbPreview, setDbPreview] = useState(null);
@@ -3327,6 +3330,32 @@ function GuideScreen() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 10 }}>{KW.map((k) => (<div key={k.name} style={{ padding: 12, background: `${k.color}0e`, border: `1px solid ${k.color}28`, borderRadius: 9 }}><div style={{ fontSize: 16, marginBottom: 4 }}>{k.icon}</div><div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, color: k.color, marginBottom: 3, fontWeight: 700 }}>{k.name}</div><p style={{ fontSize: 10, color: "#c0a870", margin: 0, lineHeight: 1.6 }}>{k.desc}</p></div>))}</div>
     </div>
 
+    {/* Factions & Regions */}
+    <div style={{ background: "#0e0a06", border: "1px solid #2a2010", borderRadius: 14, padding: 24, marginBottom: 16 }}>
+      <h3 style={{ fontFamily: "'Cinzel',serif", fontSize: 15, color: "#e8c060", margin: "0 0 6px", fontWeight: 700 }}>🌍 Factions {"&"} Regions</h3>
+      <p style={{ fontSize: 11, color: "#706048", margin: "0 0 18px", lineHeight: 1.7 }}>Each card belongs to a region — the place it hails from. Regions define a card's identity, art style, and the kinds of strategies they enable. Build around a region for synergy, or mix factions for flexibility.</p>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 10 }}>
+        {[
+          { name:"Thornwood",        icon:"🌿", color:"#40a040", desc:"Ancient forests, druids, and wild beasts. Healing and growth." },
+          { name:"Shattered Expanse",icon:"💎", color:"#8060d0", desc:"Fractured void. Echo and Fracture effects run deep here." },
+          { name:"Azure Deep",       icon:"🌊", color:"#2090c0", desc:"Ocean depths. High HP walls and drowning debuffs." },
+          { name:"Ashfen",           icon:"🔥", color:"#d06020", desc:"Volcanic marshes. Bleed and burn — slow attrition." },
+          { name:"Ironmarch",        icon:"⚙",  color:"#a0a0a0", desc:"War machine empire. Shields and Anchor-locked titans." },
+          { name:"Sunveil",          icon:"☀",  color:"#d0a020", desc:"Desert kingdom. Resonate and Swift glass-cannon warriors." },
+          { name:"Bloodpact",        icon:"🩸", color:"#c03030", desc:"Forbidden arts. Pay life to unleash devastating power." },
+          { name:"Food Fight",       icon:"🍓", color:"#ff5030", desc:"Culinary chaos. Tokens, splat effects, and saucy mayhem.", isNew: true },
+          { name:"Fables",           icon:"📖", color:"#9070ff", desc:"Fairy tale warriors. Enchanted environments and story spells.", isNew: true },
+        ].map(r => (
+          <div key={r.name} style={{ padding:"12px 14px", background:`${r.color}0a`, border:`1px solid ${r.color}28`, borderRadius:9, position:"relative" }}>
+            {r.isNew && <div style={{ position:"absolute", top:-8, right:-8, background:"linear-gradient(135deg,#e8c060,#c89010)", borderRadius:10, padding:"2px 8px", fontFamily:"'Cinzel',serif", fontSize:7, fontWeight:900, color:"#1a1000", letterSpacing:1 }}>NEW</div>}
+            <div style={{ fontSize:20, marginBottom:6 }}>{r.icon}</div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:r.color, fontWeight:700, marginBottom:4 }}>{r.name}</div>
+            <p style={{ fontSize:10, color:"#907860", margin:0, lineHeight:1.6 }}>{r.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+
     {/* Ranked Mode section */}
     <div style={{ background: "#0e0c14", border: "1px solid #3a2a6033", borderRadius: 14, padding: 24 }}>
       <h3 style={{ fontFamily: "'Cinzel',serif", fontSize: 15, color: "#c080ff", margin: "0 0 6px", fontWeight: 700 }}>🏆 Ranked Mode</h3>
@@ -3372,6 +3401,7 @@ function GuideScreen() {
 function StoreScreen({ user, onUpdateUser }) {
   const shards = user?.shards || 0;
   const [opening, setOpening] = useState(null);
+  useEffect(() => { SFX.play("pack_open"); }, []);
   const [revealed, setRevealed] = useState([]);
   const [revIdx, setRevIdx] = useState(-1);
   const [shakeCard, setShakeCard] = useState(-1);
@@ -3458,7 +3488,20 @@ function StoreScreen({ user, onUpdateUser }) {
   };
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 24px 60px", position: "relative" }}>
+    <div style={{ position:"relative", minHeight:"100vh" }}>
+      {/* Store animated background */}
+      <style>{`
+        @keyframes storeFloat{0%,100%{transform:translateY(0) rotate(0deg);opacity:0.18}50%{transform:translateY(-28px) rotate(12deg);opacity:0.32}}
+        @keyframes storeGlow{0%,100%{opacity:0.06}50%{opacity:0.14}}
+        @keyframes storeCoin{0%{transform:translateY(0) rotate(0deg)}100%{transform:translateY(-120px) rotate(360deg);opacity:0}}
+      `}</style>
+      <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:0, overflow:"hidden" }}>
+        <div style={{ position:"absolute", inset:0, background:"radial-gradient(ellipse at 20% 30%,rgba(232,192,96,0.07),transparent 55%),radial-gradient(ellipse at 80% 70%,rgba(180,120,40,0.05),transparent 50%)", animation:"storeGlow 5s ease-in-out infinite" }} />
+        {[{l:"12%",t:"18%",s:22,d:0},{l:"78%",t:"12%",s:16,d:1.2},{l:"55%",t:"72%",s:20,d:0.6},{l:"30%",t:"60%",s:14,d:1.8},{l:"88%",t:"45%",s:18,d:0.3},{l:"8%",t:"80%",s:12,d:2.1}].map((c,i)=>(
+          <div key={i} style={{ position:"absolute", left:c.l, top:c.t, width:c.s, height:c.s, borderRadius:"50%", background:"radial-gradient(circle,#e8c060,#c8900a)", boxShadow:`0 0 ${c.s}px rgba(232,192,96,0.4)`, animation:`storeFloat ${3.5+i*0.7}s ease-in-out ${c.d}s infinite` }} />
+        ))}
+      </div>
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 24px 60px", position: "relative", zIndex:1 }}>
       {/* Dupe Shard Toast */}
       {dupeToast && (
         <div key={dupeToast.id} style={{ position: "fixed", top: "30%", left: "50%", transform: "translateX(-50%)", zIndex: 400, pointerEvents: "none", animation: "dupeToast 2.2s ease-out forwards" }}>
@@ -3507,27 +3550,29 @@ function StoreScreen({ user, onUpdateUser }) {
           </div>
         </div>
 
-        {/* ── NEW FACTION PACKS ────────────────────────────────────────────── */}
+        {/* ── NEW FACTION PACKS — locked until launch ──────────────────────── */}
         <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#a09060", letterSpacing:2, marginBottom:12, marginTop:28 }}>NEW FACTION PACKS</div>
         <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-          <div style={{ background:"#0a0808", border:"1px solid rgba(200,40,40,0.25)", borderRadius:14, padding:"20px 22px", opacity: shards>=200 ? 1 : 0.7, position:"relative", overflow:"hidden" }}>
-            <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:"linear-gradient(90deg,#aa1010,#dd3030,#aa1010)" }} />
-            <div style={{ display:"inline-block", padding:"2px 10px", background:"rgba(200,40,40,0.12)", border:"1px solid rgba(200,40,40,0.25)", borderRadius:20, fontFamily:"'Cinzel',serif", fontSize:8, color:"#ff7070", letterSpacing:3, marginBottom:8 }}>NEW FACTION</div>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:900, color:"#ff5050", marginBottom:4, letterSpacing:1 }}>Food Fight Pack</div>
-            <p style={{ fontSize:10, color:"rgba(200,120,120,0.65)", margin:"0 0 12px", lineHeight:1.65 }}>12 culinary warriors — Champions, creatures and spells. Berry {"&"} Tooty and Master Jax lead the charge. 1 Rare guaranteed.</p>
+          {/* Food Fight — locked */}
+          <div style={{ background:"#0a0808", border:"1px solid rgba(200,40,40,0.15)", borderRadius:14, padding:"20px 22px", opacity:0.52, position:"relative", overflow:"hidden", filter:"grayscale(40%)" }}>
+            <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:"linear-gradient(90deg,#661010,#993030,#661010)" }} />
+            <div style={{ display:"inline-block", padding:"2px 10px", background:"rgba(200,40,40,0.08)", border:"1px solid rgba(200,40,40,0.15)", borderRadius:20, fontFamily:"'Cinzel',serif", fontSize:8, color:"#994040", letterSpacing:3, marginBottom:8 }}>NEW FACTION</div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:900, color:"#883040", marginBottom:4, letterSpacing:1 }}>Food Fight Pack</div>
+            <p style={{ fontSize:10, color:"rgba(160,80,80,0.55)", margin:"0 0 12px", lineHeight:1.65 }}>12 culinary warriors — Champions, creatures and spells. Berry {"&"} Tooty and Master Jax lead the charge. 1 Rare guaranteed.</p>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-              <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>{["12 Cards","1 Rare","Food Fight Faction"].map(t=>(<span key={t} style={{ padding:"2px 8px", background:"rgba(200,40,40,0.08)", border:"1px solid rgba(200,40,40,0.18)", borderRadius:10, fontSize:8, color:"rgba(255,120,120,0.5)", fontFamily:"'Cinzel',serif" }}>{t}</span>))}</div>
-              <button onClick={()=>{const p=PACKS.find(pk=>pk.id==="food_fight");if(p&&shards>=p.cost)buyPack(p);else SFX.play("defeat");}} style={{ padding:"8px 18px", background:shards>=200?"linear-gradient(135deg,#aa1010,#dd3030)":"rgba(255,255,255,0.04)", border:`1px solid ${shards>=200?"transparent":"#3a1010"}`, borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:shards>=200?"#fff":"#604040", cursor:shards>=200?"pointer":"not-allowed", letterSpacing:2, transition:"all .2s" }}>OPEN · 200 ◈</button>
+              <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>{["12 Cards","1 Rare","Food Fight Faction"].map(t=>(<span key={t} style={{ padding:"2px 8px", background:"rgba(120,40,40,0.06)", border:"1px solid rgba(120,40,40,0.12)", borderRadius:10, fontSize:8, color:"rgba(160,80,80,0.4)", fontFamily:"'Cinzel',serif" }}>{t}</span>))}</div>
+              <div style={{ padding:"8px 18px", background:"rgba(255,255,255,0.03)", border:"1px solid #3a2020", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:"#604040", letterSpacing:2 }}>COMING SOON</div>
             </div>
           </div>
-          <div style={{ background:"#08080e", border:"1px solid rgba(144,100,255,0.25)", borderRadius:14, padding:"20px 22px", opacity: shards>=200 ? 1 : 0.7, position:"relative", overflow:"hidden" }}>
-            <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:"linear-gradient(90deg,#6040b0,#9060ff,#6040b0)" }} />
-            <div style={{ display:"inline-block", padding:"2px 10px", background:"rgba(144,100,255,0.12)", border:"1px solid rgba(144,100,255,0.25)", borderRadius:20, fontFamily:"'Cinzel',serif", fontSize:8, color:"#b090ff", letterSpacing:3, marginBottom:8 }}>NEW FACTION</div>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:900, color:"#9070ff", marginBottom:4, letterSpacing:1 }}>Fables Pack</div>
-            <p style={{ fontSize:10, color:"rgba(170,145,230,0.65)", margin:"0 0 12px", lineHeight:1.65 }}>13 fairy tale warriors — Dragon Knights, Crystal Golems, enchanted environments. One Rare guaranteed.</p>
+          {/* Fables — locked */}
+          <div style={{ background:"#08080e", border:"1px solid rgba(144,100,255,0.15)", borderRadius:14, padding:"20px 22px", opacity:0.52, position:"relative", overflow:"hidden", filter:"grayscale(40%)" }}>
+            <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:"linear-gradient(90deg,#3a2880,#5a40b0,#3a2880)" }} />
+            <div style={{ display:"inline-block", padding:"2px 10px", background:"rgba(100,70,200,0.08)", border:"1px solid rgba(100,70,200,0.15)", borderRadius:20, fontFamily:"'Cinzel',serif", fontSize:8, color:"#706090", letterSpacing:3, marginBottom:8 }}>NEW FACTION</div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:900, color:"#5a4090", marginBottom:4, letterSpacing:1 }}>Fables Pack</div>
+            <p style={{ fontSize:10, color:"rgba(120,100,180,0.55)", margin:"0 0 12px", lineHeight:1.65 }}>13 fairy tale warriors — Dragon Knights, Crystal Golems, enchanted environments. One Rare guaranteed.</p>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-              <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>{["13 Cards","1 Rare","Fables Faction"].map(t=>(<span key={t} style={{ padding:"2px 8px", background:"rgba(144,100,255,0.08)", border:"1px solid rgba(144,100,255,0.18)", borderRadius:10, fontSize:8, color:"rgba(180,150,255,0.5)", fontFamily:"'Cinzel',serif" }}>{t}</span>))}</div>
-              <button onClick={()=>{const p=PACKS.find(pk=>pk.id==="fables_pack");if(p&&shards>=p.cost)buyPack(p);else SFX.play("defeat");}} style={{ padding:"8px 18px", background:shards>=200?"linear-gradient(135deg,#6040b0,#9060ff)":"rgba(255,255,255,0.04)", border:`1px solid ${shards>=200?"transparent":"#2a1840"}`, borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:shards>=200?"#fff":"#504070", cursor:shards>=200?"pointer":"not-allowed", letterSpacing:2, transition:"all .2s" }}>OPEN · 200 ◈</button>
+              <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>{["13 Cards","1 Rare","Fables Faction"].map(t=>(<span key={t} style={{ padding:"2px 8px", background:"rgba(80,60,160,0.06)", border:"1px solid rgba(80,60,160,0.12)", borderRadius:10, fontSize:8, color:"rgba(130,110,200,0.4)", fontFamily:"'Cinzel',serif" }}>{t}</span>))}</div>
+              <div style={{ padding:"8px 18px", background:"rgba(255,255,255,0.03)", border:"1px solid #2a1840", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:"#504060", letterSpacing:2 }}>COMING SOON</div>
             </div>
           </div>
         </div>
@@ -3570,6 +3615,7 @@ function StoreScreen({ user, onUpdateUser }) {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }
