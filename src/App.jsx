@@ -3074,6 +3074,7 @@ function CollectionScreen({ user, onUpdateUser }) {
 function HomeScreen({ setTab, user }) {
   const [active, setActive] = useState(0);
   const [entered, setEntered] = useState(false);
+  const [ffHover, setFfHover] = useState(false);
   useEffect(() => {
     MusicCtx.play("home"); setEntered(true);
     const id = setInterval(() => setActive((c) => (c + 1) % HOME_CARDS.length), 4000);
@@ -3135,18 +3136,75 @@ function HomeScreen({ setTab, user }) {
       </div>
     </section>
 
-    {/* The Fables — book teaser section */}
-    <section style={{ background:"linear-gradient(180deg,#080610 0%,#0a0818 100%)", borderTop:"1px solid #1a1228", borderBottom:"1px solid #1a1228", padding:"32px 28px" }}>
-      <div style={{ maxWidth:1100, margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"center", gap:48 }}>
-        <ForgeAndFableTeaser inline={true} />
-        <div style={{ maxWidth:340 }}>
-          <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#6040a0", letterSpacing:5, fontWeight:700, marginBottom:8 }}>COMING SOON</div>
-          <div style={{ fontFamily:"'Palatino Linotype',Palatino,'Book Antiqua',Georgia,serif", fontSize:32, fontStyle:"italic", color:"#c8a0e8", marginBottom:12, lineHeight:1.2 }}>The Fables</div>
-          <p style={{ fontSize:12, color:"#6050a0", lineHeight:1.8, margin:"0 0 16px" }}>A standalone narrative expansion built on the Forge {"&"} Fable engine. New mechanics, new realms, and legends that reshape the world.</p>
-          <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-            {["Story Mode","New Factions","Campaign Deck","Legendary Bosses"].map(t => (
-              <span key={t} style={{ fontSize:8, padding:"3px 10px", background:"rgba(160,80,240,0.08)", border:"1px solid #6040a033", borderRadius:20, color:"#8060b0", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>{t}</span>
-            ))}
+    {/* Fables + Food Fight — dual faction teaser */}
+    <section style={{ background:"linear-gradient(180deg,#080610 0%,#0c0814 100%)", borderTop:"1px solid #1a1228", borderBottom:"1px solid #1a1228", padding:"32px 28px" }}>
+      <style>{`
+        @keyframes berryBounceFF{0%,100%{transform:scaleY(1) scaleX(1) translateY(0)}38%{transform:scaleY(1.09) scaleX(0.93) translateY(-16px)}58%{transform:scaleY(0.87) scaleX(1.1) translateY(4px)}74%{transform:scaleY(1.04) scaleX(0.97) translateY(-5px)}}
+        @keyframes splatPop{0%{transform:translate(-50%,-50%) scale(0) rotate(0deg)}28%{transform:translate(-50%,-50%) scale(1.45) rotate(-10deg)}52%{transform:translate(-50%,-50%) scale(0.88) rotate(5deg)}72%{transform:translate(-50%,-50%) scale(1.12) rotate(-2deg)}100%{transform:translate(-50%,-50%) scale(1) rotate(0deg)}}
+        @keyframes splatDrip{0%{transform:translate(0,0) scale(0);opacity:0}20%{opacity:1;transform:translate(var(--dx),var(--dy)) scale(1.2)}60%{opacity:0.8;transform:translate(calc(var(--dx)*1.6),calc(var(--dy)*1.6)) scale(0.8)}100%{opacity:0;transform:translate(calc(var(--dx)*2.2),calc(var(--dy)*2.2)) scale(0.3)}}
+        @keyframes splatLabel{0%{opacity:0;transform:translate(-50%,-50%) scale(0.6)}60%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}80%{transform:translate(-50%,-50%) scale(0.97)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+      `}</style>
+      <div style={{ maxWidth:1100, margin:"0 auto", display:"grid", gridTemplateColumns:"1fr 1fr", gap:0 }}>
+        {/* LEFT — Fables animated book */}
+        <div style={{ display:"flex", alignItems:"center", gap:28, paddingRight:32, borderRight:"1px solid #1e1430" }}>
+          <ForgeAndFableTeaser inline={true} />
+          <div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#6040a0", letterSpacing:5, fontWeight:700, marginBottom:8 }}>COMING SOON</div>
+            <div style={{ fontFamily:"'Palatino Linotype',Palatino,'Book Antiqua',Georgia,serif", fontSize:28, fontStyle:"italic", color:"#c8a0e8", marginBottom:10, lineHeight:1.2 }}>The Fables</div>
+            <p style={{ fontSize:11, color:"#6050a0", lineHeight:1.75, margin:"0 0 14px" }}>13 fairy tale warriors. Dragon Knights, Crystal Golems, enchanted environments and ancient spells.</p>
+            <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+              {["13 Cards","Dragon Knight","Enchanted Glade"].map(t => (
+                <span key={t} style={{ fontSize:8, padding:"3px 10px", background:"rgba(160,80,240,0.08)", border:"1px solid #6040a033", borderRadius:20, color:"#8060b0", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>{t}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+        {/* RIGHT — Food Fight strawberry splat */}
+        <div
+          onMouseEnter={()=>setFfHover(true)}
+          onMouseLeave={()=>setFfHover(false)}
+          style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:24, paddingLeft:32, cursor:"pointer", position:"relative" }}
+        >
+          {/* Berry / splat container */}
+          <div style={{ position:"relative", width:120, height:120, flexShrink:0 }}>
+            {/* Bouncing berry */}
+            <div style={{ opacity: ffHover ? 0 : 1, transition:"opacity 0.15s", position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)" }}>
+              <svg viewBox="0 0 80 90" xmlns="http://www.w3.org/2000/svg" style={{ width:80, height:90, filter:"drop-shadow(0 0 18px rgba(220,50,50,0.7))", animation:"berryBounceFF 1.2s ease-in-out infinite" }}>
+                <path d="M40 14 Q44 4 48 0" stroke="#2e7d32" strokeWidth="3" strokeLinecap="round" fill="none"/>
+                <ellipse cx="50" cy="7" rx="9" ry="5" fill="#388e3c" transform="rotate(-25 50 7)"/>
+                <ellipse cx="32" cy="8" rx="7" ry="4" fill="#2e7d32" transform="rotate(20 32 8)"/>
+                <path d="M40 18 C20 16,4 34,4 52 C4 72,20 88,40 88 C60 88,76 72,76 52 C76 34,60 16,40 18 Z" fill="url(#ffGH)"/>
+                {[{x:28,y:34},{x:44,y:30},{x:58,y:38},{x:22,y:50},{x:38,y:52},{x:54,y:52},{x:30,y:66},{x:48,y:64}].map((s,i)=>(<ellipse key={i} cx={s.x} cy={s.y} rx="2.2" ry="3" fill="rgba(255,240,180,0.7)" transform={`rotate(${-15+i*5} ${s.x} ${s.y})`}/>))}
+                <ellipse cx="30" cy="36" rx="8" ry="5" fill="rgba(255,255,255,0.25)" transform="rotate(-20 30 36)"/>
+                <defs><radialGradient id="ffGH" cx="35%" cy="30%" r="65%"><stop offset="0%" stopColor="#ff7070"/><stop offset="45%" stopColor="#dd1111"/><stop offset="100%" stopColor="#6b0000"/></radialGradient></defs>
+              </svg>
+            </div>
+            {/* Splat on hover */}
+            {ffHover && (<>
+              <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style={{ position:"absolute", top:"50%", left:"50%", width:170, height:170, animation:"splatPop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards" }}>
+                <path d="M100 20 C130 10,165 20,175 50 C188 85,175 105,185 130 C195 158,175 185,148 188 C118 192,95 178,68 182 C40 186,15 168,12 140 C8 110,25 92,18 65 C10 35,70 30,100 20 Z" fill="#dd2020"/>
+                <path d="M100 35 C125 25,155 35,162 58 C170 82,158 98,165 118 C172 140,158 160,136 163 C112 166,92 154,72 157 C50 160,30 145,28 122 C25 97,40 83,34 62 C28 40,75 45,100 35 Z" fill="#ee3030"/>
+                <ellipse cx="85" cy="75" rx="22" ry="14" fill="rgba(255,120,100,0.35)" transform="rotate(-15 85 75)"/>
+              </svg>
+              {[{dx:-60,dy:-52,s:0.7,d:0.05},{dx:56,dy:-46,s:0.55,d:0.08},{dx:-52,dy:54,s:0.65,d:0.06},{dx:50,dy:56,s:0.5,d:0.1},{dx:66,dy:8,s:0.45,d:0.04},{dx:-68,dy:10,s:0.5,d:0.07}].map((dp,i)=>(
+                <div key={i} style={{ position:"absolute", top:"50%", left:"50%", width:10*dp.s, height:10*dp.s, borderRadius:"50%", background:"#dd2020", marginLeft:-5*dp.s, marginTop:-5*dp.s, animation:`splatDrip 0.7s ease-out ${dp.d}s forwards`, "--dx":`${dp.dx}px`, "--dy":`${dp.dy}px` }} />
+              ))}
+              <div style={{ position:"absolute", top:"50%", left:"50%", textAlign:"center", animation:"splatLabel 0.45s cubic-bezier(0.34,1.56,0.64,1) 0.15s both", transform:"translate(-50%,-50%)", pointerEvents:"none", zIndex:5 }}>
+                <div style={{ fontFamily:"'Cinzel',serif", fontSize:15, fontWeight:900, color:"#fff8e8", letterSpacing:2, textShadow:"0 1px 4px rgba(0,0,0,0.7)", lineHeight:1.2, whiteSpace:"nowrap" }}>FOOD FIGHT</div>
+                <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"rgba(255,220,200,0.85)", letterSpacing:2, marginTop:3 }}>12 CARDS · COMING SOON</div>
+              </div>
+            </>)}
+          </div>
+          {/* Text — fades on hover */}
+          <div style={{ opacity: ffHover ? 0 : 1, transition:"opacity 0.2s" }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#901010", letterSpacing:5, fontWeight:700, marginBottom:8 }}>COMING SOON</div>
+            <div style={{ fontFamily:"'Palatino Linotype',Palatino,'Book Antiqua',Georgia,serif", fontSize:28, fontStyle:"italic", color:"#ff6060", marginBottom:10, lineHeight:1.2 }}>Food Fight</div>
+            <p style={{ fontSize:11, color:"rgba(220,120,120,0.65)", lineHeight:1.75, margin:"0 0 14px" }}>12 culinary warriors. Champions, tokens, and spells — Berry {"&"} Tooty and Master Jax lead the charge.</p>
+            <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+              {["12 Cards","Berry & Tooty","Master Jax"].map(t => (
+                <span key={t} style={{ fontSize:8, padding:"3px 10px", background:"rgba(200,40,40,0.08)", border:"1px solid #601010aa", borderRadius:20, color:"#a04040", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>{t}</span>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -3243,82 +3301,6 @@ function HomeScreen({ setTab, user }) {
             </div>
             <div style={{ marginTop:16, background:"rgba(232,160,32,0.06)", border:"1px solid #e8a02022", borderRadius:10, padding:"12px 16px" }}>
               <span style={{ fontSize:10, color:"#806838", lineHeight:1.7 }}>⚠ Alpha phase — you may experience occasional lag or sync delays. We appreciate your support! 🔥</span>
-            </div>
-          </div>
-        </section>
-      );
-    })()}
-    {/* ── FACTION TEASERS: FABLES & FOOD FIGHT ──────────────────────────── */}
-    {(()=>{
-      const [ffHover, setFfHover] = useState(false);
-      return (
-        <section style={{ position:"relative", overflow:"hidden", background:"linear-gradient(180deg,#060408 0%,#0d060a 50%,#060408 100%)", borderTop:"1px solid rgba(120,80,200,0.15)", padding:"52px 28px 56px" }}>
-          <style>{`
-            @keyframes berryBounceFF{0%,100%{transform:scaleY(1) scaleX(1) translateY(0)}38%{transform:scaleY(1.09) scaleX(0.93) translateY(-16px)}58%{transform:scaleY(0.87) scaleX(1.1) translateY(4px)}74%{transform:scaleY(1.04) scaleX(0.97) translateY(-5px)}}
-            @keyframes splatPop{0%{transform:translate(-50%,-50%) scale(0) rotate(0deg)}28%{transform:translate(-50%,-50%) scale(1.45) rotate(-10deg)}52%{transform:translate(-50%,-50%) scale(0.88) rotate(5deg)}72%{transform:translate(-50%,-50%) scale(1.12) rotate(-2deg)}100%{transform:translate(-50%,-50%) scale(1) rotate(0deg)}}
-            @keyframes splatDrip{0%{transform:translate(0,0) scale(0);opacity:0}20%{opacity:1;transform:translate(var(--dx),var(--dy)) scale(1.2)}60%{opacity:0.8;transform:translate(calc(var(--dx)*1.6),calc(var(--dy)*1.6)) scale(0.8)}100%{opacity:0;transform:translate(calc(var(--dx)*2.2),calc(var(--dy)*2.2)) scale(0.3)}}
-            @keyframes splatLabel{0%{opacity:0;transform:translate(-50%,-50%) scale(0.6)}60%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}80%{transform:translate(-50%,-50%) scale(0.97)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
-          `}</style>
-          <div style={{ position:"absolute", inset:0, background:"radial-gradient(ellipse at 30% 50%,rgba(120,60,220,0.1),transparent 50%),radial-gradient(ellipse at 70% 50%,rgba(200,30,30,0.1),transparent 50%)", pointerEvents:"none" }} />
-          <div style={{ maxWidth:1100, margin:"0 auto", position:"relative", zIndex:2 }}>
-            <div style={{ textAlign:"center", fontFamily:"'Cinzel',serif", fontSize:9, color:"#504050", letterSpacing:4, marginBottom:28, fontWeight:700 }}>COMING NEXT SEASON</div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
-              {/* Fables half */}
-              <div style={{ background:"linear-gradient(135deg,#0a080e,#130b1a)", border:"1px solid rgba(144,100,255,0.25)", borderRadius:16, padding:"28px 24px", display:"flex", alignItems:"center", gap:20, position:"relative", overflow:"hidden" }}>
-                <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:"linear-gradient(90deg,#6040b0,#9060ff,#6040b0)" }} />
-                <div style={{ fontSize:52, flexShrink:0, lineHeight:1, filter:"drop-shadow(0 0 18px rgba(120,80,255,0.5))" }}>📖</div>
-                <div>
-                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:20, fontWeight:900, color:"#9070ff", marginBottom:4, letterSpacing:1, textShadow:"0 0 30px rgba(144,100,255,0.5)" }}>Fables</div>
-                  <p style={{ fontSize:11, color:"rgba(180,150,255,0.6)", lineHeight:1.65, margin:"0 0 12px" }}>13 fairy tale warriors. Dragon Knights, Crystal Golems, enchanted environments and ancient spells.</p>
-                  <div style={{ display:"inline-block", padding:"2px 10px", background:"rgba(144,100,255,0.12)", border:"1px solid rgba(144,100,255,0.25)", borderRadius:12, fontFamily:"'Cinzel',serif", fontSize:8, color:"rgba(180,150,255,0.5)", letterSpacing:2 }}>13 CARDS · COMING SOON</div>
-                </div>
-              </div>
-              {/* Food Fight half — interactive splat */}
-              <div
-                onMouseEnter={()=>setFfHover(true)}
-                onMouseLeave={()=>setFfHover(false)}
-                style={{ background:"linear-gradient(135deg,#0e0608,#180a0a)", border:`1px solid ${ffHover?"rgba(255,80,50,0.55)":"rgba(200,40,40,0.25)"}`, borderRadius:16, padding:"28px 24px", display:"flex", alignItems:"center", justifyContent:"center", position:"relative", overflow:"hidden", cursor:"pointer", transition:"border-color 0.3s", minHeight:120 }}
-              >
-                <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:"linear-gradient(90deg,#aa1010,#ee3030,#aa1010)" }} />
-                {/* Berry — hidden on hover */}
-                <div style={{ position:"relative", width:110, height:110, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  {/* Bouncing berry */}
-                  <div style={{ opacity: ffHover ? 0 : 1, transition:"opacity 0.15s", position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)" }}>
-                    <svg viewBox="0 0 80 90" xmlns="http://www.w3.org/2000/svg" style={{ width:72, height:80, filter:"drop-shadow(0 0 18px rgba(220,50,50,0.7))", animation:"berryBounceFF 1.2s ease-in-out infinite" }}>
-                      <path d="M40 14 Q44 4 48 0" stroke="#2e7d32" strokeWidth="3" strokeLinecap="round" fill="none"/>
-                      <ellipse cx="50" cy="7" rx="9" ry="5" fill="#388e3c" transform="rotate(-25 50 7)"/>
-                      <ellipse cx="32" cy="8" rx="7" ry="4" fill="#2e7d32" transform="rotate(20 32 8)"/>
-                      <path d="M40 18 C20 16,4 34,4 52 C4 72,20 88,40 88 C60 88,76 72,76 52 C76 34,60 16,40 18 Z" fill="url(#ffG3)"/>
-                      {[{x:28,y:34},{x:44,y:30},{x:58,y:38},{x:22,y:50},{x:38,y:52},{x:54,y:52},{x:30,y:66},{x:48,y:64}].map((s,i)=>(<ellipse key={i} cx={s.x} cy={s.y} rx="2.2" ry="3" fill="rgba(255,240,180,0.7)" transform={`rotate(${-15+i*5} ${s.x} ${s.y})`}/>))}
-                      <ellipse cx="30" cy="36" rx="8" ry="5" fill="rgba(255,255,255,0.25)" transform="rotate(-20 30 36)"/>
-                      <defs><radialGradient id="ffG3" cx="35%" cy="30%" r="65%"><stop offset="0%" stopColor="#ff7070"/><stop offset="45%" stopColor="#dd1111"/><stop offset="100%" stopColor="#6b0000"/></radialGradient></defs>
-                    </svg>
-                  </div>
-                  {/* Splat blob */}
-                  {ffHover && (<>
-                    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style={{ position:"absolute", top:"50%", left:"50%", width:160, height:160, animation:"splatPop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards" }}>
-                      <path d="M100 20 C130 10,165 20,175 50 C188 85,175 105,185 130 C195 158,175 185,148 188 C118 192,95 178,68 182 C40 186,15 168,12 140 C8 110,25 92,18 65 C10 35,70 30,100 20 Z" fill="#dd2020"/>
-                      <path d="M100 35 C125 25,155 35,162 58 C170 82,158 98,165 118 C172 140,158 160,136 163 C112 166,92 154,72 157 C50 160,30 145,28 122 C25 97,40 83,34 62 C28 40,75 45,100 35 Z" fill="#ee3030"/>
-                      <ellipse cx="85" cy="75" rx="22" ry="14" fill="rgba(255,120,100,0.35)" transform="rotate(-15 85 75)"/>
-                    </svg>
-                    {/* Drip drops */}
-                    {[{dx:-55,dy:-48,s:0.7,d:0.05},{dx:52,dy:-42,s:0.55,d:0.08},{dx:-48,dy:50,s:0.65,d:0.06},{dx:46,dy:52,s:0.5,d:0.1},{dx:60,dy:8,s:0.45,d:0.04},{dx:-62,dy:10,s:0.5,d:0.07}].map((dp,i)=>(
-                      <div key={i} style={{ position:"absolute", top:"50%", left:"50%", width:10*dp.s, height:10*dp.s, borderRadius:"50%", background:"#dd2020", marginLeft:-5*dp.s, marginTop:-5*dp.s, animation:`splatDrip 0.7s ease-out ${dp.d}s forwards`, "--dx":`${dp.dx}px`, "--dy":`${dp.dy}px` }} />
-                    ))}
-                    {/* Label inside splat */}
-                    <div style={{ position:"absolute", top:"50%", left:"50%", textAlign:"center", animation:"splatLabel 0.45s cubic-bezier(0.34,1.56,0.64,1) 0.15s both", transform:"translate(-50%,-50%)", pointerEvents:"none", zIndex:5 }}>
-                      <div style={{ fontFamily:"'Cinzel',serif", fontSize:15, fontWeight:900, color:"#fff8e8", letterSpacing:2, textShadow:"0 1px 4px rgba(0,0,0,0.6)", lineHeight:1.2, whiteSpace:"nowrap" }}>FOOD FIGHT</div>
-                      <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"rgba(255,220,200,0.8)", letterSpacing:2, marginTop:3 }}>12 CARDS · COMING SOON</div>
-                    </div>
-                  </>)}
-                </div>
-                {/* Text beside berry */}
-                <div style={{ opacity: ffHover ? 0 : 1, transition:"opacity 0.2s" }}>
-                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:20, fontWeight:900, color:"#ff5050", marginBottom:4, letterSpacing:1, textShadow:"0 0 30px rgba(220,50,50,0.5)" }}>Food Fight</div>
-                  <p style={{ fontSize:11, color:"rgba(220,140,140,0.6)", lineHeight:1.65, margin:"0 0 12px" }}>12 culinary warriors. Champions, tokens, and spells — Berry {"&"} Tooty and Master Jax lead the charge.</p>
-                  <div style={{ display:"inline-block", padding:"2px 10px", background:"rgba(200,40,40,0.12)", border:"1px solid rgba(200,40,40,0.25)", borderRadius:12, fontFamily:"'Cinzel',serif", fontSize:8, color:"rgba(220,140,140,0.5)", letterSpacing:2 }}>12 CARDS · COMING SOON</div>
-                </div>
-              </div>
             </div>
           </div>
         </section>
