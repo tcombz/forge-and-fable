@@ -1275,7 +1275,10 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
   const wonSavedRef = useRef(false);
   const pollRef = useRef(null);
   const prevGsRef = useRef(null);
+  const pvpBcRef = useRef(null);
   const [turnBanner, setTurnBanner] = useState(null);
+  const [logHoverCard, setLogHoverCard] = useState(null);
+  const [forfeitConfirm, setForfeitConfirm] = useState(false);
   const showTurnBanner = (type) => { setTurnBanner(type); setTimeout(() => setTurnBanner(null), 1400); };
   const [animUids, setAnimUids] = useState({});
   const vfx = useVFX();
@@ -1397,12 +1400,18 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       if (!match) { onExit(); return; }
       const role = match.player1_id === user.id ? "p1" : "p2";
       setMyRole(role);
+      const fetchFresh = async () => {
+        const { data: fresh } = await supabase.from("matches").select("game_state").eq("id", matchId).single();
+        if (fresh?.game_state) { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } setGs(fresh.game_state); }
+      };
+      // Fast broadcast channel — opponent sends this after each action, much faster than postgres_changes
+      pvpBcRef.current = supabase.channel("pvp_bc_" + matchId)
+        .on("broadcast", { event: "updated" }, fetchFresh)
+        .subscribe();
+      // postgres_changes as reliable fallback
       channel = supabase.channel("pvp_" + matchId)
-        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "matches", filter: `id=eq.${matchId}` }, async () => {
-          // payload.new.game_state may be stripped if row is too large — always refetch
-          const { data: fresh } = await supabase.from("matches").select("game_state").eq("id", matchId).single();
-          if (fresh?.game_state) { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } setGs(fresh.game_state); }
-        }).subscribe();
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "matches", filter: `id=eq.${matchId}` }, fetchFresh)
+        .subscribe();
       if (match.game_state) { setGs(match.game_state); return; }
       if (role === "p1") {
         const fb = [...POOL, ...POOL, ...POOL.slice(0, 5)];
@@ -1441,7 +1450,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       }
     };
     setup();
-    return () => { if (channel) supabase.removeChannel(channel); if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } MusicCtx.play("home"); };
+    return () => { if (channel) supabase.removeChannel(channel); if (pvpBcRef.current) supabase.removeChannel(pvpBcRef.current); if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } MusicCtx.play("home"); };
   }, [matchId]);
 
   useEffect(() => { if (logRef.current) logRef.current.scrollTo({ top: 99999, behavior: "smooth" }); }, [gs?.log]);
@@ -1460,6 +1469,14 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       prevAi.playerBoard.forEach(c => { if (!currAi.playerBoard.find(n => n.uid === c.uid)) anims[c.uid] = "dying"; });
       prevAi.playerBoard.forEach(c => { const cur = currAi.playerBoard.find(n => n.uid === c.uid); if (cur && cur.currentHp < c.currentHp && !anims[c.uid]) anims[c.uid] = "hit"; });
       if (Object.keys(anims).length > 0) { if (Object.values(anims).includes("dying")) SFX.play("kill"); setAnimUids(anims); setTimeout(() => setAnimUids({}), 700); }
+      // Opponent VFX: environment change
+      if (gs.env?.id !== prev.env?.id && gs.env) { vfx.add("envchange", { color: gs.env.border||"#40a020" }); vfx.add("environment", { color: gs.env.border, duration:2000 }); SFX.play("env_play"); }
+      // Opponent VFX: spell cast (detect from new log entries)
+      const newEntries = (gs.log||[]).slice((prev.log||[]).length);
+      if (newEntries.some(l => l.includes("casts ") || l.includes("Cast "))) { vfx.add("spell", { color:"#c090d0" }); SFX.play("ability"); }
+      // VFX: my face was hit
+      const myHPKey = myRole+"HP";
+      if (gs[myHPKey] < prev[myHPKey]) { vfx.add("damage", { amount: prev[myHPKey]-gs[myHPKey] }); }
     }
     prevGsRef.current = gs;
   }, [gs]); // eslint-disable-line
@@ -1471,6 +1488,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       const newGs = applyPvpAction(gs, action, myRole, vfx);
       await supabase.from("matches").update({ game_state: newGs }).eq("id", matchId);
       setGs(newGs);
+      if (pvpBcRef.current) pvpBcRef.current.send({ type:"broadcast", event:"updated", payload:{} });
     } catch (err) {
       console.error("PvP action failed:", err);
     }
@@ -1508,7 +1526,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
     aiOld.enemyBoard.forEach(c => { if (!aiNew.enemyBoard.find(n => n.uid === c.uid)) dyingUids[c.uid] = "dying"; });
     if (Object.keys(dyingUids).length > 0) { SFX.play("kill"); setAnimUids(p => ({ ...p, ...dyingUids })); await new Promise(r => setTimeout(r, 500)); }
     setSyncing(true); setAttacker(null);
-    try { await supabase.from("matches").update({ game_state: newGs }).eq("id", matchId); setGs(newGs); } catch (err) { console.error("PvP action failed:", err); }
+    try { await supabase.from("matches").update({ game_state: newGs }).eq("id", matchId); setGs(newGs); if (pvpBcRef.current) pvpBcRef.current.send({ type:"broadcast", event:"updated", payload:{} }); } catch (err) { console.error("PvP action failed:", err); }
     setSyncing(false);
     await new Promise(r => setTimeout(r, 200));
     setAnimUids({});
@@ -1532,6 +1550,17 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
     invokeAction({ type: "end_turn" });
   };
 
+  const forfeit = async () => {
+    const op = myRole === "p1" ? "p2" : "p1";
+    const newGs = { ...gs, winner: op, log: [...(gs.log||[]).slice(-20), `${user?.name||"Player"} forfeited.`] };
+    setForfeitConfirm(false);
+    try {
+      await supabase.from("matches").update({ game_state: newGs }).eq("id", matchId);
+      setGs(newGs);
+      if (pvpBcRef.current) pvpBcRef.current.send({ type:"broadcast", event:"updated", payload:{} });
+    } catch (err) { console.error("Forfeit failed:", err); }
+  };
+
   if (!gs || !myRole) return (
     <div style={{ maxWidth:480, margin:"0 auto", padding:"80px 24px", textAlign:"center" }}>
       <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, color:"#e8c060", animation:"pulse 1.5s infinite" }}>CONNECTING...</div>
@@ -1548,8 +1577,33 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
   const myWon = gs.winner === myRole;
   const oppWon = gs.winner && gs.winner !== myRole;
 
-  return (<div style={{ maxWidth:1180, margin:"0 auto", padding:"0 16px 60px" }} onClick={() => { SFX.init(); }}>
+  const CARD_NAMES_SORTED = [...new Set(POOL.map(c=>c.name))].sort((a,b)=>b.length-a.length);
+  const renderLogLine = (text, key) => {
+    const parts = []; let rem = text; let ki=0;
+    while (rem.length > 0) {
+      let found=false;
+      for (const nm of CARD_NAMES_SORTED) {
+        const idx=rem.indexOf(nm);
+        if (idx!==-1) { if(idx>0) parts.push(<span key={ki++}>{rem.slice(0,idx)}</span>); const cd=POOL.find(c=>c.name===nm); parts.push(<span key={ki++} style={{color:cd?.border||"#c0a040",fontWeight:700,cursor:"pointer",borderBottom:"1px dotted currentColor"}} onMouseEnter={()=>setLogHoverCard(cd)} onMouseLeave={()=>setLogHoverCard(null)}>{nm}</span>); rem=rem.slice(idx+nm.length); found=true; break; }
+      }
+      if (!found) { parts.push(<span key={ki++}>{rem}</span>); rem=""; }
+    }
+    return <span key={key}>{parts}</span>;
+  };
+  return (<div style={{ maxWidth:1440, margin:"0 auto", padding:"0 16px 60px" }} onClick={() => { SFX.init(); }}>
     {previewCard && <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />}
+    {/* Forfeit confirm */}
+    {forfeitConfirm && (<div style={{ position:"fixed", inset:0, zIndex:600, background:"rgba(0,0,0,0.85)", display:"flex", alignItems:"center", justifyContent:"center" }} onClick={()=>setForfeitConfirm(false)}>
+      <div style={{ background:"#120a06", border:"1px solid #c04020", borderRadius:14, padding:"28px 36px", textAlign:"center", maxWidth:320 }} onClick={e=>e.stopPropagation()}>
+        <div style={{ fontSize:32, marginBottom:8 }}>🏳️</div>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:16, color:"#e8c060", fontWeight:700, marginBottom:8 }}>FORFEIT MATCH?</div>
+        <p style={{ fontSize:11, color:"#a09070", marginBottom:20 }}>Your opponent wins the match. This cannot be undone.</p>
+        <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
+          <button onClick={forfeit} style={{ padding:"9px 22px", background:"linear-gradient(135deg,#8a0808,#c01010)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:11, color:"#ffcccc", cursor:"pointer", fontWeight:700 }}>FORFEIT</button>
+          <button onClick={()=>setForfeitConfirm(false)} style={{ padding:"9px 22px", background:"transparent", border:"1px solid #3a2010", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:11, color:"#806040", cursor:"pointer" }}>CANCEL</button>
+        </div>
+      </div>
+    </div>)}
     {/* Opening draw overlay */}
     {gs?.drawAnim && !gs.winner && (<div style={{ position:"fixed", inset:0, zIndex:500, background:"rgba(0,0,0,0.9)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", animation:"fadeIn 0.4s" }}>
       <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#a09060", letterSpacing:4, marginBottom:20 }}>OPENING DRAW</div>
@@ -1566,7 +1620,10 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
     {/* Turn banner */}
     {!gs.winner && (<div style={{ textAlign:"center", padding:"6px 0 2px", fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, letterSpacing:3, color: isMyTurn ? "#78cc45" : "#e8c060", animation: "fadeIn 0.3s" }}>{isMyTurn ? "YOUR TURN" : `${opponentName || "OPPONENT"}'S TURN`}{syncing && <span style={{ fontSize:8, color:"#806040", marginLeft:8 }}>syncing...</span>}</div>)}
     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-      <button onClick={onExit} style={{ padding:"7px 16px", background:"transparent", border:"1px solid #3a2c10", borderRadius:7, color:"#806040", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer" }}>EXIT</button>
+      <div style={{ display:"flex", gap:6 }}>
+        <button onClick={onExit} style={{ padding:"7px 14px", background:"transparent", border:"1px solid #3a2c10", borderRadius:7, color:"#806040", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer" }}>EXIT</button>
+        {!gs?.winner && <button onClick={()=>setForfeitConfirm(true)} style={{ padding:"7px 14px", background:"transparent", border:"1px solid #6a1010", borderRadius:7, color:"#804040", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer" }}>FORFEIT</button>}
+      </div>
       <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:16, fontWeight:700, color:"#e8c060", margin:0 }}>PvP Battle</h2>
       {isMyTurn && !gs.winner ? <TurnTimer key={timerKey} active={true} onExpire={endTurn} /> : <div style={{ width:110 }} />}
     </div>
@@ -1576,9 +1633,9 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       <p style={{ fontSize:13, color:"#a09070" }}>{myWon?`You defeated ${opponentName}!`:`${opponentName} wins this round.`}</p>
       <button onClick={onExit} style={{ marginTop:16, padding:"11px 28px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontWeight:700, fontSize:12, letterSpacing:2, color:"#1a1000", cursor:"pointer" }}>EXIT</button>
     </div>)}
-    <div style={{ display:"grid", gridTemplateColumns:"250px 1fr 270px", gap:14 }}>
+    <div style={{ display:"grid", gridTemplateColumns:"240px 1fr 310px", gap:12 }}>
       {/* Chat panel — LEFT */}
-      <div style={{ display:"flex", flexDirection:"column", minHeight:500 }}>
+      <div style={{ display:"flex", flexDirection:"column", minHeight:600 }}>
         <BattleChat user={user} aiMode={false} matchId={matchId} />
       </div>
       <div style={{ background: envTheme?envTheme.bg:"#0c0a08", border:`1px solid ${envTheme?envTheme.glow+"44":"#242010"}`, borderRadius:14, overflow:"hidden", position:"relative", transition:"background 1.5s, border-color 1s" }}>
@@ -1614,7 +1671,12 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
           </div>
           <div style={{ borderTop:"1px solid #181408", paddingTop:10, marginBottom:10 }}>
             <div style={{ display:"flex", gap:6, justifyContent:"center", flexWrap:"wrap" }}>
-              {ai.playerHand.map((card)=>{const cp=isMyTurn&&!syncing&&(card.type==="environment"||card.type==="spell"||ai.playerBoard.length<CFG.maxBoard)&&(card.bloodpact?card.cost<ai.playerHP:card.cost<=ai.playerEnergy);return(<HandCard key={card.uid} card={resolveCardArt(card,myRole==="p1"?gs?.p1Arts||{}:gs?.p2Arts||{})} playable={cp} onClick={()=>playCard(card)}/>);})}
+              {ai.playerHand.map((card)=>{
+                const needsAllies=(card.type==="spell")&&(card.effects||[]).some(e=>["buff_allies","heal_all_allies","buff_random_ally","buff_keyword_allies"].includes(e.effect));
+                const canAfford=card.bloodpact?card.cost<ai.playerHP:card.cost<=ai.playerEnergy;
+                const cp=isMyTurn&&!syncing&&canAfford&&(card.type==="environment"||card.type==="spell"||ai.playerBoard.length<CFG.maxBoard)&&!(needsAllies&&ai.playerBoard.length===0);
+                return(<HandCard key={card.uid} card={resolveCardArt(card,myRole==="p1"?gs?.p1Arts||{}:gs?.p2Arts||{})} playable={cp} onClick={()=>playCard(card)}/>);
+              })}
             </div>
           </div>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
@@ -1639,9 +1701,10 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       {/* Log */}
       <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
         {attCard&&(<div style={{ background:`${attCard.border}15`, border:`1px solid ${attCard.border}55`, borderRadius:10, padding:10 }}><div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:attCard.border, fontWeight:600 }}>ATTACKING</div><div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#f0e8d8", fontWeight:700 }}>{attCard.name}</div><div style={{ fontSize:12, color:"#ff7050", fontWeight:700 }}>ATK {attCard.currentAtk}</div><button onClick={()=>setAttacker(null)} style={{ marginTop:6, width:"100%", padding:"3px", background:"transparent", border:"1px solid #241408", borderRadius:4, color:"#806040", fontFamily:"'Cinzel',serif", fontSize:8, cursor:"pointer" }}>Cancel</button></div>)}
-        <div style={{ flex:1, background:"#080604", border:"1px solid #161408", borderRadius:10, overflow:"hidden", display:"flex", flexDirection:"column" }}>
-          <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#c09048", letterSpacing:3, padding:"8px 12px", borderBottom:"1px solid #281e08", fontWeight:700 }}>BATTLE LOG</div>
-          <div ref={logRef} style={{ overflowY:"auto", padding:"8px 12px", flex:1, maxHeight:460 }}>{(gs.log||[]).map((l,i)=>(<div key={i} style={{ fontSize:11, lineHeight:1.65, marginBottom:4, color:logColor(l), borderLeft:i===(gs.log||[]).length-1?`2px solid ${logColor(l)}`:"2px solid transparent", paddingLeft:6, fontFamily:"'Cinzel',serif", fontWeight:i===(gs.log||[]).length-1?700:400 }}>{logIcon(l)}{l}</div>))}</div>
+        {logHoverCard && <div style={{ background:`${logHoverCard.border}12`, border:`1px solid ${logHoverCard.border}44`, borderRadius:8, padding:"8px 10px", marginBottom:4 }}><div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:logHoverCard.border, fontWeight:700 }}>{logHoverCard.name}</div><div style={{ fontSize:9, color:"#a09060", marginTop:2, lineHeight:1.5 }}>{logHoverCard.type} · {logHoverCard.rarity}</div>{logHoverCard.atk!==undefined&&<div style={{ fontSize:9, color:"#ff8060", marginTop:1 }}>{logHoverCard.atk}/{logHoverCard.hp}</div>}</div>}
+        <div style={{ flex:1, background:"#080604", border:"1px solid #161408", borderRadius:10, overflow:"hidden", display:"flex", flexDirection:"column", minHeight:400 }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#c09048", letterSpacing:3, padding:"8px 12px", borderBottom:"1px solid #281e08", fontWeight:700, display:"flex", justifyContent:"space-between", alignItems:"center" }}><span>BATTLE LOG</span><span style={{ fontSize:8, color:"#403828" }}>TURN {gs.turn}</span></div>
+          <div ref={logRef} style={{ overflowY:"auto", padding:"8px 12px", flex:1, maxHeight:560 }}>{(gs.log||[]).map((l,i)=>{const isLast=i===(gs.log||[]).length-1;return(<div key={i} style={{ fontSize:10, lineHeight:1.7, marginBottom:5, color:logColor(l), borderLeft:isLast?`2px solid ${logColor(l)}`:"2px solid #1a160e", paddingLeft:6, fontFamily:"'Cinzel',serif", fontWeight:isLast?700:400, display:"flex", alignItems:"flex-start", gap:4 }}><span style={{ opacity:0.5, flexShrink:0 }}>{logIcon(l)}</span>{renderLogLine(l, i)}</div>);})}</div>
         </div>
       </div>
     </div>
