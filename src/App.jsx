@@ -858,14 +858,26 @@ function logIcon(line) {
 // ═══ BATTLE CHAT (GIF) ════════════════════════════════════════════════════════
 const GIPHY_KEY = "6HnQE0960QsP5zT7DWHbow94frssuHfS";
 const AI_REACTIONS = ["nice","reaction","wow","gaming","card game","epic","gg","celebrate"];
-function BattleChat({ user, aiMode }) {
+function BattleChat({ user, aiMode, matchId }) {
   const [messages, setMessages] = useState([{ from: "System", text: "Battle chat active. Search GIFs to react!", id: 0 }]);
   const [gifQuery, setGifQuery] = useState("");
   const [gifs, setGifs] = useState([]);
   const [searching, setSearching] = useState(false);
   const [showGifPanel, setShowGifPanel] = useState(false);
   const msgRef = useRef(null);
+  const chatChRef = useRef(null);
   useEffect(() => { if (msgRef.current) msgRef.current.scrollTop = msgRef.current.scrollHeight; }, [messages]);
+  // PvP broadcast channel for cross-player GIF chat
+  useEffect(() => {
+    if (aiMode || !matchId) return;
+    chatChRef.current = supabase.channel("bchat_" + matchId)
+      .on("broadcast", { event: "gif" }, ({ payload }) => {
+        if (payload.from !== user?.id) {
+          setMessages(m => [...m, { from: payload.name || "Opponent", gif: payload.url, id: Date.now() }]);
+        }
+      }).subscribe();
+    return () => { if (chatChRef.current) { supabase.removeChannel(chatChRef.current); chatChRef.current = null; } };
+  }, [matchId]); // eslint-disable-line
   const searchGifs = async () => {
     if (!gifQuery.trim()) return;
     setSearching(true);
@@ -881,6 +893,9 @@ function BattleChat({ user, aiMode }) {
     if (!url) return;
     setMessages(m => [...m, { from: user?.name || "You", gif: url, id: Date.now() }]);
     setShowGifPanel(false); setGifQuery(""); setGifs([]);
+    if (!aiMode && chatChRef.current) {
+      chatChRef.current.send({ type: "broadcast", event: "gif", payload: { from: user?.id, name: user?.name || "You", url } });
+    }
     if (aiMode) {
       setTimeout(async () => {
         const rq = AI_REACTIONS[Math.floor(Math.random() * AI_REACTIONS.length)];
@@ -972,7 +987,37 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   };
 
   const selectAtt = (c) => { if (g.phase !== "player" || aiThink) return; if (attacker === c.uid) { setAttacker(null); return; } if (c.canAttack && !c.hasAttacked) setAttacker(c.uid); };
-  const atkCreature = async (tgt) => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking" }); await new Promise(r => setTimeout(r, 220)); setAnimUids(p => ({ ...p, [tgt.uid]: "hit" })); const av = att.currentAtk + ((att.keywords || []).includes("Resonate") ? g.enemyHand.length : 0); setGame((prev) => { let s = { ...prev, log: [...prev.log.slice(-20)] }; let nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av; let nAHP = att.currentHp - tgt.currentAtk; if (tgt.shielded) s.log = [...s.log, `${tgt.name} shield absorbs!`]; s.enemyBoard = prev.enemyBoard.map((c) => c.uid === tgt.uid ? { ...c, currentHp: nTHP, shielded: false, bleed: (c.bleed || 0) + ((att.keywords || []).includes("Bleed") ? 1 : 0) } : c).filter((c) => c.currentHp > 0); s.playerBoard = prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP } : c).filter((c) => c.currentHp > 0); s.log = [...s.log, `${att.name}(${av}) attacks ${tgt.name}`]; if (nTHP <= 0) { SFX.play("kill"); s.log = [...s.log, `${tgt.name} destroyed!`]; s = resolveEffects("onDeath", tgt, s, "enemy", vfx); } if (nAHP <= 0) { s.log = [...s.log, `${att.name} falls.`]; s = resolveEffects("onDeath", att, s, "player", vfx); } if (s.enemyHP <= 0) { s.phase = "gameover"; s.winner = "player"; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 300)); setAnimUids({}); };
+  const atkCreature = async (tgt) => {
+    if (!attacker || g.phase !== "player") return;
+    const att = g.playerBoard.find((c) => c.uid === attacker);
+    if (!att) return;
+    SFX.play("attack");
+    setAnimUids({ [att.uid]: "attacking" });
+    await new Promise(r => setTimeout(r, 220));
+    setAnimUids(p => ({ ...p, [tgt.uid]: "hit" }));
+    await new Promise(r => setTimeout(r, 180));
+    const av = att.currentAtk + ((att.keywords || []).includes("Resonate") ? g.enemyHand.length : 0);
+    const nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av;
+    const nAHP = att.currentHp - tgt.currentAtk;
+    const dyingUids = {};
+    if (nTHP <= 0) { dyingUids[tgt.uid] = "dying"; SFX.play("kill"); }
+    if (nAHP <= 0) dyingUids[att.uid] = "dying";
+    if (Object.keys(dyingUids).length > 0) { setAnimUids(p => ({ ...p, ...dyingUids })); await new Promise(r => setTimeout(r, 500)); }
+    setGame((prev) => {
+      let s = { ...prev, log: [...prev.log.slice(-20)] };
+      if (tgt.shielded) s.log = [...s.log, `${tgt.name} shield absorbs!`];
+      s.enemyBoard = prev.enemyBoard.map((c) => c.uid === tgt.uid ? { ...c, currentHp: nTHP, shielded: false, bleed: (c.bleed || 0) + ((att.keywords || []).includes("Bleed") ? 1 : 0) } : c).filter((c) => c.currentHp > 0);
+      s.playerBoard = prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP } : c).filter((c) => c.currentHp > 0);
+      s.log = [...s.log, `${att.name}(${av}) attacks ${tgt.name}`];
+      if (nTHP <= 0) { s.log = [...s.log, `${tgt.name} destroyed!`]; s = resolveEffects("onDeath", tgt, s, "enemy", vfx); }
+      if (nAHP <= 0) { s.log = [...s.log, `${att.name} falls.`]; s = resolveEffects("onDeath", att, s, "player", vfx); }
+      if (s.enemyHP <= 0) { s.phase = "gameover"; s.winner = "player"; }
+      return s;
+    });
+    setAttacker(null);
+    await new Promise(r => setTimeout(r, 200));
+    setAnimUids({});
+  };
   const atkFace = async () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking" }); await new Promise(r => setTimeout(r, 280)); const dmg = att.currentAtk + ((att.keywords || []).includes("Resonate") ? g.enemyHand.length : 0); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if (nHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 200)); setAnimUids({}); };
   const attCard = attacker ? g.playerBoard.find((c) => c.uid === attacker) : null;
 
@@ -1350,8 +1395,10 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       const role = match.player1_id === user.id ? "p1" : "p2";
       setMyRole(role);
       channel = supabase.channel("pvp_" + matchId)
-        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "matches", filter: `id=eq.${matchId}` }, (payload) => {
-          if (payload.new.game_state) { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } setGs(payload.new.game_state); }
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "matches", filter: `id=eq.${matchId}` }, async () => {
+          // payload.new.game_state may be stripped if row is too large — always refetch
+          const { data: fresh } = await supabase.from("matches").select("game_state").eq("id", matchId).single();
+          if (fresh?.game_state) { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } setGs(fresh.game_state); }
         }).subscribe();
       if (match.game_state) { setGs(match.game_state); return; }
       if (role === "p1") {
@@ -1415,19 +1462,29 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
   const selectAtt = (c) => { if (!isMyTurn || syncing) return; setAttacker(attacker === c.uid ? null : (c.canAttack && !c.hasAttacked ? c.uid : attacker)); };
 
   const atkCreature = async (tgt) => {
-    if (!attacker || !isMyTurn) return;
+    if (!attacker || !isMyTurn || syncing) return;
     SFX.play("attack");
     const attUid = attacker;
     setAnimUids({ [attUid]: "attacking" });
     await new Promise(r => setTimeout(r, 220));
     setAnimUids(p => ({ ...p, [tgt.uid]: "hit" }));
-    invokeAction({ type: "attack_creature", attackerUid: attUid, targetUid: tgt.uid });
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise(r => setTimeout(r, 180));
+    // Compute result to find dying cards before committing state
+    const newGs = applyPvpAction(gs, { type: "attack_creature", attackerUid: attUid, targetUid: tgt.uid }, myRole, vfx);
+    const aiOld = toAI(gs, myRole), aiNew = toAI(newGs, myRole);
+    const dyingUids = {};
+    aiOld.playerBoard.forEach(c => { if (!aiNew.playerBoard.find(n => n.uid === c.uid)) dyingUids[c.uid] = "dying"; });
+    aiOld.enemyBoard.forEach(c => { if (!aiNew.enemyBoard.find(n => n.uid === c.uid)) dyingUids[c.uid] = "dying"; });
+    if (Object.keys(dyingUids).length > 0) { SFX.play("kill"); setAnimUids(p => ({ ...p, ...dyingUids })); await new Promise(r => setTimeout(r, 500)); }
+    setSyncing(true); setAttacker(null);
+    try { await supabase.from("matches").update({ game_state: newGs }).eq("id", matchId); setGs(newGs); } catch (err) { console.error("PvP action failed:", err); }
+    setSyncing(false);
+    await new Promise(r => setTimeout(r, 200));
     setAnimUids({});
   };
 
   const atkFace = async () => {
-    if (!attacker || !isMyTurn) return;
+    if (!attacker || !isMyTurn || syncing) return;
     SFX.play("attack");
     const attUid = attacker;
     setAnimUids({ [attUid]: "attacking" });
@@ -1478,7 +1535,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
     <div style={{ display:"grid", gridTemplateColumns:"250px 1fr 270px", gap:14 }}>
       {/* Chat panel — LEFT */}
       <div style={{ display:"flex", flexDirection:"column", minHeight:500 }}>
-        <BattleChat user={user} aiMode={false} />
+        <BattleChat user={user} aiMode={false} matchId={matchId} />
       </div>
       <div style={{ background: envTheme?envTheme.bg:"#0c0a08", border:`1px solid ${envTheme?envTheme.glow+"44":"#242010"}`, borderRadius:14, overflow:"hidden", position:"relative", transition:"background 1.5s, border-color 1s" }}>
         <VFXOverlay effects={vfx.effects} />
