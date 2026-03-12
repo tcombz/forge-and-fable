@@ -29,7 +29,7 @@ const CURRENT_PATCH = "v18";
 const SFX = (() => {
   let ctx = null;
   const init = () => { if (!ctx) try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} return ctx; };
-  const masterVolume = 0.38;
+  const masterVolume = 0.08;
   const tone = (f, type, vol, t0, dur) => {
     const c = init(); if (!c) return; if (c.state === "suspended") c.resume();
     try { const o = c.createOscillator(), g = c.createGain(); o.connect(g); g.connect(c.destination); o.type = type; o.frequency.value = Math.min(f, 880); g.gain.setValueAtTime(vol * masterVolume, c.currentTime + t0); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + t0 + dur); o.start(c.currentTime + t0); o.stop(c.currentTime + t0 + dur + 0.05); } catch (e) {}
@@ -146,7 +146,7 @@ const MUSIC_TRACKS = {
 const MusicCtx = (() => {
   let audio = null;
   let currentTrack = null;
-  let volume = 0.35;
+  let volume = 0.08;
   let muted = false;
   const listeners = new Set();
   const notify = () => listeners.forEach(fn => fn({ currentTrack, muted, volume }));
@@ -745,7 +745,7 @@ function Token({ c, selected, isTarget, canSelect, onClick, onRightClick, animTy
         {c.bleed > 0 && <div style={{ fontSize: 7, color: "#ff6060", fontWeight: 700, marginBottom: 1 }}>🩸 BLEED {c.bleed}</div>}
         {c.buffNote && <div style={{ fontSize: 7, color: "#60e880", fontWeight: 700, marginBottom: 1 }}>⬆ {c.buffNote}</div>}
         {c.debuffNote && <div style={{ fontSize: 7, color: "#ff6060", fontWeight: 700, marginBottom: 1 }}>⬇ {c.debuffNote}</div>}
-        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, color: "#fff", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textShadow: "0 0 6px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.levelLabel || c.name}</div>
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, color: "#fff", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textShadow: "0 0 6px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.name}</div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 2 }}>
           <span style={{ fontSize: 15, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#ff7050", textShadow: "0 0 8px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.currentAtk}</span>
           <span style={{ fontSize: 15, fontFamily: "'Cinzel',serif", fontWeight: 700, color: pct < 0.4 ? "#e04040" : "#50c060", textShadow: "0 0 8px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.currentHp}</span>
@@ -860,7 +860,7 @@ function resolveEffects(trigger, card, state, side, vfx) {
       case "damage_all": s[myB] = s[myB].map((c) => c.uid === card.uid ? c : { ...c, currentHp: c.currentHp - fx.amount }).filter((c) => c.currentHp > 0); s[thB] = s[thB].map((c) => ({ ...c, currentHp: c.currentHp - fx.amount })).filter((c) => c.currentHp > 0); L(`${card.name}: ${fx.amount} to ALL!`); if (vfx) vfx.add("ability", { color: "#ff8040" }); break;
       case "damage_random_enemy": if (s[thB].length > 0) { const idx = Math.floor(Math.random() * s[thB].length); const tgt = s[thB][idx]; s[thB] = s[thB].map((c, i) => i === idx ? { ...c, currentHp: c.currentHp - fx.amount } : c).filter((c) => c.currentHp > 0); L(`${card.name} hits ${tgt.name} for ${fx.amount}!`); } break;
       case "buff_allies": { const isDebuff = (fx.atk||0) < 0 || (fx.hp||0) < 0; const noteStr = `${fx.atk>=0?"+":""}${fx.atk||0}/${fx.hp>=0?"+":""}${fx.hp||0} (${card.name})`; s[myB] = s[myB].map((c) => ({ ...c, currentAtk: c.currentAtk + (fx.atk || 0), currentHp: c.currentHp + (fx.hp || 0), maxHp: c.maxHp + (fx.hp || 0), ...(isDebuff ? { debuffNote: noteStr } : { buffNote: noteStr }) })); L(`${card.name} ${isDebuff?"debuffs":"buffs"} ${fx.atk||0}/${fx.hp||0}!`); if (vfx) vfx.add("ability", { color: isDebuff?"#ff6040":"#40ff60" }); break; }
-      case "buff_random_ally": { const allies = s[myB].filter((c) => c.uid !== card.uid); if (allies.length > 0) { const t = allies[Math.floor(Math.random() * allies.length)]; s[myB] = s[myB].map((c) => c.uid === t.uid ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), buffNote: `+${fx.atk||0} ATK (${card.name})` } : c); L(`${card.name} buffs ${t.name}!`); } break; }
+      case "buff_random_ally": { const allies = s[myB].filter((c) => c.id !== card.id); if (allies.length > 0) { const t = allies[Math.floor(Math.random() * allies.length)]; s[myB] = s[myB].map((c) => c.uid === t.uid ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), buffNote: `+${fx.atk||0} ATK (${card.name})` } : c); L(`${card.name} buffs ${t.name}!`); } break; }
       case "buff_keyword_allies": s[myB] = s[myB].map((c) => (c.keywords || []).length > 0 ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), buffNote: `+${fx.atk||0} ATK (${card.name})` } : c); break;
       case "heal_all_allies": s[myB] = s[myB].map((c) => ({ ...c, currentHp: Math.min(c.maxHp, c.currentHp + fx.amount) })); break;
       case "self_buff": s[myB] = s[myB].map((c) => c.uid === card.uid ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), buffNote: `+${fx.atk||0} ATK (${card.name})` } : c); break;
@@ -1351,7 +1351,7 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
   const selectedArts = user?.selectedArts || {};
   const owned = POOL.filter((c) => (col[c.id] || 0) > 0);
   const isNew = !editDeck;
-  const [deck, setDeck] = useState(() => editDeck ? [...editDeck.cards] : [...STARTER_DECK]);
+  const [deck, setDeck] = useState(() => editDeck ? [...editDeck.cards] : []);
   const [dbPreview, setDbPreview] = useState(null);
   const [errMsg, setErrMsg] = useState("");
   useEffect(() => {
@@ -1463,7 +1463,10 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
       {/* Deck list */}
       <div style={{ display:"flex", flexDirection:"column", overflow:"hidden", background:"linear-gradient(180deg,#0e0c06,#0a0806)" }}>
         <div style={{ padding:"14px 18px", borderBottom:"1px solid #2a2010", flexShrink:0 }}>
-          <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#c09848", letterSpacing:2, fontWeight:700, marginBottom:4 }}>YOUR DECK — {total}/{CFG.deck.size}</div>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#c09848", letterSpacing:2, fontWeight:700 }}>YOUR DECK — {total}/{CFG.deck.size}</div>
+            {deck.length > 0 && <button onClick={() => { setErrMsg(""); setDeck([]); }} style={{ padding:"3px 10px", background:"rgba(180,40,20,0.12)", border:"1px solid #5a1810", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:8, color:"#a06040", cursor:"pointer", letterSpacing:1 }}>CLEAR ALL</button>}
+          </div>
           {errMsg && <div style={{ fontSize:9, color:"#e06050", fontFamily:"'Cinzel',serif", marginBottom:4, letterSpacing:0.5 }}>⚠ {errMsg}</div>}
           {!canSave && <div style={{ fontSize:10, color:"#604028", marginBottom:4 }}>{need > 0 ? `Need ${need} more` : "At limit — remove a card"}</div>}
           <div style={{ height:4, background:"#1a1408", borderRadius:2, overflow:"hidden" }}>
@@ -1484,7 +1487,7 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
                   <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#f0e0c8", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.name}</div>
                   <div style={{ fontSize:7, color:typeColor, fontFamily:"'Cinzel',serif", letterSpacing:0.5 }}>{(c.type||"creature").toUpperCase()}</div>
                 </div>
-                <button onClick={() => removeCard(i)} style={{ background:"transparent", border:"none", color:"#c07060", fontSize:14, cursor:"pointer", lineHeight:1, flexShrink:0 }}>×</button>
+                <button onClick={() => removeCard(i)} style={{ background:"rgba(180,60,40,0.15)", border:"1px solid #c0706055", borderRadius:5, color:"#e08060", fontSize:16, fontWeight:700, cursor:"pointer", lineHeight:1, flexShrink:0, width:28, height:28, display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
               </div>
             );
           })}
@@ -1670,11 +1673,26 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       }
       s[role+"Board"] = (s[role+"Board"]||[]).map(c => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter(c => c.currentHp > 0);
       s[op+"Board"] = (s[op+"Board"]||[]).map(c => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter(c => c.currentHp > 0);
+      // Check if bleed killed the hero
+      if (!s.winner) { if ((s[role+"HP"]||20) <= 0) { s.winner = op; s.log = [...(s.log||[]).slice(-20), `${role} hero bled out!`]; } else if ((s[op+"HP"]||20) <= 0) { s.winner = role; s.log = [...(s.log||[]).slice(-20), `${op} hero bled out!`]; } }
+      if (s.winner) return s;
       s[role+"Board"] = s[role+"Board"].map(c => ({ ...c, canAttack: true, hasAttacked: false }));
       s[op+"Board"] = s[op+"Board"].map(c => ({ ...c, canAttack: true, hasAttacked: false }));
       if ((s[op+"Deck"]||[]).length > 0 && (s[op+"Hand"]||[]).length < CFG.maxHand) {
         s[op+"Hand"] = [...s[op+"Hand"], makeInst(s[op+"Deck"][0], op)];
         s[op+"Deck"] = s[op+"Deck"].slice(1);
+      } else if ((s[op+"Deck"]||[]).length === 0) {
+        // Deck empty: increment fatigue and deal damage
+        s[op+"Fatigue"] = (s[op+"Fatigue"]||0) + 1;
+        s[op+"HP"] = (s[op+"HP"]||20) - s[op+"Fatigue"];
+        s.log = [...(s.log||[]).slice(-20), `${op.toUpperCase()} deck empty — ${s[op+"Fatigue"]} fatigue damage!`];
+        if (!s.winner && s[op+"HP"] <= 0) { s.winner = role; s.log = [...s.log, `${op} falls to fatigue!`]; }
+      }
+      if ((s[role+"Deck"]||[]).length === 0) {
+        s[role+"Fatigue"] = (s[role+"Fatigue"]||0) + 1;
+        s[role+"HP"] = (s[role+"HP"]||20) - s[role+"Fatigue"];
+        s.log = [...(s.log||[]).slice(-20), `${role.toUpperCase()} deck empty — ${s[role+"Fatigue"]} fatigue damage!`];
+        if (!s.winner && s[role+"HP"] <= 0) { s.winner = op; s.log = [...s.log, `${role} falls to fatigue!`]; }
       }
       s.turn = newTurn; s.phase = op;
       s[op+"Max"] = newMax; s[op+"Energy"] = newMax;
@@ -2062,9 +2080,9 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     {/* Top bar: controls + centered turn status + timer */}
     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
       <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-        <button onClick={onExit} style={{ padding:"7px 14px", background:"transparent", border:"1px solid #3a2c10", borderRadius:7, color:"#806040", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer" }}>EXIT</button>
-        {!gs?.winner && <button onClick={()=>setForfeitConfirm(true)} style={{ padding:"7px 14px", background:"transparent", border:"1px solid #6a1010", borderRadius:7, color:"#804040", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer" }}>FORFEIT</button>}
-        <button onClick={()=>{ const el=document.documentElement; if(!document.fullscreenElement){el.requestFullscreen?.();}else{document.exitFullscreen?.();} }} style={{ padding:"7px 10px", background:"transparent", border:"1px solid #2a2010", borderRadius:7, color:"#605040", fontFamily:"'Cinzel',serif", fontSize:11, cursor:"pointer" }} title="Fullscreen">⛶</button>
+        <button onClick={onExit} style={{ padding:"7px 16px", background:"rgba(20,14,4,0.8)", border:"1px solid #806040aa", borderRadius:7, color:"#d0a060", fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, cursor:"pointer", letterSpacing:1 }}>EXIT</button>
+        {!gs?.winner && <button onClick={()=>setForfeitConfirm(true)} style={{ padding:"7px 16px", background:"rgba(30,4,4,0.8)", border:"1px solid #c04040aa", borderRadius:7, color:"#e06060", fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, cursor:"pointer", letterSpacing:1 }}>FF</button>}
+        <button onClick={()=>{ const el=document.documentElement; if(!document.fullscreenElement){el.requestFullscreen?.();}else{document.exitFullscreen?.();} }} style={{ padding:"7px 12px", background:"rgba(14,12,8,0.8)", border:"1px solid #604028aa", borderRadius:7, color:"#a08050", fontFamily:"'Cinzel',serif", fontSize:13, cursor:"pointer" }} title="Fullscreen">⛶</button>
       </div>
       {!gs.winner && (<div style={{ display:"flex", alignItems:"center", gap:8, position:"absolute", left:"50%", transform:"translateX(-50%)" }}>
         <div style={{ width:7, height:7, borderRadius:"50%", background:isMyTurn?"#78cc45":"#e8c060", boxShadow:`0 0 8px ${isMyTurn?"#78cc45":"#e8c060"}`, animation:"pulse 1.5s infinite" }} />
@@ -2129,6 +2147,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
               <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#cc4848", letterSpacing:2, fontWeight:700 }}>{(opponentName||"OPPONENT").toUpperCase()}</span>
               <div style={{ display:"flex", gap:2 }}>{Array.from({length:ai.enemyHand.length}).map((_,i)=>(<div key={i} style={{ width:14, height:20, background:"linear-gradient(135deg,#240c0c,#180808)", border:"1px solid #341818", borderRadius:2 }}/>))}</div>
               <span style={{ fontSize:8, color:"#604040" }}>Deck:{ai.enemyDeck.length}</span>
+              <span style={{ fontSize:8, color:"#4080a0", fontFamily:"'Cinzel',serif" }}>⚡{gs[myRole==="p1"?"p2Energy":"p1Energy"]||0}/{gs[myRole==="p1"?"p2Max":"p1Max"]||0}</span>
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:6 }}>
               <div style={{ width:60, height:6, background:"#180808", borderRadius:3, overflow:"hidden" }}><div style={{ height:"100%", width:`${Math.max(0,(ai.enemyHP/CFG.startHP)*100)}%`, background:hpCol(ai.enemyHP), transition:"width .4s" }}/></div>
@@ -3383,12 +3402,14 @@ function StoreScreen({ user, onUpdateUser }) {
               const isRevealed = revealed.includes(i);
               const isShaking = shakeCard === i;
               const rarGlow = { Rare: "#5090ff", Epic: "#a860d8", Legendary: "#f0b818" }[card.rarity] || null;
+              const isNewAlt = card.altSetId && !((user.altOwned||{})[card.id]||[]).includes(card.altSetId);
               return (
                 <div key={i} onClick={!isRevealed ? revealNext : undefined} style={{ width: 142, cursor: isRevealed ? "default" : "pointer", perspective: 1000 }}>
                   <div style={{ transition: "transform 0.6s cubic-bezier(.4,0,.2,1)", transformStyle: "preserve-3d", transform: isRevealed ? "rotateY(0deg)" : isShaking ? "rotateY(90deg)" : "rotateY(180deg)" }}>
                     {isRevealed ? (
                       <div style={{ animation: "cardReveal 0.5s ease-out", position: "relative" }}>
                         {rarGlow && <div style={{ position: "absolute", inset: -8, borderRadius: 20, background: `radial-gradient(circle,${rarGlow}33,transparent 70%)`, animation: "vfxPulse 1s ease-out", pointerEvents: "none", zIndex: -1 }} />}
+                        {isNewAlt && <div style={{ position:"absolute", top:-10, left:"50%", transform:"translateX(-50%)", background:"linear-gradient(135deg,#20a040,#40d060)", borderRadius:20, padding:"3px 12px", fontFamily:"'Cinzel',serif", fontSize:8, fontWeight:900, color:"#fff", letterSpacing:2, whiteSpace:"nowrap", boxShadow:"0 2px 10px #40d06088", zIndex:10 }}>✦ NEW</div>}
                         <Card card={card} size="sm" />
                       </div>
                     ) : (
