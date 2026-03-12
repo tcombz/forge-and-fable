@@ -271,7 +271,7 @@ function safeRoundRect(ctx, x, y, w, h, r) {
   const rad = typeof r === "number" ? r : 0;
   ctx.beginPath(); ctx.moveTo(x + rad, y); ctx.lineTo(x + w - rad, y); ctx.quadraticCurveTo(x + w, y, x + w, y + rad); ctx.lineTo(x + w, y + h - rad); ctx.quadraticCurveTo(x + w, y + h, x + w - rad, y + h); ctx.lineTo(x + rad, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - rad); ctx.lineTo(x, y + rad); ctx.quadraticCurveTo(x, y, x + rad, y); ctx.closePath();
 }
-function getStarterCollection() { const c = {}; POOL.forEach((x) => { c[x.id] = 3; }); return c; }
+// NOTE: getStarterCollection defined after GAMEPLAY_POOL below
 
 // ═══ FLOATING PARTICLES ══════════════════════════════════════════════════════
 function FloatingParticles({ count = 30, color = "#e8c06015", speed = 1, shape = "circle", direction = "up" }) {
@@ -590,6 +590,8 @@ const POOL = [
 // Cards locked from all gameplay until art/tuning is complete
 const LOCKED_REGIONS = new Set(["Food Fight", "Fables"]);
 const GAMEPLAY_POOL = POOL.filter(c => !LOCKED_REGIONS.has(c.region));
+// Only base cards are given to new accounts — no locked faction cards
+function getStarterCollection() { const c = {}; GAMEPLAY_POOL.forEach((x) => { c[x.id] = 3; }); return c; }
 const HOME_CARDS = [POOL.find((c) => c.id === "velrun"), POOL.find((c) => c.id === "kraken"), POOL.find((c) => c.id === "colossus"), POOL.find((c) => c.id === "bloodmage"), POOL.find((c) => c.id === "weaver")].filter(Boolean);
 
 // ═══ PACKS ═══════════════════════════════════════════════════════════════════
@@ -2785,12 +2787,13 @@ function LoginModal({ needsProfile = false, userId, userEmail, onSignOut, onProf
     if (error) { setErr(error.message); setBusy(false); return; }
     if (data.user) {
       const starter = getStarterCollection();
-      const isFounder = email.trim().toLowerCase() === "sncombz@gmail.com";
-      const founderAltOwned = isFounder ? Object.fromEntries(Object.entries(ALT_ARTS).map(([id, alts]) => [id, alts.map(a => a.setId)])) : {};
+      const isAdmin = ["sncombz@gmail.com","tcombzv2@gmail.com"].includes(email.trim().toLowerCase());
+      const founderAltOwned = isAdmin ? Object.fromEntries(Object.entries(ALT_ARTS).map(([id, alts]) => [id, alts.map(a => a.setId)])) : {};
+      const starterDeckEntry = { name: "Starter Deck", cards: STARTER_DECK };
       await supabase.from("profiles").upsert({
         id: data.user.id, name: name.trim(), alpha_key: k, shards: 1000,
         last_shard_reset: new Date().toISOString(), battles_played: 0, battles_won: 0,
-        cards_forged: 0, collection: starter, decks: [], joined: new Date().toLocaleDateString(),
+        cards_forged: 0, collection: starter, decks: [starterDeckEntry], joined: new Date().toLocaleDateString(),
         alt_owned: founderAltOwned,
       });
       // Mark key as used
@@ -2812,12 +2815,13 @@ function LoginModal({ needsProfile = false, userId, userEmail, onSignOut, onProf
     const uid = userId || (await supabase.auth.getUser()).data?.user?.id;
     if (!uid) { setErr("Session expired. Please sign in again."); setBusy(false); return; }
     const starter = getStarterCollection();
-    const isFounder = (userEmail || email || "").trim().toLowerCase() === "sncombz@gmail.com";
-    const founderAltOwned = isFounder ? Object.fromEntries(Object.entries(ALT_ARTS).map(([id, alts]) => [id, alts.map(a => a.setId)])) : {};
+    const isAdmin = ["sncombz@gmail.com","tcombzv2@gmail.com"].includes((userEmail || email || "").trim().toLowerCase());
+    const founderAltOwned = isAdmin ? Object.fromEntries(Object.entries(ALT_ARTS).map(([id, alts]) => [id, alts.map(a => a.setId)])) : {};
+    const starterDeckEntry = { name: "Starter Deck", cards: STARTER_DECK };
     const { error } = await supabase.from("profiles").upsert({
       id: uid, name: name.trim(), alpha_key: k, shards: 1000,
       last_shard_reset: new Date().toISOString(), battles_played: 0, battles_won: 0,
-      cards_forged: 0, collection: starter, decks: [], joined: new Date().toLocaleDateString(),
+      cards_forged: 0, collection: starter, decks: [starterDeckEntry], joined: new Date().toLocaleDateString(),
       alt_owned: founderAltOwned,
     });
     if (error) { setErr(error.message); setBusy(false); return; }
@@ -3312,7 +3316,7 @@ function HomeScreen({ setTab, user }) {
     {/* Bottom info bar */}
     <div style={{ background:"rgba(0,0,0,0.5)", borderTop:"1px solid rgba(255,255,255,0.05)", padding:"10px 28px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
       <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#504038", letterSpacing:2 }}>FORGE {"&"} FABLE</div>
-      <div style={{ fontSize:9, color:"#3a3028", letterSpacing:2, fontFamily:"'Cinzel',serif" }}>{CURRENT_PATCH} · 58 CARDS · 9 REGIONS · {user ? "ALPHA" : "GUEST"}</div>
+      <div style={{ fontSize:9, color:"#3a3028", letterSpacing:2, fontFamily:"'Cinzel',serif" }}>{CURRENT_PATCH} · {GAMEPLAY_POOL.length} CARDS · 7 REGIONS · {user ? "ALPHA" : "GUEST"}</div>
       <div style={{ fontSize:9, color:"#3a3028", letterSpacing:1 }}>MULTIPLAYER ALPHA</div>
     </div>
   </>);
