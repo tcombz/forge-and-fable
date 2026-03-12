@@ -311,88 +311,52 @@ function CardPreview({ card, onClose }) {
 }
 
 // ═══ PATCH NOTES MODAL ═══════════════════════════════════════════════════════
-const PATCH_NOTES = {
-  version: "v17",
-  title: "Multiplayer Alpha Launch",
-  sections: [
-    {
-      heading: "✅ Matchmaking — Live & Working",
-      color: "#78cc45",
-      items: [
-        "Queue → match → battle fully working for all players",
-        "Both players load the board simultaneously, no stuck screens",
-        "Actions sync to opponent in real-time via dual broadcast channel",
-      ]
-    },
-    {
-      heading: "⚔ PvP Battle Upgrades",
-      color: "#60a8e8",
-      items: [
-        "Opponent attack animations — see enemy cards lunge and deal damage on your screen",
-        "Battle log: hover any card name to see full card preview",
-        "Environment card active indicator in battle — click for full details",
-        "Forfeit button with confirm dialog",
-        "Opening draw determines who goes first (shown to both players)",
-        "Profile photos visible on both sides of the board",
-      ]
-    },
-    {
-      heading: "🏝 Anime Island",
-      color: "#ff80c0",
-      items: [
-        "32 alt arts across all cards · Prismatic Sun Strike at 0.1%",
-        "Anime Island Pack in Store: 300 shards · no limits",
-      ]
-    },
-    {
-      heading: "🃏 Store & Collection",
-      color: "#e8c060",
-      items: [
-        "Free daily pack limit now persists across sessions",
-        "Alt Art selector: choose your art per card",
-      ]
-    },
-    {
-      heading: "⚡ Coming Next",
-      color: "#806040",
-      items: [
-        "Leaderboard & ELO ranking",
-        "The Forge — card crafting",
-        "Thornwood Expansion",
-      ]
-    },
-  ]
-};
 function PatchNotesModal({ onDismiss }) {
+  const NEW = () => (
+    <span style={{ marginLeft:6, padding:"1px 6px", background:"rgba(120,204,69,0.18)", border:"1px solid #78cc4555", borderRadius:8, fontSize:8, color:"#78cc45", fontFamily:"'Cinzel',serif", fontWeight:700, letterSpacing:1, verticalAlign:"middle" }}>NEW</span>
+  );
+  const rows = [
+    { icon:"⚔", label:<>PvP Matchmaking is live — find real opponents<NEW /></> },
+    { icon:"⚡", label:<>Attack & spell animations now sync to opponent's screen<NEW /></> },
+    { icon:"📣", label:<>Turn announcements redesigned — dramatic slam-in banner<NEW /></> },
+    { icon:"🌍", label:<>Environment cards affect only the caster's board half<NEW /></> },
+    { icon:"🎴", label:<>Community Card Forge — describe an idea, get a full card<NEW /></> },
+    { icon:"📺", label:<>Live Arena feed on home screen shows recent results<NEW /></> },
+    { icon:"🔊", label:<>Heal, spell & environment sounds added<NEW /></> },
+    { icon:"🛡", label:"Nav locks while in a PvP match — no accidental exits" },
+    { icon:"🏝", label:"Anime Island: 32 alt arts · 0.1% Prismatic Sun Strike" },
+    { icon:"🃏", label:"Free daily pack · alt art selector in collection" },
+    { icon:"⚗", label:"Coming next: Leaderboard · ELO · Thornwood Expansion", dim:true },
+  ];
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(2,1,0,0.96)", backdropFilter: "blur(14px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div style={{ background: "linear-gradient(160deg,#1e1c10,#100e08)", border: "1px solid #e8c06044", borderRadius: 20, padding: "32px 30px", maxWidth: 500, width: "100%", maxHeight: "85vh", overflow: "auto", boxShadow: "0 30px 80px rgba(0,0,0,0.98)", animation: "fadeIn 0.4s ease-out" }}>
+    <div style={{ position:"fixed", inset:0, zIndex:300, background:"rgba(2,1,0,0.96)", backdropFilter:"blur(16px)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+      <div style={{ background:"linear-gradient(160deg,#1c1a0e,#0e0c06)", border:"1px solid #e8c06044", borderRadius:18, width:"100%", maxWidth:430, boxShadow:"0 30px 80px rgba(0,0,0,0.98)", animation:"fadeIn 0.35s ease-out", overflow:"hidden" }}>
         {/* Header */}
-        <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 26, fontWeight: 900, color: "#e8c060", marginBottom: 6, letterSpacing: 1 }}>Forge {"&"} Fable</div>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#e8c06014", border: "1px solid #e8c06040", borderRadius: 20, padding: "5px 16px" }}>
-            <span style={{ fontFamily: "'Cinzel',serif", fontSize: 11, fontWeight: 700, color: "#e8a020", letterSpacing: 2 }}>{PATCH_NOTES.version}</span>
-            <span style={{ width: 1, height: 12, background: "#e8c06030" }} />
-            <span style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#a08040", letterSpacing: 1 }}>{PATCH_NOTES.title}</span>
+        <div style={{ background:"linear-gradient(135deg,#1a1608,#100e04)", borderBottom:"1px solid #2a2210", padding:"20px 24px 16px", textAlign:"center" }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:"#e8c060", letterSpacing:1, marginBottom:6 }}>Forge {"&"} Fable</div>
+          <div style={{ display:"inline-flex", alignItems:"center", gap:8, background:"rgba(232,192,96,0.1)", border:"1px solid #e8c06033", borderRadius:20, padding:"4px 14px" }}>
+            <div style={{ width:6, height:6, borderRadius:"50%", background:"#78cc45", boxShadow:"0 0 8px #78cc45", animation:"pulse 1.5s infinite" }} />
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:"#e8a020", letterSpacing:3 }}>v17 · PATCH NOTES</span>
           </div>
         </div>
-        {/* Sections */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 18, marginBottom: 24 }}>
-          {PATCH_NOTES.sections.map((sec, si) => (
-            <div key={si}>
-              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, fontWeight: 700, color: sec.color, letterSpacing: 2, marginBottom: 8, paddingBottom: 5, borderBottom: `1px solid ${sec.color}22` }}>{sec.heading}</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                {sec.items.map((item, ii) => (
-                  <div key={ii} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                    <span style={{ color: sec.color, fontSize: 13, lineHeight: 1, marginTop: 1, flexShrink: 0 }}>›</span>
-                    <span style={{ fontSize: 12, color: sec.color === "#806040" ? "#706050" : "#d0c4a0", lineHeight: 1.6 }}>{item}</span>
-                  </div>
-                ))}
-              </div>
+        {/* Rows */}
+        <div style={{ padding:"12px 18px 8px", display:"flex", flexDirection:"column", gap:1 }}>
+          {rows.map((r, i) => (
+            <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"6px 8px", borderRadius:7, background: i%2===0 ? "rgba(255,255,255,0.02)" : "transparent" }}>
+              <span style={{ fontSize:13, flexShrink:0, width:20, textAlign:"center" }}>{r.icon}</span>
+              <span style={{ fontSize:11, color: r.dim ? "#4a4030" : "#c0b490", lineHeight:1.4, flex:1 }}>{r.label}</span>
             </div>
           ))}
         </div>
-        <button onClick={onDismiss} style={{ width: "100%", padding: "13px", background: "linear-gradient(135deg,#c89010,#f0c040)", border: "none", borderRadius: 10, fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, letterSpacing: 3, color: "#1a1000", cursor: "pointer" }}>ENTER THE ARENA</button>
+        {/* Alpha notice */}
+        <div style={{ margin:"10px 18px 14px", background:"rgba(232,160,32,0.07)", border:"1px solid #e8a02033", borderRadius:10, padding:"11px 13px" }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#e8a020", letterSpacing:3, fontWeight:700, marginBottom:4 }}>⚠ ALPHA TESTING PHASE</div>
+          <div style={{ fontSize:10, color:"#806838", lineHeight:1.7 }}>You may experience lag or sync delays — that's expected in early multiplayer. We appreciate the support and hope you have a blast on the battlefield! 🔥</div>
+        </div>
+        {/* CTA */}
+        <div style={{ padding:"0 18px 18px" }}>
+          <button onClick={onDismiss} style={{ width:"100%", padding:"13px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:10, fontFamily:"'Cinzel',serif", fontSize:13, fontWeight:700, letterSpacing:3, color:"#1a1000", cursor:"pointer", boxShadow:"0 4px 20px rgba(200,144,0,0.35)", transition:"all .2s" }} onMouseEnter={e=>e.currentTarget.style.transform="translateY(-1px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>ENTER THE ARENA</button>
+        </div>
       </div>
     </div>
   );
