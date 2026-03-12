@@ -23,6 +23,8 @@ const SFX = (() => {
     init,
     play(t) {
       switch (t) {
+        case "end_turn_go": [330,440,550,660,880,1100,1320,1540].forEach((f,i)=>tone(f,"sine",0.065,i*0.048,0.26)); tone(880,"sine",0.04,0.3,0.55); tone(1100,"sine",0.03,0.38,0.48); tone(1540,"sine",0.025,0.46,0.55); break;
+        case "card_inspect": tone(900,"sine",0.07,0,0.035); tone(1350,"sine",0.055,0.028,0.055); tone(1800,"sine",0.04,0.056,0.07); tone(2200,"sine",0.025,0.09,0.09); break;
         case "card": tone(320,"sine",0.1,0,0.08); tone(480,"sine",0.06,0.05,0.1); tone(640,"sine",0.03,0.1,0.08); break;
         case "attack": tone(90,"sawtooth",0.08,0,0.06); tone(130,"square",0.05,0.04,0.12); tone(70,"sawtooth",0.04,0.08,0.1); break;
         case "kill": [240,180,130,90].forEach((f,i) => tone(f,"sawtooth",0.07,i*0.08,0.2)); break;
@@ -294,7 +296,7 @@ function CardPreview({ card, onClose }) {
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(2,1,0,0.92)", backdropFilter: "blur(10px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, animation: "fadeIn 0.2s ease-out" }}>
       <div onClick={(e) => e.stopPropagation()} style={{ background: "linear-gradient(160deg,#1e1c10,#0e0c06)", border: `2px solid ${border}`, borderRadius: 18, width: 320, overflow: "hidden", boxShadow: `0 30px 80px rgba(0,0,0,0.95), 0 0 40px ${border}22` }}>
-        <div style={{ height: 180, position: "relative" }}><CardArt card={card} /><div style={{ position: "absolute", top: 8, left: 8, width: 38, height: 38, borderRadius: "50%", background: isBP ? "radial-gradient(#ff3050,#a00018)" : isEnv ? "radial-gradient(#40c0e0,#1a6888)" : "radial-gradient(#ffe040,#d09000)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontWeight: 900, fontSize: 18, color: isBP ? "#fff" : "#1a1000", boxShadow: isBP ? "0 0 12px #ff305088" : isEnv ? "0 0 12px #40c0e088" : "0 0 12px #ffe04088" }}>{isBP ? "B" : isEnv ? "E" : card.cost}</div><div style={{ position: "absolute", top: 8, right: 8, fontSize: 9, color: RC[card.rarity] || "#aaa", background: "rgba(0,0,0,0.7)", padding: "3px 10px", borderRadius: 20, border: `1px solid ${RC[card.rarity] || "#888"}44`, fontWeight: 700 }}>{(card.rarity || "Common").toUpperCase()}</div></div>
+        <div style={{ height: 180, position: "relative" }}><CardArt card={card} /><div style={{ position: "absolute", top: 8, left: 8, width: isBP||isEnv?38:32, height: isBP||isEnv?38:44, borderRadius: isBP||isEnv?"50%":"50% 50% 45% 45% / 40% 40% 60% 60%", background: isBP ? "radial-gradient(#ff3050,#a00018)" : isEnv ? "radial-gradient(#40c0e0,#1a6888)" : "linear-gradient(160deg,#90e0ff 0%,#2090d0 40%,#0a60a0 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontWeight: 900, fontSize: 18, color: "#fff", boxShadow: isBP ? "0 0 12px #ff305088" : isEnv ? "0 0 12px #40c0e088" : "0 0 16px #2090ff88, inset 0 2px 0 rgba(255,255,255,0.35)" }}>{isBP ? "B" : isEnv ? "E" : card.cost}</div><div style={{ position: "absolute", top: 8, right: 8, fontSize: 9, color: RC[card.rarity] || "#aaa", background: "rgba(0,0,0,0.7)", padding: "3px 10px", borderRadius: 20, border: `1px solid ${RC[card.rarity] || "#888"}44`, fontWeight: 700 }}>{(card.rarity || "Common").toUpperCase()}</div></div>
         <div style={{ padding: "14px 18px 10px" }}>
           <div style={{ fontFamily: "'Cinzel',serif", fontSize: 18, fontWeight: 700, color: "#f8f0e0", marginBottom: 2 }}>{card.name}</div>
           <div style={{ fontSize: 10, color: "#a09060", marginBottom: 10 }}>{(card.type || "creature").charAt(0).toUpperCase() + (card.type || "").slice(1)} · <span style={{ color: border }}>{card.region}</span></div>
@@ -646,7 +648,7 @@ function HandCard({ card, playable, onClick }) {
         {/* Bottom gradient */}
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(4,2,0,0.95) 0%, rgba(4,2,0,0.65) 35%, transparent 62%)" }} />
         {/* Cost badge top-left */}
-        <div style={{ position: "absolute", top: 4, left: 4, zIndex: 3, width: 26, height: 26, borderRadius: "50%", background: isBP ? "radial-gradient(#ff3050,#a00018)" : isEnv ? "radial-gradient(#40c0e0,#1a6888)" : "radial-gradient(#ffe040,#d09000)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontWeight: 900, fontSize: 12, color: isBP ? "#fff" : "#1a1000", boxShadow: isBP ? "0 0 7px #ff305088,0 1px 4px rgba(0,0,0,0.8)" : isEnv ? "0 0 7px #40c0e088,0 1px 4px rgba(0,0,0,0.8)" : "0 0 7px #ffe04088,0 1px 4px rgba(0,0,0,0.8)" }}>{isBP ? "B" : isEnv ? "E" : card.cost}</div>
+        <div style={{ position: "absolute", top: 4, left: 4, zIndex: 3, width: isBP||isEnv ? 26 : 22, height: isBP||isEnv ? 26 : 28, borderRadius: isBP||isEnv ? "50%" : "50% 50% 45% 45% / 40% 40% 60% 60%", background: isBP ? "radial-gradient(#ff3050,#a00018)" : isEnv ? "radial-gradient(#40c0e0,#1a6888)" : "linear-gradient(160deg,#90e0ff 0%,#2090d0 40%,#0a60a0 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontWeight: 900, fontSize: 12, color: "#fff", boxShadow: isBP ? "0 0 7px #ff305088,0 1px 4px rgba(0,0,0,0.8)" : isEnv ? "0 0 7px #40c0e088,0 1px 4px rgba(0,0,0,0.8)" : "0 0 10px #2090ff88, 0 1px 4px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.4)" }}>{isBP ? "B" : isEnv ? "E" : card.cost}</div>
         {/* Type tag top-right */}
         {(card.type === "spell" || card.type === "environment" || card.type === "champion") && (
           <div style={{ position: "absolute", top: 4, right: 4, zIndex: 3, fontSize: 6, background: "rgba(0,0,0,0.75)", color: isEnv ? "#28c0cc" : card.type === "champion" ? "#e8c060" : "#d090d0", border: `1px solid ${isEnv?"#28a0cc":card.type==="champion"?"#e8c060":"#d090d0"}55`, borderRadius: 3, padding: "1px 4px", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>{isEnv ? "ENV" : card.type === "champion" ? "CHP" : "SPL"}</div>
@@ -1147,10 +1149,10 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
                 <span style={{ fontSize: 8, color: "#c0a060", fontFamily: "'Cinzel',serif" }}>ENERGY</span>
-                <div style={{ display: "flex", gap: 3 }}>{Array.from({ length: g.maxEnergy }).map((_, i) => (<div key={i} style={{ width: 18, height: 18, borderRadius: "50%", background: i < g.playerEnergy ? "radial-gradient(circle at 35% 35%,#ffe860,#e89a10,#a06000)" : "radial-gradient(circle at 35% 35%,#2a2010,#160e04)", border: `1px solid ${i < g.playerEnergy ? "#f0c040" : "#1e1608"}`, transition: "all .3s", boxShadow: i < g.playerEnergy ? "0 0 6px #e8b82866" : "none" }} />))}</div>
-                <span style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#e8b828", fontWeight: 700 }}>{g.playerEnergy}/{g.maxEnergy}</span>
+                <div style={{ display: "flex", gap: 4, alignItems: "flex-end" }}>{Array.from({ length: g.maxEnergy }).map((_, i) => (<div key={i} style={{ width: 14, height: 18, background: i < g.playerEnergy ? "linear-gradient(160deg,#90e0ff 0%,#2090d0 45%,#1060a0 100%)" : "rgba(20,50,80,0.35)", borderRadius: "50% 50% 45% 45% / 40% 40% 60% 60%", border: `1px solid ${i < g.playerEnergy ? "#60c8ff88" : "#1a3a5a44"}`, boxShadow: i < g.playerEnergy ? "0 2px 8px #2090ff55, inset 0 1px 0 rgba(255,255,255,0.35)" : "none", transition: "all .25s" }} />))}</div>
+                <span style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#60c8ff", fontWeight: 700 }}>{g.playerEnergy}/{g.maxEnergy}</span>
               </div>
-              <button onClick={endTurn} disabled={g.phase !== "player" || aiThink} style={{ padding: "8px 16px", background: g.phase === "player" && !aiThink ? "linear-gradient(135deg,#c89010,#f0c040)" : "rgba(255,255,255,0.04)", border: "none", borderRadius: 7, fontFamily: "'Cinzel',serif", fontSize: 10, fontWeight: 700, letterSpacing: 2, color: g.phase === "player" && !aiThink ? "#1a1000" : "#404030", cursor: g.phase === "player" && !aiThink ? "pointer" : "not-allowed" }}>{aiThink ? "THINKING..." : "END TURN"}</button>
+              <button onClick={()=>{SFX.play("end_turn_go");endTurn();}} disabled={g.phase !== "player" || aiThink} style={{ padding: "8px 16px", background: g.phase === "player" && !aiThink ? "linear-gradient(135deg,#c89010,#f0c040)" : "rgba(255,255,255,0.04)", border: "none", borderRadius: 7, fontFamily: "'Cinzel',serif", fontSize: 10, fontWeight: 700, letterSpacing: 2, color: g.phase === "player" && !aiThink ? "#1a1000" : "#404030", cursor: g.phase === "player" && !aiThink ? "pointer" : "not-allowed", boxShadow: g.phase==="player"&&!aiThink?"0 0 18px #e8c06044,0 4px 12px rgba(200,144,0,0.3)":"none", transition:"all .18s" }}>{aiThink ? "THINKING..." : "END TURN"}</button>
             </div>
           </div>
         </div>
@@ -1176,7 +1178,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
             }
             if (remaining) parts.push({ text: remaining });
             const rendered = parts.length > 1 ? parts.map((p, pi) => p.card
-              ? <span key={pi} onClick={(e) => { e.stopPropagation(); SFX.play("flip"); setPreviewCard(p.card); }} style={{ color: p.card.border, textDecoration: "underline", cursor: "pointer", fontWeight: 700 }}>{p.card.name}</span>
+              ? <span key={pi} onClick={(e) => { e.stopPropagation(); SFX.play("card_inspect"); setPreviewCard(p.card); }} style={{ color: p.card.border, textDecoration: "underline", cursor: "pointer", fontWeight: 700 }}>{p.card.name}</span>
               : <span key={pi}>{p.text}</span>
             ) : l;
             return (<div key={i} style={{ fontSize: 11, lineHeight: 1.65, marginBottom: 4, color: col, borderLeft: isLast ? `2px solid ${col}` : "2px solid transparent", paddingLeft: 6, fontFamily: "'Cinzel',serif", fontWeight: isLast ? 700 : 400 }}>{logIcon(l)}{rendered}</div>);
@@ -1319,11 +1321,33 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   const vfx = useVFX();
   const logRef = useRef(null);
 
-  // Mark nav as in-match so tabs are blocked
+  // Mark nav as in-match so tabs are blocked; register forfeit for nav-leave auto-FF
   useEffect(() => {
     setInPvpMatch?.(true);
-    return () => setInPvpMatch?.(false);
+    // Irish dwarf bartender welcome
+    setTimeout(() => {
+      try {
+        const u = new SpeechSynthesisUtterance("Welcome to the arena!");
+        const trySpeak = () => {
+          const voices = speechSynthesis.getVoices();
+          if (voices.length) {
+            const pref = voices.find(v => /irish|moira|roisin/i.test(v.name))
+              || voices.find(v => /en.*(gb|ie|uk)/i.test(v.lang))
+              || voices.find(v => /daniel/i.test(v.name))
+              || voices[0];
+            if (pref) u.voice = pref;
+            u.rate = 0.82; u.pitch = 0.55; u.volume = 0.9;
+            speechSynthesis.speak(u);
+          } else {
+            speechSynthesis.onvoiceschanged = () => { trySpeak(); speechSynthesis.onvoiceschanged = null; };
+          }
+        };
+        trySpeak();
+      } catch(_) {}
+    }, 800);
+    return () => { setInPvpMatch?.(false); pvpForfeitRef.current = null; };
   }, []); // eslint-disable-line
+  useEffect(() => { pvpForfeitRef.current = forfeit; }, [gs]); // keep closure fresh
 
   // Save match history and stats when PvP ends
   useEffect(() => {
@@ -1661,6 +1685,11 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       setGs(newGs);
       if (pvpBcRef.current) pvpBcRef.current.send({ type:"broadcast", event:"updated", payload:{} });
     } catch (err) { console.error("Forfeit failed:", err); }
+    // Save FF to match history
+    if (onUpdateUser && user) {
+      const histEntry = { opponent: opponentName, result: "FF", forfeit: true, date: new Date().toISOString(), turns: gs?.turn || 0 };
+      onUpdateUser({ battlesPlayed: (user?.battlesPlayed||0)+1, matchHistory: [histEntry, ...(user?.matchHistory||[])].slice(0,50) });
+    }
   };
 
   if (!gs || !myRole) return (
@@ -1686,7 +1715,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       let found=false;
       for (const nm of CARD_NAMES_SORTED) {
         const idx=rem.indexOf(nm);
-        if (idx!==-1) { if(idx>0) parts.push(<span key={ki++}>{rem.slice(0,idx)}</span>); const cd=POOL.find(c=>c.name===nm); parts.push(<span key={ki++} style={{color:cd?.border||"#c0a040",fontWeight:700,cursor:"pointer",borderBottom:"1px dotted currentColor"}} onClick={(e)=>{e.stopPropagation();cd&&setPreviewCard(p=>p?.id===cd.id?null:cd);}}>{nm}</span>); rem=rem.slice(idx+nm.length); found=true; break; }
+        if (idx!==-1) { if(idx>0) parts.push(<span key={ki++}>{rem.slice(0,idx)}</span>); const cd=POOL.find(c=>c.name===nm); parts.push(<span key={ki++} style={{color:cd?.border||"#c0a040",fontWeight:700,cursor:"pointer",borderBottom:"1px dotted currentColor"}} onClick={(e)=>{e.stopPropagation();if(cd){SFX.play("card_inspect");setPreviewCard(p=>p?.id===cd.id?null:cd);}}}>{nm}</span>); rem=rem.slice(idx+nm.length); found=true; break; }
       }
       if (!found) { parts.push(<span key={ki++}>{rem}</span>); rem=""; }
     }
@@ -1756,7 +1785,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       </div>
       <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:16, fontWeight:700, color:"#e8c060", margin:0, letterSpacing:2 }}>⚔ PvP BATTLE ⚔</h2>
       <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-        {syncing && <button onClick={async()=>{ setSyncing(false); const {data}=await supabase.from("matches").select("game_state").eq("id",matchId).single(); if(data?.game_state)setGs(data.game_state); }} style={{ padding:"5px 12px", background:"rgba(232,192,96,0.1)", border:"1px solid #e8c06055", borderRadius:7, color:"#e8c060", fontFamily:"'Cinzel',serif", fontSize:8, cursor:"pointer", animation:"pulse 1s infinite" }}>↻ RECONNECT</button>}
+        {syncing && <span style={{ fontSize:8, color:"#806040", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>SYNCING...</span>}
         {isMyTurn && !gs.winner ? <TurnTimer key={timerKey} active={true} onExpire={endTurn} /> : <div style={{ width:110 }} />}
       </div>
     </div>
@@ -1837,10 +1866,10 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               <div style={{ display:"flex", alignItems:"center", gap:3 }}>
                 <span style={{ fontSize:8, color:"#c0a060", fontFamily:"'Cinzel',serif" }}>ENERGY</span>
-                <div style={{ display:"flex", gap:3 }}>{Array.from({length:ai.maxEnergy}).map((_,i)=>(<div key={i} style={{ width:18, height:18, borderRadius:"50%", background:i<ai.playerEnergy?"radial-gradient(circle at 35% 35%,#ffe860,#e89a10,#a06000)":"radial-gradient(circle at 35% 35%,#2a2010,#160e04)", border:`1px solid ${i<ai.playerEnergy?"#f0c040":"#1e1608"}`, transition:"all .3s", boxShadow:i<ai.playerEnergy?"0 0 6px #e8b82866":"none" }}/>))}</div>
-                <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#e8b828", fontWeight:700 }}>{ai.playerEnergy}/{ai.maxEnergy}</span>
+                <div style={{ display:"flex", gap:4, alignItems:"flex-end" }}>{Array.from({length:ai.maxEnergy}).map((_,i)=>(<div key={i} style={{ width:14, height:18, background:i<ai.playerEnergy?"linear-gradient(160deg,#90e0ff 0%,#2090d0 45%,#1060a0 100%)":"rgba(20,50,80,0.35)", borderRadius:"50% 50% 45% 45% / 40% 40% 60% 60%", border:`1px solid ${i<ai.playerEnergy?"#60c8ff88":"#1a3a5a44"}`, boxShadow:i<ai.playerEnergy?"0 2px 8px #2090ff55, inset 0 1px 0 rgba(255,255,255,0.35)":"none", transition:"all .25s" }}/>))}</div>
+                <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#60c8ff", fontWeight:700 }}>{ai.playerEnergy}/{ai.maxEnergy}</span>
               </div>
-              <button onClick={endTurn} disabled={!isMyTurn||syncing} style={{ padding:"8px 16px", background:isMyTurn&&!syncing?"linear-gradient(135deg,#c89010,#f0c040)":"rgba(255,255,255,0.04)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, letterSpacing:2, color:isMyTurn&&!syncing?"#1a1000":"#404030", cursor:isMyTurn&&!syncing?"pointer":"not-allowed" }}>{syncing?"SYNCING...":"END TURN"}</button>
+              <button onClick={()=>{SFX.play("end_turn_go");endTurn();}} disabled={!isMyTurn||syncing} style={{ padding:"8px 16px", background:isMyTurn&&!syncing?"linear-gradient(135deg,#c89010,#f0c040)":"rgba(255,255,255,0.04)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, letterSpacing:2, color:isMyTurn&&!syncing?"#1a1000":"#404030", cursor:isMyTurn&&!syncing?"pointer":"not-allowed", boxShadow:isMyTurn&&!syncing?"0 0 18px #e8c06044,0 4px 12px rgba(200,144,0,0.3)":"none", transition:"all .18s" }}>{syncing?"SYNCING...":"END TURN"}</button>
             </div>
           </div>
         </div>
@@ -2450,7 +2479,7 @@ function CollectionScreen({ user, onUpdateUser }) {
     const displayCard = resolveCardArt(card, selectedArts);
     const isOpen = artPicker === card.id;
     return (
-      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6, position:"relative" }} onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewCard(displayCard); }}>
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6, position:"relative" }} onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); SFX.play("card_inspect"); setPreviewCard(displayCard); }}>
         <Card card={displayCard} size="sm" animDelay={i * 0.04} />
         {alts.length > 0 && (
           <div style={{ position:"relative" }}>
@@ -3235,6 +3264,9 @@ function CommunityScreen({ user }) {
 }
 
 // ═══ APP ══════════════════════════════════════════════════════════════════════
+// Global ref so nav can trigger PvP forfeit when user confirms leaving
+const pvpForfeitRef = { current: null };
+
 const NAV = [
   { id: "home",       label: "Home",    icon: "⬡" },
   { id: "play",       label: "Battle",  icon: "⚔" },
@@ -3264,8 +3296,6 @@ export default function App() {
       @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
       @keyframes turnBannerIn{0%{opacity:0;transform:translate(-50%,-50%) scale(0.7)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}25%{transform:translate(-50%,-50%) scale(1)}75%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.1)}}
       @keyframes turnStamp{0%{opacity:0;transform:scale(1.4)}8%{opacity:1;transform:scale(0.94)}16%{transform:scale(1.02)}22%{transform:scale(1)}70%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.05)}}
-      @keyframes cardLunge{0%{transform:translateY(0) scale(1)}35%{transform:translateY(-38px) scale(1.06)}65%{transform:translateY(-30px) scale(1.03)}100%{transform:translateY(0) scale(1)}}
-      @keyframes cardHit{0%{transform:translate(0,0);filter:none}12%{transform:translate(-10px,5px);filter:brightness(4) saturate(0) drop-shadow(0 0 14px #ff2020)}28%{transform:translate(9px,4px);filter:brightness(2.8) saturate(0.15) drop-shadow(0 0 9px #ff3030)}46%{transform:translate(-6px,2px);filter:brightness(2) drop-shadow(0 0 5px #ff4040)}64%{transform:translate(5px,1px);filter:brightness(1.5)}80%{transform:translate(-3px,0);filter:none}100%{transform:translate(0,0);filter:none}}
       @keyframes cardDie{0%{opacity:1;transform:scale(1) rotate(0deg)}40%{opacity:.7;transform:scale(0.88) rotate(-6deg)}100%{opacity:0;transform:scale(0.55) rotate(-18deg) translateY(20px)}}
       @keyframes cardSummon{0%{opacity:0;transform:translateY(48px) scale(0.82)}60%{opacity:1;transform:translateY(-6px) scale(1.04)}100%{opacity:1;transform:translateY(0) scale(1)}}
       @keyframes spellCast{0%{opacity:0;transform:translate(-50%,-50%) scale(0.4)}30%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}70%{opacity:.9;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.4)}}
@@ -3328,7 +3358,8 @@ export default function App() {
           return (
             <button key={t.id} onClick={() => {
               if (locked) {
-                if (!window.confirm("Leave your active PvP match? You'll forfeit if you don't return.")) return;
+                if (!window.confirm("Leave your active PvP match? You will forfeit immediately.")) return;
+                pvpForfeitRef.current?.();
                 setInPvpMatch(false);
               }
               setTab(t.id);
@@ -3373,15 +3404,24 @@ export default function App() {
             <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#e8a020", letterSpacing:2, marginBottom:8, fontWeight:700, borderBottom:"1px solid #2a2010", paddingBottom:5 }}>⚔ RECENT BATTLES</div>
             {(user.matchHistory||[]).length === 0
               ? <div style={{ fontSize:11, color:"#504030", fontStyle:"italic", padding:"8px 0", textAlign:"center" }}>No battles yet — fight someone!</div>
-              : <div style={{ maxHeight:260, overflowY:"auto", paddingRight:2 }}>{(user.matchHistory||[]).map((m,i) => (
-                <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"6px 10px", marginBottom:4, background:`rgba(0,0,0,0.35)`, borderRadius:7, borderLeft:`3px solid ${m.result==="W"?"#48a028":"#c03030"}` }}>
-                  <div>
-                    <div style={{ fontSize:11, color:"#c0a870", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", maxWidth:160 }}>vs {m.opponent}</div>
-                    <div style={{ fontSize:9, color:"#504030", marginTop:1 }}>{m.turns} turns · {m.date ? new Date(m.date).toLocaleDateString() : ""}</div>
+              : <div style={{ maxHeight:260, overflowY:"auto", paddingRight:2 }}>{(user.matchHistory||[]).map((m,i) => {
+                  const won = m.result==="W";
+                  const ff = m.result==="FF" || m.forfeit;
+                  const rc = won?"#78cc45":ff?"#e8a020":"#e05050";
+                  const rl = won?"WIN":ff?"FF":"LOSS";
+                  return (
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"5px 8px", marginBottom:3, background:"rgba(0,0,0,0.35)", borderRadius:7, borderLeft:`3px solid ${rc}` }}>
+                    <div style={{ width:26, height:26, borderRadius:"50%", overflow:"hidden", border:`1px solid ${rc}55`, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", background:"#1a1408", fontSize:8, color:rc, fontFamily:"'Cinzel',serif", fontWeight:700 }}>
+                      {user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (user.name||"?").slice(0,2).toUpperCase()}
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:10, color:"#c0a870", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>vs {m.opponent||"Unknown"}</div>
+                      <div style={{ fontSize:8, color:"#504030", marginTop:1 }}>{m.turns||0} turns · {m.date ? new Date(m.date).toLocaleDateString() : ""}</div>
+                    </div>
+                    <span style={{ fontSize:9, fontWeight:900, fontFamily:"'Cinzel',serif", color:rc, flexShrink:0, padding:"2px 6px", background:`${rc}14`, borderRadius:5, border:`1px solid ${rc}33` }}>{rl}</span>
                   </div>
-                  <span style={{ fontSize:13, fontWeight:900, fontFamily:"'Cinzel',serif", color:m.result==="W"?"#78cc45":"#e05050", flexShrink:0, marginLeft:8 }}>{m.result}</span>
-                </div>
-              ))}</div>
+                  );
+                })}</div>
             }
           </div>
           <button onClick={() => { logout(); setShowProfile(false); }} style={{ width:"100%", padding:"9px", background:"rgba(180,30,30,0.12)", border:"1px solid #5a1818", borderRadius:7, color:"#c07060", fontFamily:"'Cinzel',serif", fontSize:10, cursor:"pointer", letterSpacing:1 }}>SIGN OUT</button>
