@@ -3433,6 +3433,46 @@ function StoreScreen({ user, onUpdateUser }) {
             <div style={{ padding:"8px 28px", background:"rgba(255,255,255,0.03)", border:"1px solid #3a2c10", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:12, color:"#505030", letterSpacing:3, fontWeight:700 }}>IN DEVELOPMENT</div>
           </div>
         </div>
+
+        {/* ── FOOD FIGHT TEASER ─────────────────────────────────────────────── */}
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#a09060", letterSpacing:2, marginBottom:12, marginTop:36 }}>FROM THE SAME STUDIO</div>
+        <div style={{ background:"linear-gradient(135deg,#0e0a0a,#160b0b,#0e0808)", border:"2px solid rgba(200,40,40,0.32)", borderRadius:16, overflow:"hidden", position:"relative" }}>
+          {/* top accent bar */}
+          <div style={{ position:"absolute", top:0, left:0, right:0, height:3, background:"linear-gradient(90deg,#b01010,#ee3333,#b01010)" }} />
+          {/* bg glow */}
+          <div style={{ position:"absolute", inset:0, background:"radial-gradient(ellipse at 20% 50%,rgba(180,20,20,0.1),transparent 55%)", pointerEvents:"none" }} />
+          <div style={{ position:"relative", zIndex:1, display:"grid", gridTemplateColumns:"1fr auto", gap:0, alignItems:"center" }}>
+            {/* left content */}
+            <div style={{ padding:"28px 24px 28px 28px" }}>
+              <div style={{ display:"inline-flex", alignItems:"center", gap:8, background:"rgba(200,40,40,0.15)", border:"1px solid rgba(200,40,40,0.35)", borderRadius:20, padding:"4px 14px", marginBottom:12 }}>
+                <div style={{ width:6, height:6, borderRadius:"50%", background:"#ff5050", boxShadow:"0 0 8px #ff5050", animation:"pulse 2s infinite" }} />
+                <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#ff7070", letterSpacing:3, fontWeight:700 }}>COMING SOON</span>
+              </div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:26, fontWeight:900, color:"#ff5050", marginBottom:4, letterSpacing:1, textShadow:"0 0 30px rgba(220,50,50,0.45)" }}>Food Fight</div>
+              <div style={{ fontSize:10, color:"rgba(255,140,140,0.55)", marginBottom:10, fontFamily:"'Cinzel',serif", letterSpacing:2 }}>A Card Game of Culinary Chaos</div>
+              <p style={{ fontSize:11, color:"rgba(200,120,120,0.7)", marginBottom:14, lineHeight:1.75, maxWidth:320 }}>13 food warriors battle for supremacy. Draft your deck, launch your lunchbox, and send your rivals back to the cafeteria.</p>
+              <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:18 }}>
+                {["13 Fighters","Fast & Juicy Combat","Drafting + Deckbuilding","Cross-studio Universe"].map(tag=>(
+                  <span key={tag} style={{ padding:"3px 10px", background:"rgba(200,40,40,0.1)", border:"1px solid rgba(200,40,40,0.22)", borderRadius:12, fontSize:9, color:"rgba(255,120,120,0.6)", fontFamily:"'Cinzel',serif" }}>{tag}</span>
+                ))}
+              </div>
+              <a href="/food-fight-teaser.html" target="_blank" rel="noopener" style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"11px 24px", background:"linear-gradient(135deg,#a01010,#cc2020)", border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:"#fff", cursor:"pointer", letterSpacing:2, boxShadow:"0 6px 22px rgba(200,30,30,0.4)", textDecoration:"none", transition:"all .2s" }}
+                onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"}
+                onMouseLeave={e=>e.currentTarget.style.transform="none"}>
+                PREVIEW THE GAME ⚔
+              </a>
+            </div>
+            {/* right: 13 mini card silhouettes */}
+            <div style={{ padding:"24px 24px 24px 8px", display:"flex", flexWrap:"wrap", gap:5, width:200, alignContent:"center", justifyContent:"center" }}>
+              {["🍓","🌮","🍕","🥦","🍩","🌶","🍦","🥑","🍜","🥕","🍄","🍋","🧄"].map((em,i)=>(
+                <div key={i} style={{ width:52, height:72, borderRadius:7, background:"linear-gradient(160deg,#1a0808,#2a0e0e)", border:"1px solid rgba(180,30,30,0.22)", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:2, animation:`cardFloat ${2.2+(i%5)*0.3}s ${(i*0.18)%2}s ease-in-out infinite`, boxShadow:"0 2px 8px rgba(0,0,0,0.6)" }}>
+                  <div style={{ fontSize:18, filter:"grayscale(80%) brightness(0.6)" }}>{em}</div>
+                  <div style={{ fontSize:6, color:"rgba(180,60,60,0.3)", fontFamily:"'Cinzel',serif", letterSpacing:0 }}>???</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </>) : (
         <div style={{ textAlign: "center" }}>
           <div style={{ fontFamily: "'Cinzel',serif", fontSize: 14, color: opening.pack.color, letterSpacing: 4, marginBottom: 24, textShadow: `0 0 20px ${opening.pack.color}44` }}>{opening.pack.name.toUpperCase()}</div>
