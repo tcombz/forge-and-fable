@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, Fragment } from "react";
 import { supabase } from "./supabase";
 
 // ═══ STORAGE ═════════════════════════════════════════════════════════════════
@@ -144,6 +144,12 @@ const ENV_THEMES = {
   Ironmarch: { bg: "linear-gradient(180deg,#04040a 0%,#0a0a18 40%,#060614 100%)", particle: "#8888ff", glow: "#5050a0" },
   Sunveil: { bg: "linear-gradient(180deg,#140a00 0%,#221400 40%,#180c00 100%)", particle: "#ffc020", glow: "#b08010" },
   Bloodpact: { bg: "linear-gradient(180deg,#100004 0%,#1c000a 40%,#120006 100%)", particle: "#ff2040", glow: "#a01020" },
+};
+const BATTLE_MAPS = {
+  default: { label: "Ruined Keep", enemyBg: "rgba(180,40,40,0.09)", playerBg: "rgba(40,100,20,0.09)", dividerBg: "#1a1510", accent: "#382e18" },
+  thornwood: { label: "Thornwood Hollow", enemyBg: "rgba(40,160,20,0.12)", playerBg: "rgba(20,100,10,0.10)", dividerBg: "#0a1808", accent: "#204018" },
+  expanse: { label: "Shattered Expanse", enemyBg: "rgba(120,40,200,0.10)", playerBg: "rgba(80,20,160,0.08)", dividerBg: "#0c0020", accent: "#280840" },
+  ashfen: { label: "Ashfen Wastes", enemyBg: "rgba(200,60,10,0.10)", playerBg: "rgba(160,40,5,0.08)", dividerBg: "#180400", accent: "#401008" },
 };
 const hpCol = (h) => (h > 12 ? "#50c060" : h > 6 ? "#d8b040" : "#d84040");
 const uid = (p) => `${p}_${Math.random().toString(36).slice(2, 8)}`;
@@ -580,13 +586,13 @@ function resolveCardArt(card, selectedArts) {
 }
 
 // ═══ TOKEN + HAND CARD ═══════════════════════════════════════════════════════
-function Token({ c, selected, isTarget, canSelect, onClick, onRightClick }) {
+function Token({ c, selected, isTarget, canSelect, onClick, onRightClick, animType }) {
   const [hov, setHov] = useState(false);
   const pct = c.currentHp / c.maxHp;
   const opac = (c.hasAttacked && !isTarget) ? 0.45 : 1;
   const kws = KW.filter((k) => (c.keywords || []).includes(k.name));
   return (
-    <div onClick={onClick} onContextMenu={(e) => { e.preventDefault(); if (onRightClick) onRightClick(); }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ width: 110, height: 152, cursor: (canSelect || isTarget) ? "pointer" : "default", userSelect: "none", border: `2px solid ${selected ? "#f0d840" : isTarget && hov ? "#e84040" : hov && canSelect ? c.border + "aa" : c.border + "55"}`, borderRadius: 10, overflow: "hidden", opacity: opac, boxShadow: selected ? `0 0 20px #f0d84066` : hov ? `0 6px 18px ${c.border}44` : "none", transform: selected ? "translateY(-8px)" : hov ? "translateY(-4px)" : "none", transition: "all .18s", position: "relative" }}>
+    <div onClick={onClick} onContextMenu={(e) => { e.preventDefault(); if (onRightClick) onRightClick(); }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ width: 110, height: 152, cursor: (canSelect || isTarget) ? "pointer" : "default", userSelect: "none", border: `2px solid ${selected ? "#f0d840" : isTarget && hov ? "#e84040" : hov && canSelect ? c.border + "aa" : c.border + "55"}`, borderRadius: 10, overflow: "hidden", opacity: opac, boxShadow: selected ? `0 0 20px #f0d84066` : hov ? `0 6px 18px ${c.border}44` : "none", transform: animType ? "none" : selected ? "translateY(-8px)" : hov ? "translateY(-4px)" : "none", animation: animType === "attacking" ? "cardLunge 0.35s ease-out" : animType === "hit" ? "cardHit 0.3s ease-out" : animType === "dying" ? "cardDie 0.5s ease-out forwards" : animType === "summoning" ? "cardSummon 0.4s ease-out" : "none", transition: animType ? "none" : "all .18s", position: "relative" }}>
       {/* Full art */}
       <div style={{ position: "absolute", inset: 0 }}><CardArt card={c} /></div>
       {/* Bottom gradient */}
@@ -921,8 +927,9 @@ function BattleChat({ user, aiMode }) {
 }
 
 function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
-  const initGame = () => { const fallback = [...POOL, ...POOL, ...POOL.slice(0, 5)]; const pd = shuf(matchConfig?.playerDeck?.length >= CFG.deck.min ? [...matchConfig.playerDeck] : [...fallback]); const ed = shuf([...fallback]); return { matchId: uid("m"), turn: 1, phase: "opening", winner: null, playerHP: CFG.startHP, playerEnergy: CFG.startEnergy, maxEnergy: CFG.startEnergy, playerHand: pd.slice(0, CFG.startHand).map((c) => makeInst(c, "p")), playerDeck: pd.slice(CFG.startHand), playerBoard: [], enemyHP: CFG.startHP, enemyHand: ed.slice(0, CFG.startHand).map((c) => makeInst(c, "e")), enemyDeck: ed.slice(CFG.startHand), enemyBoard: [], environment: null, envLastTurn: null, log: ["Draw for priority!"] }; };
+  const initGame = () => { const fallback = [...POOL, ...POOL, ...POOL.slice(0, 5)]; const pd = shuf(matchConfig?.playerDeck?.length >= CFG.deck.min ? [...matchConfig.playerDeck] : [...fallback]); const ed = shuf([...fallback]); return { matchId: uid("m"), turn: 1, phase: "opening", winner: null, playerHP: CFG.startHP, playerEnergy: CFG.startEnergy, maxEnergy: CFG.startEnergy, playerHand: pd.slice(0, CFG.startHand).map((c) => makeInst(c, "p")), playerDeck: pd.slice(CFG.startHand), playerBoard: [], enemyHP: CFG.startHP, enemyHand: ed.slice(0, CFG.startHand).map((c) => makeInst(c, "e")), enemyDeck: ed.slice(CFG.startHand), enemyBoard: [], environment: null, envLastTurn: null, mapTheme: "default", log: ["Draw for priority!"] }; };
   const [game, setGame] = useState(initGame);
+  const [animUids, setAnimUids] = useState({});
   const [attacker, setAttacker] = useState(null);
   const [aiThink, setAiThink] = useState(false);
   const [previewCard, setPreviewCard] = useState(null);
@@ -943,7 +950,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   const handleOpeningResult = (winner) => { setGame((p) => ({ ...p, phase: winner === "player" ? "player" : "enemy", log: [...p.log, winner === "player" ? "You go first!" : "Enemy goes first!"] })); setTimerKey((k) => k + 1); showTurnBanner(winner === "player" ? "YOUR TURN" : "ENEMY TURN"); if (winner === "enemy") setTimeout(() => doEnemyTurn(), 1400); };
 
   const flashAction = (msg) => { setLiveAction(msg); setTimeout(() => setLiveAction(null), 1800); };
-  const doEnemyTurn = () => { showTurnBanner("ENEMY TURN"); setAiThink(true); setTimeout(() => { setGame((prev) => { const next = computeEnemyTurn(prev, vfx); if (next.phase === "gameover") { const won = next.winner === "player"; SFX.play(won ? "victory" : "defeat"); const histEntry = { opponent: "AI", result: won ? "W" : "L", date: new Date().toISOString(), turns: next.turn || 0 }; const newHistory = [histEntry, ...(user?.matchHistory || [])].slice(0, 20); if (onUpdateUser) onUpdateUser({ battlesPlayed: (user?.battlesPlayed || 0) + 1, battlesWon: won ? (user?.battlesWon || 0) + 1 : (user?.battlesWon || 0), matchHistory: newHistory }); } const newLines = next.log.filter(l => !prev.log.includes(l)); if (newLines.length > 0) { const pick = newLines.find(l => /attacks|cast|play|destroy|deals/i.test(l)) || newLines[newLines.length-1]; setTimeout(() => flashAction(pick), 100); } return next; }); setAiThink(false); setTimerKey((k) => k + 1); setTimeout(() => showTurnBanner("YOUR TURN"), 200); }, 800); };
+  const doEnemyTurn = () => { showTurnBanner("ENEMY TURN"); setAiThink(true); setTimeout(() => { setGame((prev) => { const next = computeEnemyTurn(prev, vfx); if (next.phase === "gameover") { const won = next.winner === "player"; SFX.play(won ? "victory" : "defeat"); const histEntry = { opponent: "AI", result: won ? "W" : "L", date: new Date().toISOString(), turns: next.turn || 0 }; const newHistory = [histEntry, ...(user?.matchHistory || [])].slice(0, 50); if (onUpdateUser) onUpdateUser({ battlesPlayed: (user?.battlesPlayed || 0) + 1, battlesWon: won ? (user?.battlesWon || 0) + 1 : (user?.battlesWon || 0), matchHistory: newHistory }); } const newLines = next.log.filter(l => !prev.log.includes(l)); if (newLines.length > 0) { const pick = newLines.find(l => /attacks|cast|play|destroy|deals/i.test(l)) || newLines[newLines.length-1]; setTimeout(() => flashAction(pick), 100); } return next; }); setAiThink(false); setTimerKey((k) => k + 1); setTimeout(() => showTurnBanner("YOUR TURN"), 200); }, 800); };
 
   const endTurn = useCallback(() => { if (g.phase !== "player" || aiThink) return; setAttacker(null); SFX.play("timer_end"); setGame((p) => ({ ...p, phase: "enemy", log: [...p.log.slice(-20), "Your turn ends."] })); setTimeout(() => doEnemyTurn(), 300); }, [g.phase, aiThink]);
 
@@ -960,8 +967,8 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   };
 
   const selectAtt = (c) => { if (g.phase !== "player" || aiThink) return; if (attacker === c.uid) { setAttacker(null); return; } if (c.canAttack && !c.hasAttacked) setAttacker(c.uid); };
-  const atkCreature = (tgt) => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); const av = att.currentAtk + ((att.keywords || []).includes("Resonate") ? g.enemyHand.length : 0); setGame((prev) => { let s = { ...prev, log: [...prev.log.slice(-20)] }; let nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av; let nAHP = att.currentHp - tgt.currentAtk; if (tgt.shielded) s.log = [...s.log, `${tgt.name} shield absorbs!`]; s.enemyBoard = prev.enemyBoard.map((c) => c.uid === tgt.uid ? { ...c, currentHp: nTHP, shielded: false, bleed: (c.bleed || 0) + ((att.keywords || []).includes("Bleed") ? 1 : 0) } : c).filter((c) => c.currentHp > 0); s.playerBoard = prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP } : c).filter((c) => c.currentHp > 0); s.log = [...s.log, `${att.name}(${av}) attacks ${tgt.name}`]; if (nTHP <= 0) { SFX.play("kill"); s.log = [...s.log, `${tgt.name} destroyed!`]; s = resolveEffects("onDeath", tgt, s, "enemy", vfx); } if (nAHP <= 0) { s.log = [...s.log, `${att.name} falls.`]; s = resolveEffects("onDeath", att, s, "player", vfx); } if (s.enemyHP <= 0) { s.phase = "gameover"; s.winner = "player"; } return s; }); setAttacker(null); };
-  const atkFace = () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); const dmg = att.currentAtk + ((att.keywords || []).includes("Resonate") ? g.enemyHand.length : 0); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if (nHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); };
+  const atkCreature = async (tgt) => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking" }); await new Promise(r => setTimeout(r, 220)); setAnimUids(p => ({ ...p, [tgt.uid]: "hit" })); const av = att.currentAtk + ((att.keywords || []).includes("Resonate") ? g.enemyHand.length : 0); setGame((prev) => { let s = { ...prev, log: [...prev.log.slice(-20)] }; let nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av; let nAHP = att.currentHp - tgt.currentAtk; if (tgt.shielded) s.log = [...s.log, `${tgt.name} shield absorbs!`]; s.enemyBoard = prev.enemyBoard.map((c) => c.uid === tgt.uid ? { ...c, currentHp: nTHP, shielded: false, bleed: (c.bleed || 0) + ((att.keywords || []).includes("Bleed") ? 1 : 0) } : c).filter((c) => c.currentHp > 0); s.playerBoard = prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP } : c).filter((c) => c.currentHp > 0); s.log = [...s.log, `${att.name}(${av}) attacks ${tgt.name}`]; if (nTHP <= 0) { SFX.play("kill"); s.log = [...s.log, `${tgt.name} destroyed!`]; s = resolveEffects("onDeath", tgt, s, "enemy", vfx); } if (nAHP <= 0) { s.log = [...s.log, `${att.name} falls.`]; s = resolveEffects("onDeath", att, s, "player", vfx); } if (s.enemyHP <= 0) { s.phase = "gameover"; s.winner = "player"; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 300)); setAnimUids({}); };
+  const atkFace = async () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking" }); await new Promise(r => setTimeout(r, 280)); const dmg = att.currentAtk + ((att.keywords || []).includes("Resonate") ? g.enemyHand.length : 0); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if (nHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 200)); setAnimUids({}); };
   const attCard = attacker ? g.playerBoard.find((c) => c.uid === attacker) : null;
 
   return (<div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 16px 60px" }} onClick={() => { SFX.init(); }}>
@@ -998,7 +1005,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
       <div style={{ display:"flex", flexDirection:"column", minHeight:500 }}>
         <BattleChat user={user} aiMode={true} />
       </div>
-      <div style={{ background: envTheme ? envTheme.bg : "#0f0d0a", border: `1px solid ${envTheme ? envTheme.glow + "44" : "#242010"}`, borderRadius: 14, overflow: "hidden", position: "relative", transition: "background 1.5s ease, border-color 1s ease" }}>
+      <div style={{ background: envTheme ? envTheme.bg : "#1e1c14", border: `1px solid ${envTheme ? envTheme.glow + "44" : "#2e2c18"}`, borderRadius: 14, overflow: "hidden", position: "relative", transition: "background 1.5s ease, border-color 1s ease" }}>
         {g.phase === "opening" && <OpeningDraw onResult={handleOpeningResult} />}
         <VFXOverlay effects={vfx.effects} />
         {/* Environment particles */}
@@ -1023,8 +1030,9 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
               <span style={{ fontFamily: "'Cinzel',serif", fontSize: 18, fontWeight: 700, color: hpCol(g.enemyHP) }}>{g.enemyHP}</span>
             </div>
           </div>
+          <div style={{ fontSize: 8, color: "#3a1414", fontFamily: "'Cinzel',serif", letterSpacing: 3, marginBottom: 4, textAlign: "center", fontWeight: 700 }}>ENEMY FIELD</div>
           <div style={{ minHeight: 105, display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", alignItems: "center" }}>
-            {g.enemyBoard.length === 0 ? <span style={{ fontSize: 10, color: "#241010", letterSpacing: 3 }}>---</span> : g.enemyBoard.map((c) => (<Token key={c.uid} c={c} isTarget={!!attacker} canSelect={false} onClick={() => { if (attacker) atkCreature(c); else { SFX.play("flip"); setPreviewCard(c); } }} />))}
+            {g.enemyBoard.length === 0 ? <span style={{ fontSize: 10, color: "#241010", letterSpacing: 3 }}>---</span> : g.enemyBoard.map((c) => (<Token key={c.uid} c={resolveCardArt(c, {})} animType={animUids[c.uid]} isTarget={!!attacker} canSelect={false} onClick={() => { if (attacker) atkCreature(c); else { SFX.play("flip"); setPreviewCard(c); } }} />))}
           </div>
         </div>
         {/* Centre divider */}
@@ -1035,12 +1043,13 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         </div>
         {/* Player zone */}
         <div style={{ background: "rgba(40,100,20,0.09)", padding: "10px 14px", position: "relative", zIndex: 2 }}>
+          <div style={{ fontSize: 8, color: "#1e3010", fontFamily: "'Cinzel',serif", letterSpacing: 3, marginBottom: 4, textAlign: "center", fontWeight: 700 }}>YOUR FIELD</div>
           <div style={{ minHeight: 105, display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", alignItems: "center", marginBottom: 10 }}>
-            {g.playerBoard.length === 0 ? <span style={{ fontSize: 10, color: "#181408", letterSpacing: 3 }}>PLAY A CARD</span> : g.playerBoard.map((c) => (<Token key={c.uid} c={c} selected={attacker === c.uid} isTarget={false} canSelect={g.phase === "player" && c.canAttack && !c.hasAttacked && !aiThink} onClick={() => selectAtt(c)} onRightClick={() => { SFX.play("flip"); setPreviewCard(c); }} />))}
+            {g.playerBoard.length === 0 ? <span style={{ fontSize: 10, color: "#181408", letterSpacing: 3 }}>PLAY A CARD</span> : g.playerBoard.map((c) => (<Token key={c.uid} c={resolveCardArt(c, user?.selectedArts || {})} animType={animUids[c.uid]} selected={attacker === c.uid} isTarget={false} canSelect={g.phase === "player" && c.canAttack && !c.hasAttacked && !aiThink} onClick={() => selectAtt(c)} onRightClick={() => { SFX.play("flip"); setPreviewCard(c); }} />))}
           </div>
           <div style={{ borderTop: "1px solid #2a2010", paddingTop: 10, marginBottom: 10 }}>
             <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap" }}>
-              {g.playerHand.map((card) => { const isEnv = card.type === "environment"; const isSpl = card.type === "spell"; const cp = g.phase === "player" && !aiThink && (isEnv || isSpl || g.playerBoard.length < CFG.maxBoard) && (card.bloodpact ? card.cost < g.playerHP : card.cost <= g.playerEnergy); return (<HandCard key={card.uid} card={card} playable={cp} onClick={() => playCard(card)} />); })}
+              {g.playerHand.map((card) => { const isEnv = card.type === "environment"; const isSpl = card.type === "spell"; const cp = g.phase === "player" && !aiThink && (isEnv || isSpl || g.playerBoard.length < CFG.maxBoard) && (card.bloodpact ? card.cost < g.playerHP : card.cost <= g.playerEnergy); return (<HandCard key={card.uid} card={resolveCardArt(card, user?.selectedArts || {})} playable={cp} onClick={() => playCard(card)} />); })}
             </div>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1096,8 +1105,15 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
 // ═══ DECK BUILDER ═════════════════════════════════════════════
 function DeckBuilderModal({ user, onSave, onClose }) {
   const col = user?.collection || {};
+  const selectedArts = user?.selectedArts || {};
   const owned = POOL.filter((c) => (col[c.id] || 0) > 0);
   const [deck, setDeck] = useState([]);
+  const [dbPreview, setDbPreview] = useState(null);
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") setDbPreview(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   const [deckName, setDeckName] = useState("My Deck");
   const [search, setSearch] = useState("");
   const filtered = owned.filter((c) => !search || c.name.toLowerCase().includes(search.toLowerCase()));
@@ -1117,6 +1133,7 @@ function DeckBuilderModal({ user, onSave, onClose }) {
   const removeCard = (idx) => setDeck((d) => d.filter((_, i) => i !== idx));
   const save = () => { if (deck.length < 10) return; onSave({ name: deckName, cards: deck }); onClose(); };
   return (<div style={{ position:"fixed", inset:0, zIndex:500, background:"rgba(2,1,0,0.97)", display:"flex", flexDirection:"column" }}>
+    {dbPreview && <CardPreview card={dbPreview} onClose={() => setDbPreview(null)} />}
     {/* Header bar */}
     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"16px 24px", borderBottom:"2px solid #3a2c10", background:"linear-gradient(180deg,#1a1608,#0e0c06)", flexShrink:0 }}>
       <div style={{ display:"flex", alignItems:"center", gap:16 }}>
@@ -1153,11 +1170,11 @@ function DeckBuilderModal({ user, onSave, onClose }) {
                 const inDeck = countInDeck(c);
                 const blocked = inDeck>=maxCop || (c.rarity==="Legendary"&&legendaryCount>=2) || (c.type==="environment"&&envCount>=3) || (c.type==="spell"&&spellCount>=6) || deck.length>=20;
                 return (
-                  <div key={i} onClick={() => !blocked && addCard(c)} style={{ position:"relative", cursor:blocked?"not-allowed":"pointer", opacity:blocked?0.35:1, transition:"all .2s", transform:"none" }}
+                  <div key={i} onClick={() => !blocked && addCard(c)} onContextMenu={(e) => { e.preventDefault(); setDbPreview(resolveCardArt(c, selectedArts)); }} style={{ position:"relative", cursor:blocked?"not-allowed":"pointer", opacity:blocked?0.35:1, transition:"all .2s", transform:"none" }}
                     onMouseEnter={e => { if (!blocked) e.currentTarget.style.transform="translateY(-4px)"; }}
                     onMouseLeave={e => { e.currentTarget.style.transform="none"; }}>
                     {inDeck > 0 && <div style={{ position:"absolute", top:-6, right:-6, zIndex:10, background:"#e8b828", borderRadius:"50%", width:20, height:20, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:900, color:"#1a1000", boxShadow:"0 2px 8px #e8b82888", border:"2px solid #1a1000" }}>{inDeck}</div>}
-                    <Card card={c} size="sm" />
+                    <Card card={resolveCardArt(c, selectedArts)} size="sm" />
                   </div>
                 );
               })}
@@ -1177,12 +1194,18 @@ function DeckBuilderModal({ user, onSave, onClose }) {
         </div>
         <div style={{ overflowY:"auto", flex:1, padding:"10px 14px", display:"flex", flexDirection:"column", gap:5 }}>
           {deck.length === 0 && <p style={{ color:"#504030", fontSize:11, textAlign:"center", marginTop:30, fontStyle:"italic" }}>Click cards on the left to add them</p>}
-          {deck.map((c, i) => (
-            <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", background:"rgba(0,0,0,0.3)", borderRadius:7, padding:"7px 10px", border:`1px solid ${c.border}33` }}>
-              <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#f0e0c8", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:120 }}>{c.name}</span>
-              <button onClick={() => removeCard(i)} style={{ background:"transparent", border:"none", color:"#c07060", fontSize:14, cursor:"pointer", lineHeight:1, flexShrink:0 }}>×</button>
-            </div>
-          ))}</div>
+          {deck.map((c, i) => {
+            const dc = resolveCardArt(c, selectedArts);
+            return (
+              <div key={i} onContextMenu={(e) => { e.preventDefault(); setDbPreview(dc); }} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", background:"rgba(0,0,0,0.3)", borderRadius:7, padding:"5px 8px", border:`1px solid ${c.border}33`, gap:8, cursor:"context-menu" }}>
+                <div style={{ width:32, height:44, borderRadius:4, overflow:"hidden", flexShrink:0, border:`1px solid ${c.border}44` }}>
+                  <CardArt card={dc} />
+                </div>
+                <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#f0e0c8", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, minWidth:0 }}>{c.name}</span>
+                <button onClick={() => removeCard(i)} style={{ background:"transparent", border:"none", color:"#c07060", fontSize:14, cursor:"pointer", lineHeight:1, flexShrink:0 }}>×</button>
+              </div>
+            );
+          })}</div>
         </div>
       </div>
     </div>);
@@ -1223,7 +1246,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
     const won = gs.winner === myRole;
     SFX.play(won ? "victory" : "defeat");
     const histEntry = { opponent: opponentName, result: won ? "W" : "L", date: new Date().toISOString(), turns: gs.turn || 0 };
-    const newHistory = [histEntry, ...(user?.matchHistory || [])].slice(0, 20);
+    const newHistory = [histEntry, ...(user?.matchHistory || [])].slice(0, 50);
     if (onUpdateUser) onUpdateUser({ battlesPlayed: (user?.battlesPlayed || 0) + 1, battlesWon: won ? (user?.battlesWon || 0) + 1 : (user?.battlesWon || 0), matchHistory: newHistory });
   }, [gs?.winner]);
 
@@ -1458,98 +1481,231 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
   </div>);
 }
 
-// ═══ MATCHMAKING ═══════════════════════════════════════════════════════
+// ═══ MATCHMAKING ═══════════════════════════════════════════════════════════════════════
+// Phase lifecycle: waiting → found → accepted → entering
+//                 waiting → timeout | error
+//                 found / accepted → declined
 function MatchmakingScreen({ user, onMatch, onCancel }) {
-  const [status, setStatus] = useState("waiting");
+  const [phase, setPhase] = useState('waiting');
   const [dots, setDots] = useState(0);
-  useEffect(() => { const id = setInterval(() => setDots(d => (d + 1) % 4), 500); return () => clearInterval(id); }, []);
+  const [oppName, setOppName] = useState('');
+  const [countdown, setCountdown] = useState(20);
 
+  // Stable refs so closures in effects/callbacks always see the latest values
+  const activeRef       = useRef(true);
+  const transitionedRef = useRef(false);
+  const phaseRef        = useRef('waiting');
+  const rowIdRef        = useRef(null);
+  const matchIdRef      = useRef(null);
+  const oppIdRef        = useRef(null);
+  const oppNameRef      = useRef('');
+  const mmChannelRef    = useRef(null);
+  const matchChRef      = useRef(null);
+  const pollTimerRef    = useRef(null);
+
+  // Keep phaseRef synced with phase state
+  useEffect(() => { phaseRef.current = phase; }, [phase]);
+
+  // Animated waiting dots
   useEffect(() => {
-    let rowId = null;
-    let matched = false;
-    let active = true;
+    const id = setInterval(() => setDots(d => (d + 1) % 4), 500);
+    return () => clearInterval(id);
+  }, []);
 
-    const go = async () => {
-      // 1. Purge any stale rows for this user
-      await supabase.from("matchmaking").delete().eq("user_id", user.id);
-      if (!active) return;
+  // 20-second acceptance countdown — auto-decline on expiry
+  useEffect(() => {
+    if (phase !== 'found') return;
+    setCountdown(20);
+    const id = setInterval(() => {
+      setCountdown(c => { if (c <= 1) { clearInterval(id); doDecline(); return 0; } return c - 1; });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [phase]); // eslint-disable-line
 
-      // 2. Insert a fresh waiting row
-      const { data, error } = await supabase.from("matchmaking")
-        .insert({ user_id: user.id, display_name: user.name, status: "waiting" })
-        .select().single();
-      if (!active) return;
-      if (error || !data) { setStatus("error"); return; }
-      rowId = data.id;
+  // ── Transition into found/acceptance state when pairing is confirmed ──────────────────
+  const transitionMatched = (row) => {
+    if (transitionedRef.current || !activeRef.current) return;
+    transitionedRef.current = true;
+    matchIdRef.current = row.match_id;
+    oppIdRef.current   = row.opponent_id;
+    oppNameRef.current = row.opponent_name || 'Opponent';
+    setOppName(row.opponent_name || 'Opponent');
+    setPhase('found');
+    SFX.play('rare_reveal');
+    // Subscribe to matches row — fires when both accept (status=active) or someone cancels
+    matchChRef.current = supabase.channel('mready_' + row.match_id)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'matches', filter: `id=eq.${row.match_id}` }, (payload) => {
+        if (!activeRef.current) return;
+        if (payload.new.status === 'active' && phaseRef.current === 'accepted') {
+          setPhase('entering');
+          clearTimeout(pollTimerRef.current);
+          setTimeout(() => { if (activeRef.current) onMatch({ matchId: row.match_id, opponentId: row.opponent_id, opponentName: oppNameRef.current }); }, 700);
+        } else if (payload.new.status === 'cancelled') {
+          setPhase('declined');
+        }
+      })
+      .subscribe();
+  };
 
-      // 3. Poll loop — check own row AND look for opponents each cycle
-      while (active && !matched) {
-        await new Promise(r => setTimeout(r, 1200));
-        if (!active || matched) break;
+  // ── Cancel / decline ───────────────────────────────────────────────────────────────
+  const doDecline = async () => {
+    if (!activeRef.current) return;
+    activeRef.current = false;
+    setPhase('declined');
+    clearTimeout(pollTimerRef.current);
+    try {
+      if (matchIdRef.current) { await supabase.rpc('cancel_duel', { p_match_id: matchIdRef.current }); }
+      else if (rowIdRef.current) { await supabase.from('matchmaking').delete().eq('id', rowIdRef.current); }
+    } catch (_) {}
+    if (mmChannelRef.current) supabase.removeChannel(mmChannelRef.current);
+    if (matchChRef.current)   supabase.removeChannel(matchChRef.current);
+  };
 
-        try {
-          // Check if someone already matched us
-          const { data: myRow } = await supabase.from("matchmaking")
-            .select("match_id,opponent_id,opponent_name,status").eq("id", rowId).single();
-          if (myRow?.status === "matched") {
-            matched = true;
-            setStatus("matched");
-            setTimeout(() => onMatch({ matchId: myRow.match_id, opponentId: myRow.opponent_id, opponentName: myRow.opponent_name }), 800);
-            break;
-          }
-
-          // Look for a waiting opponent (entries from last 5 min)
-          const cutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-          const { data: waiting } = await supabase.from("matchmaking")
-            .select("*").eq("status", "waiting").neq("user_id", user.id)
-            .gte("created_at", cutoff).order("created_at").limit(1);
-          if (!waiting?.length || !active || matched) continue;
-
-          const opp = waiting[0];
-          const matchId = crypto.randomUUID();
-
-          // Atomically claim opponent — only succeeds if they're still "waiting"
-          const { data: claimed } = await supabase.from("matchmaking")
-            .update({ status: "matched", match_id: matchId, opponent_id: user.id, opponent_name: user.name })
-            .eq("id", opp.id).eq("status", "waiting").select();
-          if (!claimed?.length) continue; // race lost — try again next tick
-
-          // Update our own row and create the match record
-          await supabase.from("matchmaking")
-            .update({ status: "matched", match_id: matchId, opponent_id: opp.user_id, opponent_name: opp.display_name })
-            .eq("id", rowId);
-          await supabase.from("matches").insert({
-            id: matchId, player1_id: opp.user_id, player2_id: user.id, status: "active", game_state: null
-          });
-
-          matched = true;
-          setStatus("matched");
-          setTimeout(() => onMatch({ matchId, opponentId: opp.user_id, opponentName: opp.display_name }), 800);
-        } catch (_) {}
+  // ── Accept duel ───────────────────────────────────────────────────────────────────
+  const doAccept = async () => {
+    if (!matchIdRef.current || phaseRef.current !== 'found') return;
+    setPhase('accepted');
+    try {
+      const { data } = await supabase.rpc('accept_duel', { p_match_id: matchIdRef.current, p_user_id: user.id });
+      if (data?.ready) {
+        // Both accepted simultaneously — enter immediately
+        setPhase('entering');
+        setTimeout(() => { if (activeRef.current) onMatch({ matchId: matchIdRef.current, opponentId: oppIdRef.current, opponentName: oppNameRef.current }); }, 700);
       }
-    };
+      // Otherwise matchChRef Realtime fires when opponent accepts (matches.status → 'active')
+    } catch (_) { setPhase('error'); }
+  };
 
+  // ── Main setup effect: insert row, Realtime subscribe, start poll ─────────────────────
+  useEffect(() => {
+    activeRef.current = true;
+    const go = async () => {
+      // Purge any stale rows for this user
+      await supabase.from('matchmaking').delete().eq('user_id', user.id);
+      if (!activeRef.current) return;
+      // Insert fresh waiting row
+      const { data, error } = await supabase.from('matchmaking')
+        .insert({ user_id: user.id, display_name: user.name, status: 'waiting' }).select().single();
+      if (!activeRef.current) return;
+      if (error || !data) { setPhase('error'); return; }
+      const rowId = data.id;
+      rowIdRef.current = rowId;
+      // Realtime on our own row — fires when the OTHER client's pair_players() updates us
+      mmChannelRef.current = supabase.channel('mm_row_' + rowId)
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'matchmaking', filter: `id=eq.${rowId}` }, (payload) => {
+          if (payload.new.status === 'matched' && activeRef.current) transitionMatched(payload.new);
+        })
+        .subscribe();
+      // Poll: call pair_players() RPC every 1.5s
+      // The caller that wins FOR UPDATE SKIP LOCKED does the pairing; others retry
+      const doPoll = async () => {
+        if (!activeRef.current || phaseRef.current !== 'waiting') return;
+        try {
+          const { data: res } = await supabase.rpc('pair_players', { p_user_id: user.id, p_display_name: user.name, p_row_id: rowId });
+          if (res?.paired && activeRef.current) {
+            transitionMatched({ match_id: res.match_id, opponent_id: res.opponent_id, opponent_name: res.opponent_name });
+            return;
+          }
+        } catch (_) {}
+        if (activeRef.current && phaseRef.current === 'waiting') pollTimerRef.current = setTimeout(doPoll, 1500);
+      };
+      pollTimerRef.current = setTimeout(doPoll, 1000);
+      // 5-minute queue timeout
+      setTimeout(() => {
+        if (activeRef.current && phaseRef.current === 'waiting') {
+          setPhase('timeout'); activeRef.current = false;
+          supabase.from('matchmaking').delete().eq('id', rowId).then(() => {});
+          if (mmChannelRef.current) supabase.removeChannel(mmChannelRef.current);
+        }
+      }, 5 * 60 * 1000);
+    };
     go();
     return () => {
-      active = false;
-      if (rowId && !matched) supabase.from("matchmaking").delete().eq("id", rowId).then(() => {});
+      activeRef.current = false;
+      clearTimeout(pollTimerRef.current);
+      // Only delete row if still waiting (matched rows are cleaned by cancel_duel)
+      if (rowIdRef.current && ['waiting','error','timeout'].includes(phaseRef.current)) {
+        supabase.from('matchmaking').delete().eq('id', rowIdRef.current).then(() => {});
+      }
+      if (mmChannelRef.current) supabase.removeChannel(mmChannelRef.current);
+      if (matchChRef.current)   supabase.removeChannel(matchChRef.current);
     };
-  }, []);
-  return (<div style={{ maxWidth:480, margin:"0 auto", padding:"80px 24px", textAlign:"center" }}>
-    <div style={{ width:72, height:72, borderRadius:"50%", background:"linear-gradient(135deg,#1a1610,#0e0c08)", border:"2px solid #e8c06044", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 24px", fontSize:28 }}>
-      {status==="matched" ? "⚔" : status==="error" ? "⚠" : "🔍"}
-    </div>
-    <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:24, color:"#e8c060", margin:"0 0 8px" }}>
-      {status==="matched" ? "Match Found!" : status==="error" ? "Connection Error" : `Searching${".".repeat(dots)}`}
-    </h2>
-    <p style={{ fontSize:13, color:"#a09070", marginBottom:28 }}>
-      {status==="matched" ? "Entering the arena..." : status==="error" ? "Could not connect. Try again." : "Waiting in the queue — this may take a moment."}
-    </p>
-    {status==="waiting" && <div style={{ display:"flex", gap:4, justifyContent:"center", marginBottom:24 }}>{[0,1,2].map((i) => (<div key={i} style={{ width:8, height:8, borderRadius:"50%", background:"#e8c060", animation:`pulse 1.2s ${i*0.4}s ease-in-out infinite` }} />))}</div>}
-    {status!=="matched" && <button onClick={onCancel} style={{ padding:"10px 28px", background:"transparent", border:"1px solid #3a2010", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:"#806040", cursor:"pointer" }}>CANCEL</button>}
-  </div>);
-}
+  }, []); // eslint-disable-line
 
+  const pulseDots = [0,1,2].map(i => (<div key={i} style={{ width:8, height:8, borderRadius:'50%', background:'#e8c060', animation:`pulse 1.2s ${i*0.4}s ease-in-out infinite` }} />));
+  const backBtn = (label='CANCEL') => (<button onClick={onCancel} style={{ marginTop:28, padding:'10px 28px', background:'transparent', border:'1px solid #3a2010', borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:'#806040', cursor:'pointer' }}>{label}</button>);
+
+  if (phase === 'found') return (
+    <div style={{ maxWidth:480, margin:'0 auto', padding:'60px 24px', textAlign:'center' }}>
+      <div style={{ fontSize:56, marginBottom:14, animation:'pulse 0.7s ease-in-out infinite' }}>⚔</div>
+      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:26, color:'#e8c060', margin:'0 0 6px', letterSpacing:3 }}>DUEL FOUND</h2>
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:'#806040', letterSpacing:3, marginBottom:6 }}>CHALLENGER</div>
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, color:'#f0e8d8', fontWeight:700, marginBottom:24 }}>{oppName}</div>
+      <div style={{ width:64, height:64, borderRadius:'50%', background:`conic-gradient(#e8c060 ${countdown/20*360}deg, #2a2010 0deg)`, margin:'0 auto 22px', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <div style={{ width:50, height:50, borderRadius:'50%', background:'#0e0c08', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Cinzel',serif", fontSize:20, fontWeight:700, color:'#e8c060' }}>{countdown}</div>
+      </div>
+      <div style={{ display:'flex', gap:14, justifyContent:'center' }}>
+        <button onClick={doAccept} style={{ padding:'14px 38px', background:'linear-gradient(135deg,#4a8020,#78cc45)', border:'none', borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:14, fontWeight:700, letterSpacing:2, color:'#fff', cursor:'pointer', boxShadow:'0 4px 20px rgba(78,200,50,0.4)' }}>ACCEPT</button>
+        <button onClick={doDecline} style={{ padding:'14px 24px', background:'transparent', border:'1px solid #5a1818', borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:13, color:'#c07060', cursor:'pointer' }}>DECLINE</button>
+      </div>
+    </div>
+  );
+
+  if (phase === 'accepted') return (
+    <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
+      <div style={{ fontSize:48, marginBottom:16, color:'#78cc45' }}>✓</div>
+      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:22, color:'#78cc45', margin:'0 0 12px' }}>You Accepted</h2>
+      <p style={{ fontSize:13, color:'#a09070', marginBottom:24 }}>Waiting for <strong style={{ color:'#e8c060' }}>{oppName}</strong> to respond…</p>
+      <div style={{ display:'flex', gap:4, justifyContent:'center', marginBottom:28 }}>{pulseDots}</div>
+      <button onClick={doDecline} style={{ padding:'8px 22px', background:'transparent', border:'1px solid #3a2010', borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:10, color:'#806040', cursor:'pointer' }}>CANCEL</button>
+    </div>
+  );
+
+  if (phase === 'entering') return (
+    <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
+      <div style={{ fontSize:60, marginBottom:16, animation:'pulse 0.6s ease-in-out infinite' }}>⚔</div>
+      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:24, color:'#e8c060', margin:'0 0 8px', letterSpacing:3 }}>ENTERING THE ARENA</h2>
+      <p style={{ fontSize:13, color:'#a09070' }}>Both players ready. Prepare yourself…</p>
+    </div>
+  );
+
+  if (phase === 'declined') return (
+    <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
+      <div style={{ fontSize:48, marginBottom:16 }}>🚫</div>
+      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:22, color:'#e05050', margin:'0 0 12px' }}>Duel Cancelled</h2>
+      <p style={{ fontSize:13, color:'#a09070', marginBottom:4 }}>The match was declined or the opponent left.</p>
+      {backBtn('BACK TO LOBBY')}
+    </div>
+  );
+
+  if (phase === 'timeout') return (
+    <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
+      <div style={{ fontSize:48, marginBottom:16 }}>⏱</div>
+      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:22, color:'#a09070', margin:'0 0 12px' }}>No Opponents Found</h2>
+      <p style={{ fontSize:13, color:'#806040', marginBottom:4 }}>Queue timed out after 5 minutes. Try again!</p>
+      {backBtn('BACK')}
+    </div>
+  );
+
+  if (phase === 'error') return (
+    <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
+      <div style={{ fontSize:48, marginBottom:16 }}>⚠</div>
+      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:22, color:'#e05050', margin:'0 0 12px' }}>Connection Error</h2>
+      <p style={{ fontSize:13, color:'#a09070', marginBottom:4 }}>Could not reach matchmaking. Check your connection.</p>
+      {backBtn('BACK')}
+    </div>
+  );
+
+  return (
+    <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
+      <div style={{ width:72, height:72, borderRadius:'50%', background:'linear-gradient(135deg,#1a1610,#0e0c08)', border:'2px solid #e8c06044', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 24px', fontSize:28 }}>🔍</div>
+      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:24, color:'#e8c060', margin:'0 0 8px' }}>{'Searching' + '.'.repeat(dots)}</h2>
+      <p style={{ fontSize:13, color:'#a09070', marginBottom:28 }}>Waiting in the queue — this may take a moment.</p>
+      <div style={{ display:'flex', gap:4, justifyContent:'center', marginBottom:24 }}>{pulseDots}</div>
+      <button onClick={() => { doDecline(); setTimeout(onCancel, 200); }} style={{ padding:'10px 28px', background:'transparent', border:'1px solid #3a2010', borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:'#806040', cursor:'pointer' }}>CANCEL</button>
+    </div>
+  );
+}
 // ═══ MATCH SETUP ═════════════════════════════════════════════
 function GameTab({ user, onUpdateUser }) {
   const [matchConfig, setMatchConfig] = useState(null);
@@ -1674,7 +1830,7 @@ function PackOpening({ user, onUpdateUser }) {
 // ═══ AUTH ═════════════════════════════════════════════════════════════════════
 function getLastFriday() { const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 2) % 7)); d.setHours(0,0,0,0); return d; }
 const toAppUser = (p, email) => ({
-  id: p.id, email, name: p.name, alphaKey: p.alpha_key, shards: p.shards ?? 30,
+  id: p.id, email, name: p.name, alphaKey: p.alpha_key, shards: p.shards ?? 1000,
   lastShardReset: p.last_shard_reset, battlesPlayed: p.battles_played ?? 0,
   battlesWon: p.battles_won ?? 0, cardsForged: p.cards_forged ?? 0,
   collection: p.collection || {}, decks: p.decks || [], avatarUrl: p.avatar_url || null,
@@ -1692,8 +1848,14 @@ function useAuth() {
         const lastFri = getLastFriday();
         const lastReset = p.last_shard_reset ? new Date(p.last_shard_reset) : new Date(0);
         if (lastFri > lastReset) {
-          p = { ...p, shards: 30, last_shard_reset: new Date().toISOString() };
-          await supabase.from("profiles").update({ shards: 30, last_shard_reset: p.last_shard_reset }).eq("id", p.id);
+          p = { ...p, shards: 1000, last_shard_reset: new Date().toISOString() };
+          await supabase.from("profiles").update({ shards: 1000, last_shard_reset: p.last_shard_reset }).eq("id", p.id);
+        }
+        // Founder auto-grant: ensure sncombz@gmail.com always has full alt art
+        if (session.user.email?.toLowerCase() === "sncombz@gmail.com" && (!p.alt_owned || Object.keys(p.alt_owned).length === 0)) {
+          const founderAlts = Object.fromEntries(Object.entries(ALT_ARTS).map(([id, alts]) => [id, alts.map(a => a.setId)]));
+          p = { ...p, alt_owned: founderAlts };
+          await supabase.from("profiles").update({ alt_owned: founderAlts }).eq("id", p.id);
         }
         setUser(toAppUser(p, session.user.email));
       } else {
@@ -1960,7 +2122,7 @@ function CollectionScreen({ user, onUpdateUser }) {
       </div>
       <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#c09848", marginBottom: 12, fontWeight: 600 }}>OWNED ({filter(owned).length})</div>
       <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 28, alignItems:"flex-start" }}>
-        {filter(owned).map((c, i) => (<CollectionCard key={c.id} card={c} i={i} />))}
+        {filter(owned).map((c, i) => <Fragment key={c.id}>{CollectionCard({ card: c, i })}</Fragment>)}
       </div>
       {filter(locked).length > 0 && (
         <>
@@ -2304,11 +2466,12 @@ const NAV = [
 
 export default function App() {
   const [tab, setTab] = useState("home"); const { user, loading, login, logout, update, completeProfile } = useAuth(); const [showProfile, setShowProfile] = useState(false); const [showPatchNotes, setShowPatchNotes] = useState(true);
-  if (loading) return (<div style={{ minHeight: "100vh", background: "#0a0806", display: "flex", alignItems: "center", justifyContent: "center" }}><div style={{ fontFamily: "'Cinzel',serif", color: "#e8c060", fontSize: 16, letterSpacing: 4, animation: "pulse 1.5s ease-in-out infinite" }}>FORGING...</div></div>);
-  return (<div style={{ minHeight: "100vh", background: "#0e0c0a", color: "#e8e0d0", fontFamily: "'Lora',Georgia,serif", overflowX: "hidden" }} onClick={() => setShowProfile(false)}>
+  if (loading) return (<div style={{ minHeight: "100vh", background: "#161210", display: "flex", alignItems: "center", justifyContent: "center" }}><div style={{ fontFamily: "'Cinzel',serif", color: "#e8c060", fontSize: 16, letterSpacing: 4, animation: "pulse 1.5s ease-in-out infinite" }}>FORGING...</div></div>);
+  return (<div style={{ minHeight: "100vh", background: "#161210", color: "#e8e0d0", fontFamily: "'Lora',Georgia,serif", overflowX: "hidden" }} onClick={() => setShowProfile(false)}>
     <style>{`
       @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Lora:ital,wght@0,400;0,500;1,400&display=swap');
-      *{box-sizing:border-box}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:#0e0c0a}::-webkit-scrollbar-thumb{background:#3a3018;border-radius:3px}select option{background:#1a1408}button{transition:all .18s}canvas{image-rendering:auto}
+      html{zoom:1.25}
+      *{box-sizing:border-box}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:#161210}::-webkit-scrollbar-thumb{background:#4a4022;border-radius:3px}select option{background:#1a1408}button{transition:all .18s}canvas{image-rendering:auto}
       @keyframes vfxShake{0%,100%{transform:translate(-50%,-50%)}25%{transform:translate(-55%,-45%)}75%{transform:translate(-45%,-55%)}}
       @keyframes vfxFloat{0%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(-50%,-120%)}}
       @keyframes vfxPulse{0%{opacity:.8;transform:translate(-50%,-50%) scale(.5)}100%{opacity:0;transform:translate(-50%,-50%) scale(2)}}
@@ -2320,6 +2483,10 @@ export default function App() {
       @keyframes slideDown{0%{opacity:0;transform:translateY(-10px)}100%{opacity:1;transform:translateY(0)}}
       @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
       @keyframes turnBannerIn{0%{opacity:0;transform:translate(-50%,-50%) scale(0.7)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}25%{transform:translate(-50%,-50%) scale(1)}75%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.1)}}
+      @keyframes cardLunge{0%{transform:translateY(0) scale(1)}35%{transform:translateY(-38px) scale(1.06)}65%{transform:translateY(-30px) scale(1.03)}100%{transform:translateY(0) scale(1)}}
+      @keyframes cardHit{0%,100%{filter:none;transform:translateY(0)}20%{filter:brightness(3.5) saturate(0) drop-shadow(0 0 10px #ff3030);transform:translateY(6px)}60%{filter:brightness(2) saturate(0.3) drop-shadow(0 0 5px #ff2020);transform:translateY(3px)}}
+      @keyframes cardDie{0%{opacity:1;transform:scale(1) rotate(0deg)}40%{opacity:.7;transform:scale(0.88) rotate(-6deg)}100%{opacity:0;transform:scale(0.55) rotate(-18deg) translateY(20px)}}
+      @keyframes cardSummon{0%{opacity:0;transform:translateY(48px) scale(0.82)}60%{opacity:1;transform:translateY(-6px) scale(1.04)}100%{opacity:1;transform:translateY(0) scale(1)}}
       @keyframes foilShimmer{0%{background-position:200% center}100%{background-position:-200% center}}
       @keyframes prismShimmer{0%{background-position:0% 50%;filter:hue-rotate(0deg) brightness(1.2)}50%{background-position:100% 50%;filter:hue-rotate(180deg) brightness(1.5)}100%{background-position:0% 50%;filter:hue-rotate(360deg) brightness(1.2)}}
       @keyframes prismPulse{0%,100%{box-shadow:0 0 18px #ff808088,0 0 36px #8080ff66,0 0 54px #80ff8044}33%{box-shadow:0 0 18px #80ff8088,0 0 36px #ff808066,0 0 54px #8080ff44}66%{box-shadow:0 0 18px #8080ff88,0 0 36px #80ff8066,0 0 54px #ff808044}}
@@ -2350,8 +2517,8 @@ export default function App() {
     `}</style>
     {(!user || user.__needsProfile) && <LoginModal needsProfile={!!user?.__needsProfile} userId={user?.id} userEmail={user?.email} onSignOut={logout} onProfileCreated={completeProfile} />}
     {user && showPatchNotes && <PatchNotesModal onDismiss={() => setShowPatchNotes(false)} />}
-    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "radial-gradient(ellipse at 15% 15%,rgba(200,140,20,0.06) 0%,transparent 50%),radial-gradient(ellipse at 85% 85%,rgba(30,120,200,0.04) 0%,transparent 50%)" }} />
-    <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "linear-gradient(180deg,#0e0b06 0%,#0a0806 100%)", backdropFilter: "blur(20px)", borderBottom: "2px solid #3a2c10", padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 72, boxShadow: "0 4px 24px rgba(0,0,0,0.6)" }} onClick={(e) => e.stopPropagation()}>
+    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "radial-gradient(ellipse at 15% 15%,rgba(200,140,20,0.11) 0%,transparent 50%),radial-gradient(ellipse at 85% 85%,rgba(30,120,200,0.08) 0%,transparent 50%)" }} />
+    <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "linear-gradient(180deg,#201c10 0%,#181408 100%)", backdropFilter: "blur(20px)", borderBottom: "2px solid #4a3c18", padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 72, boxShadow: "0 4px 24px rgba(0,0,0,0.5)" }} onClick={(e) => e.stopPropagation()}>
       <button onClick={() => setTab("home")} style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}>
         <div style={{ width: 36, height: 36, borderRadius: 8, background: "linear-gradient(135deg,#e8c060,#a07820)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontSize: 16, fontWeight: 900, color: "#1a1000", boxShadow: "0 2px 12px #e8c06044" }}>F</div>
         <div>
@@ -2367,8 +2534,8 @@ export default function App() {
               style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8px 16px", gap: 4, background: active ? "linear-gradient(180deg,rgba(232,192,96,0.18) 0%,rgba(232,192,96,0.06) 100%)" : "transparent", border: "none", borderBottom: active ? "3px solid #e8c060" : "3px solid transparent", cursor: "pointer", minWidth: 68, transition: "all .18s", position: "relative" }}
               onMouseEnter={e => { if (!active) e.currentTarget.style.background = "rgba(232,192,96,0.07)"; }}
               onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}>
-              <span style={{ fontFamily: "'Cinzel',serif", fontSize: 18, fontWeight: 900, color: active ? "#e8c060" : "#5a4020", lineHeight: 1, textShadow: active ? "0 0 20px #e8c06088" : "none", transition: "all .18s" }}>{t.icon}</span>
-              <span style={{ fontFamily: "'Cinzel',serif", fontSize: 10, fontWeight: active ? 700 : 400, color: active ? "#e8c060" : "#7a5830", letterSpacing: 1, lineHeight: 1, transition: "all .18s" }}>{t.label}</span>
+              <span style={{ fontFamily: "'Cinzel',serif", fontSize: 18, fontWeight: 900, color: active ? "#e8c060" : "#b09458", lineHeight: 1, textShadow: active ? "0 0 20px #e8c06088" : "none", transition: "all .18s" }}>{t.icon}</span>
+              <span style={{ fontFamily: "'Cinzel',serif", fontSize: 10, fontWeight: active ? 700 : 400, color: active ? "#e8c060" : "#9a7848", letterSpacing: 1, lineHeight: 1, transition: "all .18s" }}>{t.label}</span>
             </button>
           );
         })}
@@ -2404,7 +2571,7 @@ export default function App() {
             <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#e8a020", letterSpacing:2, marginBottom:8, fontWeight:700, borderBottom:"1px solid #2a2010", paddingBottom:5 }}>⚔ RECENT BATTLES</div>
             {(user.matchHistory||[]).length === 0
               ? <div style={{ fontSize:11, color:"#504030", fontStyle:"italic", padding:"8px 0", textAlign:"center" }}>No battles yet — fight someone!</div>
-              : (user.matchHistory||[]).slice(0,8).map((m,i) => (
+              : <div style={{ maxHeight:260, overflowY:"auto", paddingRight:2 }}>{(user.matchHistory||[]).map((m,i) => (
                 <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"6px 10px", marginBottom:4, background:`rgba(0,0,0,0.35)`, borderRadius:7, borderLeft:`3px solid ${m.result==="W"?"#48a028":"#c03030"}` }}>
                   <div>
                     <div style={{ fontSize:11, color:"#c0a870", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", maxWidth:160 }}>vs {m.opponent}</div>
@@ -2412,7 +2579,7 @@ export default function App() {
                   </div>
                   <span style={{ fontSize:13, fontWeight:900, fontFamily:"'Cinzel',serif", color:m.result==="W"?"#78cc45":"#e05050", flexShrink:0, marginLeft:8 }}>{m.result}</span>
                 </div>
-              ))
+              ))}</div>
             }
           </div>
           <button onClick={() => { logout(); setShowProfile(false); }} style={{ width:"100%", padding:"9px", background:"rgba(180,30,30,0.12)", border:"1px solid #5a1818", borderRadius:7, color:"#c07060", fontFamily:"'Cinzel',serif", fontSize:10, cursor:"pointer", letterSpacing:1 }}>SIGN OUT</button>
