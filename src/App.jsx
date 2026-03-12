@@ -203,7 +203,7 @@ function MusicPlayer() {
 }
 
 // ═══ CONFIG ══════════════════════════════════════════════════════════════════
-const CFG = { startHP: 20, startHand: 3, maxHand: 7, maxBoard: 5, startEnergy: 2, maxEnergy: 7, turnTimer: 45, deck: { min: 15, max: 25, maxLeg: 2, copies: { Common: 2, Uncommon: 2, Rare: 1, Epic: 1, Legendary: 1 } } };
+const CFG = { startHP: 20, startHand: 3, maxHand: 7, maxBoard: 5, startEnergy: 2, maxEnergy: 7, turnTimer: 45, deck: { size: 40, maxChamp: 6, maxAuraEnv: 4, copies: 3 } };
 
 // ═══ CONSTANTS ═══════════════════════════════════════════════════════════════
 const RC = { Common: "#8a8a7a", Uncommon: "#c0922a", Rare: "#5090ff", Epic: "#a860d8", Legendary: "#f0b818" };
@@ -268,7 +268,7 @@ function safeRoundRect(ctx, x, y, w, h, r) {
   const rad = typeof r === "number" ? r : 0;
   ctx.beginPath(); ctx.moveTo(x + rad, y); ctx.lineTo(x + w - rad, y); ctx.quadraticCurveTo(x + w, y, x + w, y + rad); ctx.lineTo(x + w, y + h - rad); ctx.quadraticCurveTo(x + w, y + h, x + w - rad, y + h); ctx.lineTo(x + rad, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - rad); ctx.lineTo(x, y + rad); ctx.quadraticCurveTo(x, y, x + rad, y); ctx.closePath();
 }
-function getStarterCollection() { const c = {}; POOL.forEach((x) => { c[x.id] = x.rarity === "Common" ? 2 : x.rarity === "Uncommon" ? 1 : 0; }); return c; }
+function getStarterCollection() { const c = {}; POOL.forEach((x) => { c[x.id] = x.rarity === "Common" ? 3 : x.rarity === "Uncommon" ? 2 : 0; }); return c; }
 
 // ═══ FLOATING PARTICLES ══════════════════════════════════════════════════════
 function FloatingParticles({ count = 30, color = "#e8c06015", speed = 1, shape = "circle", direction = "up" }) {
@@ -418,7 +418,6 @@ function CardPreview({ card, onClose }) {
           {kws.length > 0 && <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 8 }}>{kws.map((k) => (<span key={k.name} style={{ fontSize: 9, padding: "3px 8px", borderRadius: 20, background: k.color + "25", color: k.color, border: "1px solid " + k.color + "55" }}>{k.icon} {k.name}</span>))}{isBP && <span style={{ fontSize: 9, padding: "3px 8px", borderRadius: 20, background: "#cc203025", color: "#ee6688", border: "1px solid #cc203055" }}>Bloodpact</span>}</div>}
           <div style={{ fontSize: 12, color: isEnv ? "#80c0d0" : "#e0d0b0", lineHeight: 1.7, marginBottom: 10, padding: "8px 0", borderTop: "1px solid " + border + "22", borderBottom: "1px solid " + border + "22" }}>{card.ability}</div>
           {card.atk != null && <div style={{ display: "flex", gap: 20, marginBottom: 8 }}><div><span style={{ fontSize: 24, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#ff7750" }}>{card.currentAtk != null ? card.currentAtk : card.atk}</span><span style={{ fontSize: 9, color: "#996655", marginLeft: 4 }}>ATK</span></div><div><span style={{ fontSize: 24, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#50c065" }}>{card.currentHp != null ? card.currentHp : card.hp}</span><span style={{ fontSize: 9, color: "#448850", marginLeft: 4 }}>HP</span></div></div>}
-          {card.levelUp && card.levelUp.length > 0 && <div style={{ fontSize: 9, color: "#806040", marginBottom: 6 }}>Levels: {card.levelUp.map((l) => l.label).join(" > ")}</div>}
           <div style={{ fontSize: 10, fontStyle: "italic", color: "#70603a", lineHeight: 1.6 }}>"{card.flavor || "Lost to history."}"</div>
         </div>
         <button onClick={onClose} style={{ width: "100%", padding: "10px", background: "rgba(0,0,0,0.3)", border: "none", borderTop: "1px solid " + border + "22", color: "#806040", fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: 2, cursor: "pointer" }}>CLOSE</button>
@@ -739,7 +738,6 @@ function Token({ c, selected, isTarget, canSelect, onClick, onRightClick, animTy
       {/* Top badges */}
       <div style={{ position: "absolute", top: 4, left: 4, right: 4, display: "flex", justifyContent: "space-between", zIndex: 3 }}>
         {c.shielded && <div style={{ fontSize: 7, background: "rgba(40,100,200,0.9)", borderRadius: 4, padding: "1px 5px", color: "#a8d8ff", fontWeight: 700, border:"1px solid #60a0ffaa", letterSpacing:0.5 }}>♦ SHIELD</div>}
-        {c.level > 1 && <div style={{ marginLeft: "auto", background: c.border + "cc", borderRadius: 10, padding: "1px 5px", fontSize: 7, color: "#fff", fontWeight: 700, fontFamily: "'Cinzel',serif", letterSpacing: 0.5, border:`1px solid ${c.border}88` }}>LV{c.level}</div>}
       </div>
       {/* Keywords row */}
       {kws.length > 0 && <div style={{ position: "absolute", top: 24, left: 4, right: 4, display: "flex", gap: 2, flexWrap: "wrap", zIndex: 3 }}>{kws.map((k) => (<span key={k.name} style={{ fontSize: 6, padding: "1px 3px", borderRadius: 6, background: `${k.color}44`, color: k.color, border: `1px solid ${k.color}55` }}>{k.icon}{k.name}</span>))}</div>}
@@ -843,8 +841,7 @@ function TurnTimer({ active, duration = CFG.turnTimer, onExpire }) {
 }
 
 // ═══ GAME ENGINE ═════════════════════════════════════════════════════════════
-function makeInst(c, p = "p") { return { ...c, uid: uid(p + c.id), currentHp: c.hp, maxHp: c.hp, currentAtk: c.atk, canAttack: false, hasAttacked: false, bleed: 0, xp: 0, level: 1, levelLabel: "", echoQueued: false, shielded: (c.keywords || []).includes("Shield") }; }
-function levelUp(u) { if (!u.levelUp || !u.levelUp.length) return u; let c = { ...u }; u.levelUp.forEach((t, i) => { if (c.xp >= t.at && c.level <= i + 1) c = { ...c, level: i + 2, currentAtk: c.currentAtk + t.bonus.atk, currentHp: c.currentHp + t.bonus.hp, maxHp: c.maxHp + t.bonus.hp, levelLabel: t.label }; }); return c; }
+function makeInst(c, p = "p") { return { ...c, uid: uid(p + c.id), currentHp: c.hp, maxHp: c.hp, currentAtk: c.atk, canAttack: false, hasAttacked: false, bleed: 0, echoQueued: false, shielded: (c.keywords || []).includes("Shield") }; }
 
 function resolveEffects(trigger, card, state, side, vfx) {
   const effects = (card.effects || []).filter((e) => e.trigger === trigger); let s = { ...state };
@@ -888,7 +885,7 @@ function computeEnemyPlayPhase(g, vfx) {
     const inst = { ...makeInst(card, "eb"), canAttack: (card.keywords || []).includes("Swift") };
     if (card.bloodpact) { s.enemyHP -= card.cost; L(`Enemy blood-plays ${card.name}!`); } else { en -= ec; L(`Enemy plays ${card.name}!`); }
     s.enemyBoard = [...s.enemyBoard, inst]; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid);
-    if ((card.keywords || []).includes("Fracture") && s.enemyBoard.length < CFG.maxBoard) s.enemyBoard = [...s.enemyBoard, { ...inst, uid: uid("ef"), currentHp: Math.ceil(card.hp / 2), maxHp: Math.ceil(card.hp / 2), currentAtk: Math.ceil(card.atk / 2), name: card.name + " Frag", keywords: [], levelUp: [], effects: [] }];
+    if ((card.keywords || []).includes("Fracture") && s.enemyBoard.length < CFG.maxBoard) s.enemyBoard = [...s.enemyBoard, { ...inst, uid: uid("ef"), currentHp: Math.ceil(card.hp / 2), maxHp: Math.ceil(card.hp / 2), currentAtk: Math.ceil(card.atk / 2), name: card.name + " Frag", keywords: [], effects: [] }];
     s = resolveEffects("onPlay", card, s, "enemy", vfx);
   });
   return s;
@@ -908,9 +905,9 @@ function computeEnemyAttackPhase(g, vfx) {
   s.playerBoard = s.playerBoard.map((c) => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter((c) => c.currentHp > 0);
   s.enemyBoard = s.enemyBoard.map((c) => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter((c) => c.currentHp > 0);
   s.playerBoard.forEach((c) => { if (c.effects && c.effects.length) s = resolveEffects("onTurnStart", c, s, "player", vfx); });
-  s.playerBoard = s.playerBoard.map((c) => { const lv = levelUp({ ...c, xp: c.xp + 1 }); if (lv.level > c.level) L(`${c.name} leveled to ${lv.levelLabel}!`); return { ...lv, canAttack: true, hasAttacked: false }; });
-  s.enemyBoard = s.enemyBoard.map((c) => ({ ...levelUp({ ...c, xp: c.xp + 1 }), canAttack: true, hasAttacked: false }));
-  s.playerBoard.filter((c) => (c.keywords || []).includes("Echo") && !c.echoQueued).forEach((src) => { if (s.playerBoard.length < CFG.maxBoard) { s.playerBoard = [...s.playerBoard, { ...makeInst({ ...src, id: src.id + "_e", hp: 1, atk: 1, keywords: [], levelUp: [], effects: [] }, "pe"), uid: uid("echo"), currentHp: 1, maxHp: 1, currentAtk: 1, name: src.name + " Echo", canAttack: true }]; L(`Echo of ${src.name}!`); } });
+  s.playerBoard = s.playerBoard.map((c) => ({ ...c, canAttack: true, hasAttacked: false }));
+  s.enemyBoard = s.enemyBoard.map((c) => ({ ...c, canAttack: true, hasAttacked: false }));
+  s.playerBoard.filter((c) => (c.keywords || []).includes("Echo") && !c.echoQueued).forEach((src) => { if (s.playerBoard.length < CFG.maxBoard) { s.playerBoard = [...s.playerBoard, { ...makeInst({ ...src, id: src.id + "_e", hp: 1, atk: 1, keywords: [], effects: [] }, "pe"), uid: uid("echo"), currentHp: 1, maxHp: 1, currentAtk: 1, name: src.name + " Echo", canAttack: true }]; L(`Echo of ${src.name}!`); } });
   s.playerBoard = s.playerBoard.map((c) => (c.keywords || []).includes("Echo") ? { ...c, echoQueued: true } : c);
   if (s.playerDeck.length > 0 && s.playerHand.length < CFG.maxHand) { s.playerHand = [...s.playerHand, makeInst(s.playerDeck[0], "p")]; s.playerDeck = s.playerDeck.slice(1); }
   if (s.enemyHP <= 0) return { ...s, phase: "gameover", winner: "player", log: [...s.log, "Victory!"] };
@@ -931,7 +928,7 @@ function computeEnemyTurn(g, vfx) {
     const inst = { ...makeInst(card, "eb"), canAttack: (card.keywords || []).includes("Swift") };
     if (card.bloodpact) { s.enemyHP -= card.cost; L(`Enemy blood-plays ${card.name}!`); } else { en -= ec; L(`Enemy plays ${card.name}!`); }
     s.enemyBoard = [...s.enemyBoard, inst]; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid);
-    if ((card.keywords || []).includes("Fracture") && s.enemyBoard.length < CFG.maxBoard) s.enemyBoard = [...s.enemyBoard, { ...inst, uid: uid("ef"), currentHp: Math.ceil(card.hp / 2), maxHp: Math.ceil(card.hp / 2), currentAtk: Math.ceil(card.atk / 2), name: card.name + " Frag", keywords: [], levelUp: [], effects: [] }];
+    if ((card.keywords || []).includes("Fracture") && s.enemyBoard.length < CFG.maxBoard) s.enemyBoard = [...s.enemyBoard, { ...inst, uid: uid("ef"), currentHp: Math.ceil(card.hp / 2), maxHp: Math.ceil(card.hp / 2), currentAtk: Math.ceil(card.atk / 2), name: card.name + " Frag", keywords: [], effects: [] }];
     s = resolveEffects("onPlay", card, s, "enemy", vfx);
   });
   s.enemyBoard.filter((c) => c.canAttack && !c.hasAttacked).forEach((att) => {
@@ -945,9 +942,9 @@ function computeEnemyTurn(g, vfx) {
   s.playerBoard = s.playerBoard.map((c) => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter((c) => c.currentHp > 0);
   s.enemyBoard = s.enemyBoard.map((c) => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter((c) => c.currentHp > 0);
   s.playerBoard.forEach((c) => { if (c.effects && c.effects.length) s = resolveEffects("onTurnStart", c, s, "player", vfx); });
-  s.playerBoard = s.playerBoard.map((c) => { const lv = levelUp({ ...c, xp: c.xp + 1 }); if (lv.level > c.level) L(`${c.name} leveled to ${lv.levelLabel}!`); return { ...lv, canAttack: true, hasAttacked: false }; });
-  s.enemyBoard = s.enemyBoard.map((c) => ({ ...levelUp({ ...c, xp: c.xp + 1 }), canAttack: true, hasAttacked: false }));
-  s.playerBoard.filter((c) => (c.keywords || []).includes("Echo") && !c.echoQueued).forEach((src) => { if (s.playerBoard.length < CFG.maxBoard) { s.playerBoard = [...s.playerBoard, { ...makeInst({ ...src, id: src.id + "_e", hp: 1, atk: 1, keywords: [], levelUp: [], effects: [] }, "pe"), uid: uid("echo"), currentHp: 1, maxHp: 1, currentAtk: 1, name: src.name + " Echo", canAttack: true }]; L(`Echo of ${src.name}!`); } });
+  s.playerBoard = s.playerBoard.map((c) => ({ ...c, canAttack: true, hasAttacked: false }));
+  s.enemyBoard = s.enemyBoard.map((c) => ({ ...c, canAttack: true, hasAttacked: false }));
+  s.playerBoard.filter((c) => (c.keywords || []).includes("Echo") && !c.echoQueued).forEach((src) => { if (s.playerBoard.length < CFG.maxBoard) { s.playerBoard = [...s.playerBoard, { ...makeInst({ ...src, id: src.id + "_e", hp: 1, atk: 1, keywords: [], effects: [] }, "pe"), uid: uid("echo"), currentHp: 1, maxHp: 1, currentAtk: 1, name: src.name + " Echo", canAttack: true }]; L(`Echo of ${src.name}!`); } });
   s.playerBoard = s.playerBoard.map((c) => (c.keywords || []).includes("Echo") ? { ...c, echoQueued: true } : c);
   if (s.playerDeck.length > 0 && s.playerHand.length < CFG.maxHand) { s.playerHand = [...s.playerHand, makeInst(s.playerDeck[0], "p")]; s.playerDeck = s.playerDeck.slice(1); }
   if (s.enemyHP <= 0) return { ...s, phase: "gameover", winner: "player", log: [...s.log, "Victory!"] };
@@ -1325,53 +1322,97 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
 }
 
 // ═══ DECK BUILDER ═════════════════════════════════════════════
+// ═══ STARTER DECK ════════════════════════════════════════════════════════════
+// Valid 40-card starter deck using Common (3x) and Uncommon (2x) cards
+const STARTER_DECK = (() => {
+  const get = (id) => POOL.find(c => c.id === id);
+  return [
+    // Creatures (28)
+    ...Array(3).fill(get("wolf")),       // Thornwood, Swift 3/2
+    ...Array(3).fill(get("guard")),      // Thornwood, tanky 1/5
+    ...Array(3).fill(get("shard")),      // Shattered Expanse, Swift 2/1
+    ...Array(3).fill(get("shellguard")), // Azure Deep, Shield 1/4
+    ...Array(3).fill(get("forgebot")),   // Ironmarch, 2/3
+    ...Array(3).fill(get("falcon")),     // Sunveil, Swift 3/1
+    ...Array(3).fill(get("imp")),        // Ashfen, 2/1
+    ...Array(3).fill(get("sprite")),     // Ashfen, Bleed 1/2
+    ...Array(2).fill(get("druid")),      // Thornwood Uncommon, healer 2/3
+    ...Array(2).fill(get("wisp")),       // Shattered Expanse Uncommon, Echo 2/2
+    // Spells (8)
+    ...Array(3).fill(get("current")),    // Azure Deep Common — draw/heal
+    ...Array(3).fill(get("shield_wall")),// Ironmarch Common — shield buff
+    ...Array(2).fill(get("blood_pact")), // Bloodpact Uncommon — bloodpact spell
+    // Environments (4 — meets Aura/Env cap)
+    ...Array(2).fill(get("env_grove")),  // Thornwood Uncommon
+    ...Array(2).fill(get("env_depths")), // Azure Deep Uncommon
+  ].filter(Boolean);
+})();
+
 function DeckBuilderModal({ user, onSave, onClose }) {
   const col = user?.collection || {};
   const selectedArts = user?.selectedArts || {};
   const owned = POOL.filter((c) => (col[c.id] || 0) > 0);
-  const [deck, setDeck] = useState([]);
+  const isNew = !(user?.decks?.length);
+  const [deck, setDeck] = useState(() => isNew ? [...STARTER_DECK] : []);
   const [dbPreview, setDbPreview] = useState(null);
+  const [errMsg, setErrMsg] = useState("");
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") setDbPreview(null); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
-  const [deckName, setDeckName] = useState("My Deck");
+  const [deckName, setDeckName] = useState(isNew ? "Starter Deck" : "My Deck");
   const [search, setSearch] = useState("");
   const filtered = owned.filter((c) => !search || c.name.toLowerCase().includes(search.toLowerCase()));
+
+  // Deck counts
   const countInDeck = (card) => deck.filter((c) => c.id === card.id).length;
-  const legendaryCount = deck.filter((c) => c.rarity === "Legendary").length;
-  const envCount = deck.filter((c) => c.type === "environment").length;
-  const spellCount = deck.filter((c) => c.type === "spell").length;
+  const champCount = deck.filter(c => c.type === "champion").length;
+  const auraEnvCount = deck.filter(c => c.type === "aura" || c.type === "environment").length;
+  const total = deck.length;
+  const canSave = total === CFG.deck.size;
+
   const addCard = (card) => {
-    if (deck.length >= 20) return;
-    const maxCopies = CFG.deck.copies[card.rarity] || 1;
-    if (countInDeck(card) >= maxCopies) return; // rarity copy limit
-    if (card.rarity === "Legendary" && legendaryCount >= 2) return; // max 2 legendaries
-    if (card.type === "environment" && envCount >= 3) return; // max 3 environments
-    if (card.type === "spell" && spellCount >= 6) return; // max 6 spells
-    setDeck((d) => [...d, card]);
+    if (total >= CFG.deck.size) { setErrMsg(`Deck full (${CFG.deck.size}/${CFG.deck.size})`); return; }
+    if (countInDeck(card) >= CFG.deck.copies) { setErrMsg(`Rule of 3: max ${CFG.deck.copies} copies of "${card.name}"`); return; }
+    if (card.type === "champion" && champCount >= CFG.deck.maxChamp) { setErrMsg(`Champion cap reached (${champCount}/${CFG.deck.maxChamp})`); return; }
+    if ((card.type === "aura" || card.type === "environment") && auraEnvCount >= CFG.deck.maxAuraEnv) { setErrMsg(`Aura/Environment cap reached (${auraEnvCount}/${CFG.deck.maxAuraEnv})`); return; }
+    setErrMsg("");
+    setDeck(d => [...d, card]);
   };
-  const removeCard = (idx) => setDeck((d) => d.filter((_, i) => i !== idx));
-  const save = () => { if (deck.length < 10) return; onSave({ name: deckName, cards: deck }); onClose(); };
+  const removeCard = (idx) => { setErrMsg(""); setDeck(d => d.filter((_, i) => i !== idx)); };
+  const save = () => { if (!canSave) return; onSave({ name: deckName, cards: deck }); onClose(); };
+
+  const isBlocked = (c) => {
+    if (total >= CFG.deck.size) return true;
+    if (countInDeck(c) >= CFG.deck.copies) return true;
+    if (c.type === "champion" && champCount >= CFG.deck.maxChamp) return true;
+    if ((c.type === "aura" || c.type === "environment") && auraEnvCount >= CFG.deck.maxAuraEnv) return true;
+    return false;
+  };
+
+  const need = CFG.deck.size - total;
+  const pct = (total / CFG.deck.size) * 100;
+
   return (<div style={{ position:"fixed", inset:0, zIndex:500, background:"rgba(2,1,0,0.97)", display:"flex", flexDirection:"column" }}>
     {dbPreview && <CardPreview card={dbPreview} onClose={() => setDbPreview(null)} />}
     {/* Header bar */}
-    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"16px 24px", borderBottom:"2px solid #3a2c10", background:"linear-gradient(180deg,#1a1608,#0e0c06)", flexShrink:0 }}>
+    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"16px 24px", borderBottom:"2px solid #3a2c10", background:"linear-gradient(180deg,#1a1608,#0e0c06)", flexShrink:0, gap:16, flexWrap:"wrap" }}>
       <div style={{ display:"flex", alignItems:"center", gap:16 }}>
-        <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:22, color:"#e8c060", margin:0, letterSpacing:2 }}>⚒ DECK BUILDER</h3>
-        <div style={{ display:"flex", gap:10, fontSize:10, color:"#604028" }}>
-          <span style={{ color: legendaryCount>=2?"#e8c060":"#604028", fontFamily:"'Cinzel',serif" }}>👑 {legendaryCount}/2</span>
-          <span style={{ color: envCount>=3?"#60c0a0":"#604028", fontFamily:"'Cinzel',serif" }}>🌿 {envCount}/3</span>
-          <span style={{ color: spellCount>=6?"#8080e0":"#604028", fontFamily:"'Cinzel',serif" }}>✦ {spellCount}/6</span>
+        <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:20, color:"#e8c060", margin:0, letterSpacing:2 }}>⚒ DECK BUILDER</h3>
+        {/* Category counters */}
+        <div style={{ display:"flex", gap:8, fontSize:10 }}>
+          <span style={{ fontFamily:"'Cinzel',serif", padding:"3px 8px", background:"rgba(232,160,20,0.1)", border:`1px solid ${champCount>=CFG.deck.maxChamp?"#f0c040":"#3a2810"}`, borderRadius:6, color:champCount>=CFG.deck.maxChamp?"#f0c040":"#604028" }}>👑 Champions {champCount}/{CFG.deck.maxChamp}</span>
+          <span style={{ fontFamily:"'Cinzel',serif", padding:"3px 8px", background:"rgba(40,180,120,0.08)", border:`1px solid ${auraEnvCount>=CFG.deck.maxAuraEnv?"#40c090":"#2a3020"}`, borderRadius:6, color:auraEnvCount>=CFG.deck.maxAuraEnv?"#40c090":"#405030" }}>🌿 Auras/Env {auraEnvCount}/{CFG.deck.maxAuraEnv}</span>
+          <span style={{ fontFamily:"'Cinzel',serif", padding:"3px 8px", background:"rgba(232,192,96,0.07)", border:`1px solid ${canSave?"#e8c060":"#3a2810"}`, borderRadius:6, color:canSave?"#e8c060":"#604028" }}>📚 Total {total}/{CFG.deck.size}</span>
         </div>
       </div>
       <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-        <input value={deckName} onChange={(e) => setDeckName(e.target.value)} placeholder="Deck name..." style={{ padding:"9px 14px", background:"#100e08", border:"1px solid #3a2810", borderRadius:8, color:"#f0e8d8", fontSize:13, outline:"none", fontFamily:"'Cinzel',serif", width:200 }} />
-        <button onClick={save} disabled={deck.length < 10} style={{ padding:"9px 24px", background:deck.length>=10?"linear-gradient(135deg,#c89010,#f0c040)":"rgba(255,255,255,0.06)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, letterSpacing:1, color:deck.length>=10?"#1a1000":"#403020", cursor:deck.length>=10?"pointer":"not-allowed" }}>
-          SAVE DECK ({deck.length}/20)
+        <input value={deckName} onChange={(e) => setDeckName(e.target.value)} placeholder="Deck name..." style={{ padding:"9px 14px", background:"#100e08", border:"1px solid #3a2810", borderRadius:8, color:"#f0e8d8", fontSize:13, outline:"none", fontFamily:"'Cinzel',serif", width:180 }} />
+        <button onClick={save} disabled={!canSave} style={{ padding:"9px 22px", background:canSave?"linear-gradient(135deg,#c89010,#f0c040)":"rgba(255,255,255,0.06)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, letterSpacing:1, color:canSave?"#1a1000":"#403020", cursor:canSave?"pointer":"not-allowed" }}>
+          SAVE ({total}/{CFG.deck.size})
         </button>
-        <button onClick={onClose} style={{ padding:"9px 18px", background:"transparent", border:"1px solid #4a2010", borderRadius:8, color:"#806040", fontFamily:"'Cinzel',serif", fontSize:11, cursor:"pointer" }}>✕ CLOSE</button>
+        <button onClick={onClose} style={{ padding:"9px 18px", background:"transparent", border:"1px solid #4a2010", borderRadius:8, color:"#806040", fontFamily:"'Cinzel',serif", fontSize:11, cursor:"pointer" }}>✕</button>
       </div>
     </div>
 
@@ -1381,16 +1422,15 @@ function DeckBuilderModal({ user, onSave, onClose }) {
       <div style={{ display:"flex", flexDirection:"column", overflow:"hidden", borderRight:"1px solid #2a2010" }}>
         <div style={{ padding:"12px 20px", borderBottom:"1px solid #2a1808", flexShrink:0, display:"flex", gap:10, alignItems:"center" }}>
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search your cards..." style={{ flex:1, padding:"9px 14px", background:"#100e08", border:"1px solid #2a2010", borderRadius:8, color:"#f0e8d8", fontSize:13, outline:"none" }} />
-          <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#605030" }}>{filtered.length} cards available</span>
+          <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#605030" }}>{filtered.length} owned</span>
         </div>
         <div style={{ overflowY:"auto", padding:"16px 20px", flex:1 }}>
           {filtered.length === 0
             ? <p style={{ color:"#604028", fontSize:13, textAlign:"center", marginTop:40 }}>Open packs and win battles to grow your collection!</p>
             : <div style={{ display:"flex", flexWrap:"wrap", gap:12 }}>
               {filtered.map((c, i) => {
-                const maxCop = CFG.deck.copies[c.rarity]||1;
                 const inDeck = countInDeck(c);
-                const blocked = inDeck>=maxCop || (c.rarity==="Legendary"&&legendaryCount>=2) || (c.type==="environment"&&envCount>=3) || (c.type==="spell"&&spellCount>=6) || deck.length>=20;
+                const blocked = isBlocked(c);
                 return (
                   <div key={i} onClick={() => !blocked && addCard(c)} onContextMenu={(e) => { e.preventDefault(); setDbPreview(resolveCardArt(c, selectedArts)); }} style={{ position:"relative", cursor:blocked?"not-allowed":"pointer", opacity:blocked?0.35:1, transition:"all .2s", transform:"none" }}
                     onMouseEnter={e => { if (!blocked) e.currentTarget.style.transform="translateY(-4px)"; }}
@@ -1408,29 +1448,35 @@ function DeckBuilderModal({ user, onSave, onClose }) {
       {/* Deck list */}
       <div style={{ display:"flex", flexDirection:"column", overflow:"hidden", background:"linear-gradient(180deg,#0e0c06,#0a0806)" }}>
         <div style={{ padding:"14px 18px", borderBottom:"1px solid #2a2010", flexShrink:0 }}>
-          <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#c09848", letterSpacing:2, fontWeight:700 }}>YOUR DECK — {deck.length}/20</div>
-          {deck.length < 10 && <div style={{ fontSize:10, color:"#604028", marginTop:4 }}>Need {10-deck.length} more to save</div>}
-          <div style={{ marginTop:8, height:4, background:"#1a1408", borderRadius:2, overflow:"hidden" }}>
-            <div style={{ height:"100%", width:`${(deck.length/20)*100}%`, background:"linear-gradient(90deg,#c89010,#f0c040)", transition:"width .3s", borderRadius:2 }} />
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#c09848", letterSpacing:2, fontWeight:700, marginBottom:4 }}>YOUR DECK — {total}/{CFG.deck.size}</div>
+          {errMsg && <div style={{ fontSize:9, color:"#e06050", fontFamily:"'Cinzel',serif", marginBottom:4, letterSpacing:0.5 }}>⚠ {errMsg}</div>}
+          {!canSave && <div style={{ fontSize:10, color:"#604028", marginBottom:4 }}>{need > 0 ? `Need ${need} more` : "At limit — remove a card"}</div>}
+          <div style={{ height:4, background:"#1a1408", borderRadius:2, overflow:"hidden" }}>
+            <div style={{ height:"100%", width:`${pct}%`, background: canSave ? "linear-gradient(90deg,#40c070,#80e0a0)" : "linear-gradient(90deg,#c89010,#f0c040)", transition:"width .3s", borderRadius:2 }} />
           </div>
         </div>
-        <div style={{ overflowY:"auto", flex:1, padding:"10px 14px", display:"flex", flexDirection:"column", gap:5 }}>
+        <div style={{ overflowY:"auto", flex:1, padding:"10px 14px", display:"flex", flexDirection:"column", gap:4 }}>
           {deck.length === 0 && <p style={{ color:"#504030", fontSize:11, textAlign:"center", marginTop:30, fontStyle:"italic" }}>Click cards on the left to add them</p>}
           {deck.map((c, i) => {
             const dc = resolveCardArt(c, selectedArts);
+            const typeColor = c.type==="champion"?"#f0c040":c.type==="environment"||c.type==="aura"?"#40c090":c.type==="spell"?"#c090d0":"#806040";
             return (
-              <div key={i} onContextMenu={(e) => { e.preventDefault(); setDbPreview(dc); }} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", background:"rgba(0,0,0,0.3)", borderRadius:7, padding:"5px 8px", border:`1px solid ${c.border}33`, gap:8, cursor:"context-menu" }}>
-                <div style={{ width:32, height:44, borderRadius:4, overflow:"hidden", flexShrink:0, border:`1px solid ${c.border}44` }}>
+              <div key={i} onContextMenu={(e) => { e.preventDefault(); setDbPreview(dc); }} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", background:"rgba(0,0,0,0.3)", borderRadius:7, padding:"4px 8px", border:`1px solid ${c.border}22`, gap:8, cursor:"context-menu" }}>
+                <div style={{ width:30, height:42, borderRadius:4, overflow:"hidden", flexShrink:0, border:`1px solid ${c.border}44` }}>
                   <CardArt card={dc} />
                 </div>
-                <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#f0e0c8", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, minWidth:0 }}>{c.name}</span>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#f0e0c8", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.name}</div>
+                  <div style={{ fontSize:7, color:typeColor, fontFamily:"'Cinzel',serif", letterSpacing:0.5 }}>{(c.type||"creature").toUpperCase()}</div>
+                </div>
                 <button onClick={() => removeCard(i)} style={{ background:"transparent", border:"none", color:"#c07060", fontSize:14, cursor:"pointer", lineHeight:1, flexShrink:0 }}>×</button>
               </div>
             );
-          })}</div>
+          })}
         </div>
       </div>
-    </div>);
+    </div>
+  </div>);
 }
 
 // ═══ PVP BATTLE SCREEN ═══════════════════════════════════════════════
@@ -1580,7 +1626,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         const inst = { ...makeInst(card, "pb"), canAttack: (card.keywords||[]).includes("Swift"), hasAttacked: false };
         ai.playerBoard = [...ai.playerBoard, inst]; ai.log = [...ai.log, `You play ${card.name}!`];
         if ((card.keywords||[]).includes("Fracture") && ai.playerBoard.length < CFG.maxBoard) {
-          ai.playerBoard = [...ai.playerBoard, { ...inst, uid: uid("pf"), currentHp: Math.ceil(card.hp/2), maxHp: Math.ceil(card.hp/2), currentAtk: Math.ceil(card.atk/2), name: card.name+" Frag", keywords:[], levelUp:[], effects:[] }];
+          ai.playerBoard = [...ai.playerBoard, { ...inst, uid: uid("pf"), currentHp: Math.ceil(card.hp/2), maxHp: Math.ceil(card.hp/2), currentAtk: Math.ceil(card.atk/2), name: card.name+" Frag", keywords:[], effects:[] }];
           ai.log = [...ai.log, "Fragment enters!"];
         }
       }
@@ -1630,8 +1676,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       }
       s[role+"Board"] = (s[role+"Board"]||[]).map(c => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter(c => c.currentHp > 0);
       s[op+"Board"] = (s[op+"Board"]||[]).map(c => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter(c => c.currentHp > 0);
-      s[role+"Board"] = s[role+"Board"].map(c => { const lv = levelUp({ ...c, xp: c.xp+1 }); return { ...lv, canAttack: true, hasAttacked: false }; });
-      s[op+"Board"] = s[op+"Board"].map(c => ({ ...levelUp({ ...c, xp: c.xp+1 }), canAttack: true, hasAttacked: false }));
+      s[role+"Board"] = s[role+"Board"].map(c => ({ ...c, canAttack: true, hasAttacked: false }));
+      s[op+"Board"] = s[op+"Board"].map(c => ({ ...c, canAttack: true, hasAttacked: false }));
       if ((s[op+"Deck"]||[]).length > 0 && (s[op+"Hand"]||[]).length < CFG.maxHand) {
         s[op+"Hand"] = [...s[op+"Hand"], makeInst(s[op+"Deck"][0], op)];
         s[op+"Deck"] = s[op+"Deck"].slice(1);
@@ -2888,46 +2934,10 @@ function CollectionScreen({ user, onUpdateUser }) {
 function HomeScreen({ setTab, user }) {
   const [active, setActive] = useState(0);
   const [entered, setEntered] = useState(false);
-  const [recentBattles, setRecentBattles] = useState([]);
-  const fetchBattles = async () => {
-    try {
-      const { data: matches } = await supabase.from("matches").select("id,game_state,updated_at").not("game_state->>winner","is",null).order("updated_at",{ascending:false}).limit(10);
-      if (!matches?.length) return;
-      // Collect all player names to look up avatars
-      const names = new Set();
-      matches.forEach(m => {
-        const p1 = m.game_state?.p1Name; const p2 = m.game_state?.p2Name;
-        if (p1 && p1 !== "Player") names.add(p1);
-        if (p2 && p2 !== "Player") names.add(p2);
-      });
-      // Fetch avatar_url for those names
-      const avatarMap = {};
-      if (names.size > 0) {
-        const { data: profiles } = await supabase.from("profiles").select("name,avatar_url").in("name", [...names]);
-        profiles?.forEach(p => { if (p.avatar_url) avatarMap[p.name] = p.avatar_url; });
-      }
-      setRecentBattles(matches.map(m => {
-        const p1Name = m.game_state?.p1Name || "Player";
-        const p2Name = m.game_state?.p2Name || "Player";
-        return {
-          id: m.id,
-          p1Name, p2Name,
-          p1Avatar: m.game_state?.p1Avatar || avatarMap[p1Name] || null,
-          p2Avatar: m.game_state?.p2Avatar || avatarMap[p2Name] || null,
-          winner: m.game_state?.winner,
-          forfeit: !!(m.game_state?.log||[]).find(l => l.includes("forfeited")),
-          turns: m.game_state?.turn || 0,
-          date: m.updated_at,
-        };
-      }));
-    } catch(_) {}
-  };
   useEffect(() => {
     MusicCtx.play("home"); setEntered(true);
     const id = setInterval(() => setActive((c) => (c + 1) % HOME_CARDS.length), 4000);
-    fetchBattles();
-    const pollId = setInterval(fetchBattles, 30000);
-    return () => { clearInterval(id); clearInterval(pollId); };
+    return () => clearInterval(id);
   }, []);
 
   const REGION_ICONS = { Thornwood: "🌿", "Shattered Expanse": "💎", "Azure Deep": "🌊", Ashfen: "🔥", Ironmarch: "⚙", Sunveil: "☀", Bloodpact: "🩸" };
@@ -3077,101 +3087,36 @@ function HomeScreen({ setTab, user }) {
     {(() => {
       const patchRows = [
         { icon:"⚔", label:"PvP Matchmaking live — find real opponents" },
-        { icon:"🌊", label:"Energy redesigned as blue water droplets on cards & meters" },
-        { icon:"🎴", label:"Community Card Forge — describe an idea, get a full card" },
-        { icon:"🔊", label:"Euphoric end-turn sound · card inspect sound on right-click" },
-        { icon:"📺", label:"Live Arena feed shows recent completed matches" },
+        { icon:"🏆", label:"Ranked Mode — ELO rating, rank tiers from Iron to Grandmaster" },
+        { icon:"🌊", label:"Per-player environments · Community Card Forge" },
+        { icon:"🎵", label:"Euphoric SFX overhaul · card inspect · shield glow · buff notes" },
         { icon:"🛡", label:"Nav locks while in PvP — auto-forfeit if you confirm leaving" },
         { icon:"🏝", label:"Anime Island: 32 alt arts · 0.1% Prismatic Sun Strike" },
         { icon:"🔑", label:"Alpha key system — each key single-use, admin panel for tcombz" },
-        { icon:"⚗", label:"Coming next: Leaderboard · ELO · Thornwood Expansion", dim:true },
+        { icon:"⚗", label:"Coming next: Leaderboard · Thornwood Expansion · Draft Mode", dim:true },
       ];
-      const [open, setOpen] = useState(false);
       return (
-        <section style={{ background:"linear-gradient(180deg,#0c0a06,#0a0806)", borderTop:"1px solid #2a2010", padding:"0 28px" }}>
+        <section style={{ background:"linear-gradient(180deg,#0c0a06,#080608)", borderTop:"1px solid #2a2010", padding:"32px 28px 36px" }}>
           <div style={{ maxWidth:1100, margin:"0 auto" }}>
-            <button onClick={()=>setOpen(o=>!o)} style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 0", background:"transparent", border:"none", cursor:"pointer", borderBottom: open ? "1px solid #2a2010" : "none" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#806040", letterSpacing:3, fontWeight:700 }}>📋 PATCH NOTES</span>
-                <span style={{ padding:"2px 8px", background:"rgba(232,192,96,0.1)", border:"1px solid #e8c06033", borderRadius:10, fontSize:8, color:"#e8c060", fontFamily:"'Cinzel',serif", letterSpacing:2 }}>{CURRENT_PATCH}</span>
-              </div>
-              <span style={{ fontSize:12, color:"#504030", transition:"transform .25s", display:"inline-block", transform: open ? "rotate(180deg)" : "none" }}>▼</span>
-            </button>
-            {open && (
-              <div style={{ padding:"12px 0 18px", display:"flex", flexDirection:"column", gap:2 }}>
-                {patchRows.map((r,i) => (
-                  <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"5px 6px", borderRadius:6, background: i%2===0?"rgba(255,255,255,0.015)":"transparent" }}>
-                    <span style={{ fontSize:12, flexShrink:0, width:20, textAlign:"center" }}>{r.icon}</span>
-                    <span style={{ fontSize:11, color: r.dim ? "#4a4030" : "#c0b490", lineHeight:1.4, flex:1 }}>{r.label}</span>
-                  </div>
-                ))}
-                <div style={{ marginTop:8, background:"rgba(232,160,32,0.06)", border:"1px solid #e8a02022", borderRadius:8, padding:"8px 12px" }}>
-                  <span style={{ fontSize:9, color:"#806838", lineHeight:1.7 }}>⚠ Alpha phase — you may experience lag or sync delays. Thanks for fighting with us! 🔥</span>
+            <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:20 }}>
+              <span style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#806040", letterSpacing:3, fontWeight:700 }}>📋 PATCH NOTES</span>
+              <span style={{ padding:"3px 10px", background:"rgba(232,192,96,0.12)", border:"1px solid #e8c06044", borderRadius:12, fontSize:9, color:"#e8c060", fontFamily:"'Cinzel',serif", letterSpacing:2, fontWeight:700 }}>{CURRENT_PATCH}</span>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))", gap:8 }}>
+              {patchRows.map((r,i) => (
+                <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:12, padding:"10px 14px", borderRadius:9, background: r.dim ? "transparent" : "rgba(255,255,255,0.02)", border:`1px solid ${r.dim?"transparent":"#2a2010"}` }}>
+                  <span style={{ fontSize:16, flexShrink:0, width:24, textAlign:"center", lineHeight:1.3 }}>{r.icon}</span>
+                  <span style={{ fontSize:12, color: r.dim ? "#4a4030" : "#c0b490", lineHeight:1.5, flex:1 }}>{r.label}</span>
                 </div>
-              </div>
-            )}
+              ))}
+            </div>
+            <div style={{ marginTop:16, background:"rgba(232,160,32,0.06)", border:"1px solid #e8a02022", borderRadius:10, padding:"12px 16px" }}>
+              <span style={{ fontSize:10, color:"#806838", lineHeight:1.7 }}>⚠ Alpha phase — you may experience occasional lag or sync delays. We appreciate your support! 🔥</span>
+            </div>
           </div>
         </section>
       );
     })()}
-    {/* Live Arena Feed — 8-bit arcade style */}
-    <section style={{ background:"#020402", borderTop:"2px solid #1a2a10", borderBottom:"1px solid #0a1208", padding:"24px 28px 28px", fontFamily:"monospace" }}>
-      <div style={{ maxWidth:1100, margin:"0 auto" }}>
-        {/* Header */}
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-            <div style={{ width:8, height:8, background:"#00ff41", boxShadow:"0 0 10px #00ff41", animation:"pulse 1s infinite" }} />
-            <span style={{ fontSize:11, color:"#00ff41", letterSpacing:4, fontWeight:700 }}>▶ LIVE ARENA FEED</span>
-          </div>
-          <span style={{ fontSize:9, color:"#1a3a10", letterSpacing:2 }}>FORGE {"&"} FABLE NETWORK</span>
-        </div>
-        {/* Pixel border box */}
-        <div style={{ border:"1px solid #0f2a08", background:"#010301", padding:"12px 0", position:"relative", overflow:"hidden" }}>
-          {/* Scanlines overlay */}
-          <div style={{ position:"absolute", inset:0, backgroundImage:"repeating-linear-gradient(0deg,rgba(0,255,65,0.02) 0px,rgba(0,255,65,0.02) 1px,transparent 1px,transparent 3px)", pointerEvents:"none", zIndex:1 }} />
-          {recentBattles.length === 0 ? (
-            <div style={{ padding:"20px 20px", textAlign:"center" }}>
-              <div style={{ fontSize:10, color:"#1a4010", letterSpacing:3, marginBottom:6 }}>NO BATTLES RECORDED YET</div>
-              <div style={{ fontSize:9, color:"#0f2a08", letterSpacing:2 }}>BE THE FIRST TO FIGHT</div>
-            </div>
-          ) : (
-            <div style={{ display:"flex", flexDirection:"column", gap:0, position:"relative", zIndex:2 }}>
-              {recentBattles.map((b, i) => {
-                const p1Won = b.winner === "p1";
-                const winnerName = p1Won ? b.p1Name : b.p2Name;
-                const loserName = p1Won ? b.p2Name : b.p1Name;
-                const winnerAvatar = p1Won ? b.p1Avatar : b.p2Avatar;
-                const loserAvatar = p1Won ? b.p2Avatar : b.p1Avatar;
-                const minutesAgo = b.date ? Math.round((Date.now() - new Date(b.date).getTime()) / 60000) : null;
-                const timeStr = minutesAgo === null ? "" : minutesAgo < 1 ? "just now" : minutesAgo < 60 ? `${minutesAgo}m ago` : `${Math.round(minutesAgo/60)}h ago`;
-                const AvatarDot = ({ src, name, won }) => (
-                  <div style={{ width:22, height:22, borderRadius:"50%", border:`1px solid ${won?"#00ff4155":"#c0404055"}`, overflow:"hidden", background:"#060806", display:"flex", alignItems:"center", justifyContent:"center", fontSize:7, color:won?"#00ff41":"#c04040", fontFamily:"'Cinzel',serif", fontWeight:700, flexShrink:0 }}>
-                    {src ? <img src={src} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (name||"?").slice(0,2).toUpperCase()}
-                  </div>
-                );
-                return (
-                  <div key={b.id} style={{ display:"flex", alignItems:"center", padding:"7px 14px", borderBottom: i < recentBattles.length-1 ? "1px solid #0a1a08" : "none", gap:7, animation:`fadeIn 0.3s ease-out ${i*0.04}s both` }}>
-                    <span style={{ fontSize:8, color:"#0f3008", minWidth:14, textAlign:"right", flexShrink:0 }}>{String(i+1).padStart(2,"0")}</span>
-                    <AvatarDot src={winnerAvatar} name={winnerName} won={true} />
-                    <span style={{ fontSize:9, color:"#00ff41", fontWeight:700, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", textShadow:"0 0 8px #00ff4133" }}>{(winnerName||"???").toUpperCase()}</span>
-                    <span style={{ fontSize:9, color:"#806010", fontWeight:700, flexShrink:0 }}>⚔</span>
-                    <span style={{ fontSize:9, color:"#c04040", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", textAlign:"right" }}>{(loserName||"???").toUpperCase()}</span>
-                    <AvatarDot src={loserAvatar} name={loserName} won={false} />
-                    {b.forfeit && <span style={{ fontSize:7, color:"#e05050", border:"1px solid #e0505066", borderRadius:3, padding:"1px 4px", letterSpacing:1, flexShrink:0 }}>FF</span>}
-                    <span style={{ fontSize:7, color:"#1a3010", minWidth:36, textAlign:"right", flexShrink:0 }}>{timeStr}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-        {/* Pixel footer */}
-        <div style={{ display:"flex", justifyContent:"space-between", marginTop:6, padding:"0 2px" }}>
-          <span style={{ fontSize:7, color:"#0a1a08", letterSpacing:2 }}>UPDATED LIVE</span>
-          <span style={{ fontSize:7, color:"#0a1a08", letterSpacing:2 }}>{recentBattles.length}/10 MATCHES</span>
-        </div>
-      </div>
-    </section>
     {/* Bottom info bar */}
     <div style={{ background:"rgba(0,0,0,0.5)", borderTop:"1px solid rgba(255,255,255,0.05)", padding:"10px 28px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
       <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#504038", letterSpacing:2 }}>FORGE {"&"} FABLE</div>
