@@ -1274,6 +1274,9 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
   const [syncing, setSyncing] = useState(false);
   const wonSavedRef = useRef(false);
   const pollRef = useRef(null);
+  const prevGsRef = useRef(null);
+  const [turnBanner, setTurnBanner] = useState(null);
+  const showTurnBanner = (type) => { setTurnBanner(type); setTimeout(() => setTurnBanner(null), 1400); };
   const [animUids, setAnimUids] = useState({});
   const vfx = useVFX();
   const logRef = useRef(null);
@@ -1404,15 +1407,20 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       if (role === "p1") {
         const fb = [...POOL, ...POOL, ...POOL.slice(0, 5)];
         const d1 = shuf([...fb]), d2 = shuf([...fb]);
+        const dc = POOL[Math.floor(Math.random() * POOL.length)];
+        const ec = POOL[Math.floor(Math.random() * POOL.length)];
+        const firstPlayer = (dc.cost || 0) >= (ec.cost || 0) ? "p1" : "p2";
         const init = {
-          turn: 1, phase: "p1", winner: null,
+          turn: 1, phase: firstPlayer, winner: null,
+          drawAnim: { p1Card: dc, p2Card: ec, first: firstPlayer },
+          p1Arts: user?.selectedArts || {},
           p1HP: CFG.startHP, p1Energy: CFG.startEnergy, p1Max: CFG.startEnergy,
           p1Hand: d1.slice(0, CFG.startHand).map((c) => makeInst(c, "p1")),
           p1Deck: d1.slice(CFG.startHand), p1Board: [],
           p2HP: CFG.startHP, p2Energy: CFG.startEnergy, p2Max: CFG.startEnergy,
           p2Hand: d2.slice(0, CFG.startHand).map((c) => makeInst(c, "p2")),
           p2Deck: d2.slice(CFG.startHand), p2Board: [],
-          env: null, log: ["Match started! Your turn."]
+          env: null, log: [firstPlayer === "p1" ? "Match started! P1 goes first." : "Match started! P2 goes first."]
         };
         await supabase.from("matches").update({ game_state: init }).eq("id", matchId);
         setGs(init);
@@ -1423,7 +1431,12 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
           attempts++;
           if (attempts > 25) { clearInterval(pollRef.current); pollRef.current = null; return; }
           const { data: fresh } = await supabase.from("matches").select("game_state").eq("id", matchId).single();
-          if (fresh?.game_state) { clearInterval(pollRef.current); pollRef.current = null; setGs(fresh.game_state); }
+          if (fresh?.game_state) {
+            clearInterval(pollRef.current); pollRef.current = null;
+            const withArts = { ...fresh.game_state, p2Arts: user?.selectedArts || {} };
+            await supabase.from("matches").update({ game_state: withArts }).eq("id", matchId);
+            setGs(withArts);
+          }
         }, 1200);
       }
     };
@@ -1432,6 +1445,24 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
   }, [matchId]);
 
   useEffect(() => { if (logRef.current) logRef.current.scrollTo({ top: 99999, behavior: "smooth" }); }, [gs?.log]);
+
+  // Animate opponent actions + show turn banner when gs changes
+  useEffect(() => {
+    if (!gs || !myRole) { prevGsRef.current = gs; return; }
+    const prev = prevGsRef.current;
+    if (prev && prev.phase !== myRole && gs.phase === myRole && !gs.winner) { showTurnBanner("YOUR TURN"); SFX.play("ability"); }
+    else if (prev && prev.phase === myRole && gs.phase !== myRole && !gs.winner) { showTurnBanner("OPPONENT'S TURN"); }
+    if (prev && prev.phase !== myRole) {
+      const prevAi = toAI(prev, myRole), currAi = toAI(gs, myRole);
+      const anims = {};
+      currAi.enemyBoard.forEach(c => { if (!prevAi.enemyBoard.find(p => p.uid === c.uid)) anims[c.uid] = "summoning"; });
+      prevAi.enemyBoard.forEach(c => { if (!currAi.enemyBoard.find(n => n.uid === c.uid)) anims[c.uid] = "dying"; });
+      prevAi.playerBoard.forEach(c => { if (!currAi.playerBoard.find(n => n.uid === c.uid)) anims[c.uid] = "dying"; });
+      prevAi.playerBoard.forEach(c => { const cur = currAi.playerBoard.find(n => n.uid === c.uid); if (cur && cur.currentHp < c.currentHp && !anims[c.uid]) anims[c.uid] = "hit"; });
+      if (Object.keys(anims).length > 0) { if (Object.values(anims).includes("dying")) SFX.play("kill"); setAnimUids(anims); setTimeout(() => setAnimUids({}), 700); }
+    }
+    prevGsRef.current = gs;
+  }, [gs]); // eslint-disable-line
 
   const invokeAction = async (action) => {
     if (syncing) return;
@@ -1519,6 +1550,19 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
 
   return (<div style={{ maxWidth:1180, margin:"0 auto", padding:"0 16px 60px" }} onClick={() => { SFX.init(); }}>
     {previewCard && <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />}
+    {/* Opening draw overlay */}
+    {gs?.drawAnim && !gs.winner && (<div style={{ position:"fixed", inset:0, zIndex:500, background:"rgba(0,0,0,0.9)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", animation:"fadeIn 0.4s" }}>
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#a09060", letterSpacing:4, marginBottom:20 }}>OPENING DRAW</div>
+      <div style={{ display:"flex", gap:40, alignItems:"center", marginBottom:24 }}>
+        <div style={{ textAlign:"center" }}><div style={{ fontSize:9, color:"#cc4848", fontFamily:"'Cinzel',serif", letterSpacing:2, marginBottom:8 }}>{(opponentName||"OPPONENT").toUpperCase()}</div>{gs.drawAnim.p2Card&&<Card card={gs.drawAnim.p2Card} size="sm"/>}<div style={{ fontFamily:"'Cinzel',serif", fontSize:16, color:"#e8c060", marginTop:6 }}>COST {gs.drawAnim.p2Card?.cost||0}</div></div>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:24, color:"#403020" }}>VS</div>
+        <div style={{ textAlign:"center" }}><div style={{ fontSize:9, color:"#78cc45", fontFamily:"'Cinzel',serif", letterSpacing:2, marginBottom:8 }}>{(user?.name||"YOU").toUpperCase()}</div>{gs.drawAnim.p1Card&&<Card card={gs.drawAnim.p1Card} size="sm"/>}<div style={{ fontFamily:"'Cinzel',serif", fontSize:16, color:"#e8c060", marginTop:6 }}>COST {gs.drawAnim.p1Card?.cost||0}</div></div>
+      </div>
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize:20, fontWeight:700, color:gs.drawAnim.first===myRole?"#78cc45":"#e05050", letterSpacing:2, marginBottom:18, animation:"pulse 0.8s infinite" }}>{gs.drawAnim.first===myRole?"YOU GO FIRST!":"OPPONENT GOES FIRST"}</div>
+      <button onClick={() => setGs(g => ({ ...g, drawAnim: null }))} style={{ padding:"10px 28px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, color:"#1a1000", cursor:"pointer", letterSpacing:2 }}>BEGIN BATTLE</button>
+    </div>)}
+    {/* Turn banner */}
+    {turnBanner && (<div style={{ position:"fixed", top:"44%", left:"50%", transform:"translate(-50%,-50%)", zIndex:300, pointerEvents:"none", animation:"turnBannerIn 1.4s ease-out forwards" }}><div style={{ background:turnBanner==="YOUR TURN"?"linear-gradient(135deg,rgba(30,70,10,0.97),rgba(20,50,8,0.97))":"linear-gradient(135deg,rgba(60,15,15,0.97),rgba(40,8,8,0.97))", border:"2px solid "+(turnBanner==="YOUR TURN"?"#78cc45":"#cc4848"), borderRadius:14, padding:"16px 42px", fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:turnBanner==="YOUR TURN"?"#78cc45":"#e05050", letterSpacing:4, whiteSpace:"nowrap", boxShadow:"0 8px 40px "+(turnBanner==="YOUR TURN"?"#78cc4555":"#cc484855") }}>{turnBanner}</div></div>)}
     {/* Turn banner */}
     {!gs.winner && (<div style={{ textAlign:"center", padding:"6px 0 2px", fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, letterSpacing:3, color: isMyTurn ? "#78cc45" : "#e8c060", animation: "fadeIn 0.3s" }}>{isMyTurn ? "YOUR TURN" : `${opponentName || "OPPONENT"}'S TURN`}{syncing && <span style={{ fontSize:8, color:"#806040", marginLeft:8 }}>syncing...</span>}</div>)}
     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
@@ -1554,7 +1598,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
             </div>
           </div>
           <div style={{ minHeight:105, display:"flex", gap:8, flexWrap:"wrap", justifyContent:"center", alignItems:"center" }}>
-            {ai.enemyBoard.length===0?<span style={{ fontSize:10, color:"#241010", letterSpacing:3 }}>---</span>:ai.enemyBoard.map((c)=>(<Token key={c.uid} c={resolveCardArt(c,{})} animType={animUids[c.uid]} isTarget={!!attacker} canSelect={false} onClick={()=>{ if(attacker)atkCreature(c); else setPreviewCard(c); }}/>))}
+            {ai.enemyBoard.length===0?<span style={{ fontSize:10, color:"#241010", letterSpacing:3 }}>---</span>:ai.enemyBoard.map((c)=>(<Token key={c.uid} c={resolveCardArt(c,myRole==="p1"?gs?.p2Arts||{}:gs?.p1Arts||{})} animType={animUids[c.uid]} isTarget={!!attacker} canSelect={false} onClick={()=>{ if(attacker)atkCreature(c); else setPreviewCard(c); }}/>))}
           </div>
         </div>
         {/* Divider */}
@@ -1566,11 +1610,11 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
         {/* My zone */}
         <div style={{ background:"rgba(40,100,20,0.04)", padding:"10px 14px" }}>
           <div style={{ minHeight:105, display:"flex", gap:8, flexWrap:"wrap", justifyContent:"center", alignItems:"center", marginBottom:10 }}>
-            {ai.playerBoard.length===0?<span style={{ fontSize:10, color:"#181408", letterSpacing:3 }}>{isMyTurn?"PLAY A CARD":"WAITING..."}</span>:ai.playerBoard.map((c)=>(<Token key={c.uid} c={resolveCardArt(c,user?.selectedArts||{})} animType={animUids[c.uid]} selected={attacker===c.uid} isTarget={false} canSelect={isMyTurn&&c.canAttack&&!c.hasAttacked&&!syncing} onClick={()=>selectAtt(c)} onRightClick={()=>setPreviewCard(c)}/>))}
+            {ai.playerBoard.length===0?<span style={{ fontSize:10, color:"#181408", letterSpacing:3 }}>{isMyTurn?"PLAY A CARD":"WAITING..."}</span>:ai.playerBoard.map((c)=>(<Token key={c.uid} c={resolveCardArt(c,myRole==="p1"?gs?.p1Arts||{}:gs?.p2Arts||{})} animType={animUids[c.uid]} selected={attacker===c.uid} isTarget={false} canSelect={isMyTurn&&c.canAttack&&!c.hasAttacked&&!syncing} onClick={()=>selectAtt(c)} onRightClick={()=>setPreviewCard(c)}/>))}
           </div>
           <div style={{ borderTop:"1px solid #181408", paddingTop:10, marginBottom:10 }}>
             <div style={{ display:"flex", gap:6, justifyContent:"center", flexWrap:"wrap" }}>
-              {ai.playerHand.map((card)=>{const cp=isMyTurn&&!syncing&&(card.type==="environment"||card.type==="spell"||ai.playerBoard.length<CFG.maxBoard)&&(card.bloodpact?card.cost<ai.playerHP:card.cost<=ai.playerEnergy);return(<HandCard key={card.uid} card={resolveCardArt(card,user?.selectedArts||{})} playable={cp} onClick={()=>playCard(card)}/>);})}
+              {ai.playerHand.map((card)=>{const cp=isMyTurn&&!syncing&&(card.type==="environment"||card.type==="spell"||ai.playerBoard.length<CFG.maxBoard)&&(card.bloodpact?card.cost<ai.playerHP:card.cost<=ai.playerEnergy);return(<HandCard key={card.uid} card={resolveCardArt(card,myRole==="p1"?gs?.p1Arts||{}:gs?.p2Arts||{})} playable={cp} onClick={()=>playCard(card)}/>);})}
             </div>
           </div>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
@@ -2366,6 +2410,19 @@ function HomeScreen({ setTab, user }) {
       </div>
     </section>
 
+    {/* Anime Island Banner */}
+    <section style={{ background:"linear-gradient(135deg,#0e0620,#140830)", borderTop:"2px solid #ff80c033", borderBottom:"1px solid #ff80c022", padding:"18px 28px" }}>
+      <div style={{ maxWidth:1100, margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:12 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+          <div style={{ width:42, height:42, borderRadius:10, background:"linear-gradient(135deg,#a020c0,#ff40a0)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, boxShadow:"0 4px 16px rgba(255,64,160,0.4)", flexShrink:0 }}>🌸</div>
+          <div>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}><span style={{ fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:900, color:"#f0a0c0", letterSpacing:1 }}>ANIME ISLAND COLLECTION</span><span style={{ padding:"2px 8px", background:"rgba(255,128,192,0.15)", border:"1px solid #ff80c044", borderRadius:10, fontSize:8, color:"#ff80c0", fontFamily:"'Cinzel',serif", letterSpacing:2 }}>OUT NOW</span></div>
+            <div style={{ fontSize:10, color:"#806070", marginTop:2 }}>Alt-art cards across all 7 regions · 0.1% Prismatic · No limits</div>
+          </div>
+        </div>
+        <button onClick={() => setTab("store")} style={{ padding:"8px 20px", background:"linear-gradient(135deg,#a020c0,#ff40a0)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:"#fff", cursor:"pointer", letterSpacing:2, flexShrink:0, boxShadow:"0 3px 12px rgba(255,64,160,0.3)" }}>ENTER STORE</button>
+      </div>
+    </section>
     {/* Region/faction badge strip */}
     <section style={{ borderTop:"1px solid rgba(255,255,255,0.06)", padding: "28px 28px 40px", background:"rgba(0,0,0,0.3)", backdropFilter:"blur(8px)" }}>
       <div style={{ maxWidth:1100, margin:"0 auto" }}>
@@ -2419,6 +2476,11 @@ function StoreScreen({ user, onUpdateUser }) {
 
   const buyPack = (pack) => {
     if (pack.cost > 0 && shards < pack.cost) { SFX.play("defeat"); return; }
+    if (pack.cost === 0) {
+      const today = new Date().toDateString();
+      if (user?.freePackUsed === today) { SFX.play("defeat"); return; }
+      onUpdateUser({ freePackUsed: today });
+    }
     const newShards = shards - pack.cost;
 
     if (pack.altPack) {
@@ -2515,17 +2577,26 @@ function StoreScreen({ user, onUpdateUser }) {
               onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
               <div style={{ fontFamily: "'Cinzel',serif", fontSize: 14, fontWeight: 700, color: p.color, marginBottom: 6 }}>{p.name}</div>
               <p style={{ fontSize: 10, color: "#a09060", margin: "0 0 12px", lineHeight: 1.5 }}>{p.desc}</p>
-              <div style={{ padding: "8px 14px", background: p.color + "18", border: "1px solid " + p.color + "44", borderRadius: 8, fontFamily: "'Cinzel',serif", fontSize: 11, color: p.color, fontWeight: 700 }}>{p.cost === 0 ? "FREE" : `${p.cost} SHARDS`}</div>
+              {p.cost === 0 && user?.freePackUsed === new Date().toDateString() ? (<div style={{ padding:"8px 14px", background:"rgba(255,255,255,0.03)", border:"1px solid #282010", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:"#504030", fontWeight:700 }}>CLAIMED TODAY</div>) : (<div style={{ padding:"8px 14px", background:p.color+"18", border:"1px solid "+p.color+"44", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:p.color, fontWeight:700 }}>{p.cost===0?"FREE · 1/DAY":`${p.cost} SHARDS`}</div>)}
             </div>
           ))}
         </div>
         <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, color: "#a09060", letterSpacing: 2, marginBottom: 12 }}>SPECIAL EDITIONS</div>
-        <div style={{ background: "#121008", border: "1px solid #e8c06015", borderRadius: 14, padding: 28, textAlign: "center", position: "relative", overflow: "hidden" }}>
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, #ff80a020, #a040ff10, #40c0ff10)", pointerEvents: "none" }} />
-          <div style={{ position: "relative", zIndex: 1 }}>
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 20, fontWeight: 900, color: "#f0a0c0", marginBottom: 4 }}>Anime Island</div>
-            <div style={{ fontSize: 11, color: "#a080a0", marginBottom: 12, lineHeight: 1.6 }}>Alternate art anime-style cards for every region. 10 exclusive cards with unique abilities.</div>
-            <div style={{ display: "inline-block", padding: "10px 24px", background: "rgba(255,255,255,0.04)", border: "1px solid #404040", borderRadius: 8, fontFamily: "'Cinzel',serif", fontSize: 11, color: "#606060", letterSpacing: 2 }}>COMING SOON</div>
+        <div style={{ background:"linear-gradient(135deg,#0e0620,#180a2e,#0a1020)", border:"2px solid #ff80c044", borderRadius:16, overflow:"hidden", position:"relative" }}>
+          <div style={{ position:"absolute", inset:0, background:"linear-gradient(135deg,rgba(255,128,192,0.07),rgba(160,64,255,0.09),rgba(64,192,255,0.05))", pointerEvents:"none" }} />
+          <div style={{ position:"absolute", top:0, left:0, right:0, height:3, background:"linear-gradient(90deg,#ff80c0,#a040ff,#40c0ff,#ff80c0)" }} />
+          <div style={{ position:"relative", zIndex:1, display:"grid", gridTemplateColumns:"1fr auto", gap:0, alignItems:"center" }}>
+            <div style={{ padding:"28px 24px 28px 28px" }}>
+              <div style={{ display:"inline-flex", alignItems:"center", gap:8, background:"rgba(255,128,192,0.15)", border:"1px solid #ff80c044", borderRadius:20, padding:"4px 14px", marginBottom:12 }}>
+                <div style={{ width:6, height:6, borderRadius:"50%", background:"#ff80c0", boxShadow:"0 0 8px #ff80c0", animation:"pulse 2s infinite" }} />
+                <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#ff80c0", letterSpacing:3, fontWeight:700 }}>LIVE NOW</span>
+              </div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:"#f0a0c0", marginBottom:6, textShadow:"0 0 30px #ff80c044" }}>Anime Island</div>
+              <p style={{ fontSize:11, color:"#b090c0", marginBottom:14, lineHeight:1.7, maxWidth:320 }}>Anime-style alternate art for every region. Prismatic holofoil variants. No purchase limits — collect them all.</p>
+              <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:16 }}>{["0.1% Prismatic","All 7 Regions","No Limits","Dupe → Shards"].map(tag=>(<span key={tag} style={{ padding:"3px 10px", background:"rgba(255,128,192,0.1)", border:"1px solid #ff80c030", borderRadius:12, fontSize:9, color:"#c090b0", fontFamily:"'Cinzel',serif" }}>{tag}</span>))}</div>
+              <button onClick={()=>{ const p=PACKS.find(pk=>pk.id==="anime_island"); if(p&&(shards>=p.cost))buyPack(p); else SFX.play("defeat"); }} style={{ padding:"11px 28px", background:"linear-gradient(135deg,#a020c0,#ff40a0)", border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, color:"#fff", cursor:"pointer", letterSpacing:2, boxShadow:"0 6px 24px rgba(255,64,160,0.4)", transition:"all .2s" }} onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>OPEN PACK · 300 ◈</button>
+            </div>
+            <div style={{ padding:"20px 24px 20px 0", display:"flex", alignItems:"center", gap:8 }}>{["🌸","✨","🌺"].map((em,i)=>(<div key={i} style={{ width:70, height:100, borderRadius:10, background:"linear-gradient(160deg,#1a0830,rgba(255,128,192,0.15))", border:"2px solid #ff80c044", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:4, transform:`rotate(${(i-1)*7}deg) translateY(${i===1?-8:4}px)`, boxShadow:"0 4px 16px rgba(255,80,160,0.2)" }}><div style={{ fontSize:24 }}>{em}</div><div style={{ fontSize:7, color:"#f0a0c0", fontFamily:"'Cinzel',serif", textAlign:"center" }}>ANIME</div></div>))}</div>
           </div>
         </div>
       </>) : (
