@@ -4,7 +4,7 @@ import {
   useReducedMotion,
   useAnimationControls,
 } from "framer-motion";
-import { Axe, Tower, Feather } from "lucide-react";
+import { Axe, Castle, Feather } from "lucide-react";
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
@@ -21,7 +21,7 @@ const silhouettes = [
     label: "axe",
   },
   {
-    Icon: Tower,
+    Icon: Castle,
     x: 0,
     y: -140,
     delay: 0.08,

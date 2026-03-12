@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, Fragment } from "react";
 import { supabase } from "./supabase";
+import ForgeAndFableTeaser from "./components/ForgeAndFableTeaser";
 
 // ═══ STORAGE ═════════════════════════════════════════════════════════════════
 const store = {
@@ -497,7 +498,7 @@ function rollAltArtPack(pack) {
 }
 
 // ═══ CARD COMPONENT ══════════════════════════════════════════════════════════
-function Card({ card, size = "md", onClick, animDelay = 0 }) {
+function Card({ card, size = "md", onClick, animDelay = 0, isThird = false }) {
   const [hov, setHov] = useState(false);
   const [flip, setFlip] = useState(false);
   const W = size === "sm" ? 148 : size === "lg" ? 228 : 188;
@@ -512,7 +513,11 @@ function Card({ card, size = "md", onClick, animDelay = 0 }) {
   const rarityGlow = isPrismatic ? "#ffffff" : (RARITY_GLOW[card.rarity] || null);
   const handleClick = () => { if (onClick) onClick(card); else { SFX.play("flip"); setFlip((f) => !f); } };
   return (
-    <div style={{ perspective: 1000, width: W, flexShrink: 0, animation: animDelay ? `cardReveal 0.6s ease-out ${animDelay}s both` : (isPrismatic ? `prismPulse 3s ease-in-out infinite` : undefined), transform: hov ? "translateY(-8px) scale(1.02)" : "none", transition: "transform .2s ease, filter .2s ease", filter: hov ? `drop-shadow(0 12px 28px ${isPrismatic ? "#ffffff" : border}88)` : (isPrismatic ? undefined : rarityGlow ? `drop-shadow(0 0 7px ${rarityGlow}99)` : undefined) }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}>
+    <div style={{ perspective: 1000, width: W, flexShrink: 0, animation: animDelay ? `cardReveal 0.6s ease-out ${animDelay}s both` : (isPrismatic ? `prismPulse 3s ease-in-out infinite` : undefined), transform: hov ? "translateY(-8px) scale(1.02)" : "none", transition: "transform .2s ease, filter .2s ease", filter: hov ? `drop-shadow(0 12px 28px ${isPrismatic ? "#ffffff" : border}88)` : (isPrismatic ? undefined : rarityGlow ? `drop-shadow(0 0 7px ${rarityGlow}99)` : undefined) }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} className={`
+        border-2 border-[#b8860b] rounded-lg
+        ${isThird ? 'shadow-[0_0_12px_#ffd700]' : ''}
+        transition-all duration-500
+      `}>
       <div onClick={handleClick} style={{ width: W, transformStyle: "preserve-3d", transition: "transform .5s cubic-bezier(.4,0,.2,1)", transform: flip ? "rotateY(180deg)" : "none", cursor: "pointer" }}>
         <div style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", border: isPrismatic ? "2px solid transparent" : `2px solid ${rarityGlow || border}`, borderRadius: 14, overflow: "hidden", position: "relative", height: H, width: W, ...(isPrismatic ? { backgroundImage: "linear-gradient(#0a0806,#0a0806), linear-gradient(135deg,#ff0080,#ff8000,#ffff00,#00ff80,#0080ff,#8000ff,#ff0080)", backgroundOrigin: "border-box", backgroundClip: "padding-box, border-box", borderWidth: 3 } : {}) }}>
           {/* Full-bleed art */}
@@ -624,7 +629,7 @@ function Token({ c, selected, isTarget, canSelect, onClick, onRightClick, animTy
   const opac = (c.hasAttacked && !isTarget) ? 0.45 : 1;
   const kws = KW.filter((k) => (c.keywords || []).includes(k.name));
   return (
-    <div onClick={onClick} onContextMenu={(e) => { e.preventDefault(); if (onRightClick) onRightClick(); }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ width: 110, height: 152, cursor: (canSelect || isTarget) ? "pointer" : "default", userSelect: "none", border: `2px solid ${selected ? "#f0d840" : animType==="hit" ? "#ff3030" : animType==="attacking" ? "#ff8030" : isTarget && hov ? "#e84040" : hov && canSelect ? c.border + "aa" : c.border + "55"}`, borderRadius: 10, overflow: "hidden", opacity: animType==="dying" ? 1 : opac, boxShadow: animType==="hit" ? "0 0 28px #ff303088, 0 0 60px #ff202044" : animType==="attacking" ? `0 0 28px ${c.border}aa` : selected ? `0 0 22px #f0d84066` : hov ? `0 6px 18px ${c.border}44` : "none", transform: animType ? "none" : selected ? "translateY(-8px)" : hov ? "translateY(-4px)" : "none", animation: animType === "attacking" ? "cardLunge 0.45s cubic-bezier(0.25,0.46,0.45,0.94)" : animType === "hit" ? "cardHit 0.5s ease-out" : animType === "dying" ? "cardDie 0.6s ease-out forwards" : animType === "summoning" ? (c.rarity==="Prismatic"?"prismaticPop 0.7s ease-out, cardSummon 0.5s ease-out":"cardSummon 0.5s ease-out") : "none", transition: animType ? "none" : "all .18s", position: "relative" }}>
+    <div onClick={onClick} onContextMenu={(e) => { e.preventDefault(); if (onRightClick) onRightClick(); }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ width: 110, height: 152, cursor: (canSelect || isTarget) ? "pointer" : "default", userSelect: "none", border: `2px solid ${selected ? "#f0d840" : animType==="hit" ? "#ff3030" : (animType==="attacking"||animType==="attacking-down") ? "#ff8030" : isTarget && hov ? "#e84040" : hov && canSelect ? c.border + "aa" : c.border + "55"}`, borderRadius: 10, overflow: "hidden", opacity: animType==="dying" ? 1 : opac, boxShadow: animType==="hit" ? "0 0 28px #ff303088, 0 0 60px #ff202044" : (animType==="attacking"||animType==="attacking-down") ? `0 0 28px ${c.border}aa, 0 0 50px ${c.border}55` : selected ? `0 0 22px #f0d84066` : hov ? `0 6px 18px ${c.border}44` : "none", transform: animType ? "none" : selected ? "translateY(-8px)" : hov ? "translateY(-4px)" : "none", animation: animType === "attacking" ? "cardLunge 0.45s cubic-bezier(0.25,0.46,0.45,0.94)" : animType === "attacking-down" ? "cardLungeDown 0.45s cubic-bezier(0.25,0.46,0.45,0.94)" : animType === "hit" ? "cardHit 0.5s ease-out" : animType === "dying" ? "cardDie 0.6s ease-out forwards" : animType === "summoning" ? (c.rarity==="Prismatic"?"prismaticPop 0.7s ease-out, cardSummon 0.5s ease-out":"cardSummon 0.5s ease-out") : "none", transition: animType ? "none" : "all .18s", position: "relative" }}>
       {/* Full art */}
       <div style={{ position: "absolute", inset: 0 }}><CardArt card={c} /></div>
       {/* Bottom gradient */}
@@ -1553,8 +1558,16 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       // Opponent VFX: environment change
       if (gs.env?.id !== prev.env?.id && gs.env) { vfx.add("envchange", { color: gs.env.border||"#40a020" }); vfx.add("environment", { color: gs.env.border, duration:2200 }); SFX.play("env_play"); }
 
-      // Opponent VFX: spell cast
-      if (newEntries.some(l => l.includes("casts ") || l.includes("Cast ") || l.includes("spell"))) { vfx.add("spell", { color:"#c090d0", duration:1000 }); SFX.play("ability"); }
+      // Opponent VFX: spell cast — color by effect type
+      const spellEntries = newEntries.filter(l => l.includes("casts ") || l.includes("Cast ") || l.includes("spell"));
+      spellEntries.forEach(l => {
+        const color = /heal|restore|mend/i.test(l) ? "#40c060" : /damage|blast|burn|fire|bolt/i.test(l) ? "#e05030" : "#c090d0";
+        vfx.add("spell", { color, duration:1100 });
+        SFX.play("ability");
+      });
+      // Opponent VFX: card played (new summon)
+      const newSummons = currAi.enemyBoard.filter(c => !prevAi.enemyBoard.find(p => p.uid === c.uid));
+      if (newSummons.length > 0) { SFX.play("card"); }
 
       // Opponent VFX: heal (detect HP gain)
       const opHPKey = (myRole==="p1"?"p2":"p1")+"HP";
@@ -1578,22 +1591,24 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         const tgtCard = tgtName ? prevAi.playerBoard.find(c => c.name === tgtName) : null;
         setTimeout(() => {
           SFX.play("attack");
-          if (atkCard) setAnimUids(p => ({ ...p, [atkCard.uid]: "attacking" }));
+          if (atkCard) setAnimUids(p => ({ ...p, [atkCard.uid]: "attacking-down" }));
           setTimeout(() => {
             if (tgtCard) {
-              setAnimUids(p => ({ ...p, ...(atkCard?{[atkCard.uid]:"attacking"}:{}), [tgtCard.uid]: "hit" }));
-              vfx.add("attackImpact", { duration:500 });
+              setAnimUids(p => ({ ...p, ...(atkCard?{[atkCard.uid]:"attacking-down"}:{}), [tgtCard.uid]: "hit" }));
+              vfx.add("attackImpact", { duration:600 });
+              SFX.play("kill");
             } else {
-              // face attack — screen flash + damage number shown by HP diff
-              vfx.add("damage", { amount: 0, flash: true, duration:600 });
+              // face attack — dramatic screen flash
+              vfx.add("damage", { amount: 0, flash: true, duration:800 });
+              vfx.add("attackImpact", { duration:500 });
             }
             setTimeout(() => {
               if (atkCard) setAnimUids(p => { const n={...p}; delete n[atkCard.uid]; return n; });
               if (tgtCard) setAnimUids(p => { const n={...p}; delete n[tgtCard.uid]; return n; });
-            }, 350);
-          }, 230);
+            }, 420);
+          }, 260);
         }, delay);
-        delay += 700;
+        delay += 850;
       });
 
       if (Object.keys(anims).length > 0) {
@@ -2428,7 +2443,7 @@ function LoginModal({ needsProfile = false, userId, userEmail, onSignOut, onProf
     setBusy(false);
   };
 
-  return (<div style={{ position:"fixed", inset:0, zIndex:999, background:"rgba(4,2,0,0.96)", backdropFilter:"blur(14px)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+  return (<div style={{ position:"fixed", inset:0, zIndex:999, background:"rgba(4,2,0,0.75)", backdropFilter:"blur(8px)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
     <div style={{ background:"linear-gradient(160deg,#1e1c10,#100e08)", border:"1px solid #3a3020", borderRadius:18, padding:42, maxWidth:420, width:"100%", textAlign:"center", boxShadow:"0 32px 80px rgba(0,0,0,0.9)", animation:"fadeIn 0.6s ease-out", position:"relative", overflow:"hidden" }}>
       <div style={{ position:"absolute", inset:0, pointerEvents:"none" }}><FloatingParticles count={15} color="#e8c060" speed={0.3} /></div>
       <div style={{ position:"relative", zIndex:1 }}>
@@ -2616,25 +2631,27 @@ function HomeScreen({ setTab, user }) {
   const [active, setActive] = useState(0);
   const [entered, setEntered] = useState(false);
   const [recentBattles, setRecentBattles] = useState([]);
+  const fetchBattles = async () => {
+    try {
+      const { data: matches } = await supabase.from("matches").select("id,game_state,updated_at").not("game_state->>winner","is",null).order("updated_at",{ascending:false}).limit(10);
+      if (!matches?.length) return;
+      setRecentBattles(matches.map(m => ({
+        id: m.id,
+        p1Name: m.game_state?.p1Name || "Player",
+        p2Name: m.game_state?.p2Name || "Player",
+        winner: m.game_state?.winner,
+        forfeit: !!(m.game_state?.log||[]).find(l => l.includes("forfeited")),
+        turns: m.game_state?.turn || 0,
+        date: m.updated_at,
+      })));
+    } catch(_) {}
+  };
   useEffect(() => {
     MusicCtx.play("home"); setEntered(true);
     const id = setInterval(() => setActive((c) => (c + 1) % HOME_CARDS.length), 4000);
-    // Fetch recent completed battles
-    (async () => {
-      try {
-        const { data: matches } = await supabase.from("matches").select("id,game_state,updated_at").not("game_state->>winner","is",null).order("updated_at",{ascending:false}).limit(10);
-        if (!matches?.length) return;
-        setRecentBattles(matches.map(m => ({
-          id: m.id,
-          p1Name: m.game_state?.p1Name || m.game_state?.p1Avatar || "Player",
-          p2Name: m.game_state?.p2Name || m.game_state?.p2Avatar || "Player",
-          winner: m.game_state?.winner,
-          turns: m.game_state?.turn || 0,
-          date: m.updated_at,
-        })));
-      } catch(_) {}
-    })();
-    return () => clearInterval(id);
+    fetchBattles();
+    const pollId = setInterval(fetchBattles, 30000);
+    return () => { clearInterval(id); clearInterval(pollId); };
   }, []);
 
   const REGION_ICONS = { Thornwood: "🌿", "Shattered Expanse": "💎", "Azure Deep": "🌊", Ashfen: "🔥", Ironmarch: "⚙", Sunveil: "☀", Bloodpact: "🩸" };
@@ -2836,6 +2853,8 @@ function HomeScreen({ setTab, user }) {
                     <span style={{ fontSize:10, color:"#c04040", minWidth:90, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{(loserName||"???").toUpperCase()}</span>
                     {/* Spacer */}
                     <span style={{ flex:1 }} />
+                    {/* FF badge */}
+                    {b.forfeit && <span style={{ fontSize:7, color:"#e05050", border:"1px solid #e0505066", borderRadius:3, padding:"1px 4px", letterSpacing:1 }}>FF</span>}
                     {/* Turn count */}
                     <span style={{ fontSize:8, color:"#1a4010", letterSpacing:1 }}>{b.turns}T</span>
                     <span style={{ fontSize:8, color:"#0f2208", margin:"0 4px" }}>│</span>
@@ -3083,96 +3102,158 @@ function ForgeScreen() {
 }
 // ─── AI Card Forge (rule-based generator, no external API key needed) ─────────
 function generateCardConcept(idea) {
-  const idea_lower = idea.toLowerCase();
-  const words = idea.replace(/[^a-zA-Z ]/g,"").split(/\s+/).filter(w => w.length > 3);
+  const L = idea.toLowerCase().trim();
 
-  // Faction heuristics
+  // ── Faction ───────────────────────────────────────────────────────────
   let faction = ["Thornwood","Shattered Expanse","Azure Deep","Ashfen","Ironmarch","Sunveil","Bloodpact"][Math.floor(Math.random()*7)];
-  if (/fire|flame|ash|burn|ember|lava|inferno|pyre/.test(idea_lower)) faction = "Ashfen";
-  else if (/water|ocean|sea|tide|wave|deep|coral|fish|aqua|flood/.test(idea_lower)) faction = "Azure Deep";
-  else if (/shadow|void|rift|crystal|shard|prism|echo|ghost/.test(idea_lower)) faction = "Shattered Expanse";
-  else if (/iron|steel|forge|war|march|machine|golem|gear|armor/.test(idea_lower)) faction = "Ironmarch";
-  else if (/sun|gold|light|veil|dawn|glow|radiant|holy|divine/.test(idea_lower)) faction = "Sunveil";
-  else if (/blood|death|pact|sacrifice|dark|soul|curse|undead|dread/.test(idea_lower)) faction = "Bloodpact";
-  else if (/forest|grove|leaf|vine|thorn|wolf|beast|root|bark|tree/.test(idea_lower)) faction = "Thornwood";
+  if (/fire|flame|ash|burn|ember|lava|inferno|pyre|volcanic/.test(L)) faction = "Ashfen";
+  else if (/water|ocean|sea|tide|wave|deep|coral|fish|aqua|flood|mermaid|kraken/.test(L)) faction = "Azure Deep";
+  else if (/shadow|void|rift|crystal|shard|prism|echo|ghost|phantom|wisp/.test(L)) faction = "Shattered Expanse";
+  else if (/iron|steel|forge|war|march|machine|golem|gear|armor|construct/.test(L)) faction = "Ironmarch";
+  else if (/sun|gold|light|veil|dawn|glow|radiant|holy|divine|angel|celestial/.test(L)) faction = "Sunveil";
+  else if (/blood|death|pact|sacrifice|dark|soul|curse|undead|dread|lich|vampire|necro/.test(L)) faction = "Bloodpact";
+  else if (/forest|grove|leaf|vine|thorn|wolf|beast|root|bark|tree|druid|fae|nature/.test(L)) faction = "Thornwood";
 
-  // Type heuristics
+  // ── Type ──────────────────────────────────────────────────────────────
   let type = "Creature";
-  if (/spell|cast|magic|curse|bolt|wave|blast|summon|invoke|ritual/.test(idea_lower)) type = "Spell";
-  else if (/zone|field|terrain|land|realm|enviro|alter|reshape|change the field/.test(idea_lower)) type = "Environment";
+  if (/\bspell\b|\bcast\b|\bmagic\b|\bcurse\b|\bbolt\b|\bblast\b|\binvoke\b|\britual\b/.test(L)) type = "Spell";
+  else if (/\bzone\b|\bfield\b|\bterrain\b|\brealm\b|\benviron|\balter the|\bchange the\b/.test(L)) type = "Environment";
 
-  // Keyword detection
-  const keywords = ["Swift","Shield","Echo","Bleed","Fracture","Resonate","Anchor"];
-  const pickedKws = keywords.filter(k => {
-    const n = k.toLowerCase();
-    if (n === "swift" && /fast|quick|swift|speed|dash|rush|agile/.test(idea_lower)) return true;
-    if (n === "shield" && /shield|guard|protect|defend|armor|tank/.test(idea_lower)) return true;
-    if (n === "echo" && /echo|ghost|copy|mirror|reflect|twin/.test(idea_lower)) return true;
-    if (n === "bleed" && /bleed|wound|poison|drain|rot|venom|toxin/.test(idea_lower)) return true;
-    if (n === "fracture" && /split|fracture|clone|two|double|divide/.test(idea_lower)) return true;
-    if (n === "resonate" && /resonate|sing|music|hum|vibrate/.test(idea_lower)) return true;
-    return false;
-  }).slice(0, 2);
-  if (pickedKws.length === 0 && Math.random() > 0.4) pickedKws.push(keywords[Math.floor(Math.random()*keywords.length)]);
+  // ── Keywords ──────────────────────────────────────────────────────────
+  const pickedKws = [];
+  if (/fast|quick|swift|speed|dash|rush|agile|instant/.test(L)) pickedKws.push("Swift");
+  if (/shield|guard|protect|defend|armor|tank|fortif/.test(L)) pickedKws.push("Shield");
+  if (/echo|copy|mirror|reflect|twin|doppel/.test(L)) pickedKws.push("Echo");
+  if (/bleed|wound|poison|drain|rot|venom|toxin|sap/.test(L)) pickedKws.push("Bleed");
+  if (/split|fracture|clone|double|divide|fragment/.test(L)) pickedKws.push("Fracture");
+  if (/resonate|song|music|hum|vibrat|harmonic/.test(L)) pickedKws.push("Resonate");
+  const allKws = ["Swift","Shield","Echo","Bleed","Fracture","Resonate"];
+  if (pickedKws.length === 0) pickedKws.push(allKws[Math.floor(Math.random()*allKws.length)]);
+  pickedKws.splice(2);
 
-  // Stats — scale by aggression words in idea
-  const isAggressive = /attack|destroy|kill|powerful|strong|mighty|devastating|burst/.test(idea_lower);
-  const isDefensive = /heal|protect|guard|restore|block|absorb|tough|durable/.test(idea_lower);
-  const atk = type === "Creature" ? (isAggressive ? 3 + Math.floor(Math.random()*4) : 1 + Math.floor(Math.random()*4)) : null;
-  const hp  = type === "Creature" ? (isDefensive ? 3 + Math.floor(Math.random()*5) : 1 + Math.floor(Math.random()*5)) : null;
-  const cost = 1 + Math.floor(Math.random() * 5);
+  // ── Stats ─────────────────────────────────────────────────────────────
+  const isAggressive = /attack|destroy|kill|powerful|strong|mighty|devastating|burst|ruthless|dominate/.test(L);
+  const isDefensive  = /heal|protect|guard|restore|block|absorb|tough|durable|endure|resilient/.test(L);
+  const atk  = type === "Creature" ? (isAggressive ? 3+Math.floor(Math.random()*4) : 1+Math.floor(Math.random()*3)) : null;
+  const hp   = type === "Creature" ? (isDefensive  ? 4+Math.floor(Math.random()*4) : 2+Math.floor(Math.random()*4)) : null;
+  const cost = type === "Spell" ? 1+Math.floor(Math.random()*4) : (isAggressive||isDefensive ? 3+Math.floor(Math.random()*3) : 2+Math.floor(Math.random()*4));
 
-  // Name — extract key noun from idea, combine with faction flavor
-  const creatureNouns = { dragon:"Drake",wolf:"Wolf",knight:"Warden",mage:"Weaver",priest:"Herald",demon:"Fiend",serpent:"Coil",golem:"Titan",witch:"Hexer",archer:"Shot",guardian:"Sentinel",shadow:"Shade",spirit:"Wisp",hunter:"Stalker" };
-  let themeWord = "";
-  for (const [kw, suffix] of Object.entries(creatureNouns)) { if (idea_lower.includes(kw)) { themeWord = suffix; break; } }
-  const facPfx = { Thornwood:["Thorn","Grove","Wild","Root","Bark"], "Shattered Expanse":["Rift","Void","Shard","Echo","Prism"], "Azure Deep":["Tide","Coral","Deep","Wave","Shell"], Ashfen:["Ash","Ember","Scorch","Pyre","Char"], Ironmarch:["Iron","Steel","Forge","March","Bolt"], Sunveil:["Sun","Dawn","Veil","Gilded","Radiant"], Bloodpact:["Blood","Dread","Soul","Hex","Vile"] };
-  const typeSfx = { Creature:["Walker","Warden","Stalker","Herald","Caller","Kin"], Spell:["Strike","Bolt","Surge","Wave","Pulse","Rend"], Environment:["Hollow","Expanse","Depths","Wastes","Fields","Fen"] };
+  // ── Name ──────────────────────────────────────────────────────────────
+  // 1. Try to pull the subject noun directly from the idea
+  const subjectMap = [
+    [/dragon|drake/, "Drake"], [/wolf|wolves/, "Wolf"], [/knight|warrior/, "Warden"],
+    [/mage|wizard|sorcerer/, "Mage"], [/priest|cleric|healer/, "Herald"],
+    [/demon|fiend/, "Fiend"], [/serpent|snake|viper/, "Coil"], [/golem|titan/, "Titan"],
+    [/witch|hex|warlock/, "Hexer"], [/archer|ranger/, "Ranger"],
+    [/guardian|sentinel/, "Sentinel"], [/shadow|shade/, "Shade"],
+    [/spirit|wisp|ghost|phantom/, "Wisp"], [/hunter|stalker/, "Stalker"],
+    [/lich|undead/, "Lich"], [/kraken|leviathan/, "Leviathan"],
+    [/vampire|blood/, "Wraith"], [/angel|celestial/, "Seraph"],
+    [/elemental|construct/, "Elemental"], [/bear|beast/, "Beast"],
+  ];
+  let subjectWord = "";
+  for (const [rx, s] of subjectMap) { if (rx.test(L)) { subjectWord = s; break; } }
+
+  // 2. Find an adjective/flavor word from the idea (not stop words, not verbs ending -s/-ing/-ed)
+  const stopWords = /^(when|that|this|with|from|into|over|have|will|make|does|deal|deals|give|gives|draw|draws|gain|gains|play|plays|cast|casts|take|takes|enemy|enemies|friend|allies|board|field|hero|your|their|all|any|each|can|and|the|for|has|its|upon|after|which|they|them)$/i;
+  const verbForms = /ing$|ed$|es$|ies$/;
+  const rawWords = idea.replace(/[^a-zA-Z ]/g,"").split(/\s+/);
+  const flavorWord = rawWords.find(w => w.length >= 4 && !stopWords.test(w) && !verbForms.test(w) && !/^\d+$/.test(w));
+
+  const facPfx = { Thornwood:["Thorn","Grove","Wild","Root"], "Shattered Expanse":["Rift","Void","Shard","Prism"], "Azure Deep":["Tide","Coral","Deep","Wave"], Ashfen:["Ash","Ember","Scorch","Pyre"], Ironmarch:["Iron","Steel","Forge","Bolt"], Sunveil:["Sun","Dawn","Veil","Gilded"], Bloodpact:["Blood","Dread","Soul","Vile"] };
+  const typeSfx = { Creature:["Walker","Warden","Stalker","Herald","Kin"], Spell:["Strike","Surge","Wave","Rend"], Environment:["Hollow","Expanse","Depths","Wastes"] };
   const px = facPfx[faction]||[]; const sx = typeSfx[type]||[];
-  // Prefer idea-extracted word, fall back to faction prefix
-  const ideaWord = words.find(w => w.length > 4 && !/when|that|this|with|from|into|over|have|will|make|does/.test(w.toLowerCase()));
-  const namePfx = ideaWord ? (ideaWord.charAt(0).toUpperCase() + ideaWord.slice(1).toLowerCase()) : px[Math.floor(Math.random()*px.length)] || "";
-  const nameSfx = themeWord || sx[Math.floor(Math.random()*sx.length)] || "";
-  const name = namePfx && nameSfx && namePfx !== nameSfx ? `${namePfx} ${nameSfx}` : `${px[Math.floor(Math.random()*px.length)]}${sx[Math.floor(Math.random()*sx.length)]}`;
 
-  // Ability — directly reflect intent from the idea
-  const dmgAmt = 1 + Math.floor(Math.random()*3);
-  const healAmt = 1 + Math.floor(Math.random()*3);
-  const buffAmt = Math.floor(Math.random()*2)+1;
-  let ability = "";
-  if (/enter|arrives|play|summon|cast/.test(idea_lower) && /damage|deal|hurt|hit|strike/.test(idea_lower)) {
-    ability = `When ${name} enters the battlefield, deal ${dmgAmt} damage to all enemies.`;
-  } else if (/heal|restore|recover/.test(idea_lower)) {
-    ability = `When ${name} enters or attacks, restore ${healAmt} HP to your hero.`;
-  } else if (/destroy|kill|eliminate/.test(idea_lower) && type === "Creature") {
-    ability = `When ${name} destroys a creature, gain +${buffAmt} ATK permanently.`;
-  } else if (/buff|boost|strengthen|empower|all.*friend|friend.*all/.test(idea_lower)) {
-    ability = `When ${name} enters, give all other friendly creatures +${buffAmt}/+${buffAmt} until end of turn.`;
-  } else if (/draw|card/.test(idea_lower)) {
-    ability = `When ${name} enters the battlefield, draw a card.`;
-  } else if (type === "Spell" && /damage|deal|hurt/.test(idea_lower)) {
-    ability = `Deal ${dmgAmt+1} damage to a target creature or hero.`;
-  } else if (type === "Spell" && /heal|restore/.test(idea_lower)) {
-    ability = `Restore ${healAmt+2} HP to your hero and remove Bleed from all friendly creatures.`;
-  } else if (type === "Environment") {
-    ability = /damage|burn|hurt/.test(idea_lower)
-      ? `While active, deal 1 damage to the enemy hero at the start of each turn.`
-      : `While active, all friendly creatures enter with +1/+1.`;
+  let name;
+  if (subjectWord && flavorWord) {
+    // "Fire Drake", "Shadow Wisp", "Iron Titan"
+    const adj = flavorWord.charAt(0).toUpperCase() + flavorWord.slice(1).toLowerCase();
+    name = `${adj} ${subjectWord}`;
+  } else if (subjectWord) {
+    // "Ember Drake", "Void Fiend"
+    const pfx = px[Math.floor(Math.random()*px.length)] || "";
+    name = pfx ? `${pfx} ${subjectWord}` : subjectWord;
+  } else if (flavorWord) {
+    // "Cruel Stalker", "Frozen Herald"
+    const adj = flavorWord.charAt(0).toUpperCase() + flavorWord.slice(1).toLowerCase();
+    const sfx = sx[Math.floor(Math.random()*sx.length)] || "";
+    name = sfx ? `${adj} ${sfx}` : adj;
   } else {
-    // Fallback: write something based on keywords
-    const kw = pickedKws[0];
-    const fallbacks = {
-      Swift: `Swift. ${name} can attack immediately and ignores guard effects.`,
-      Shield: `${name} enters with Shield. When Shield breaks, draw a card.`,
-      Bleed: `${name} inflicts 1 Bleed on all enemies it damages.`,
-      Echo: `Echo. When ${name} leaves play, a 1/1 Echo copy enters your hand.`,
-      Fracture: `Fracture. ${name} splits into two copies at half stats when destroyed.`,
-      Resonate: `Resonate. ${name} gains +1 ATK for each card in your opponent's hand.`,
-    };
-    ability = fallbacks[kw] || `When ${name} enters the battlefield, deal ${dmgAmt} damage to the lowest-HP enemy.`;
+    name = `${px[Math.floor(Math.random()*px.length)]}${sx[Math.floor(Math.random()*sx.length)]}`;
   }
 
-  const rarity = Math.random() < 0.08 ? "Legendary" : Math.random() < 0.2 ? "Epic" : Math.random() < 0.4 ? "Rare" : Math.random() < 0.6 ? "Uncommon" : "Common";
+  // ── Ability ───────────────────────────────────────────────────────────
+  const dmg  = 1 + Math.floor(Math.random()*3);
+  const heal = 2 + Math.floor(Math.random()*3);
+  const buff = 1 + Math.floor(Math.random()*2);
+
+  let ability = "";
+  // Direct damage on entry / attack / spell
+  if (/deal.*damage|damage.*all|hurt|strike.*all|burn.*all|zap|lightning/.test(L)) {
+    const target = /all enemy|all foe|all opp/.test(L) ? "all enemy creatures" : "a target creature or hero";
+    ability = type === "Spell"
+      ? `Deal ${dmg+1} damage to ${target}.`
+      : `When ${name} enters the battlefield, deal ${dmg} damage to ${target}.`;
+  }
+  // Healing
+  else if (/heal|restore.*hp|recover.*hp|mend|regenerat/.test(L)) {
+    const who = /all.*friend|friendly.*all|allies/.test(L) ? "all friendly creatures" : "your hero";
+    ability = `When ${name} enters or attacks, restore ${heal} HP to ${who}.`;
+  }
+  // Revive / resurrection
+  else if (/reviv|resurrect|bring.*back|return.*grave|raise.*dead/.test(L)) {
+    ability = `When ${name} enters, return a friendly creature from your discard to your hand.`;
+  }
+  // Destroy / kill on death or entry
+  else if (/destroy|eliminate|execute|annihilate/.test(L)) {
+    const trigger = /when.*die|on.*death|destroyed/.test(L) ? "dies" : "destroys a creature";
+    ability = `When ${name} ${trigger}, gain +${buff}/+${buff} and draw a card.`;
+  }
+  // Buff allies
+  else if (/buff|boost|strengthen|empower|give.*friend|friend.*all|strengthen.*allies/.test(L)) {
+    ability = `When ${name} enters, give all other friendly creatures +${buff}/+${buff} until end of turn.`;
+  }
+  // Draw / hand manipulation
+  else if (/draw.*card|card.*draw|fill.*hand|look.*deck/.test(L)) {
+    ability = `When ${name} enters the battlefield, draw ${buff} card${buff>1?"s":""}.`;
+  }
+  // Stealth / cannot be targeted
+  else if (/stealth|invisible|cannot.*target|ignore.*guard|unblockable/.test(L)) {
+    ability = `${name} cannot be targeted by spells or abilities. Attacks bypass guard creatures.`;
+  }
+  // Environment specific
+  else if (type === "Environment") {
+    if (/damage|burn|hurt|punish/.test(L))
+      ability = `While active, deal 1 damage to the enemy hero at the start of each turn.`;
+    else if (/draw|card/.test(L))
+      ability = `While active, both players draw an extra card each turn.`;
+    else
+      ability = `While active, all friendly creatures enter with +1/+1.`;
+  }
+  // Spell with no matched pattern
+  else if (type === "Spell") {
+    if (/bleed|poison|wither/.test(L))
+      ability = `Apply 2 Bleed to all enemy creatures.`;
+    else if (/shield|protect/.test(L))
+      ability = `Give all friendly creatures Shield until your next turn.`;
+    else
+      ability = `Deal ${dmg+1} damage to a target, then draw a card.`;
+  }
+  // Keyword fallback
+  else {
+    const kw = pickedKws[0];
+    const kwAbilities = {
+      Swift:    `Swift. When ${name} attacks, it deals damage before the defender can strike back.`,
+      Shield:   `${name} enters with Shield. When Shield breaks, deal ${dmg} damage to the attacker.`,
+      Bleed:    `${name} inflicts 2 Bleed on every creature it damages.`,
+      Echo:     `Echo. When ${name} leaves play, a 1/1 Echo copy enters your hand.`,
+      Fracture: `Fracture. ${name} splits into two ${Math.ceil((atk||1)/2)}/${Math.ceil((hp||1)/2)} copies when it dies.`,
+      Resonate: `Resonate. ${name} gains +1 ATK for each card in your opponent's hand.`,
+    };
+    ability = kwAbilities[kw] || `When ${name} enters the battlefield, deal ${dmg} damage to the lowest-HP enemy creature.`;
+  }
+
+  const rarity = Math.random()<0.06?"Legendary":Math.random()<0.18?"Epic":Math.random()<0.38?"Rare":Math.random()<0.6?"Uncommon":"Common";
   return { name, faction, type, cost, atk, hp, ability, keywords: pickedKws, rarity };
 }
 
@@ -3371,6 +3452,7 @@ const NAV = [
   { id: "store",      label: "Store",   icon: "◈" },
   { id: "collection", label: "Cards",   icon: "❖" },
   { id: "community",  label: "Hub",     icon: "✦" },
+  { id: "forge",      label: "Forge",   icon: "⚗" },
   { id: "howto",      label: "Guide",   icon: "◉" },
 ];
 
@@ -3428,7 +3510,12 @@ function AlphaKeyAdminPanel() {
 
 export default function App() {
   const [tab, setTab] = useState("home"); const { user, loading, login, logout, update, completeProfile } = useAuth(); const [showProfile, setShowProfile] = useState(false); const [showPatchNotes, setShowPatchNotes] = useState(false); const [inPvpMatch, setInPvpMatch] = useState(false);
-  useEffect(() => { if (user && user.lastPatchSeen !== CURRENT_PATCH) setShowPatchNotes(true); }, [user?.id]); // eslint-disable-line
+  useEffect(() => {
+    if (!user) return;
+    const localSeen = localStorage.getItem("lastPatchSeen");
+    if (localSeen === CURRENT_PATCH) return; // already dismissed this session/device
+    if (user.lastPatchSeen !== CURRENT_PATCH) setShowPatchNotes(true);
+  }, [user?.id]); // eslint-disable-line
   if (loading) return (<div style={{ minHeight: "100vh", background: "#161210", display: "flex", alignItems: "center", justifyContent: "center" }}><div style={{ fontFamily: "'Cinzel',serif", color: "#e8c060", fontSize: 16, letterSpacing: 4, animation: "pulse 1.5s ease-in-out infinite" }}>FORGING...</div></div>);
   return (<div style={{ minHeight: "100vh", background: "#161210", color: "#e8e0d0", fontFamily: "'Lora',Georgia,serif", overflowX: "hidden" }} onClick={() => setShowProfile(false)}>
     <style>{`
@@ -3464,6 +3551,7 @@ export default function App() {
       @keyframes vfxRingBurst{0%{opacity:0.9;transform:translate(-50%,-50%) scale(0.1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
       @keyframes vfxSpellFlash{0%{opacity:0}15%{opacity:1}100%{opacity:0}}
       @keyframes cardLunge{0%{transform:translateY(0) scale(1)}30%{transform:translateY(-44px) scale(1.1) rotate(-3deg)}55%{transform:translateY(-36px) scale(1.06) rotate(-1deg)}100%{transform:translateY(0) scale(1) rotate(0deg)}}
+      @keyframes cardLungeDown{0%{transform:translateY(0) scale(1)}30%{transform:translateY(44px) scale(1.1) rotate(3deg)}55%{transform:translateY(36px) scale(1.06) rotate(1deg)}100%{transform:translateY(0) scale(1) rotate(0deg)}}
       @keyframes cardHit{0%{transform:translate(0,0) rotate(0deg);filter:none}8%{transform:translate(-14px,6px) rotate(-4deg);filter:brightness(5) saturate(0) drop-shadow(0 0 18px #ff1010)}22%{transform:translate(12px,5px) rotate(3deg);filter:brightness(3.5) saturate(0.1) drop-shadow(0 0 12px #ff2020)}40%{transform:translate(-8px,3px) rotate(-2deg);filter:brightness(2.5) drop-shadow(0 0 8px #ff3030)}58%{transform:translate(6px,1px) rotate(1deg);filter:brightness(1.8)}75%{transform:translate(-4px,0) rotate(0deg);filter:brightness(1.2)}100%{transform:translate(0,0) rotate(0deg);filter:none}}
       @media(max-width:768px){
         nav{height:60px!important;padding:0 6px!important}
@@ -3486,8 +3574,9 @@ export default function App() {
         .pack-grid{grid-template-columns:repeat(2,1fr)!important}
       }
     `}</style>
+    {!user && !loading && <ForgeAndFableTeaser />}
     {(!user || user.__needsProfile) && <LoginModal needsProfile={!!user?.__needsProfile} userId={user?.id} userEmail={user?.email} onSignOut={logout} onProfileCreated={completeProfile} />}
-    {user && showPatchNotes && <PatchNotesModal onDismiss={() => { update({ lastPatchSeen: CURRENT_PATCH }); setShowPatchNotes(false); }} />}
+    {user && showPatchNotes && <PatchNotesModal onDismiss={() => { localStorage.setItem("lastPatchSeen", CURRENT_PATCH); update({ lastPatchSeen: CURRENT_PATCH }); setShowPatchNotes(false); }} />}
     <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "radial-gradient(ellipse at 15% 15%,rgba(200,140,20,0.11) 0%,transparent 50%),radial-gradient(ellipse at 85% 85%,rgba(30,120,200,0.08) 0%,transparent 50%)" }} />
     <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "linear-gradient(180deg,#201c10 0%,#181408 100%)", backdropFilter: "blur(20px)", borderBottom: "2px solid #4a3c18", padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 72, boxShadow: "0 4px 24px rgba(0,0,0,0.5)" }} onClick={(e) => e.stopPropagation()}>
       <button onClick={() => setTab("home")} style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}>
@@ -3498,11 +3587,6 @@ export default function App() {
         </div>
       </button>
       <div style={{ display: "flex", gap: 2, alignItems: "center" }}>
-        {inPvpMatch && (
-          <button onClick={() => setTab("play")} style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 14px", background:"rgba(120,204,69,0.15)", border:"1px solid #78cc4566", borderRadius:8, cursor:"pointer", fontFamily:"'Cinzel',serif", fontSize:9, color:"#78cc45", letterSpacing:2, fontWeight:700, animation:"pulse 2s infinite", marginRight:6 }}>
-            <span style={{ fontSize:12 }}>⚔</span> RETURN TO MATCH
-          </button>
-        )}
         {NAV.map((t) => {
           const active = tab === t.id;
           const locked = inPvpMatch && t.id !== "play";
