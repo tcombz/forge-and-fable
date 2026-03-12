@@ -1596,13 +1596,15 @@ function MatchmakingScreen({ user, onMatch, onCancel }) {
     oppIdRef.current   = row.opponent_id;
     oppNameRef.current = row.opponent_name || 'Opponent';
     setOppName(row.opponent_name || 'Opponent');
+    phaseRef.current = 'found';
     setPhase('found');
     SFX.play('rare_reveal');
     // Subscribe to matches row — fires when both accept (status=active) or someone cancels
     matchChRef.current = supabase.channel('mready_' + row.match_id)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'matches', filter: `id=eq.${row.match_id}` }, (payload) => {
         if (!activeRef.current) return;
-        if (payload.new.status === 'active' && phaseRef.current === 'accepted') {
+        if (payload.new.status === 'active' && (phaseRef.current === 'accepted' || phaseRef.current === 'found')) {
+          phaseRef.current = 'entering';
           setPhase('entering');
           clearTimeout(pollTimerRef.current);
           setTimeout(() => { if (activeRef.current) onMatch({ matchId: row.match_id, opponentId: row.opponent_id, opponentName: oppNameRef.current }); }, 700);
@@ -1630,16 +1632,36 @@ function MatchmakingScreen({ user, onMatch, onCancel }) {
   // ── Accept duel ───────────────────────────────────────────────────────────────────
   const doAccept = async () => {
     if (!matchIdRef.current || phaseRef.current !== 'found') return;
+    phaseRef.current = 'accepted'; // sync update — Realtime callback checks this before useEffect can run
     setPhase('accepted');
     try {
       const { data } = await supabase.rpc('accept_duel', { p_match_id: matchIdRef.current, p_user_id: user.id });
       if (data?.ready) {
-        // Both accepted simultaneously — enter immediately
+        phaseRef.current = 'entering';
         setPhase('entering');
         setTimeout(() => { if (activeRef.current) onMatch({ matchId: matchIdRef.current, opponentId: oppIdRef.current, opponentName: oppNameRef.current }); }, 700);
+        return;
       }
-      // Otherwise matchChRef Realtime fires when opponent accepts (matches.status → 'active')
-    } catch (_) { setPhase('error'); }
+    } catch (_) { setPhase('error'); return; }
+    // Polling fallback: Realtime may miss the status→active update, so poll every 1s
+    let aTries = 0;
+    const checkActive = async () => {
+      if (!activeRef.current || phaseRef.current !== 'accepted') return; // Realtime already handled
+      aTries++;
+      if (aTries > 20) { setPhase('declined'); return; }
+      try {
+        const { data: m } = await supabase.from('matches').select('status').eq('id', matchIdRef.current).single();
+        if (m?.status === 'active') {
+          if (phaseRef.current !== 'accepted') return;
+          phaseRef.current = 'entering';
+          setPhase('entering');
+          setTimeout(() => { if (activeRef.current) onMatch({ matchId: matchIdRef.current, opponentId: oppIdRef.current, opponentName: oppNameRef.current }); }, 700);
+          return;
+        }
+      } catch (_) {}
+      setTimeout(checkActive, 1000);
+    };
+    setTimeout(checkActive, 1000);
   };
 
   // ── Main setup effect: insert row, Realtime subscribe, start poll ─────────────────────
