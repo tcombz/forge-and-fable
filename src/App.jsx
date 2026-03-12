@@ -246,12 +246,27 @@ function VFXOverlay({ effects }) {
   return (
     <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 50, overflow: "hidden" }}>
       {effects.map((fx) => {
-        if (fx.type === "damage") return (<div key={fx.id} style={{ position: "absolute", top: "40%", left: "50%", transform: "translate(-50%,-50%)", animation: "vfxShake .3s ease-out", fontSize: 36, fontFamily: "'Cinzel',serif", fontWeight: 900, color: "#ff4040", textShadow: "0 0 30px #ff0000, 0 0 60px #ff000066" }}>-{fx.amount}</div>);
-        if (fx.type === "heal") return (<div key={fx.id} style={{ position: "absolute", top: fx.side === "player" ? "70%" : "20%", left: "50%", transform: "translate(-50%,-50%)", animation: "vfxFloat 1s ease-out forwards", fontSize: 28, fontFamily: "'Cinzel',serif", fontWeight: 900, color: "#40ff60", textShadow: "0 0 20px #00ff44" }}>+{fx.amount}</div>);
-        if (fx.type === "ability") return (<div key={fx.id} style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", animation: "vfxPulse .8s ease-out forwards", background: `radial-gradient(circle,${fx.color || "#e8c060"}44,transparent)`, width: 260, height: 260, borderRadius: "50%" }} />);
-        if (fx.type === "environment") return (<div key={fx.id} style={{ position: "absolute", inset: 0, animation: "vfxEnv 2s ease-out forwards", background: `radial-gradient(ellipse at 50% 100%,${fx.color || "#4a9020"}30,transparent 70%)`, borderTop: `1px solid ${fx.color || "#4a9020"}22` }} />);
-        if (fx.type === "spell") return (<div key={fx.id} style={{ position:"absolute", top:"50%", left:"50%", width:220, height:220, borderRadius:"50%", animation:"spellCast 0.7s ease-out forwards", background:`radial-gradient(circle,${fx.color||"#c090d0"}55,${fx.color||"#c090d0"}22 50%,transparent 70%)`, border:`2px solid ${fx.color||"#c090d0"}66`, pointerEvents:"none" }}/>);
-        if (fx.type === "envchange") return (<div key={fx.id} style={{ position:"absolute", inset:0, animation:"envFlash 1.2s ease-out forwards", background:`${fx.color||"#4a9020"}28`, pointerEvents:"none" }}/>);
+        if (fx.type === "damage") return (<Fragment key={fx.id}>
+          <div style={{ position:"absolute", inset:0, animation:"vfxHitFlash 0.35s ease-out forwards", background:"rgba(255,30,30,0.18)", borderRadius:"inherit" }} />
+          {fx.amount > 0 && <div style={{ position:"absolute", top:"38%", left:"50%", transform:"translate(-50%,-50%)", animation:"vfxShake .35s ease-out, vfxFloat 0.9s 0.1s ease-out forwards", fontSize:42, fontFamily:"'Cinzel',serif", fontWeight:900, color:"#ff3030", textShadow:"0 0 40px #ff0000cc, 0 0 80px #ff000055", letterSpacing:2 }}>-{fx.amount}</div>}
+          <div style={{ position:"absolute", top:"38%", left:"50%", transform:"translate(-50%,-50%)", width:180, height:180, borderRadius:"50%", animation:"vfxRingBurst 0.5s ease-out forwards", border:"3px solid #ff404088" }} />
+        </Fragment>);
+        if (fx.type === "heal") return (<div key={fx.id} style={{ position:"absolute", top:fx.side==="player"?"72%":"18%", left:"50%", transform:"translate(-50%,-50%)", animation:"vfxFloat 1s ease-out forwards", fontSize:32, fontFamily:"'Cinzel',serif", fontWeight:900, color:"#40ff70", textShadow:"0 0 30px #00ff4499, 0 0 60px #00ff4433" }}>+{fx.amount}</div>);
+        if (fx.type === "ability") return (<Fragment key={fx.id}>
+          <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", animation:"vfxPulse .9s ease-out forwards", background:`radial-gradient(circle,${fx.color||"#e8c060"}55,transparent)`, width:300, height:300, borderRadius:"50%" }} />
+          <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:200, height:200, borderRadius:"50%", animation:"vfxRingBurst 0.6s ease-out forwards", border:`2px solid ${fx.color||"#e8c060"}88` }} />
+        </Fragment>);
+        if (fx.type === "environment") return (<div key={fx.id} style={{ position:"absolute", inset:0, animation:"vfxEnv 2.5s ease-out forwards", background:`radial-gradient(ellipse at 50% 100%,${fx.color||"#4a9020"}40,transparent 70%)`, borderTop:`2px solid ${fx.color||"#4a9020"}44` }} />);
+        if (fx.type === "spell") return (<Fragment key={fx.id}>
+          <div style={{ position:"absolute", top:"50%", left:"50%", width:260, height:260, borderRadius:"50%", animation:"spellCast 0.8s ease-out forwards", background:`radial-gradient(circle,${fx.color||"#c090d0"}66,${fx.color||"#c090d0"}22 50%,transparent 70%)`, border:`2px solid ${fx.color||"#c090d0"}88` }}/>
+          <div style={{ position:"absolute", top:"50%", left:"50%", width:360, height:360, borderRadius:"50%", animation:"vfxRingBurst 0.9s 0.1s ease-out forwards", border:`1px solid ${fx.color||"#c090d0"}44` }}/>
+          <div style={{ position:"absolute", inset:0, animation:"vfxSpellFlash 0.4s ease-out forwards", background:`${fx.color||"#c090d0"}14` }} />
+        </Fragment>);
+        if (fx.type === "envchange") return (<div key={fx.id} style={{ position:"absolute", inset:0, animation:"envFlash 1.5s ease-out forwards", background:`${fx.color||"#4a9020"}35`, pointerEvents:"none", borderRadius:"inherit" }}/>);
+        if (fx.type === "attackImpact") return (<Fragment key={fx.id}>
+          <div style={{ position:"absolute", top:"50%", left:"50%", width:120, height:120, borderRadius:"50%", animation:"vfxRingBurst 0.4s ease-out forwards", border:"3px solid #ff804088" }} />
+          <div style={{ position:"absolute", inset:0, animation:"vfxHitFlash 0.25s ease-out forwards", background:"rgba(255,100,0,0.12)" }} />
+        </Fragment>);
         return null;
       })}
     </div>
@@ -622,7 +637,7 @@ function Token({ c, selected, isTarget, canSelect, onClick, onRightClick, animTy
   const opac = (c.hasAttacked && !isTarget) ? 0.45 : 1;
   const kws = KW.filter((k) => (c.keywords || []).includes(k.name));
   return (
-    <div onClick={onClick} onContextMenu={(e) => { e.preventDefault(); if (onRightClick) onRightClick(); }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ width: 110, height: 152, cursor: (canSelect || isTarget) ? "pointer" : "default", userSelect: "none", border: `2px solid ${selected ? "#f0d840" : isTarget && hov ? "#e84040" : hov && canSelect ? c.border + "aa" : c.border + "55"}`, borderRadius: 10, overflow: "hidden", opacity: opac, boxShadow: selected ? `0 0 20px #f0d84066` : hov ? `0 6px 18px ${c.border}44` : "none", transform: animType ? "none" : selected ? "translateY(-8px)" : hov ? "translateY(-4px)" : "none", animation: animType === "attacking" ? "cardLunge 0.35s ease-out" : animType === "hit" ? "cardHit 0.4s ease-out" : animType === "dying" ? "cardDie 0.5s ease-out forwards" : animType === "summoning" ? (c.rarity==="Prismatic"?"prismaticPop 0.6s ease-out, cardSummon 0.4s ease-out":"cardSummon 0.4s ease-out") : "none", transition: animType ? "none" : "all .18s", position: "relative" }}>
+    <div onClick={onClick} onContextMenu={(e) => { e.preventDefault(); if (onRightClick) onRightClick(); }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ width: 110, height: 152, cursor: (canSelect || isTarget) ? "pointer" : "default", userSelect: "none", border: `2px solid ${selected ? "#f0d840" : animType==="hit" ? "#ff3030" : animType==="attacking" ? "#ff8030" : isTarget && hov ? "#e84040" : hov && canSelect ? c.border + "aa" : c.border + "55"}`, borderRadius: 10, overflow: "hidden", opacity: animType==="dying" ? 1 : opac, boxShadow: animType==="hit" ? "0 0 28px #ff303088, 0 0 60px #ff202044" : animType==="attacking" ? `0 0 28px ${c.border}aa` : selected ? `0 0 22px #f0d84066` : hov ? `0 6px 18px ${c.border}44` : "none", transform: animType ? "none" : selected ? "translateY(-8px)" : hov ? "translateY(-4px)" : "none", animation: animType === "attacking" ? "cardLunge 0.45s cubic-bezier(0.25,0.46,0.45,0.94)" : animType === "hit" ? "cardHit 0.5s ease-out" : animType === "dying" ? "cardDie 0.6s ease-out forwards" : animType === "summoning" ? (c.rarity==="Prismatic"?"prismaticPop 0.7s ease-out, cardSummon 0.5s ease-out":"cardSummon 0.5s ease-out") : "none", transition: animType ? "none" : "all .18s", position: "relative" }}>
       {/* Full art */}
       <div style={{ position: "absolute", inset: 0 }}><CardArt card={c} /></div>
       {/* Bottom gradient */}
@@ -1343,7 +1358,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       [me+"HP"]: ai.playerHP, [me+"Energy"]: ai.playerEnergy, [me+"Max"]: ai.maxEnergy,
       [me+"Hand"]: ai.playerHand, [me+"Deck"]: ai.playerDeck, [me+"Board"]: ai.playerBoard,
       [op+"HP"]: ai.enemyHP, [op+"Hand"]: ai.enemyHand, [op+"Deck"]: ai.enemyDeck, [op+"Board"]: ai.enemyBoard,
-      env: ai.environment, log: ai.log,
+      env: ai.environment, log: ai.log, envOwner: ai.environment?.envOwner || orig.envOwner || null,
     };
   };
   // Apply a PvP action client-side and return new DB-format game state
@@ -1357,7 +1372,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       if (card.bloodpact) { ai.playerHP -= card.cost; ai.log = [...ai.log, `Pay ${card.cost} HP: ${card.name}!`]; }
       else { ai.playerEnergy -= card.cost; }
       if (card.type === "environment") {
-        ai.environment = { ...card, owner: "player" }; ai.log = [...ai.log, `${card.name} reshapes the field!`];
+        ai.environment = { ...card, owner: "player", envOwner: role }; ai.log = [...ai.log, `${role.toUpperCase()} plays ${card.name}!`];
       } else if (card.type === "spell") {
         ai.log = [...ai.log, `Cast ${card.name}!`];
       } else {
@@ -1666,17 +1681,33 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       <div style={{ fontFamily:"'Cinzel',serif", fontSize:20, fontWeight:700, color:gs.drawAnim.first===myRole?"#78cc45":"#e05050", letterSpacing:2, marginBottom:18, animation:"pulse 0.8s infinite" }}>{gs.drawAnim.first===myRole?"YOU GO FIRST!":"OPPONENT GOES FIRST"}</div>
       <button onClick={() => { drawDismissedRef.current = true; setGs(g => ({ ...g, drawAnim: null })); }} style={{ padding:"10px 28px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, color:"#1a1000", cursor:"pointer", letterSpacing:2 }}>BEGIN BATTLE</button>
     </div>)}
-    {/* Turn banner */}
-    {turnBanner && (<div style={{ position:"fixed", top:"44%", left:"50%", transform:"translate(-50%,-50%)", zIndex:300, pointerEvents:"none", animation:"turnBannerIn 1.4s ease-out forwards" }}><div style={{ background:turnBanner==="YOUR TURN"?"linear-gradient(135deg,rgba(30,70,10,0.97),rgba(20,50,8,0.97))":"linear-gradient(135deg,rgba(60,15,15,0.97),rgba(40,8,8,0.97))", border:"2px solid "+(turnBanner==="YOUR TURN"?"#78cc45":"#cc4848"), borderRadius:14, padding:"16px 42px", fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:turnBanner==="YOUR TURN"?"#78cc45":"#e05050", letterSpacing:4, whiteSpace:"nowrap", boxShadow:"0 8px 40px "+(turnBanner==="YOUR TURN"?"#78cc4555":"#cc484855") }}>{turnBanner}</div></div>)}
-    {/* Turn banner */}
-    {!gs.winner && (<div style={{ textAlign:"center", padding:"6px 0 2px", fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, letterSpacing:3, color: isMyTurn ? "#78cc45" : "#e8c060", animation: "fadeIn 0.3s" }}>{isMyTurn ? "YOUR TURN" : `${opponentName || "OPPONENT"}'S TURN`}{syncing && <span style={{ fontSize:8, color:"#806040", marginLeft:8 }}>syncing...</span>}</div>)}
+    {/* Fullscreen turn banner — animated center overlay */}
+    {turnBanner && (<div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, display:"flex", alignItems:"center", justifyContent:"center", zIndex:300, pointerEvents:"none" }}>
+      <div style={{ animation:"turnBannerIn 1.4s ease-out forwards", display:"flex", flexDirection:"column", alignItems:"center", gap:10 }}>
+        <div style={{ background:turnBanner==="YOUR TURN"?"linear-gradient(135deg,rgba(20,60,8,0.97),rgba(10,40,5,0.97))":"linear-gradient(135deg,rgba(60,10,10,0.97),rgba(40,5,5,0.97))", border:`2px solid ${turnBanner==="YOUR TURN"?"#78cc45":"#cc4848"}`, borderRadius:16, padding:"18px 56px", fontFamily:"'Cinzel',serif", fontSize:28, fontWeight:900, color:turnBanner==="YOUR TURN"?"#78cc45":"#e05050", letterSpacing:6, whiteSpace:"nowrap", boxShadow:`0 0 60px ${turnBanner==="YOUR TURN"?"#78cc4555":"#cc484855"}, 0 8px 40px rgba(0,0,0,0.8)`, textShadow:`0 0 30px ${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"}` }}>
+          {turnBanner}
+        </div>
+        {turnBanner==="YOUR TURN" && <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#78cc4599", letterSpacing:4 }}>CHOOSE YOUR ACTION</div>}
+        {turnBanner==="OPPONENT'S TURN" && <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#cc484899", letterSpacing:4 }}>WAIT FOR OPPONENT</div>}
+      </div>
+    </div>)}
+    {/* Inline turn status bar */}
+    {!gs.winner && (<div style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"5px 0 3px", gap:10 }}>
+      <div style={{ width:6, height:6, borderRadius:"50%", background:isMyTurn?"#78cc45":"#e8c060", boxShadow:`0 0 8px ${isMyTurn?"#78cc45":"#e8c060"}`, animation:"pulse 1.5s infinite", flexShrink:0 }} />
+      <span style={{ fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, letterSpacing:3, color:isMyTurn?"#78cc45":"#e8c060" }}>{isMyTurn ? "YOUR TURN" : `${(opponentName||"OPPONENT").toUpperCase()}'S TURN`}</span>
+      {syncing && <span style={{ fontSize:8, color:"#806040", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>SYNCING...</span>}
+    </div>)}
     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-      <div style={{ display:"flex", gap:6 }}>
+      <div style={{ display:"flex", gap:6, alignItems:"center" }}>
         <button onClick={onExit} style={{ padding:"7px 14px", background:"transparent", border:"1px solid #3a2c10", borderRadius:7, color:"#806040", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer" }}>EXIT</button>
         {!gs?.winner && <button onClick={()=>setForfeitConfirm(true)} style={{ padding:"7px 14px", background:"transparent", border:"1px solid #6a1010", borderRadius:7, color:"#804040", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer" }}>FORFEIT</button>}
+        <button onClick={()=>{ const el=document.documentElement; if(!document.fullscreenElement){el.requestFullscreen?.();}else{document.exitFullscreen?.();} }} style={{ padding:"7px 10px", background:"transparent", border:"1px solid #2a2010", borderRadius:7, color:"#605040", fontFamily:"'Cinzel',serif", fontSize:11, cursor:"pointer" }} title="Toggle Fullscreen">⛶</button>
       </div>
-      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:16, fontWeight:700, color:"#e8c060", margin:0 }}>PvP Battle</h2>
-      {isMyTurn && !gs.winner ? <TurnTimer key={timerKey} active={true} onExpire={endTurn} /> : <div style={{ width:110 }} />}
+      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:16, fontWeight:700, color:"#e8c060", margin:0, letterSpacing:2 }}>⚔ PvP BATTLE ⚔</h2>
+      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+        {syncing && <button onClick={async()=>{ setSyncing(false); const {data}=await supabase.from("matches").select("game_state").eq("id",matchId).single(); if(data?.game_state)setGs(data.game_state); }} style={{ padding:"5px 12px", background:"rgba(232,192,96,0.1)", border:"1px solid #e8c06055", borderRadius:7, color:"#e8c060", fontFamily:"'Cinzel',serif", fontSize:8, cursor:"pointer", animation:"pulse 1s infinite" }}>↻ RECONNECT</button>}
+        {isMyTurn && !gs.winner ? <TurnTimer key={timerKey} active={true} onExpire={endTurn} /> : <div style={{ width:110 }} />}
+      </div>
     </div>
     {gs.winner && (<div style={{ textAlign:"center", background: myWon?"linear-gradient(135deg,#060e04,#0e0c08)":"linear-gradient(135deg,#120404,#0e0c08)", border:`1px solid ${myWon?"#4a9020":"#b83030"}`, borderRadius:14, padding:36, marginBottom:20, animation:"fadeIn 0.5s" }}>
       <div style={{ fontSize:56, marginBottom:10 }}>{myWon?"✨":"💀"}</div>
@@ -1689,18 +1720,18 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       <div style={{ display:"flex", flexDirection:"column", minHeight:600 }}>
         <BattleChat user={user} aiMode={false} matchId={matchId} />
       </div>
-      <div style={{ background: envTheme?envTheme.bg:"#1e1c14", border:`1px solid ${envTheme?envTheme.glow+"44":"#2e2c18"}`, borderRadius:14, overflow:"hidden", position:"relative", transition:"background 1.5s ease, border-color 1s ease" }}>
+      <div style={{ background:"#1e1c14", border:`1px solid ${envTheme?envTheme.glow+"44":"#2e2c18"}`, borderRadius:14, overflow:"hidden", position:"relative", transition:"border-color 1s ease" }}>
         <VFXOverlay effects={vfx.effects} />
-        {/* Environment particles */}
-        {envTheme && <div style={{ position:"absolute", inset:0, pointerEvents:"none", zIndex:1 }}><FloatingParticles count={20} color={envTheme.particle} speed={0.6} /></div>}
-        {/* Environment banner */}
-        {gs.env && (<div style={{ padding:"7px 14px", background:`${gs.env.border}15`, borderBottom:`1px solid ${gs.env.border}33`, display:"flex", alignItems:"center", gap:10, position:"relative", zIndex:2, animation:"slideDown 0.4s ease-out" }}>
-          <div style={{ width:6, height:6, borderRadius:"50%", background:gs.env.border, boxShadow:`0 0 8px ${gs.env.border}88`, animation:"pulse 2s infinite" }} />
+        {/* Environment banner — shows who played it */}
+        {gs.env && (<div style={{ padding:"7px 14px", background:`${gs.env.border}18`, borderBottom:`1px solid ${gs.env.border}44`, display:"flex", alignItems:"center", gap:10, position:"relative", zIndex:2, animation:"slideDown 0.4s ease-out" }}>
+          <div style={{ width:6, height:6, borderRadius:"50%", background:gs.env.border, boxShadow:`0 0 10px ${gs.env.border}`, animation:"pulse 2s infinite", flexShrink:0 }} />
           <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:gs.env.border, fontWeight:700 }}>{gs.env.name}</span>
           <span style={{ fontSize:9, color:"#a09068", flex:1 }}>{gs.env.ability}</span>
+          {gs.envOwner && <span style={{ fontSize:8, color:gs.envOwner===myRole?"#78cc45":"#e05050", fontFamily:"'Cinzel',serif", fontWeight:700, letterSpacing:1, flexShrink:0 }}>{gs.envOwner===myRole?"YOU":"OPP"} PLAYED</span>}
         </div>)}
-        {/* Opponent zone */}
-        <div style={{ background:"rgba(180,40,40,0.09)", borderBottom:"1px solid #3a1818", padding:"10px 14px", position:"relative", zIndex:2 }}>
+        {/* Opponent zone — env affects this half if opponent owns it */}
+        <div style={{ background: envTheme && gs.envOwner && gs.envOwner!==myRole ? envTheme.bg : "rgba(180,40,40,0.09)", borderBottom:"1px solid #3a1818", padding:"10px 14px", position:"relative", zIndex:2, transition:"background 1.5s ease" }}>
+          {envTheme && gs.envOwner && gs.envOwner!==myRole && <div style={{ position:"absolute", inset:0, pointerEvents:"none", zIndex:1 }}><FloatingParticles count={envTheme.pCount||20} color={envTheme.particle} speed={envTheme.pSpeed||0.6} shape={envTheme.pShape||"circle"} direction={envTheme.pDir||"up"} /></div>}
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               <div style={{ width:28, height:28, borderRadius:"50%", background:"linear-gradient(135deg,#3a0c0c,#200808)", border:"2px solid #a0202044", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:"#cc6666", fontFamily:"'Cinzel',serif", fontWeight:700 }}>
@@ -1726,9 +1757,10 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
           {attCard?(<button onClick={ai.enemyBoard.length===0?atkFace:undefined} style={{ padding:"5px 16px", background:ai.enemyBoard.length===0?"linear-gradient(135deg,#6a0808,#a01010)":"rgba(255,255,255,0.04)", border:`1px solid ${ai.enemyBoard.length===0?"#e04040":"#2a1a10"}`, borderRadius:20, color:ai.enemyBoard.length===0?"#ffaaaa":"#604030", fontFamily:"'Cinzel',serif", fontSize:9, cursor:ai.enemyBoard.length===0?"pointer":"default" }}>{ai.enemyBoard.length===0?"STRIKE HERO":"SELECT TARGET"}</button>):(<span style={{ fontSize:9, color:envTheme?envTheme.glow+"88":"#241a08", letterSpacing:3, fontFamily:"'Cinzel',serif" }}>TURN {gs.turn}</span>)}
           <div style={{ flex:1, height:1, background:"linear-gradient(to left,transparent,#382e18)" }}/>
         </div>
-        {/* My zone */}
-        <div style={{ background:"rgba(40,100,20,0.09)", padding:"10px 14px", position:"relative", zIndex:2 }}>
-          <div style={{ fontSize:8, color:"#1e3010", fontFamily:"'Cinzel',serif", letterSpacing:3, marginBottom:4, textAlign:"center", fontWeight:700 }}>YOUR FIELD</div>
+        {/* My zone — env affects this half if I own it */}
+        <div style={{ background: envTheme && gs.envOwner && gs.envOwner===myRole ? envTheme.bg : "rgba(40,100,20,0.09)", padding:"10px 14px", position:"relative", zIndex:2, transition:"background 1.5s ease" }}>
+          {envTheme && gs.envOwner && gs.envOwner===myRole && <div style={{ position:"absolute", inset:0, pointerEvents:"none", zIndex:1 }}><FloatingParticles count={envTheme.pCount||20} color={envTheme.particle} speed={envTheme.pSpeed||0.6} shape={envTheme.pShape||"circle"} direction={envTheme.pDir||"up"} /></div>}
+          <div style={{ fontSize:8, color:"#1e3010", fontFamily:"'Cinzel',serif", letterSpacing:3, marginBottom:4, textAlign:"center", fontWeight:700, position:"relative", zIndex:2 }}>YOUR FIELD</div>
           <div style={{ minHeight:105, display:"flex", gap:8, flexWrap:"wrap", justifyContent:"center", alignItems:"center", marginBottom:10 }}>
             {ai.playerBoard.length===0?<span style={{ fontSize:10, color:"#181408", letterSpacing:3 }}>{isMyTurn?"PLAY A CARD":"WAITING..."}</span>:ai.playerBoard.map((c)=>(<Token key={c.uid} c={resolveCardArt(c,myRole==="p1"?gs?.p1Arts||{}:gs?.p2Arts||{})} animType={animUids[c.uid]} selected={attacker===c.uid} isTarget={false} canSelect={isMyTurn&&c.canAttack&&!c.hasAttacked&&!syncing} onClick={()=>selectAtt(c)} onRightClick={()=>setPreviewCard(c)}/>))}
           </div>
@@ -2559,16 +2591,25 @@ function HomeScreen({ setTab, user }) {
       </div>
     </section>
 
-    {/* Card showcase strip */}
-    <section style={{ background:"linear-gradient(180deg,rgba(0,0,0,0.6) 0%,rgba(10,8,4,0.95) 100%)", borderTop:"1px solid #2a2010", padding:"32px 28px 24px", overflow:"hidden" }}>
+    {/* Card showcase strip — alt art spotlight */}
+    <section style={{ background:"linear-gradient(180deg,rgba(0,0,0,0.7) 0%,rgba(8,6,4,0.98) 100%)", borderTop:"1px solid #2a2010", padding:"36px 28px 28px", overflow:"hidden" }}>
       <div style={{ maxWidth:1100, margin:"0 auto" }}>
-        <div style={{ textAlign:"center", fontFamily:"'Cinzel',serif", fontSize:9, color:"#604838", letterSpacing:4, marginBottom:20, fontWeight:700 }}>CARD SHOWCASE</div>
-        <div style={{ display:"flex", gap:16, justifyContent:"center", flexWrap:"nowrap", overflowX:"auto", paddingBottom:8 }}>
-          {POOL.filter(c => c.rarity === "Legendary" || c.rarity === "Epic").slice(0, 6).map((c, i) => (
-            <div key={c.id} style={{ flexShrink:0, animation:`cardReveal 0.5s ease-out ${i*0.1}s both` }}>
-              <Card card={c} size="sm" animDelay={i*0.08} />
-            </div>
-          ))}
+        <div style={{ textAlign:"center", marginBottom:22 }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#604838", letterSpacing:4, fontWeight:700 }}>ANIME ISLAND ALT ART SHOWCASE</div>
+          <div style={{ fontSize:9, color:"#3a2820", marginTop:4 }}>Collect exclusive alt arts from the store</div>
+        </div>
+        <div style={{ display:"flex", gap:14, justifyContent:"center", flexWrap:"nowrap", overflowX:"auto", paddingBottom:8 }}>
+          {Object.entries(ALT_ARTS).filter(([id, arts]) => arts.some(a=>a.setId==="anime_island")).slice(0,7).map(([cardId, arts], i) => {
+            const baseCard = POOL.find(c=>c.id===cardId);
+            const altArt = arts.find(a=>a.setId==="anime_island");
+            if (!baseCard || !altArt) return null;
+            const displayCard = { ...baseCard, imageUrl: altArt.imageUrl };
+            return (
+              <div key={cardId} style={{ flexShrink:0, animation:`cardReveal 0.5s ease-out ${i*0.09}s both`, filter:`drop-shadow(0 8px 24px ${baseCard.border}55)` }}>
+                <Card card={displayCard} size="sm" />
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
@@ -2926,6 +2967,11 @@ export default function App() {
       @keyframes starTwinkle{0%,100%{opacity:0.2}50%{opacity:0.9}}
       @keyframes floatBadge{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
       @keyframes dupeToast{0%{opacity:0;transform:translateY(20px) scale(0.8)}15%{opacity:1;transform:translateY(0) scale(1)}75%{opacity:1}100%{opacity:0;transform:translateY(-30px) scale(0.9)}}
+      @keyframes vfxHitFlash{0%{opacity:0}10%{opacity:1}100%{opacity:0}}
+      @keyframes vfxRingBurst{0%{opacity:0.9;transform:translate(-50%,-50%) scale(0.1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
+      @keyframes vfxSpellFlash{0%{opacity:0}15%{opacity:1}100%{opacity:0}}
+      @keyframes cardLunge{0%{transform:translateY(0) scale(1)}30%{transform:translateY(-44px) scale(1.1) rotate(-3deg)}55%{transform:translateY(-36px) scale(1.06) rotate(-1deg)}100%{transform:translateY(0) scale(1) rotate(0deg)}}
+      @keyframes cardHit{0%{transform:translate(0,0) rotate(0deg);filter:none}8%{transform:translate(-14px,6px) rotate(-4deg);filter:brightness(5) saturate(0) drop-shadow(0 0 18px #ff1010)}22%{transform:translate(12px,5px) rotate(3deg);filter:brightness(3.5) saturate(0.1) drop-shadow(0 0 12px #ff2020)}40%{transform:translate(-8px,3px) rotate(-2deg);filter:brightness(2.5) drop-shadow(0 0 8px #ff3030)}58%{transform:translate(6px,1px) rotate(1deg);filter:brightness(1.8)}75%{transform:translate(-4px,0) rotate(0deg);filter:brightness(1.2)}100%{transform:translate(0,0) rotate(0deg);filter:none}}
       @media(max-width:768px){
         nav{height:60px!important;padding:0 6px!important}
         nav button{padding:6px 8px!important;min-width:44px!important}
