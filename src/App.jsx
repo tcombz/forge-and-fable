@@ -1641,9 +1641,16 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         const { data: fresh } = await supabase.from("matches").select("game_state").eq("id", matchId).single();
         if (fresh?.game_state) { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } setGs(fresh.game_state); }
       };
-      // Fast broadcast channel — opponent sends this after each action, much faster than postgres_changes
+      // Fast broadcast — use embedded gs if present to skip the DB re-fetch round-trip
       pvpBcRef.current = supabase.channel("pvp_bc_" + matchId)
-        .on("broadcast", { event: "updated" }, fetchFresh)
+        .on("broadcast", { event: "updated" }, (msg) => {
+          if (msg?.payload?.gs) {
+            if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+            setGs(msg.payload.gs);
+          } else {
+            fetchFresh();
+          }
+        })
         .subscribe();
       // postgres_changes as reliable fallback
       channel = supabase.channel("pvp_" + matchId)
@@ -1803,9 +1810,10 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     setSyncing(true); setAttacker(null);
     try {
       const newGs = applyPvpAction(gs, action, myRole, vfx);
+      setGs(newGs); // optimistic — show result immediately, don't wait for DB
       await supabase.from("matches").update({ game_state: newGs }).eq("id", matchId);
-      setGs(newGs);
-      if (pvpBcRef.current) pvpBcRef.current.send({ type:"broadcast", event:"updated", payload:{} });
+      // Embed full gs in broadcast so opponent applies state immediately without re-fetching
+      if (pvpBcRef.current) pvpBcRef.current.send({ type:"broadcast", event:"updated", payload:{ gs: newGs } });
     } catch (err) {
       console.error("PvP action failed:", err);
     }
@@ -1843,7 +1851,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     aiOld.enemyBoard.forEach(c => { if (!aiNew.enemyBoard.find(n => n.uid === c.uid)) dyingUids[c.uid] = "dying"; });
     if (Object.keys(dyingUids).length > 0) { SFX.play("kill"); setAnimUids(p => ({ ...p, ...dyingUids })); await new Promise(r => setTimeout(r, 500)); }
     setSyncing(true); setAttacker(null);
-    try { await supabase.from("matches").update({ game_state: newGs }).eq("id", matchId); setGs(newGs); if (pvpBcRef.current) pvpBcRef.current.send({ type:"broadcast", event:"updated", payload:{} }); } catch (err) { console.error("PvP action failed:", err); }
+    setGs(newGs); // optimistic
+    try { await supabase.from("matches").update({ game_state: newGs }).eq("id", matchId); if (pvpBcRef.current) pvpBcRef.current.send({ type:"broadcast", event:"updated", payload:{ gs: newGs } }); } catch (err) { console.error("PvP action failed:", err); }
     setSyncing(false);
     await new Promise(r => setTimeout(r, 200));
     setAnimUids({});
@@ -1871,10 +1880,10 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     const op = myRole === "p1" ? "p2" : "p1";
     const newGs = { ...gs, winner: op, log: [...(gs.log||[]).slice(-20), `${user?.name||"Player"} forfeited.`] };
     setForfeitConfirm(false);
+    setGs(newGs); // optimistic
     try {
       await supabase.from("matches").update({ game_state: newGs }).eq("id", matchId);
-      setGs(newGs);
-      if (pvpBcRef.current) pvpBcRef.current.send({ type:"broadcast", event:"updated", payload:{} });
+      if (pvpBcRef.current) pvpBcRef.current.send({ type:"broadcast", event:"updated", payload:{ gs: newGs } });
     } catch (err) { console.error("Forfeit failed:", err); }
     // Save FF to match history (counts as loss for ranked)
     if (onUpdateUser && user) {
@@ -2944,10 +2953,10 @@ function HomeScreen({ setTab, user }) {
           </div>)}
           {!user && (<div style={{ padding:"16px 22px", background:"rgba(232,192,96,0.06)", border:"1px solid #e8c06033", borderRadius:10, fontSize:12, color:"#a09060", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>Sign in to start your journey ⚔</div>)}
         </div>
-        {/* RIGHT: Featured card */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, animation: entered ? "slideInRight 0.8s ease-out" : undefined }}>
+        {/* RIGHT: Book teaser + featured card */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, animation: entered ? "slideInRight 0.8s ease-out" : undefined }}>
+          <ForgeAndFableTeaser inline={true} />
           <div style={{ position: "relative" }}>
-            {/* Outer nebula glow */}
             <div style={{ position: "absolute", inset: -40, background: `radial-gradient(circle,${HOME_CARDS[active]?.border || "#9060ff"}30,rgba(60,20,120,0.2) 50%,transparent 70%)`, transition: "background 1.2s ease", pointerEvents: "none", borderRadius:"50%" }} />
             <div style={{ position: "absolute", inset: -10, background: `radial-gradient(circle,${HOME_CARDS[active]?.border || "#9060ff"}22,transparent 70%)`, transition: "background 1.2s ease", pointerEvents: "none" }} />
             {HOME_CARDS[active] && <Card card={HOME_CARDS[active]} size="lg" key={HOME_CARDS[active].id + active} />}
@@ -3134,9 +3143,47 @@ function GuideScreen() {
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 26 }}>
       {[{ n: "1", t: "Opening Draw", d: "Both sides draw. Higher cost goes first.", c: "#e8c060" }, { n: "2", t: "Environments", d: "Play environment cards to reshape the battlefield with visual effects and ongoing abilities.", c: "#28a0cc" }, { n: "3", t: "Abilities", d: "Real card effects: damage, healing, buffs, draw. Spells resolve instantly.", c: "#9050d8" }, { n: "4", t: "Turn Timer", d: "45 seconds per turn. Warning at 10s. Plan fast or lose your turn!", c: "#c04810" }].map((s, i) => (<div key={s.t} style={{ background: "#121008", border: `1px solid ${s.c}28`, borderRadius: 13, padding: 22, animation: `cardReveal 0.4s ease-out ${i * 0.1}s both` }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 24, fontWeight: 900, color: s.c, marginBottom: 8 }}>{s.n}</div><div style={{ fontFamily: "'Cinzel',serif", fontSize: 14, fontWeight: 700, color: s.c, marginBottom: 8 }}>{s.t}</div><p style={{ fontSize: 12, color: "#c8b878", lineHeight: 1.75, margin: 0 }}>{s.d}</p></div>))}
     </div>
-    <div style={{ background: "#121008", border: "1px solid #242010", borderRadius: 14, padding: 24 }}>
+    <div style={{ background: "#121008", border: "1px solid #242010", borderRadius: 14, padding: 24, marginBottom: 16 }}>
       <h3 style={{ fontFamily: "'Cinzel',serif", fontSize: 15, color: "#e8c060", margin: "0 0 18px", fontWeight: 700 }}>Keywords</h3>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 10 }}>{KW.map((k) => (<div key={k.name} style={{ padding: 12, background: `${k.color}0e`, border: `1px solid ${k.color}28`, borderRadius: 9 }}><div style={{ fontSize: 16, marginBottom: 4 }}>{k.icon}</div><div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, color: k.color, marginBottom: 3, fontWeight: 700 }}>{k.name}</div><p style={{ fontSize: 10, color: "#c0a870", margin: 0, lineHeight: 1.6 }}>{k.desc}</p></div>))}</div>
+    </div>
+
+    {/* Ranked Mode section */}
+    <div style={{ background: "#0e0c14", border: "1px solid #3a2a6033", borderRadius: 14, padding: 24 }}>
+      <h3 style={{ fontFamily: "'Cinzel',serif", fontSize: 15, color: "#c080ff", margin: "0 0 6px", fontWeight: 700 }}>🏆 Ranked Mode</h3>
+      <p style={{ fontSize: 12, color: "#8060a0", margin: "0 0 20px", lineHeight: 1.7 }}>Toggle <strong style={{ color:"#c080ff" }}>RANKED</strong> in Battle Setup before queuing. Wins and losses adjust your MMR using an ELO formula. Reach higher tiers to earn your badge.</p>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))", gap: 10, marginBottom: 20 }}>
+        {[
+          { min:2000, name:"Grandmaster", color:"#ff6020", icon:"👑", desc:"Top tier. You are the myth." },
+          { min:1800, name:"Diamond",     color:"#60d8ff", icon:"💎", desc:"Elite — consistently dominant." },
+          { min:1600, name:"Platinum",    color:"#c080ff", icon:"🔮", desc:"Skilled forger. Feared." },
+          { min:1400, name:"Gold",        color:"#f0c040", icon:"🥇", desc:"Strong strategist." },
+          { min:1200, name:"Silver",      color:"#c8c8d8", icon:"🥈", desc:"Solid fundamentals." },
+          { min:1000, name:"Bronze",      color:"#c08840", icon:"🥉", desc:"Learning the forge." },
+          { min:0,    name:"Iron",        color:"#808080", icon:"⚔",  desc:"Every legend starts here." },
+        ].map(t => (
+          <div key={t.name} style={{ padding:"12px 14px", background:`${t.color}0a`, border:`1px solid ${t.color}33`, borderRadius:9, display:"flex", alignItems:"flex-start", gap:10 }}>
+            <span style={{ fontSize:20, flexShrink:0 }}>{t.icon}</span>
+            <div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:t.color, fontWeight:700, marginBottom:2 }}>{t.name} <span style={{ fontWeight:400, opacity:0.6, fontSize:9 }}>({t.min}+ MMR)</span></div>
+              <div style={{ fontSize:10, color:"#907060", lineHeight:1.5 }}>{t.desc}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+        {[
+          { icon:"📊", title:"ELO Formula", body:"Win vs a higher-rated opponent = bigger gain. Lose to a lower-rated = bigger drop. K-factor 24." },
+          { icon:"🔄", title:"Starting MMR", body:"All players begin at 1000. No MMR is gained or lost in Casual mode — only Ranked games count." },
+          { icon:"🏅", title:"Ranked Wins / Losses", body:"Tracked separately from casual. Displayed on your profile badge along with current MMR." },
+          { icon:"⚠", title:"Forfeit = Loss", body:"Leaving a Ranked match early counts as a full loss. Your MMR drops as if you lost normally." },
+        ].map(r => (
+          <div key={r.title} style={{ padding:"12px 14px", background:"rgba(255,255,255,0.02)", border:"1px solid #2a2040", borderRadius:9 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#c0a0e0", fontWeight:700, marginBottom:4 }}>{r.icon} {r.title}</div>
+            <p style={{ fontSize:10, color:"#806888", margin:0, lineHeight:1.6 }}>{r.body}</p>
+          </div>
+        ))}
+      </div>
     </div>
   </div>);
 }
@@ -3957,23 +4004,29 @@ export default function App() {
                 <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#e8a020", letterSpacing:2, marginBottom:7, fontWeight:700, borderBottom:"1px solid #2a2010", paddingBottom:5 }}>⚔ RECENT BATTLES</div>
                 {(user.matchHistory||[]).length === 0
                   ? <div style={{ fontSize:11, color:"#504030", fontStyle:"italic", padding:"6px 0", textAlign:"center" }}>No battles yet — fight someone!</div>
-                  : <div style={{ maxHeight:200, overflowY:"auto", paddingRight:2, display:"flex", flexDirection:"column", gap:3 }}>
+                  : <div style={{ maxHeight:220, overflowY:"auto", paddingRight:2, display:"flex", flexDirection:"column", gap:4 }}>
                       {(user.matchHistory||[]).map((m,i) => {
-                        const won = m.result==="W";
-                        const ff = m.result==="FF" || m.forfeit;
+                        const won = m.result==="W"; const ff = m.result==="FF" || m.forfeit;
                         const rc = won?"#78cc45":ff?"#e8a020":"#e05050";
+                        const oppInitials = (m.opponent||"??").slice(0,2).toUpperCase();
                         return (
-                          <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"5px 8px", background:"rgba(0,0,0,0.35)", borderRadius:7, borderLeft:`3px solid ${rc}` }}>
-                            <div style={{ width:24, height:24, borderRadius:"50%", overflow:"hidden", border:`1px solid ${rc}55`, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", background:"#1a1408", fontSize:7, color:rc, fontFamily:"'Cinzel',serif", fontWeight:700 }}>
+                          <div key={i} style={{ display:"flex", alignItems:"center", gap:7, padding:"6px 8px", background:"rgba(0,0,0,0.4)", borderRadius:8, border:`1px solid ${rc}22` }}>
+                            {/* My avatar */}
+                            <div style={{ width:28, height:28, borderRadius:"50%", overflow:"hidden", border:`1.5px solid ${rc}66`, flexShrink:0, background:"#1a1408", display:"flex", alignItems:"center", justifyContent:"center", fontSize:7, color:"#e8c060", fontFamily:"'Cinzel',serif", fontWeight:700 }}>
                               {user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (user.name||"?").slice(0,2).toUpperCase()}
                             </div>
+                            <span style={{ fontSize:8, color:"#504030", fontFamily:"'Cinzel',serif", flexShrink:0 }}>VS</span>
+                            {/* Opponent avatar placeholder */}
+                            <div style={{ width:28, height:28, borderRadius:"50%", border:`1.5px solid #40302055`, flexShrink:0, background:"#0e0c08", display:"flex", alignItems:"center", justifyContent:"center", fontSize:7, color:"#604030", fontFamily:"'Cinzel',serif", fontWeight:700 }}>{oppInitials}</div>
+                            {/* Opponent name + meta */}
                             <div style={{ flex:1, minWidth:0 }}>
-                              <div style={{ fontSize:10, color:"#c0a870", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>vs {m.opponent||"Unknown"}</div>
-                              <div style={{ fontSize:7, color:"#504030" }}>{m.turns||0}T · {m.date ? new Date(m.date).toLocaleDateString() : ""}</div>
+                              <div style={{ fontSize:10, color:"#c0a870", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{m.opponent||"Unknown"}</div>
+                              <div style={{ fontSize:7, color:"#3a2a10" }}>{m.turns||0}T · {m.date ? new Date(m.date).toLocaleDateString() : ""}</div>
                             </div>
+                            {/* Result + MMR */}
                             <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:2, flexShrink:0 }}>
-                              <span style={{ fontSize:9, fontWeight:900, fontFamily:"'Cinzel',serif", color:rc, padding:"2px 6px", background:`${rc}14`, borderRadius:5, border:`1px solid ${rc}33` }}>{won?"WIN":ff?"FF":"LOSS"}</span>
-                              {m.ranked && m.ratingDelta != null && <span style={{ fontSize:7, color:m.ratingDelta>=0?"#78cc45":"#e05050", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>{m.ratingDelta>=0?"+":""}{m.ratingDelta} MMR</span>}
+                              <span style={{ fontSize:9, fontWeight:900, fontFamily:"'Cinzel',serif", color:rc, padding:"2px 7px", background:`${rc}18`, borderRadius:5, border:`1px solid ${rc}44`, letterSpacing:1 }}>{won?"WIN":ff?"FF":"LOSS"}</span>
+                              {m.ranked && m.ratingDelta != null && <span style={{ fontSize:7, color:m.ratingDelta>=0?"#78cc45":"#e05050", fontFamily:"'Cinzel',serif" }}>{m.ratingDelta>=0?"+":""}{m.ratingDelta} MMR</span>}
                             </div>
                           </div>
                         );
