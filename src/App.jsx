@@ -1219,16 +1219,6 @@ function DeckBuilderModal({ user, onSave, onClose }) {
 // ═══ PVP BATTLE SCREEN ═══════════════════════════════════════════════
 
 // ═══ EMOTES ══════════════════════════════════════════════════════════════════
-const EMOTES = [
-  { id:"gg",   emoji:"👍", text:"GG!" },
-  { id:"nice", emoji:"😎", text:"Nice move!" },
-  { id:"lol",  emoji:"😂", text:"Ha!" },
-  { id:"fire", emoji:"🔥", text:"Let's go!" },
-  { id:"wow",  emoji:"😮", text:"Wow!" },
-  { id:"hmm",  emoji:"🤔", text:"Hmm..." },
-  { id:"oops", emoji:"💀", text:"Oops!" },
-  { id:"wp",   emoji:"🏆", text:"Well played!" },
-];
 function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
   const { matchId, opponentName } = matchConfig;
   const [gs, setGs] = useState(null);
@@ -1237,9 +1227,6 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
   const [previewCard, setPreviewCard] = useState(null);
   const [timerKey, setTimerKey] = useState(0);
   const [syncing, setSyncing] = useState(false);
-  const [showEmotes, setShowEmotes] = useState(false);
-  const [floatingEmote, setFloatingEmote] = useState(null);
-  const emoteChRef = useRef(null);
   const wonSavedRef = useRef(false);
   const pollRef = useRef(null);
   const [animUids, setAnimUids] = useState({});
@@ -1269,6 +1256,89 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       environment: g.env, log: g.log||[]
     };
   };
+  // Convert AI state format back to DB format
+  const fromAI = (ai, role, orig) => {
+    const me = role, op = role === "p1" ? "p2" : "p1";
+    return {
+      ...orig,
+      turn: ai.turn,
+      phase: ai.phase === "player" ? role : op,
+      winner: ai.winner === "player" ? role : (ai.winner === "enemy" ? op : null),
+      [me+"HP"]: ai.playerHP, [me+"Energy"]: ai.playerEnergy, [me+"Max"]: ai.maxEnergy,
+      [me+"Hand"]: ai.playerHand, [me+"Deck"]: ai.playerDeck, [me+"Board"]: ai.playerBoard,
+      [op+"HP"]: ai.enemyHP, [op+"Hand"]: ai.enemyHand, [op+"Deck"]: ai.enemyDeck, [op+"Board"]: ai.enemyBoard,
+      env: ai.environment, log: ai.log,
+    };
+  };
+  // Apply a PvP action client-side and return new DB-format game state
+  const applyPvpAction = (gs, action, role, vfxInst) => {
+    const op = role === "p1" ? "p2" : "p1";
+    if (action.type === "play_card") {
+      let ai = toAI(gs, role);
+      const card = ai.playerHand.find(c => c.uid === action.cardUid);
+      if (!card) return gs;
+      ai = { ...ai, playerHand: ai.playerHand.filter(c => c.uid !== card.uid), log: [...ai.log.slice(-20)] };
+      if (card.bloodpact) { ai.playerHP -= card.cost; ai.log = [...ai.log, `Pay ${card.cost} HP: ${card.name}!`]; }
+      else { ai.playerEnergy -= card.cost; }
+      if (card.type === "environment") {
+        ai.environment = { ...card, owner: "player" }; ai.log = [...ai.log, `${card.name} reshapes the field!`];
+      } else if (card.type === "spell") {
+        ai.log = [...ai.log, `Cast ${card.name}!`];
+      } else {
+        const inst = { ...makeInst(card, "pb"), canAttack: (card.keywords||[]).includes("Swift"), hasAttacked: false };
+        ai.playerBoard = [...ai.playerBoard, inst]; ai.log = [...ai.log, `You play ${card.name}!`];
+        if ((card.keywords||[]).includes("Fracture") && ai.playerBoard.length < CFG.maxBoard) {
+          ai.playerBoard = [...ai.playerBoard, { ...inst, uid: uid("pf"), currentHp: Math.ceil(card.hp/2), maxHp: Math.ceil(card.hp/2), currentAtk: Math.ceil(card.atk/2), name: card.name+" Frag", keywords:[], levelUp:[], effects:[] }];
+          ai.log = [...ai.log, "Fragment enters!"];
+        }
+      }
+      ai = resolveEffects("onPlay", card, ai, "player", vfxInst);
+      return fromAI(ai, role, gs);
+    } else if (action.type === "attack_creature") {
+      let ai = toAI(gs, role);
+      const att = ai.playerBoard.find(c => c.uid === action.attackerUid);
+      const tgt = ai.enemyBoard.find(c => c.uid === action.targetUid);
+      if (!att || !tgt) return gs;
+      const av = att.currentAtk + ((att.keywords||[]).includes("Resonate") ? ai.enemyHand.length : 0);
+      let nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av;
+      let nAHP = att.currentHp - tgt.currentAtk;
+      ai.log = [...ai.log.slice(-20), `${att.name}(${av}) attacks ${tgt.name}`];
+      if (tgt.shielded) ai.log = [...ai.log, `${tgt.name} shield absorbs!`];
+      ai.enemyBoard = ai.enemyBoard.map(c => c.uid === tgt.uid ? { ...c, currentHp: nTHP, shielded: false, bleed: (c.bleed||0)+((att.keywords||[]).includes("Bleed")?1:0) } : c).filter(c => c.currentHp > 0);
+      ai.playerBoard = ai.playerBoard.map(c => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP } : c).filter(c => c.currentHp > 0);
+      if (nTHP <= 0) { ai.log = [...ai.log, `${tgt.name} destroyed!`]; ai = resolveEffects("onDeath", tgt, ai, "enemy", vfxInst); }
+      if (nAHP <= 0) { ai.log = [...ai.log, `${att.name} falls.`]; ai = resolveEffects("onDeath", att, ai, "player", vfxInst); }
+      if (ai.enemyHP <= 0) { ai.winner = "player"; ai.log = [...ai.log, "Victory!"]; }
+      return fromAI(ai, role, gs);
+    } else if (action.type === "attack_face") {
+      let ai = toAI(gs, role);
+      const att = ai.playerBoard.find(c => c.uid === action.attackerUid);
+      if (!att) return gs;
+      const dmg = att.currentAtk + ((att.keywords||[]).includes("Resonate") ? ai.enemyHand.length : 0);
+      ai.enemyHP -= dmg;
+      ai.playerBoard = ai.playerBoard.map(c => c.uid === att.uid ? { ...c, hasAttacked: true } : c);
+      ai.log = [...ai.log.slice(-20), `${att.name} deals ${dmg} direct!`];
+      if (ai.enemyHP <= 0) { ai.winner = "player"; ai.log = [...ai.log, "Victory!"]; }
+      return fromAI(ai, role, gs);
+    } else if (action.type === "end_turn") {
+      const newTurn = gs.turn + 1;
+      const newMax = Math.min(CFG.maxEnergy, newTurn + 1);
+      let s = { ...gs };
+      s[role+"Board"] = (s[role+"Board"]||[]).map(c => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter(c => c.currentHp > 0);
+      s[op+"Board"] = (s[op+"Board"]||[]).map(c => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter(c => c.currentHp > 0);
+      s[role+"Board"] = s[role+"Board"].map(c => { const lv = levelUp({ ...c, xp: c.xp+1 }); return { ...lv, canAttack: true, hasAttacked: false }; });
+      s[op+"Board"] = s[op+"Board"].map(c => ({ ...levelUp({ ...c, xp: c.xp+1 }), canAttack: true, hasAttacked: false }));
+      if ((s[op+"Deck"]||[]).length > 0 && (s[op+"Hand"]||[]).length < CFG.maxHand) {
+        s[op+"Hand"] = [...s[op+"Hand"], makeInst(s[op+"Deck"][0], op)];
+        s[op+"Deck"] = s[op+"Deck"].slice(1);
+      }
+      s.turn = newTurn; s.phase = op;
+      s[op+"Max"] = newMax; s[op+"Energy"] = newMax;
+      s.log = [...(s.log||[]).slice(-20), `Turn ${newTurn}`];
+      return s;
+    }
+    return gs;
+  };
 
 
   useEffect(() => {
@@ -1282,14 +1352,6 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       channel = supabase.channel("pvp_" + matchId)
         .on("postgres_changes", { event: "UPDATE", schema: "public", table: "matches", filter: `id=eq.${matchId}` }, (payload) => {
           if (payload.new.game_state) { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } setGs(payload.new.game_state); }
-        }).subscribe();
-      // Emote broadcast channel
-      emoteChRef.current = supabase.channel("emotes_" + matchId)
-        .on("broadcast", { event: "emote" }, ({ payload }) => {
-          if (payload.from !== user.id) {
-            setFloatingEmote(payload);
-            setTimeout(() => setFloatingEmote(null), 3500);
-          }
         }).subscribe();
       if (match.game_state) { setGs(match.game_state); return; }
       if (role === "p1") {
@@ -1319,7 +1381,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       }
     };
     setup();
-    return () => { if (channel) supabase.removeChannel(channel); if (emoteChRef.current) supabase.removeChannel(emoteChRef.current); if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } MusicCtx.play("home"); };
+    return () => { if (channel) supabase.removeChannel(channel); if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } MusicCtx.play("home"); };
   }, [matchId]);
 
   useEffect(() => { if (logRef.current) logRef.current.scrollTo({ top: 99999, behavior: "smooth" }); }, [gs?.log]);
@@ -1328,21 +1390,13 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
     if (syncing) return;
     setSyncing(true); setAttacker(null);
     try {
-      const { data, error } = await supabase.functions.invoke("pvp-action", { body: { matchId, action } });
-      if (error) throw error;
-      if (data?.game_state) setGs(data.game_state);
+      const newGs = applyPvpAction(gs, action, myRole, vfx);
+      await supabase.from("matches").update({ game_state: newGs }).eq("id", matchId);
+      setGs(newGs);
     } catch (err) {
       console.error("PvP action failed:", err);
     }
     setSyncing(false);
-  };
-
-  const sendEmote = async (emote) => {
-    setShowEmotes(false);
-    if (!emoteChRef.current) return;
-    await emoteChRef.current.send({ type: "broadcast", event: "emote", payload: { from: user.id, name: user.name, emoji: emote.emoji, text: emote.text } });
-    setFloatingEmote({ from: user.id, name: "You", emoji: emote.emoji, text: emote.text, isMine: true });
-    setTimeout(() => setFloatingEmote(null), 2000);
   };
   const isMyTurn = gs && myRole && gs.phase === myRole && !gs.winner;
 
@@ -1406,28 +1460,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
   const myWon = gs.winner === myRole;
   const oppWon = gs.winner && gs.winner !== myRole;
 
-  return (<div style={{ maxWidth:1180, margin:"0 auto", padding:"0 16px 60px" }} onClick={() => { SFX.init(); if(showEmotes)setShowEmotes(false); }}>
+  return (<div style={{ maxWidth:1180, margin:"0 auto", padding:"0 16px 60px" }} onClick={() => { SFX.init(); }}>
     {previewCard && <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />}
-    {/* Floating emote */}
-    {floatingEmote && (
-      <div style={{ position:"fixed", bottom:120, left:"50%", transform:"translateX(-50%)", zIndex:200, background: floatingEmote.isMine ? "rgba(20,30,20,0.95)" : "rgba(30,20,20,0.95)", border:`1px solid ${floatingEmote.isMine?"#4a9020":"#a02020"}`, borderRadius:16, padding:"10px 20px", textAlign:"center", animation:"fadeIn 0.2s", pointerEvents:"none", boxShadow:"0 8px 32px rgba(0,0,0,0.7)" }}>
-        <div style={{ fontSize:32 }}>{floatingEmote.emoji}</div>
-        <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color: floatingEmote.isMine?"#78cc45":"#e8c060", fontWeight:700, marginTop:4 }}>{floatingEmote.isMine?"You":floatingEmote.name}</div>
-        <div style={{ fontSize:11, color:"#c0a870", marginTop:2 }}>{floatingEmote.text}</div>
-      </div>
-    )}
-    {/* Emote panel */}
-    <div style={{ position:"fixed", bottom:16, right:16, zIndex:150 }}>
-      {showEmotes && (
-        <div style={{ position:"absolute", bottom:"100%", right:0, marginBottom:8, background:"#0e0c08", border:"1px solid #3a2810", borderRadius:12, padding:10, display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6, boxShadow:"0 8px 28px rgba(0,0,0,0.8)" }} onClick={(e)=>e.stopPropagation()}>
-          {EMOTES.map(e=>(<button key={e.id} onClick={()=>sendEmote(e)} style={{ background:"rgba(255,255,255,0.04)", border:"1px solid #2a2010", borderRadius:8, padding:"6px 8px", cursor:"pointer", textAlign:"center" }} title={e.text}>
-            <div style={{ fontSize:20 }}>{e.emoji}</div>
-            <div style={{ fontSize:8, color:"#a09060", marginTop:2, fontFamily:"'Cinzel',serif" }}>{e.text}</div>
-          </button>))}
-        </div>
-      )}
-      <button onClick={(e)=>{e.stopPropagation();setShowEmotes(v=>!v);}} style={{ width:58, height:58, borderRadius:"50%", background:showEmotes?"linear-gradient(135deg,#c89010,#f0c040)":"linear-gradient(135deg,#2a1e08,#1a1408)", border:showEmotes?"2px solid #e8c060":"2px solid #5a3810", cursor:"pointer", fontSize:26, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:showEmotes?"0 0 20px #e8c06066, 0 6px 18px rgba(0,0,0,0.8)":"0 4px 18px rgba(0,0,0,0.7)", transition:"all .2s" }}>😄</button>
-    </div>
     {/* Turn banner */}
     {!gs.winner && (<div style={{ textAlign:"center", padding:"6px 0 2px", fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, letterSpacing:3, color: isMyTurn ? "#78cc45" : "#e8c060", animation: "fadeIn 0.3s" }}>{isMyTurn ? "YOUR TURN" : `${opponentName || "OPPONENT"}'S TURN`}{syncing && <span style={{ fontSize:8, color:"#806040", marginLeft:8 }}>syncing...</span>}</div>)}
     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
@@ -1441,7 +1475,11 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       <p style={{ fontSize:13, color:"#a09070" }}>{myWon?`You defeated ${opponentName}!`:`${opponentName} wins this round.`}</p>
       <button onClick={onExit} style={{ marginTop:16, padding:"11px 28px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontWeight:700, fontSize:12, letterSpacing:2, color:"#1a1000", cursor:"pointer" }}>EXIT</button>
     </div>)}
-    <div style={{ display:"grid", gridTemplateColumns:"1fr 270px", gap:14 }}>
+    <div style={{ display:"grid", gridTemplateColumns:"250px 1fr 270px", gap:14 }}>
+      {/* Chat panel — LEFT */}
+      <div style={{ display:"flex", flexDirection:"column", minHeight:500 }}>
+        <BattleChat user={user} aiMode={false} />
+      </div>
       <div style={{ background: envTheme?envTheme.bg:"#0c0a08", border:`1px solid ${envTheme?envTheme.glow+"44":"#242010"}`, borderRadius:14, overflow:"hidden", position:"relative", transition:"background 1.5s, border-color 1s" }}>
         <VFXOverlay effects={vfx.effects} />
         {/* Opponent zone */}
