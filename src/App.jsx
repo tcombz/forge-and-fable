@@ -521,7 +521,7 @@ function Card({ card, size = "md", onClick, animDelay = 0 }) {
         </div>
         {/* Back - Forge and Fable card back */}
         <div style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", transform: "rotateY(180deg)", position: "absolute", top: 0, left: 0, width: W, height: H, borderRadius: 14, overflow: "hidden", boxShadow: "0 0 36px #c8901066, 0 8px 32px rgba(0,0,0,0.8)" }}>
-          <img src="/card-back.png" alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          <img src="/card-back.jpg" alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
         </div>
       </div>
     </div>
