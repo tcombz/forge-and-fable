@@ -36,6 +36,7 @@ const SFX = (() => {
         case "timer_warn": tone(800,"square",0.08,0,0.1); tone(800,"square",0.08,0.2,0.1); break;
         case "timer_end": [600,400,200].forEach((f,i) => tone(f,"sawtooth",0.1,i*0.1,0.2)); break;
         case "env_play": [200,300,250,400,500].forEach((f,i) => tone(f,"sine",0.06,i*0.12,0.4)); break;
+        case "prismatic": [600,900,1200,1600,2000,1600,1200].forEach((f,i) => tone(f,"sine",0.035,i*0.07,0.3)); tone(800,"sine",0.02,0.3,0.6); break;
       }
     }
   };
@@ -214,6 +215,8 @@ function VFXOverlay({ effects }) {
         if (fx.type === "heal") return (<div key={fx.id} style={{ position: "absolute", top: fx.side === "player" ? "70%" : "20%", left: "50%", transform: "translate(-50%,-50%)", animation: "vfxFloat 1s ease-out forwards", fontSize: 28, fontFamily: "'Cinzel',serif", fontWeight: 900, color: "#40ff60", textShadow: "0 0 20px #00ff44" }}>+{fx.amount}</div>);
         if (fx.type === "ability") return (<div key={fx.id} style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", animation: "vfxPulse .8s ease-out forwards", background: `radial-gradient(circle,${fx.color || "#e8c060"}44,transparent)`, width: 260, height: 260, borderRadius: "50%" }} />);
         if (fx.type === "environment") return (<div key={fx.id} style={{ position: "absolute", inset: 0, animation: "vfxEnv 2s ease-out forwards", background: `radial-gradient(ellipse at 50% 100%,${fx.color || "#4a9020"}30,transparent 70%)`, borderTop: `1px solid ${fx.color || "#4a9020"}22` }} />);
+        if (fx.type === "spell") return (<div key={fx.id} style={{ position:"absolute", top:"50%", left:"50%", width:220, height:220, borderRadius:"50%", animation:"spellCast 0.7s ease-out forwards", background:`radial-gradient(circle,${fx.color||"#c090d0"}55,${fx.color||"#c090d0"}22 50%,transparent 70%)`, border:`2px solid ${fx.color||"#c090d0"}66`, pointerEvents:"none" }}/>);
+        if (fx.type === "envchange") return (<div key={fx.id} style={{ position:"absolute", inset:0, animation:"envFlash 1.2s ease-out forwards", background:`${fx.color||"#4a9020"}28`, pointerEvents:"none" }}/>);
         return null;
       })}
     </div>
@@ -224,6 +227,8 @@ function VFXOverlay({ effects }) {
 // ═══ CARD PREVIEW MODAL ══════════════════════════════════════════════════════
 function CardPreview({ card, onClose }) {
   if (!card) return null;
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => { if (card.rarity === "Prismatic" || card.altSetId === "prismatic") SFX.play("prismatic"); }, [card.id]);
   const kws = KW.filter((k) => (card.keywords || []).includes(k.name));
   const border = card.border || "#e8c060";
   const isBP = card.bloodpact || card.region === "Bloodpact";
@@ -958,8 +963,8 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     if (g.phase !== "player" || aiThink) return;
     if (card.type === "environment") {
       if (g.envLastTurn && g.turn - g.envLastTurn < 2) return; // 2-round cooldown
-      if (card.bloodpact ? card.cost >= g.playerHP : card.cost > g.playerEnergy) return; SFX.play("env_play"); setAttacker(null); setGame((prev) => { let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= card.cost; s.log = [...s.log, `${card.name} reshapes the field!`]; } s.environment = { ...card, owner: "player" }; s.envLastTurn = prev.turn; s = resolveEffects("onPlay", card, s, "player", vfx); vfx.add("environment", { color: card.border, duration: 2000 }); return s; }); return; }
-    if (card.type === "spell") { if (card.bloodpact ? card.cost >= g.playerHP : card.cost > g.playerEnergy) return; SFX.play("ability"); setAttacker(null); setGame((prev) => { let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= card.cost; s.log = [...s.log, `Cast ${card.name}!`]; } s = resolveEffects("onPlay", card, s, "player", vfx); return s; }); return; }
+      if (card.bloodpact ? card.cost >= g.playerHP : card.cost > g.playerEnergy) return; SFX.play("env_play"); vfx.add("envchange", { color: card.border || "#40a020" }); setAttacker(null); setGame((prev) => { let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= card.cost; s.log = [...s.log, `${card.name} reshapes the field!`]; } s.environment = { ...card, owner: "player" }; s.envLastTurn = prev.turn; s = resolveEffects("onPlay", card, s, "player", vfx); vfx.add("environment", { color: card.border, duration: 2000 }); return s; }); return; }
+    if (card.type === "spell") { if (card.bloodpact ? card.cost >= g.playerHP : card.cost > g.playerEnergy) return; SFX.play("ability"); vfx.add("spell", { color: card.border || "#c090d0" }); setAttacker(null); setGame((prev) => { let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= card.cost; s.log = [...s.log, `Cast ${card.name}!`]; } s = resolveEffects("onPlay", card, s, "player", vfx); return s; }); return; }
     if (g.playerBoard.length >= CFG.maxBoard) return;
     if (card.bloodpact ? card.cost >= g.playerHP : card.cost > g.playerEnergy) return;
     SFX.play("card"); setAttacker(null);
@@ -1236,6 +1241,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
   const [floatingEmote, setFloatingEmote] = useState(null);
   const emoteChRef = useRef(null);
   const wonSavedRef = useRef(false);
+  const pollRef = useRef(null);
+  const [animUids, setAnimUids] = useState({});
   const vfx = useVFX();
   const logRef = useRef(null);
 
@@ -1274,7 +1281,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       setMyRole(role);
       channel = supabase.channel("pvp_" + matchId)
         .on("postgres_changes", { event: "UPDATE", schema: "public", table: "matches", filter: `id=eq.${matchId}` }, (payload) => {
-          if (payload.new.game_state) setGs(payload.new.game_state);
+          if (payload.new.game_state) { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } setGs(payload.new.game_state); }
         }).subscribe();
       // Emote broadcast channel
       emoteChRef.current = supabase.channel("emotes_" + matchId)
@@ -1300,10 +1307,19 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
         };
         await supabase.from("matches").update({ game_state: init }).eq("id", matchId);
         setGs(init);
+      } else {
+        // P2 polling fallback — Realtime may miss the UPDATE if P1 wrote before we subscribed
+        let attempts = 0;
+        pollRef.current = setInterval(async () => {
+          attempts++;
+          if (attempts > 25) { clearInterval(pollRef.current); pollRef.current = null; return; }
+          const { data: fresh } = await supabase.from("matches").select("game_state").eq("id", matchId).single();
+          if (fresh?.game_state) { clearInterval(pollRef.current); pollRef.current = null; setGs(fresh.game_state); }
+        }, 1200);
       }
     };
     setup();
-    return () => { if (channel) supabase.removeChannel(channel); if (emoteChRef.current) supabase.removeChannel(emoteChRef.current); MusicCtx.play("home"); };
+    return () => { if (channel) supabase.removeChannel(channel); if (emoteChRef.current) supabase.removeChannel(emoteChRef.current); if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } MusicCtx.play("home"); };
   }, [matchId]);
 
   useEffect(() => { if (logRef.current) logRef.current.scrollTo({ top: 99999, behavior: "smooth" }); }, [gs?.log]);
@@ -1337,22 +1353,34 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
     if (!canAfford) return;
     if (card.type !== "spell" && card.type !== "environment" && ai.playerBoard.length >= CFG.maxBoard) return;
     SFX.play(card.type === "environment" ? "env_play" : card.type === "spell" ? "ability" : "card");
-    if (card.type === "environment") vfx.add("environment", { color: card.border, duration: 2000 });
+    if (card.type === "environment") { vfx.add("envchange", { color: card.border || "#40a020" }); vfx.add("environment", { color: card.border, duration: 2000 }); }
+    if (card.type === "spell") vfx.add("spell", { color: card.border || "#c090d0" });
     invokeAction({ type: "play_card", cardUid: card.uid });
   };
 
   const selectAtt = (c) => { if (!isMyTurn || syncing) return; setAttacker(attacker === c.uid ? null : (c.canAttack && !c.hasAttacked ? c.uid : attacker)); };
 
-  const atkCreature = (tgt) => {
+  const atkCreature = async (tgt) => {
     if (!attacker || !isMyTurn) return;
     SFX.play("attack");
-    invokeAction({ type: "attack_creature", attackerUid: attacker, targetUid: tgt.uid });
+    const attUid = attacker;
+    setAnimUids({ [attUid]: "attacking" });
+    await new Promise(r => setTimeout(r, 220));
+    setAnimUids(p => ({ ...p, [tgt.uid]: "hit" }));
+    invokeAction({ type: "attack_creature", attackerUid: attUid, targetUid: tgt.uid });
+    await new Promise(r => setTimeout(r, 500));
+    setAnimUids({});
   };
 
-  const atkFace = () => {
+  const atkFace = async () => {
     if (!attacker || !isMyTurn) return;
     SFX.play("attack");
-    invokeAction({ type: "attack_face", attackerUid: attacker });
+    const attUid = attacker;
+    setAnimUids({ [attUid]: "attacking" });
+    await new Promise(r => setTimeout(r, 280));
+    invokeAction({ type: "attack_face", attackerUid: attUid });
+    await new Promise(r => setTimeout(r, 400));
+    setAnimUids({});
   };
 
   const endTurn = () => {
@@ -1431,7 +1459,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
             </div>
           </div>
           <div style={{ minHeight:105, display:"flex", gap:8, flexWrap:"wrap", justifyContent:"center", alignItems:"center" }}>
-            {ai.enemyBoard.length===0?<span style={{ fontSize:10, color:"#241010", letterSpacing:3 }}>---</span>:ai.enemyBoard.map((c)=>(<Token key={c.uid} c={c} isTarget={!!attacker} canSelect={false} onClick={()=>{ if(attacker)atkCreature(c); else setPreviewCard(c); }}/>))}
+            {ai.enemyBoard.length===0?<span style={{ fontSize:10, color:"#241010", letterSpacing:3 }}>---</span>:ai.enemyBoard.map((c)=>(<Token key={c.uid} c={resolveCardArt(c,{})} animType={animUids[c.uid]} isTarget={!!attacker} canSelect={false} onClick={()=>{ if(attacker)atkCreature(c); else setPreviewCard(c); }}/>))}
           </div>
         </div>
         {/* Divider */}
@@ -1443,11 +1471,11 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
         {/* My zone */}
         <div style={{ background:"rgba(40,100,20,0.04)", padding:"10px 14px" }}>
           <div style={{ minHeight:105, display:"flex", gap:8, flexWrap:"wrap", justifyContent:"center", alignItems:"center", marginBottom:10 }}>
-            {ai.playerBoard.length===0?<span style={{ fontSize:10, color:"#181408", letterSpacing:3 }}>{isMyTurn?"PLAY A CARD":"WAITING..."}</span>:ai.playerBoard.map((c)=>(<Token key={c.uid} c={c} selected={attacker===c.uid} isTarget={false} canSelect={isMyTurn&&c.canAttack&&!c.hasAttacked&&!syncing} onClick={()=>selectAtt(c)} onRightClick={()=>setPreviewCard(c)}/>))}
+            {ai.playerBoard.length===0?<span style={{ fontSize:10, color:"#181408", letterSpacing:3 }}>{isMyTurn?"PLAY A CARD":"WAITING..."}</span>:ai.playerBoard.map((c)=>(<Token key={c.uid} c={resolveCardArt(c,user?.selectedArts||{})} animType={animUids[c.uid]} selected={attacker===c.uid} isTarget={false} canSelect={isMyTurn&&c.canAttack&&!c.hasAttacked&&!syncing} onClick={()=>selectAtt(c)} onRightClick={()=>setPreviewCard(c)}/>))}
           </div>
           <div style={{ borderTop:"1px solid #181408", paddingTop:10, marginBottom:10 }}>
             <div style={{ display:"flex", gap:6, justifyContent:"center", flexWrap:"wrap" }}>
-              {ai.playerHand.map((card)=>{const cp=isMyTurn&&!syncing&&(card.type==="environment"||card.type==="spell"||ai.playerBoard.length<CFG.maxBoard)&&(card.bloodpact?card.cost<ai.playerHP:card.cost<=ai.playerEnergy);return(<HandCard key={card.uid} card={card} playable={cp} onClick={()=>playCard(card)}/>);})}
+              {ai.playerHand.map((card)=>{const cp=isMyTurn&&!syncing&&(card.type==="environment"||card.type==="spell"||ai.playerBoard.length<CFG.maxBoard)&&(card.bloodpact?card.cost<ai.playerHP:card.cost<=ai.playerEnergy);return(<HandCard key={card.uid} card={resolveCardArt(card,user?.selectedArts||{})} playable={cp} onClick={()=>playCard(card)}/>);})}
             </div>
           </div>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
@@ -1607,7 +1635,14 @@ function MatchmakingScreen({ user, onMatch, onCancel }) {
             return;
           }
         } catch (_) {}
-        if (activeRef.current && phaseRef.current === 'waiting') pollTimerRef.current = setTimeout(doPoll, 1500);
+        // Fallback: check if our row was already matched (Realtime may have missed the UPDATE)
+        if (activeRef.current && phaseRef.current === 'waiting') {
+          try {
+            const { data: row } = await supabase.from('matchmaking').select('status,match_id,opponent_id,opponent_name').eq('id', rowId).single();
+            if (row?.status === 'matched' && activeRef.current) { transitionMatched(row); return; }
+          } catch (_) {}
+          pollTimerRef.current = setTimeout(doPoll, 1500);
+        }
       };
       pollTimerRef.current = setTimeout(doPoll, 1000);
       // 5-minute queue timeout
@@ -2018,6 +2053,7 @@ function CollectionScreen({ user, onUpdateUser }) {
   const [search, setSearch] = useState("");
   const [regFilter, setRegFilter] = useState("all");
   const [artPicker, setArtPicker] = useState(null);
+  const [previewCard, setPreviewCard] = useState(null);
   const [showDeckBuilder, setShowDeckBuilder] = useState(false);
   const decks = user?.decks || [];
   const saveDeck = async (deck) => { const newDecks = [...decks, deck]; await onUpdateUser({ decks: newDecks }); };
@@ -2044,7 +2080,7 @@ function CollectionScreen({ user, onUpdateUser }) {
     const displayCard = resolveCardArt(card, selectedArts);
     const isOpen = artPicker === card.id;
     return (
-      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6, position:"relative" }}>
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6, position:"relative" }} onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewCard(displayCard); }}>
         <Card card={displayCard} size="sm" animDelay={i * 0.04} />
         {alts.length > 0 && (
           <div style={{ position:"relative" }}>
@@ -2096,6 +2132,7 @@ function CollectionScreen({ user, onUpdateUser }) {
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px 60px" }} onClick={() => { if(artPicker) setArtPicker(null); }}>
+      {previewCard && <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />}
       {showDeckBuilder && <DeckBuilderModal user={user} onSave={saveDeck} onClose={() => setShowDeckBuilder(false)} />}
       {/* Header row: title + deck builder CTA */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
@@ -2484,9 +2521,12 @@ export default function App() {
       @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
       @keyframes turnBannerIn{0%{opacity:0;transform:translate(-50%,-50%) scale(0.7)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}25%{transform:translate(-50%,-50%) scale(1)}75%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.1)}}
       @keyframes cardLunge{0%{transform:translateY(0) scale(1)}35%{transform:translateY(-38px) scale(1.06)}65%{transform:translateY(-30px) scale(1.03)}100%{transform:translateY(0) scale(1)}}
-      @keyframes cardHit{0%,100%{filter:none;transform:translateY(0)}20%{filter:brightness(3.5) saturate(0) drop-shadow(0 0 10px #ff3030);transform:translateY(6px)}60%{filter:brightness(2) saturate(0.3) drop-shadow(0 0 5px #ff2020);transform:translateY(3px)}}
+      @keyframes cardHit{0%{transform:translate(0,0);filter:none}12%{transform:translate(-10px,5px);filter:brightness(4) saturate(0) drop-shadow(0 0 14px #ff2020)}28%{transform:translate(9px,4px);filter:brightness(2.8) saturate(0.15) drop-shadow(0 0 9px #ff3030)}46%{transform:translate(-6px,2px);filter:brightness(2) drop-shadow(0 0 5px #ff4040)}64%{transform:translate(5px,1px);filter:brightness(1.5)}80%{transform:translate(-3px,0);filter:none}100%{transform:translate(0,0);filter:none}}
       @keyframes cardDie{0%{opacity:1;transform:scale(1) rotate(0deg)}40%{opacity:.7;transform:scale(0.88) rotate(-6deg)}100%{opacity:0;transform:scale(0.55) rotate(-18deg) translateY(20px)}}
       @keyframes cardSummon{0%{opacity:0;transform:translateY(48px) scale(0.82)}60%{opacity:1;transform:translateY(-6px) scale(1.04)}100%{opacity:1;transform:translateY(0) scale(1)}}
+      @keyframes spellCast{0%{opacity:0;transform:translate(-50%,-50%) scale(0.4)}30%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}70%{opacity:.9;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.4)}}
+      @keyframes envFlash{0%{opacity:0}20%{opacity:1}80%{opacity:.8}100%{opacity:0}}
+      @keyframes prismaticPop{0%{transform:scale(1);filter:brightness(1)}25%{transform:scale(1.12);filter:brightness(2.5) hue-rotate(60deg)}60%{transform:scale(1.05);filter:brightness(1.8) hue-rotate(120deg)}100%{transform:scale(1);filter:brightness(1)}}
       @keyframes foilShimmer{0%{background-position:200% center}100%{background-position:-200% center}}
       @keyframes prismShimmer{0%{background-position:0% 50%;filter:hue-rotate(0deg) brightness(1.2)}50%{background-position:100% 50%;filter:hue-rotate(180deg) brightness(1.5)}100%{background-position:0% 50%;filter:hue-rotate(360deg) brightness(1.2)}}
       @keyframes prismPulse{0%,100%{box-shadow:0 0 18px #ff808088,0 0 36px #8080ff66,0 0 54px #80ff8044}33%{box-shadow:0 0 18px #80ff8088,0 0 36px #ff808066,0 0 54px #8080ff44}66%{box-shadow:0 0 18px #8080ff88,0 0 36px #80ff8066,0 0 54px #ff808044}}
