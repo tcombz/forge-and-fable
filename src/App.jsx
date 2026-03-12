@@ -454,7 +454,7 @@ function PatchNotesModal({ onDismiss }) {
           <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:"#e8c060", letterSpacing:1, marginBottom:6 }}>Forge {"&"} Fable</div>
           <div style={{ display:"inline-flex", alignItems:"center", gap:8, background:"rgba(232,192,96,0.1)", border:"1px solid #e8c06033", borderRadius:20, padding:"4px 14px" }}>
             <div style={{ width:6, height:6, borderRadius:"50%", background:"#78cc45", boxShadow:"0 0 8px #78cc45", animation:"pulse 1.5s infinite" }} />
-            <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:"#e8a020", letterSpacing:3 }}>v17 · PATCH NOTES</span>
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:"#e8a020", letterSpacing:3 }}>{CURRENT_PATCH} · PATCH NOTES</span>
           </div>
         </div>
         {/* Rows */}
@@ -1439,6 +1439,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   const [forfeitConfirm, setForfeitConfirm] = useState(false);
   const [profilePopup, setProfilePopup] = useState(null); // { name, avatar, rating, wins, losses }
   const [dyingCards, setDyingCards] = useState([]); // cards mid-death animation
+  const [connectError, setConnectError] = useState(false);
   const showTurnBanner = (type) => { setTurnBanner(type); setTimeout(() => setTurnBanner(null), 1400); };
   const [animUids, setAnimUids] = useState({});
   const vfx = useVFX();
@@ -1485,10 +1486,11 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     wonSavedRef.current = true;
     const won = gs.winner === myRole;
     SFX.play(won ? "victory" : "defeat");
-    const isRanked = matchConfig?.ranked === true;
-    // Ranked rating delta (ELO-style, 1000 base if opponent unknown)
-    const oppRating = 1000; // future: store opp rating in game state
-    const ratingDelta = isRanked ? calcRatingDelta(user?.rankedRating||1000, oppRating, won) : 0;
+    const isRanked = (matchConfig?.ranked === true) || (gs?.ranked === true);
+    // Use stored ratings from game state for accurate ELO; fall back to 1000
+    const myStoredRating = myRole === "p1" ? (gs?.p1Rating || user?.rankedRating || 1000) : (gs?.p2Rating || user?.rankedRating || 1000);
+    const oppRating = myRole === "p1" ? (gs?.p2Rating || 1000) : (gs?.p1Rating || 1000);
+    const ratingDelta = isRanked ? calcRatingDelta(myStoredRating, oppRating, won) : 0;
     const newRating = Math.max(0, (user?.rankedRating||1000) + ratingDelta);
     const histEntry = {
       opponent: opponentName, result: won ? "W" : "L",
@@ -1649,6 +1651,9 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         .subscribe();
       if (match.game_state) { setGs(match.game_state); return; }
       if (role === "p1") {
+        // Fetch opponent profile to store their rating for accurate ELO
+        const oppId = match.player2_id;
+        const { data: oppProfile } = oppId ? await supabase.from("profiles").select("ranked_rating").eq("id", oppId).single() : { data: null };
         const fb = [...POOL, ...POOL, ...POOL.slice(0, 5)];
         const d1 = shuf([...fb]), d2 = shuf([...fb]);
         const dc = POOL[Math.floor(Math.random() * POOL.length)];
@@ -1656,6 +1661,9 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         const firstPlayer = (dc.cost || 0) >= (ec.cost || 0) ? "p1" : "p2";
         const init = {
           turn: 1, phase: firstPlayer, winner: null,
+          ranked: matchConfig?.ranked === true,
+          p1Rating: user?.rankedRating || 1000,
+          p2Rating: oppProfile?.ranked_rating ?? 1000,
           drawAnim: { p1Card: dc, p2Card: ec, first: firstPlayer },
           p1Arts: user?.selectedArts || {}, p1Avatar: user?.avatarUrl || "", p1Name: user?.name || "Player",
           p1HP: CFG.startHP, p1Energy: CFG.startEnergy, p1Max: CFG.startEnergy,
@@ -1673,7 +1681,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         let attempts = 0;
         pollRef.current = setInterval(async () => {
           attempts++;
-          if (attempts > 25) { clearInterval(pollRef.current); pollRef.current = null; return; }
+          if (attempts > 25) { clearInterval(pollRef.current); pollRef.current = null; setConnectError(true); return; }
           const { data: fresh } = await supabase.from("matches").select("game_state").eq("id", matchId).single();
           if (fresh?.game_state) {
             clearInterval(pollRef.current); pollRef.current = null;
@@ -1868,20 +1876,31 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       setGs(newGs);
       if (pvpBcRef.current) pvpBcRef.current.send({ type:"broadcast", event:"updated", payload:{} });
     } catch (err) { console.error("Forfeit failed:", err); }
-    // Save FF to match history
+    // Save FF to match history (counts as loss for ranked)
     if (onUpdateUser && user) {
-      const histEntry = { opponent: opponentName, result: "FF", forfeit: true, date: new Date().toISOString(), turns: gs?.turn || 0 };
-      onUpdateUser({ battlesPlayed: (user?.battlesPlayed||0)+1, matchHistory: [histEntry, ...(user?.matchHistory||[])].slice(0,50) });
+      const isRanked = matchConfig?.ranked === true;
+      const ffDelta = isRanked ? calcRatingDelta(user?.rankedRating||1000, 1000, false) : undefined;
+      const newRating = isRanked ? Math.max(0, (user?.rankedRating||1000) + ffDelta) : undefined;
+      const histEntry = { opponent: opponentName, result: "FF", forfeit: true, date: new Date().toISOString(), turns: gs?.turn || 0, ranked: isRanked, ratingDelta: isRanked ? ffDelta : undefined };
+      const upd = { battlesPlayed: (user?.battlesPlayed||0)+1, matchHistory: [histEntry, ...(user?.matchHistory||[])].slice(0,50) };
+      if (isRanked) { upd.rankedRating = newRating; upd.rankedLosses = (user?.rankedLosses||0)+1; }
+      onUpdateUser(upd);
     }
   };
 
   if (!gs || !myRole) return (
     <div style={{ maxWidth:480, margin:"0 auto", padding:"80px 24px", textAlign:"center" }}>
-      <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, color:"#e8c060", animation:"pulse 1.5s infinite" }}>CONNECTING...</div>
-      <p style={{ fontSize:12, color:"#a09070", marginTop:12, lineHeight:1.7 }}>
-        {myRole === "p2" || !myRole ? "Waiting for Player 1 to initialize the match..." : "Setting up the board..."}
-      </p>
-      <button onClick={onExit} style={{ marginTop:24, padding:"8px 20px", background:"transparent", border:"1px solid #3a2010", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, color:"#806040", cursor:"pointer" }}>CANCEL</button>
+      {connectError ? (<>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, color:"#e05050", marginBottom:12 }}>CONNECTION FAILED</div>
+        <p style={{ fontSize:12, color:"#a09070", marginBottom:24, lineHeight:1.7 }}>Could not connect to Player 1's match. The match may have expired or there was a network issue.</p>
+        <button onClick={onExit} style={{ padding:"10px 28px", background:"linear-gradient(135deg,#3a1010,#5a1818)", border:"1px solid #c0202055", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:"#e08080", cursor:"pointer" }}>BACK TO LOBBY</button>
+      </>) : (<>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, color:"#e8c060", animation:"pulse 1.5s infinite" }}>CONNECTING...</div>
+        <p style={{ fontSize:12, color:"#a09070", marginTop:12, lineHeight:1.7 }}>
+          {myRole === "p2" || !myRole ? "Waiting for Player 1 to initialize the match..." : "Setting up the board..."}
+        </p>
+        <button onClick={onExit} style={{ marginTop:24, padding:"8px 20px", background:"transparent", border:"1px solid #3a2010", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, color:"#806040", cursor:"pointer" }}>CANCEL</button>
+      </>)}
     </div>
   );
 
@@ -2903,7 +2922,7 @@ function HomeScreen({ setTab, user }) {
           {/* Patch badge */}
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(220,160,30,0.14)", border: "1px solid #d8a03055", borderRadius: 30, padding: "5px 18px", marginBottom: 22 }}>
             <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#e8c060", boxShadow: "0 0 10px #e8c060cc", animation: "pulse 2s infinite" }} />
-            <span style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#d8a838", letterSpacing: 3, fontWeight: 700 }}>v17 · MULTIPLAYER ALPHA LIVE</span>
+            <span style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#d8a838", letterSpacing: 3, fontWeight: 700 }}>{CURRENT_PATCH} · MULTIPLAYER ALPHA LIVE</span>
           </div>
           {/* Title */}
           <h1 style={{ fontFamily: "'Cinzel',serif", fontSize: "clamp(48px,6.5vw,80px)", fontWeight: 900, lineHeight: 0.95, color: "#f0d878", margin: "0 0 6px", textShadow: "0 0 80px #c89020bb, 0 0 140px #c8902055, 0 4px 8px rgba(0,0,0,0.9), 0 2px 2px rgba(0,0,0,1)" }}>
@@ -3102,7 +3121,7 @@ function HomeScreen({ setTab, user }) {
     {/* Bottom info bar */}
     <div style={{ background:"rgba(0,0,0,0.5)", borderTop:"1px solid rgba(255,255,255,0.05)", padding:"10px 28px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
       <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#504038", letterSpacing:2 }}>FORGE {"&"} FABLE</div>
-      <div style={{ fontSize:9, color:"#3a3028", letterSpacing:2, fontFamily:"'Cinzel',serif" }}>v17 · 32 CARDS · 7 REGIONS · {user ? "ALPHA" : "GUEST"}</div>
+      <div style={{ fontSize:9, color:"#3a3028", letterSpacing:2, fontFamily:"'Cinzel',serif" }}>{CURRENT_PATCH} · 32 CARDS · 7 REGIONS · {user ? "ALPHA" : "GUEST"}</div>
       <div style={{ fontSize:9, color:"#3a3028", letterSpacing:1 }}>MULTIPLAYER ALPHA</div>
     </div>
   </>);
@@ -3756,7 +3775,7 @@ function AlphaKeyAdminPanel() {
 }
 
 export default function App() {
-  const [tab, setTab] = useState("home"); const { user, loading, login, logout, update, completeProfile } = useAuth(); const [showProfile, setShowProfile] = useState(false); const [showPatchNotes, setShowPatchNotes] = useState(false); const [inPvpMatch, setInPvpMatch] = useState(false); const [navLeaveModal, setNavLeaveModal] = useState(null); // { targetTab }
+  const [tab, setTab] = useState("home"); const { user, loading, login, logout, update, completeProfile } = useAuth(); const [showProfile, setShowProfile] = useState(false); const [showPatchNotes, setShowPatchNotes] = useState(false); const [inPvpMatch, setInPvpMatch] = useState(false); const [navLeaveModal, setNavLeaveModal] = useState(null); const [avatarErr, setAvatarErr] = useState(""); // { targetTab }
   // Show patch notes once per account+device — triggers only when user logs in
   useEffect(() => {
     if (!user) return;
@@ -3844,7 +3863,7 @@ export default function App() {
         <div style={{ width: 36, height: 36, borderRadius: 8, background: "linear-gradient(135deg,#e8c060,#a07820)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontSize: 16, fontWeight: 900, color: "#1a1000", boxShadow: "0 2px 12px #e8c06044" }}>F</div>
         <div>
           <div style={{ fontFamily: "'Cinzel',serif", fontSize: 16, fontWeight: 900, color: "#e8c060", lineHeight: 1, letterSpacing: 1 }}>Forge {"&"} Fable</div>
-          <div style={{ fontSize: 8, color: "#6a5028", letterSpacing: 3, fontFamily: "'Cinzel',serif", marginTop: 3 }}>v17 · ALPHA</div>
+          <div style={{ fontSize: 8, color: "#6a5028", letterSpacing: 3, fontFamily: "'Cinzel',serif", marginTop: 3 }}>{CURRENT_PATCH} · ALPHA</div>
         </div>
       </button>
       <div style={{ display: "flex", gap: 2, alignItems: "center" }}>
@@ -3887,16 +3906,18 @@ export default function App() {
                   <div style={{ position:"absolute", bottom:0, right:0, width:18, height:18, background:"#2a2010", border:"1px solid #4a3820", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:9 }}>📷</div>
                   <input type="file" accept="image/*" style={{ display:"none" }} onChange={async (e) => {
                     const file = e.target.files[0]; if (!file) return;
-                    if (file.size > 2*1024*1024) { alert("Image must be under 2MB"); return; }
+                    setAvatarErr("");
+                    if (file.size > 2*1024*1024) { setAvatarErr("Image must be under 2MB"); return; }
                     const ext = file.name.split(".").pop().toLowerCase();
                     const path = `avatars/${user.id}.${ext}`;
                     const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert:true, contentType:file.type });
-                    if (upErr) { alert("Upload failed: " + upErr.message); return; }
+                    if (upErr) { setAvatarErr("Upload failed: " + upErr.message); return; }
                     const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
                     if (urlData?.publicUrl) await update({ avatarUrl: urlData.publicUrl + "?t=" + Date.now() });
                   }} />
                 </label>
                 <div style={{ flex:1, minWidth:0 }}>
+                  {avatarErr && <div style={{ fontSize:9, color:"#e05050", marginBottom:4, fontFamily:"'Cinzel',serif" }}>{avatarErr}</div>}
                   <div style={{ fontFamily:"'Cinzel',serif", fontSize:16, color:"#e8c060", fontWeight:900, letterSpacing:1 }}>{user.name}</div>
                   <div style={{ fontSize:9, color:"#604030", overflow:"hidden", textOverflow:"ellipsis", marginTop:2 }}>{user.email}</div>
                   <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:5 }}>
@@ -3978,7 +3999,7 @@ export default function App() {
       {tab === "forge" && <ForgeScreen />}
       {tab === "community" && <CommunityScreen user={user} />}
       {tab === "howto" && <GuideScreen />}
-      <footer style={{ borderTop: "1px solid #1e1a0e", padding: 22, textAlign: "center" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, color: "#40301a" }}>Forge {"&"} Fable</div><p style={{ fontSize: 9, color: "#30280e", margin: "4px 0 0", letterSpacing: 1 }}>PATCH 1.6: ANIME ISLAND · 32 ALT ARTS · PRISMATIC SUN STRIKE · v16</p></footer>
+      <footer style={{ borderTop: "1px solid #1e1a0e", padding: 22, textAlign: "center" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, color: "#40301a" }}>Forge {"&"} Fable</div><p style={{ fontSize: 9, color: "#30280e", margin: "4px 0 0", letterSpacing: 1 }}>{CURRENT_PATCH}: RANKED MODE · PER-PLAYER ENVIRONMENTS · VFX OVERHAUL · EUPHORIC SFX</p></footer>
     </div>
     <MusicPlayer />
   </div>);
