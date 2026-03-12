@@ -203,7 +203,7 @@ function MusicPlayer() {
 }
 
 // ═══ CONFIG ══════════════════════════════════════════════════════════════════
-const CFG = { startHP: 20, startHand: 3, maxHand: 7, maxBoard: 5, startEnergy: 2, maxEnergy: 7, turnTimer: 45, deck: { size: 40, maxChamp: 6, maxAuraEnv: 4, copies: 3 } };
+const CFG = { startHP: 20, startHand: 3, maxHand: 7, maxBoard: 5, startEnergy: 2, maxEnergy: 7, turnTimer: 45, deck: { size: 40, maxChamp: 4, maxAuraEnv: 4, copies: 3 } };
 
 // ═══ CONSTANTS ═══════════════════════════════════════════════════════════════
 const RC = { Common: "#8a8a7a", Uncommon: "#c0922a", Rare: "#5090ff", Epic: "#a860d8", Legendary: "#f0b818" };
@@ -268,7 +268,7 @@ function safeRoundRect(ctx, x, y, w, h, r) {
   const rad = typeof r === "number" ? r : 0;
   ctx.beginPath(); ctx.moveTo(x + rad, y); ctx.lineTo(x + w - rad, y); ctx.quadraticCurveTo(x + w, y, x + w, y + rad); ctx.lineTo(x + w, y + h - rad); ctx.quadraticCurveTo(x + w, y + h, x + w - rad, y + h); ctx.lineTo(x + rad, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - rad); ctx.lineTo(x, y + rad); ctx.quadraticCurveTo(x, y, x + rad, y); ctx.closePath();
 }
-function getStarterCollection() { const c = {}; POOL.forEach((x) => { c[x.id] = x.rarity === "Common" ? 3 : x.rarity === "Uncommon" ? 2 : 0; }); return c; }
+function getStarterCollection() { const c = {}; POOL.forEach((x) => { c[x.id] = 3; }); return c; }
 
 // ═══ FLOATING PARTICLES ══════════════════════════════════════════════════════
 function FloatingParticles({ count = 30, color = "#e8c06015", speed = 1, shape = "circle", direction = "up" }) {
@@ -387,6 +387,10 @@ function VFXOverlay({ effects }) {
           <div style={{ position:"absolute", top:"50%", left:"50%", width:220, height:220, borderRadius:"50%", animation:"vfxRingBurst 0.6s ease-out forwards", border:`2px solid ${fx.color||"#e8c06055"}` }} />
           <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", animation:"vfxPulse 0.5s ease-out forwards", background:`radial-gradient(circle,${fx.color||"#e8c060"}22,transparent 65%)`, width:280, height:280, borderRadius:"50%" }} />
         </Fragment>);
+        if (fx.type === "floatText") return (<div key={fx.id} style={{ position:"absolute", top:"30%", left:"50%", transform:"translate(-50%,-50%)", animation:"vfxFloat 1.4s ease-out forwards", textAlign:"center", pointerEvents:"none", zIndex:60 }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:fx.big?22:14, fontWeight:900, color:fx.color||"#e8c060", textShadow:`0 0 20px ${fx.color||"#e8c060"}88, 0 2px 4px rgba(0,0,0,0.9)`, letterSpacing:2, whiteSpace:"nowrap" }}>{fx.text}</div>
+          {fx.sub && <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:fx.color||"#e8c060", opacity:0.7, marginTop:2 }}>{fx.sub}</div>}
+        </div>);
         if (fx.type === "faceAttack") return (<Fragment key={fx.id}>
           <div style={{ position:"absolute", inset:0, animation:"vfxHitFlash 0.5s ease-out forwards", background:"rgba(255,40,10,0.2)" }} />
           <div style={{ position:"absolute", top:"50%", left:"50%", width:300, height:300, borderRadius:"50%", animation:"vfxRingBurst 0.7s ease-out forwards", border:"4px solid #ff301088" }} />
@@ -549,12 +553,7 @@ const HOME_CARDS = [POOL.find((c) => c.id === "velrun"), POOL.find((c) => c.id =
 
 // ═══ PACKS ═══════════════════════════════════════════════════════════════════
 const PACKS = [
-  { id: "starter",      name: "Starter Pack",       desc: "5 cards. Guaranteed Uncommon+",               cost: 0,   count: 5, color: "#e8c060", pool: "all",              guarantees: [{ rarity: "Uncommon", count: 1 }] },
-  { id: "thornwood",    name: "Thornwood Pack",      desc: "5 forest cards",                               cost: 100, count: 5, color: "#4a9020", pool: "Thornwood",        guarantees: [] },
-  { id: "expanse",      name: "Expanse Pack",        desc: "5 crystal cards",                              cost: 100, count: 5, color: "#9050d8", pool: "Shattered Expanse", guarantees: [] },
-  { id: "ashfen",       name: "Ashfen Pack",         desc: "5 volcanic cards",                             cost: 100, count: 5, color: "#c04810", pool: "Ashfen",           guarantees: [] },
-  { id: "premium",      name: "Rift Pack",           desc: "5 cards. Guaranteed Rare+",                    cost: 250, count: 5, color: "#f0b818", pool: "all",              guarantees: [{ rarity: "Rare", count: 1 }] },
-  { id: "anime_island", name: "Anime Island Pack",   desc: "5 anime alt art unlocks. 0.1% Prismatic ☀",   cost: 300, count: 5, color: "#ff80c0", pool: "all",              guarantees: [], altPack: true },
+  { id: "anime_island", name: "Anime Island",   desc: "5 anime alt art unlocks. 0.1% Prismatic ☀",   cost: 300, count: 5, color: "#ff80c0", pool: "all", guarantees: [], altPack: true },
 ];
 function rollPack(pack) {
   const pool = pack.pool === "all" ? POOL : POOL.filter((c) => c.region === pack.pool);
@@ -745,6 +744,7 @@ function Token({ c, selected, isTarget, canSelect, onClick, onRightClick, animTy
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0 6px 4px", zIndex: 3 }}>
         {c.bleed > 0 && <div style={{ fontSize: 7, color: "#ff6060", fontWeight: 700, marginBottom: 1 }}>🩸 BLEED {c.bleed}</div>}
         {c.buffNote && <div style={{ fontSize: 7, color: "#60e880", fontWeight: 700, marginBottom: 1 }}>⬆ {c.buffNote}</div>}
+        {c.debuffNote && <div style={{ fontSize: 7, color: "#ff6060", fontWeight: 700, marginBottom: 1 }}>⬇ {c.debuffNote}</div>}
         <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, color: "#fff", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textShadow: "0 0 6px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.levelLabel || c.name}</div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 2 }}>
           <span style={{ fontSize: 15, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#ff7050", textShadow: "0 0 8px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.currentAtk}</span>
@@ -761,6 +761,7 @@ function Token({ c, selected, isTarget, canSelect, onClick, onRightClick, animTy
 function HandCard({ card, playable, onClick, onRightClick }) {
   const [hov, setHov] = useState(false);
   const isBP = card.bloodpact; const isEnv = card.type === "environment";
+  const hasShield = (card.keywords || []).includes("Shield") || card.shielded;
   const kws = KW.filter(k => (card.keywords || []).includes(k.name));
   return (
     <div style={{ position: "relative" }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}>
@@ -787,6 +788,8 @@ function HandCard({ card, playable, onClick, onRightClick }) {
             <div style={{ fontSize: 7, color: isEnv ? "#40c0e0" : "#d090d0", fontFamily: "'Cinzel',serif", marginTop: 2 }}>{isEnv ? "ENV" : "SPELL"}</div>
           )}
         </div>
+      {/* Shield glow on HandCard */}
+      {hasShield && <div style={{ position:"absolute", inset:0, borderRadius:10, border:"2px solid #60a0ffcc", pointerEvents:"none", zIndex:6, animation:"shieldPulse 2s ease-in-out infinite" }} />}
       </div>
       {/* Hover tooltip with full card info */}
       {hov && playable && (
@@ -850,13 +853,13 @@ function resolveEffects(trigger, card, state, side, vfx) {
   const myHP = side === "player" ? "playerHP" : "enemyHP", thHP = side === "player" ? "enemyHP" : "playerHP";
   for (const fx of effects) {
     switch (fx.effect) {
-      case "heal_hero": s[myHP] = Math.min(CFG.startHP, s[myHP] + fx.amount); L(`${card.name} heals ${fx.amount}!`); if (vfx) vfx.add("heal", { amount: fx.amount, side }); break;
-      case "damage_enemy_hero": s[thHP] -= fx.amount; L(`${card.name} deals ${fx.amount} to hero!`); if (vfx) vfx.add("damage", { amount: fx.amount }); break;
+      case "heal_hero": s[myHP] = Math.min(CFG.startHP, s[myHP] + fx.amount); L(`${card.name} heals ${fx.amount}!`); if (vfx) { vfx.add("heal", { amount: fx.amount, side }); if (card.type === "environment") vfx.add("floatText", { text: `+${fx.amount} HP`, sub: card.name, color: "#40ff70", duration: 1600 }); } break;
+      case "damage_enemy_hero": s[thHP] -= fx.amount; L(`${card.name} deals ${fx.amount} to hero!`); if (vfx) { vfx.add("damage", { amount: fx.amount }); if (card.type === "environment") vfx.add("floatText", { text: `-${fx.amount} HP`, sub: card.name, color: "#ff5040", duration: 1600 }); } break;
       case "damage_own_hero": s[myHP] -= fx.amount; L(`${card.name} costs ${fx.amount} HP!`); break;
       case "damage_all_enemies": s[thB] = s[thB].map((c) => ({ ...c, currentHp: c.currentHp - fx.amount })).filter((c) => c.currentHp > 0); L(`${card.name}: ${fx.amount} to all enemies!`); if (vfx) vfx.add("ability", { color: "#ff4040" }); break;
       case "damage_all": s[myB] = s[myB].map((c) => c.uid === card.uid ? c : { ...c, currentHp: c.currentHp - fx.amount }).filter((c) => c.currentHp > 0); s[thB] = s[thB].map((c) => ({ ...c, currentHp: c.currentHp - fx.amount })).filter((c) => c.currentHp > 0); L(`${card.name}: ${fx.amount} to ALL!`); if (vfx) vfx.add("ability", { color: "#ff8040" }); break;
       case "damage_random_enemy": if (s[thB].length > 0) { const idx = Math.floor(Math.random() * s[thB].length); const tgt = s[thB][idx]; s[thB] = s[thB].map((c, i) => i === idx ? { ...c, currentHp: c.currentHp - fx.amount } : c).filter((c) => c.currentHp > 0); L(`${card.name} hits ${tgt.name} for ${fx.amount}!`); } break;
-      case "buff_allies": { const buffStr = `+${fx.atk||0}/+${fx.hp||0} (${card.name})`; s[myB] = s[myB].map((c) => ({ ...c, currentAtk: c.currentAtk + (fx.atk || 0), currentHp: c.currentHp + (fx.hp || 0), maxHp: c.maxHp + (fx.hp || 0), buffNote: buffStr })); L(`${card.name} buffs +${fx.atk || 0}/+${fx.hp || 0}!`); if (vfx) vfx.add("ability", { color: "#40ff60" }); break; }
+      case "buff_allies": { const isDebuff = (fx.atk||0) < 0 || (fx.hp||0) < 0; const noteStr = `${fx.atk>=0?"+":""}${fx.atk||0}/${fx.hp>=0?"+":""}${fx.hp||0} (${card.name})`; s[myB] = s[myB].map((c) => ({ ...c, currentAtk: c.currentAtk + (fx.atk || 0), currentHp: c.currentHp + (fx.hp || 0), maxHp: c.maxHp + (fx.hp || 0), ...(isDebuff ? { debuffNote: noteStr } : { buffNote: noteStr }) })); L(`${card.name} ${isDebuff?"debuffs":"buffs"} ${fx.atk||0}/${fx.hp||0}!`); if (vfx) vfx.add("ability", { color: isDebuff?"#ff6040":"#40ff60" }); break; }
       case "buff_random_ally": { const allies = s[myB].filter((c) => c.uid !== card.uid); if (allies.length > 0) { const t = allies[Math.floor(Math.random() * allies.length)]; s[myB] = s[myB].map((c) => c.uid === t.uid ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), buffNote: `+${fx.atk||0} ATK (${card.name})` } : c); L(`${card.name} buffs ${t.name}!`); } break; }
       case "buff_keyword_allies": s[myB] = s[myB].map((c) => (c.keywords || []).length > 0 ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), buffNote: `+${fx.atk||0} ATK (${card.name})` } : c); break;
       case "heal_all_allies": s[myB] = s[myB].map((c) => ({ ...c, currentHp: Math.min(c.maxHp, c.currentHp + fx.amount) })); break;
@@ -1188,14 +1191,9 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
             <div style={{ height:1, width:80, background:`linear-gradient(270deg,transparent,${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"})` }} />
           </div>
           {/* main announcement */}
-          <div style={{ background:turnBanner==="YOUR TURN"?"linear-gradient(135deg,#071a02 0%,#0d2804 50%,#071a02 100%)":"linear-gradient(135deg,#1a0202 0%,#280404 50%,#1a0202 100%)", border:`2px solid ${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"}`, borderRadius:4, padding:"16px 64px", textAlign:"center", position:"relative", overflow:"hidden", boxShadow:`0 0 80px ${turnBanner==="YOUR TURN"?"#78cc4555":"#e0505055"}, inset 0 0 40px ${turnBanner==="YOUR TURN"?"#78cc4510":"#e0505010"}` }}>
-            {/* Corner ornaments */}
-            <span style={{ position:"absolute", top:4, left:8, fontSize:10, color:turnBanner==="YOUR TURN"?"#78cc4566":"#e0505066" }}>✦</span>
-            <span style={{ position:"absolute", top:4, right:8, fontSize:10, color:turnBanner==="YOUR TURN"?"#78cc4566":"#e0505066" }}>✦</span>
-            <span style={{ position:"absolute", bottom:4, left:8, fontSize:10, color:turnBanner==="YOUR TURN"?"#78cc4566":"#e0505066" }}>✦</span>
-            <span style={{ position:"absolute", bottom:4, right:8, fontSize:10, color:turnBanner==="YOUR TURN"?"#78cc4566":"#e0505066" }}>✦</span>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:36, fontWeight:900, color:turnBanner==="YOUR TURN"?"#78cc45":"#e05050", letterSpacing:8, textShadow:`0 0 40px ${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"}, 0 2px 4px rgba(0,0,0,0.9)`, lineHeight:1 }}>{turnBanner}</div>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, letterSpacing:5, color:turnBanner==="YOUR TURN"?"#78cc4599":"#e0505099", marginTop:6 }}>{turnBanner==="YOUR TURN"?"— PLAY YOUR CARDS —":"— ENEMY IS THINKING —"}</div>
+          <div style={{ background:turnBanner==="YOUR TURN"?"linear-gradient(135deg,#071a02 0%,#0d2804 50%,#071a02 100%)":"linear-gradient(135deg,#1a0202 0%,#280404 50%,#1a0202 100%)", border:`2px solid ${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"}`, borderRadius:6, padding:"12px 48px", textAlign:"center", position:"relative", overflow:"hidden", boxShadow:`0 0 50px ${turnBanner==="YOUR TURN"?"#78cc4533":"#e0505033"}` }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:24, fontWeight:900, color:turnBanner==="YOUR TURN"?"#78cc45":"#e05050", letterSpacing:6, textShadow:`0 0 24px ${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"}, 0 2px 4px rgba(0,0,0,0.9)`, lineHeight:1 }}>{turnBanner}</div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, letterSpacing:3, color:turnBanner==="YOUR TURN"?"#78cc4588":"#e0505088", marginTop:5 }}>{turnBanner==="YOUR TURN"?"PLAY YOUR CARDS":"OPPONENT THINKING"}</div>
           </div>
           {/* bottom bar */}
           <div style={{ display:"flex", alignItems:"center", gap:12, marginTop:4 }}>
@@ -1348,12 +1346,12 @@ const STARTER_DECK = (() => {
   ].filter(Boolean);
 })();
 
-function DeckBuilderModal({ user, onSave, onClose }) {
+function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
   const col = user?.collection || {};
   const selectedArts = user?.selectedArts || {};
   const owned = POOL.filter((c) => (col[c.id] || 0) > 0);
-  const isNew = !(user?.decks?.length);
-  const [deck, setDeck] = useState(() => isNew ? [...STARTER_DECK] : []);
+  const isNew = !editDeck;
+  const [deck, setDeck] = useState(() => editDeck ? [...editDeck.cards] : [...STARTER_DECK]);
   const [dbPreview, setDbPreview] = useState(null);
   const [errMsg, setErrMsg] = useState("");
   useEffect(() => {
@@ -1361,9 +1359,14 @@ function DeckBuilderModal({ user, onSave, onClose }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
-  const [deckName, setDeckName] = useState(isNew ? "Starter Deck" : "My Deck");
+  const [deckName, setDeckName] = useState(editDeck ? editDeck.name : "Starter Deck");
   const [search, setSearch] = useState("");
-  const filtered = owned.filter((c) => !search || c.name.toLowerCase().includes(search.toLowerCase()));
+  const [typeFilter, setTypeFilter] = useState("all");
+  const filtered = owned.filter((c) => {
+    if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false;
+    if (typeFilter !== "all" && c.type !== typeFilter) return false;
+    return true;
+  });
 
   // Deck counts
   const countInDeck = (card) => deck.filter((c) => c.id === card.id).length;
@@ -1374,19 +1377,24 @@ function DeckBuilderModal({ user, onSave, onClose }) {
 
   const addCard = (card) => {
     if (total >= CFG.deck.size) { setErrMsg(`Deck full (${CFG.deck.size}/${CFG.deck.size})`); return; }
-    if (countInDeck(card) >= CFG.deck.copies) { setErrMsg(`Rule of 3: max ${CFG.deck.copies} copies of "${card.name}"`); return; }
-    if (card.type === "champion" && champCount >= CFG.deck.maxChamp) { setErrMsg(`Champion cap reached (${champCount}/${CFG.deck.maxChamp})`); return; }
+    // Champions: max 1 copy of any specific champion, max 4 champions total
+    if (card.type === "champion") {
+      if (countInDeck(card) >= 1) { setErrMsg(`Champions are unique — only 1 copy of "${card.name}" allowed`); return; }
+      if (champCount >= CFG.deck.maxChamp) { setErrMsg(`Champion cap reached (${champCount}/${CFG.deck.maxChamp})`); return; }
+    } else {
+      if (countInDeck(card) >= CFG.deck.copies) { setErrMsg(`Rule of 3: max ${CFG.deck.copies} copies of "${card.name}"`); return; }
+    }
     if ((card.type === "aura" || card.type === "environment") && auraEnvCount >= CFG.deck.maxAuraEnv) { setErrMsg(`Aura/Environment cap reached (${auraEnvCount}/${CFG.deck.maxAuraEnv})`); return; }
     setErrMsg("");
     setDeck(d => [...d, card]);
   };
   const removeCard = (idx) => { setErrMsg(""); setDeck(d => d.filter((_, i) => i !== idx)); };
-  const save = () => { if (!canSave) return; onSave({ name: deckName, cards: deck }); onClose(); };
+  const save = () => { if (!canSave) return; onSave({ name: deckName, cards: deck }, editDeck?.index); onClose(); };
 
   const isBlocked = (c) => {
     if (total >= CFG.deck.size) return true;
+    if (c.type === "champion") return countInDeck(c) >= 1 || champCount >= CFG.deck.maxChamp;
     if (countInDeck(c) >= CFG.deck.copies) return true;
-    if (c.type === "champion" && champCount >= CFG.deck.maxChamp) return true;
     if ((c.type === "aura" || c.type === "environment") && auraEnvCount >= CFG.deck.maxAuraEnv) return true;
     return false;
   };
@@ -1394,25 +1402,24 @@ function DeckBuilderModal({ user, onSave, onClose }) {
   const need = CFG.deck.size - total;
   const pct = (total / CFG.deck.size) * 100;
 
-  return (<div style={{ position:"fixed", inset:0, zIndex:500, background:"rgba(2,1,0,0.97)", display:"flex", flexDirection:"column" }}>
+  return (<div style={{ position:"fixed", inset:0, zIndex:600, background:"rgba(2,1,0,0.97)", display:"flex", flexDirection:"column" }}>
     {dbPreview && <CardPreview card={dbPreview} onClose={() => setDbPreview(null)} />}
     {/* Header bar */}
-    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"16px 24px", borderBottom:"2px solid #3a2c10", background:"linear-gradient(180deg,#1a1608,#0e0c06)", flexShrink:0, gap:16, flexWrap:"wrap" }}>
-      <div style={{ display:"flex", alignItems:"center", gap:16 }}>
-        <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:20, color:"#e8c060", margin:0, letterSpacing:2 }}>⚒ DECK BUILDER</h3>
-        {/* Category counters */}
-        <div style={{ display:"flex", gap:8, fontSize:10 }}>
-          <span style={{ fontFamily:"'Cinzel',serif", padding:"3px 8px", background:"rgba(232,160,20,0.1)", border:`1px solid ${champCount>=CFG.deck.maxChamp?"#f0c040":"#3a2810"}`, borderRadius:6, color:champCount>=CFG.deck.maxChamp?"#f0c040":"#604028" }}>👑 Champions {champCount}/{CFG.deck.maxChamp}</span>
-          <span style={{ fontFamily:"'Cinzel',serif", padding:"3px 8px", background:"rgba(40,180,120,0.08)", border:`1px solid ${auraEnvCount>=CFG.deck.maxAuraEnv?"#40c090":"#2a3020"}`, borderRadius:6, color:auraEnvCount>=CFG.deck.maxAuraEnv?"#40c090":"#405030" }}>🌿 Auras/Env {auraEnvCount}/{CFG.deck.maxAuraEnv}</span>
-          <span style={{ fontFamily:"'Cinzel',serif", padding:"3px 8px", background:"rgba(232,192,96,0.07)", border:`1px solid ${canSave?"#e8c060":"#3a2810"}`, borderRadius:6, color:canSave?"#e8c060":"#604028" }}>📚 Total {total}/{CFG.deck.size}</span>
+    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 20px", borderBottom:"2px solid #3a2c10", background:"linear-gradient(180deg,#1a1608,#0e0c06)", flexShrink:0, gap:12, flexWrap:"wrap" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
+        <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:18, color:"#e8c060", margin:0, letterSpacing:2 }}>⚒ {isNew ? "NEW DECK" : `EDIT: ${editDeck.name}`}</h3>
+        <div style={{ display:"flex", gap:6, fontSize:10 }}>
+          <span style={{ fontFamily:"'Cinzel',serif", padding:"3px 8px", background:"rgba(232,160,20,0.1)", border:`1px solid ${champCount>=CFG.deck.maxChamp?"#f0c040":"#3a2810"}`, borderRadius:6, color:champCount>=CFG.deck.maxChamp?"#f0c040":"#604028" }}>👑 {champCount}/{CFG.deck.maxChamp} Champs · 1 each</span>
+          <span style={{ fontFamily:"'Cinzel',serif", padding:"3px 8px", background:"rgba(40,180,120,0.08)", border:`1px solid ${auraEnvCount>=CFG.deck.maxAuraEnv?"#40c090":"#2a3020"}`, borderRadius:6, color:auraEnvCount>=CFG.deck.maxAuraEnv?"#40c090":"#405030" }}>🌿 {auraEnvCount}/{CFG.deck.maxAuraEnv} Aura/Env</span>
+          <span style={{ fontFamily:"'Cinzel',serif", padding:"3px 8px", background:"rgba(232,192,96,0.07)", border:`1px solid ${canSave?"#e8c060":"#3a2810"}`, borderRadius:6, color:canSave?"#e8c060":"#604028" }}>📚 {total}/{CFG.deck.size}</span>
         </div>
       </div>
-      <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-        <input value={deckName} onChange={(e) => setDeckName(e.target.value)} placeholder="Deck name..." style={{ padding:"9px 14px", background:"#100e08", border:"1px solid #3a2810", borderRadius:8, color:"#f0e8d8", fontSize:13, outline:"none", fontFamily:"'Cinzel',serif", width:180 }} />
-        <button onClick={save} disabled={!canSave} style={{ padding:"9px 22px", background:canSave?"linear-gradient(135deg,#c89010,#f0c040)":"rgba(255,255,255,0.06)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, letterSpacing:1, color:canSave?"#1a1000":"#403020", cursor:canSave?"pointer":"not-allowed" }}>
+      <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+        <input value={deckName} onChange={(e) => setDeckName(e.target.value)} placeholder="Deck name..." style={{ padding:"8px 12px", background:"#100e08", border:"1px solid #3a2810", borderRadius:8, color:"#f0e8d8", fontSize:12, outline:"none", fontFamily:"'Cinzel',serif", width:160 }} />
+        <button onClick={save} disabled={!canSave} style={{ padding:"8px 20px", background:canSave?"linear-gradient(135deg,#c89010,#f0c040)":"rgba(255,255,255,0.06)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, letterSpacing:1, color:canSave?"#1a1000":"#403020", cursor:canSave?"pointer":"not-allowed" }}>
           SAVE ({total}/{CFG.deck.size})
         </button>
-        <button onClick={onClose} style={{ padding:"9px 18px", background:"transparent", border:"1px solid #4a2010", borderRadius:8, color:"#806040", fontFamily:"'Cinzel',serif", fontSize:11, cursor:"pointer" }}>✕</button>
+        <button onClick={onClose} style={{ padding:"8px 16px", background:"transparent", border:"1px solid #4a2010", borderRadius:8, color:"#806040", fontFamily:"'Cinzel',serif", fontSize:11, cursor:"pointer" }}>✕ CLOSE</button>
       </div>
     </div>
 
@@ -1420,9 +1427,17 @@ function DeckBuilderModal({ user, onSave, onClose }) {
     <div style={{ display:"grid", gridTemplateColumns:"1fr 300px", flex:1, overflow:"hidden" }}>
       {/* Card pool */}
       <div style={{ display:"flex", flexDirection:"column", overflow:"hidden", borderRight:"1px solid #2a2010" }}>
-        <div style={{ padding:"12px 20px", borderBottom:"1px solid #2a1808", flexShrink:0, display:"flex", gap:10, alignItems:"center" }}>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search your cards..." style={{ flex:1, padding:"9px 14px", background:"#100e08", border:"1px solid #2a2010", borderRadius:8, color:"#f0e8d8", fontSize:13, outline:"none" }} />
-          <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#605030" }}>{filtered.length} owned</span>
+        <div style={{ padding:"10px 16px", borderBottom:"1px solid #2a1808", flexShrink:0, display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search cards..." style={{ flex:1, minWidth:120, padding:"8px 12px", background:"#100e08", border:"1px solid #2a2010", borderRadius:8, color:"#f0e8d8", fontSize:12, outline:"none" }} />
+          <select value={typeFilter} onChange={e=>setTypeFilter(e.target.value)} style={{ padding:"8px 10px", background:"#100e08", border:"1px solid #2a2010", borderRadius:8, color:"#f0e8d8", fontSize:10, outline:"none", fontFamily:"'Cinzel',serif" }}>
+            <option value="all">All Types</option>
+            <option value="creature">Creatures</option>
+            <option value="champion">Champions</option>
+            <option value="spell">Spells</option>
+            <option value="environment">Environments</option>
+            <option value="aura">Auras</option>
+          </select>
+          <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#605030" }}>{filtered.length}</span>
         </div>
         <div style={{ overflowY:"auto", padding:"16px 20px", flex:1 }}>
           {filtered.length === 0
@@ -1508,27 +1523,6 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   // Mark nav as in-match so tabs are blocked; register forfeit for nav-leave auto-FF
   useEffect(() => {
     setInPvpMatch?.(true);
-    // Irish dwarf bartender welcome
-    setTimeout(() => {
-      try {
-        const u = new SpeechSynthesisUtterance("Welcome to the arena!");
-        const trySpeak = () => {
-          const voices = speechSynthesis.getVoices();
-          if (voices.length) {
-            const pref = voices.find(v => /irish|moira|roisin/i.test(v.name))
-              || voices.find(v => /en.*(gb|ie|uk)/i.test(v.lang))
-              || voices.find(v => /daniel/i.test(v.name))
-              || voices[0];
-            if (pref) u.voice = pref;
-            u.rate = 0.82; u.pitch = 0.55; u.volume = 0.9;
-            speechSynthesis.speak(u);
-          } else {
-            speechSynthesis.onvoiceschanged = () => { trySpeak(); speechSynthesis.onvoiceschanged = null; };
-          }
-        };
-        trySpeak();
-      } catch(_) {}
-    }, 800);
     return () => { setInPvpMatch?.(false); pvpForfeitRef.current = null; };
   }, []); // eslint-disable-line
   useEffect(() => { pvpForfeitRef.current = forfeit; }, [gs]); // keep closure fresh
@@ -1807,6 +1801,18 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       const opHPKey = (myRole==="p1"?"p2":"p1")+"HP";
       if (gs[opHPKey] > prev[opHPKey]) { vfx.add("heal", { amount: gs[opHPKey]-prev[opHPKey] }); SFX.play("heal"); }
 
+      // Receiving damage: my HP dropped — show floating damage text
+      const myHPKey = myRole+"HP";
+      const hpDrop = (prev[myHPKey]||0) - (gs[myHPKey]||0);
+      if (hpDrop > 0) {
+        vfx.add("damage", { amount: hpDrop, duration: 1200 });
+        vfx.add("faceAttack", { duration: 600 });
+        SFX.play("attack");
+      }
+      // My HP healed from opponent effect
+      const myHPGain = (gs[myHPKey]||0) - (prev[myHPKey]||0);
+      if (myHPGain > 0) { vfx.add("heal", { amount: myHPGain }); SFX.play("heal"); }
+
       // Opponent attack sequence: parse creature attacks and face attacks
       const atkEntries = newEntries.filter(l => / attacks /.test(l));
       const directEntries = newEntries.filter(l => / deals .* direct/.test(l));
@@ -1858,10 +1864,6 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           }), 750);
         }, atkDelay);
       }
-
-      // VFX: my face was hit (HP loss on my side)
-      const myHPKey = myRole+"HP";
-      if (gs[myHPKey] < prev[myHPKey]) { vfx.add("damage", { amount: prev[myHPKey]-gs[myHPKey], duration:1000 }); SFX.play("attack"); }
 
       // VFX: my creature healed
       const myHealedCard = currAi.playerBoard.find(c => { const prev = prevAi.playerBoard.find(p=>p.uid===c.uid); return prev && c.currentHp > prev.currentHp; });
@@ -2048,44 +2050,28 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     </div>)}
     {/* Fullscreen turn announcement */}
     {turnBanner && (<div style={{ position:"fixed", inset:0, display:"flex", alignItems:"center", justifyContent:"center", zIndex:300, pointerEvents:"none" }}>
-      <div style={{ animation:"turnStamp 1.5s ease-out forwards", display:"flex", flexDirection:"column", alignItems:"center", gap:0 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:4 }}>
-          <div style={{ height:1, width:100, background:`linear-gradient(90deg,transparent,${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"})` }} />
-          <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, letterSpacing:5, color:turnBanner==="YOUR TURN"?"#78cc4588":"#e0505088" }}>FORGE {"&"} FABLE</span>
-          <div style={{ height:1, width:100, background:`linear-gradient(270deg,transparent,${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"})` }} />
-        </div>
-        <div style={{ background:turnBanner==="YOUR TURN"?"linear-gradient(135deg,#071a02 0%,#0d2804 50%,#071a02 100%)":"linear-gradient(135deg,#1a0202 0%,#280404 50%,#1a0202 100%)", border:`2px solid ${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"}`, borderRadius:4, padding:"18px 72px", textAlign:"center", position:"relative", overflow:"hidden", boxShadow:`0 0 100px ${turnBanner==="YOUR TURN"?"#78cc4566":"#e0505066"}, inset 0 0 50px ${turnBanner==="YOUR TURN"?"#78cc4510":"#e0505010"}` }}>
-          <span style={{ position:"absolute", top:5, left:10, fontSize:11, color:turnBanner==="YOUR TURN"?"#78cc4555":"#e0505055" }}>✦</span>
-          <span style={{ position:"absolute", top:5, right:10, fontSize:11, color:turnBanner==="YOUR TURN"?"#78cc4555":"#e0505055" }}>✦</span>
-          <span style={{ position:"absolute", bottom:5, left:10, fontSize:11, color:turnBanner==="YOUR TURN"?"#78cc4555":"#e0505055" }}>✦</span>
-          <span style={{ position:"absolute", bottom:5, right:10, fontSize:11, color:turnBanner==="YOUR TURN"?"#78cc4555":"#e0505055" }}>✦</span>
-          <div style={{ fontFamily:"'Cinzel',serif", fontSize:40, fontWeight:900, color:turnBanner==="YOUR TURN"?"#78cc45":"#e05050", letterSpacing:10, textShadow:`0 0 50px ${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"}, 0 2px 6px rgba(0,0,0,0.95)`, lineHeight:1 }}>{turnBanner}</div>
-          <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, letterSpacing:6, color:turnBanner==="YOUR TURN"?"#78cc4588":"#e0505088", marginTop:8 }}>
-            {turnBanner==="YOUR TURN"?"— COMMAND YOUR FORCES —":`— ${(opponentName||"OPPONENT").toUpperCase()} IS MOVING —`}
+      <div style={{ animation:"turnStamp 1.3s ease-out forwards", display:"flex", flexDirection:"column", alignItems:"center" }}>
+        <div style={{ background:turnBanner==="YOUR TURN"?"linear-gradient(135deg,#071a02,#0d2804)":"linear-gradient(135deg,#1a0202,#280404)", border:`2px solid ${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"}`, borderRadius:8, padding:"14px 56px", textAlign:"center", boxShadow:`0 0 60px ${turnBanner==="YOUR TURN"?"#78cc4540":"#e0505040"}` }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:26, fontWeight:900, color:turnBanner==="YOUR TURN"?"#78cc45":"#e05050", letterSpacing:7, textShadow:`0 0 30px ${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"}`, lineHeight:1 }}>{turnBanner}</div>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, letterSpacing:4, color:turnBanner==="YOUR TURN"?"#78cc4577":"#e0505077", marginTop:6 }}>
+            {turnBanner==="YOUR TURN"?"COMMAND YOUR FORCES":`${(opponentName||"OPPONENT").toUpperCase()} IS MOVING`}
           </div>
-        </div>
-        <div style={{ display:"flex", alignItems:"center", gap:12, marginTop:4 }}>
-          <div style={{ height:1, width:100, background:`linear-gradient(90deg,transparent,${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"})` }} />
-          <div style={{ width:6, height:6, borderRadius:"50%", background:turnBanner==="YOUR TURN"?"#78cc45":"#e05050", boxShadow:`0 0 12px ${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"}`, animation:"pulse 0.8s infinite" }} />
-          <div style={{ height:1, width:100, background:`linear-gradient(270deg,transparent,${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"})` }} />
         </div>
       </div>
     </div>)}
-    {/* Inline turn status bar */}
-    {!gs.winner && (<div style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"5px 0 3px", gap:10 }}>
-      <div style={{ width:6, height:6, borderRadius:"50%", background:isMyTurn?"#78cc45":"#e8c060", boxShadow:`0 0 8px ${isMyTurn?"#78cc45":"#e8c060"}`, animation:"pulse 1.5s infinite", flexShrink:0 }} />
-      <span style={{ fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, letterSpacing:3, color:isMyTurn?"#78cc45":"#e8c060" }}>{isMyTurn ? "YOUR TURN" : `${(opponentName||"OPPONENT").toUpperCase()}'S TURN`}</span>
-      {syncing && <span style={{ fontSize:8, color:"#806040", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>SYNCING...</span>}
-    </div>)}
-    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+    {/* Top bar: controls + centered turn status + timer */}
+    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
       <div style={{ display:"flex", gap:6, alignItems:"center" }}>
         <button onClick={onExit} style={{ padding:"7px 14px", background:"transparent", border:"1px solid #3a2c10", borderRadius:7, color:"#806040", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer" }}>EXIT</button>
         {!gs?.winner && <button onClick={()=>setForfeitConfirm(true)} style={{ padding:"7px 14px", background:"transparent", border:"1px solid #6a1010", borderRadius:7, color:"#804040", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer" }}>FORFEIT</button>}
-        <button onClick={()=>{ const el=document.documentElement; if(!document.fullscreenElement){el.requestFullscreen?.();}else{document.exitFullscreen?.();} }} style={{ padding:"7px 10px", background:"transparent", border:"1px solid #2a2010", borderRadius:7, color:"#605040", fontFamily:"'Cinzel',serif", fontSize:11, cursor:"pointer" }} title="Toggle Fullscreen">⛶</button>
+        <button onClick={()=>{ const el=document.documentElement; if(!document.fullscreenElement){el.requestFullscreen?.();}else{document.exitFullscreen?.();} }} style={{ padding:"7px 10px", background:"transparent", border:"1px solid #2a2010", borderRadius:7, color:"#605040", fontFamily:"'Cinzel',serif", fontSize:11, cursor:"pointer" }} title="Fullscreen">⛶</button>
       </div>
-      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:16, fontWeight:700, color:"#e8c060", margin:0, letterSpacing:2 }}>⚔ PvP BATTLE ⚔</h2>
-      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-        {syncing && <span style={{ fontSize:8, color:"#806040", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>SYNCING...</span>}
+      {!gs.winner && (<div style={{ display:"flex", alignItems:"center", gap:8, position:"absolute", left:"50%", transform:"translateX(-50%)" }}>
+        <div style={{ width:7, height:7, borderRadius:"50%", background:isMyTurn?"#78cc45":"#e8c060", boxShadow:`0 0 8px ${isMyTurn?"#78cc45":"#e8c060"}`, animation:"pulse 1.5s infinite" }} />
+        <span style={{ fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, letterSpacing:2, color:isMyTurn?"#78cc45":"#e8c060" }}>{isMyTurn ? "YOUR TURN" : `${(opponentName||"OPP").toUpperCase()}'S TURN`}</span>
+        {syncing && <span style={{ fontSize:8, color:"#806040", fontFamily:"'Cinzel',serif" }}>SYNC…</span>}
+      </div>)}
+      <div>
         {isMyTurn && !gs.winner ? <TurnTimer key={timerKey} active={true} onExpire={endTurn} /> : <div style={{ width:110 }} />}
       </div>
     </div>
@@ -2796,9 +2782,18 @@ function CollectionScreen({ user, onUpdateUser }) {
   const [regFilter, setRegFilter] = useState("all");
   const [artPicker, setArtPicker] = useState(null);
   const [previewCard, setPreviewCard] = useState(null);
-  const [showDeckBuilder, setShowDeckBuilder] = useState(false);
+  // Deck builder: null=closed, "select"=deck picker, { index, name, cards }=editing
+  const [deckBuilderState, setDeckBuilderState] = useState(null);
   const decks = user?.decks || [];
-  const saveDeck = async (deck) => { const newDecks = [...decks, deck]; await onUpdateUser({ decks: newDecks }); };
+  const saveDeck = async (deck, editIndex) => {
+    let newDecks;
+    if (editIndex != null) {
+      newDecks = decks.map((d, i) => i === editIndex ? deck : d);
+    } else {
+      newDecks = [...decks, deck];
+    }
+    await onUpdateUser({ decks: newDecks });
+  };
   const deleteDeck = async (i) => { const newDecks = decks.filter((_, idx) => idx !== i); await onUpdateUser({ decks: newDecks }); };
   const filter = (cards) => cards.filter((c) => {
     if (regFilter !== "all" && c.region !== regFilter) return false;
@@ -2821,8 +2816,11 @@ function CollectionScreen({ user, onUpdateUser }) {
     const activeSel = selectedArts[card.id] || "base";
     const displayCard = resolveCardArt(card, selectedArts);
     const isOpen = artPicker === card.id;
+    const qty = col[card.id] || 0;
     return (
       <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6, position:"relative" }} onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); SFX.play("card_inspect"); setPreviewCard(displayCard); }}>
+        {/* Quantity badge */}
+        <div style={{ position:"absolute", top:-6, right:-6, zIndex:10, background:"#e8b828", borderRadius:"50%", width:22, height:22, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:900, color:"#1a1000", boxShadow:"0 2px 8px #e8b82888", border:"2px solid #1a1000", pointerEvents:"none" }}>{qty}</div>
         <Card card={displayCard} size="sm" animDelay={i * 0.04} />
         {alts.length > 0 && (
           <div style={{ position:"relative" }}>
@@ -2875,20 +2873,63 @@ function CollectionScreen({ user, onUpdateUser }) {
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px 60px" }} onClick={() => { if(artPicker) setArtPicker(null); }}>
       {previewCard && <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />}
-      {showDeckBuilder && <DeckBuilderModal user={user} onSave={saveDeck} onClose={() => setShowDeckBuilder(false)} />}
+      {deckBuilderState && deckBuilderState !== "select" && (
+        <DeckBuilderModal
+          user={user}
+          onSave={saveDeck}
+          onClose={() => setDeckBuilderState(null)}
+          editDeck={deckBuilderState.isNew ? null : deckBuilderState}
+        />
+      )}
+      {/* Deck Select Panel */}
+      {deckBuilderState === "select" && (
+        <div style={{ position:"fixed", inset:0, zIndex:600, background:"rgba(2,1,0,0.97)", display:"flex", flexDirection:"column" }}>
+          <div style={{ padding:"18px 24px", borderBottom:"2px solid #3a2c10", background:"linear-gradient(180deg,#1a1608,#0e0c06)", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:20, color:"#e8c060", margin:0, letterSpacing:2 }}>⚒ YOUR DECKS</h3>
+            <button onClick={() => setDeckBuilderState(null)} style={{ padding:"8px 18px", background:"transparent", border:"1px solid #4a2010", borderRadius:8, color:"#806040", fontFamily:"'Cinzel',serif", fontSize:11, cursor:"pointer" }}>✕ CLOSE</button>
+          </div>
+          <div style={{ flex:1, overflowY:"auto", padding:"28px 32px", display:"flex", flexDirection:"column", gap:14, maxWidth:700, margin:"0 auto", width:"100%" }}>
+            {/* Create new */}
+            <div onClick={() => setDeckBuilderState({ isNew:true })}
+              style={{ display:"flex", alignItems:"center", gap:16, padding:"18px 22px", background:"rgba(232,192,96,0.06)", border:"2px dashed #e8c06055", borderRadius:14, cursor:"pointer", transition:"all .2s" }}
+              onMouseEnter={e=>{e.currentTarget.style.background="rgba(232,192,96,0.12)";e.currentTarget.style.borderColor="#e8c060aa";}}
+              onMouseLeave={e=>{e.currentTarget.style.background="rgba(232,192,96,0.06)";e.currentTarget.style.borderColor="#e8c06055";}}>
+              <div style={{ width:52, height:52, borderRadius:"50%", background:"rgba(232,192,96,0.1)", border:"2px solid #e8c06066", display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>+</div>
+              <div>
+                <div style={{ fontFamily:"'Cinzel',serif", fontSize:16, fontWeight:700, color:"#e8c060", letterSpacing:1 }}>CREATE NEW DECK</div>
+                <div style={{ fontSize:10, color:"#806040", marginTop:3 }}>Start fresh from 40 cards — Rule of 3, max 4 Champions</div>
+              </div>
+            </div>
+            {/* Existing decks */}
+            {decks.length === 0 && <div style={{ textAlign:"center", padding:"40px 0", color:"#503828", fontFamily:"'Cinzel',serif", fontSize:13 }}>No saved decks yet — create your first deck above</div>}
+            {decks.map((d, i) => (
+              <div key={i} style={{ display:"flex", alignItems:"center", gap:16, padding:"18px 22px", background:"#0e0c08", border:"1px solid #2a2010", borderRadius:14 }}>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:16, fontWeight:700, color:"#f0e0c8", letterSpacing:1 }}>{d.name}</div>
+                  <div style={{ fontSize:10, color:"#806040", marginTop:4 }}>{d.cards?.length || 0} cards</div>
+                </div>
+                <button onClick={() => setDeckBuilderState({ isNew:false, index:i, name:d.name, cards:d.cards||[] })}
+                  style={{ padding:"9px 20px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:"#1a1000", cursor:"pointer", letterSpacing:1 }}>EDIT</button>
+                <button onClick={() => deleteDeck(i)}
+                  style={{ padding:"9px 14px", background:"transparent", border:"1px solid #5a1010", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:"#904040", cursor:"pointer" }}>DELETE</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {/* Header row: title + deck builder CTA */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
         <div>
           <h2 style={{ fontFamily: "'Cinzel',serif", fontSize: 24, fontWeight: 700, color: "#e8c060", margin: 0 }}>Collection</h2>
           <div style={{ fontSize: 11, color: "#806040", marginTop: 3 }}>{owned.length} / {POOL.length} cards owned</div>
         </div>
-        <button onClick={() => setShowDeckBuilder(true)}
+        <button onClick={() => setDeckBuilderState("select")}
           style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 22px", background: "linear-gradient(135deg,#1a1608,#2a2010)", border: "2px solid #e8c06055", borderRadius: 12, cursor: "pointer", fontFamily: "'Cinzel',serif", color: "#e8c060", transition: "all .2s" }}
           onMouseEnter={e => { e.currentTarget.style.borderColor="#e8c060aa"; e.currentTarget.style.background="linear-gradient(135deg,#2a2010,#3a3018)"; }}
           onMouseLeave={e => { e.currentTarget.style.borderColor="#e8c06055"; e.currentTarget.style.background="linear-gradient(135deg,#1a1608,#2a2010)"; }}>
           <span style={{ fontSize: 22 }}>🗂</span>
           <div style={{ textAlign: "left" }}>
-            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1 }}>DECK BUILDER</div>
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1 }}>BUILD DECK</div>
             <div style={{ fontSize: 9, color: "#a08040", marginTop: 1 }}>{decks.length} deck{decks.length !== 1 ? "s" : ""} saved</div>
           </div>
         </button>
@@ -2910,21 +2951,6 @@ function CollectionScreen({ user, onUpdateUser }) {
             {filter(locked).map((c) => (<div key={c.id} style={{ opacity: 0.2, filter: "grayscale(80%)" }}><Card card={c} size="sm" /></div>))}
           </div>
         </>
-      )}
-      {/* ── SAVED DECKS ── */}
-      {decks.length > 0 && (
-        <div style={{ marginTop: 48, borderTop: "1px solid #2a2010", paddingTop: 24 }}>
-          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#c09848", fontWeight: 700, letterSpacing: 2, marginBottom: 14 }}>SAVED DECKS</div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            {decks.map((d, i) => (
-              <div key={i} style={{ background: "#0e0c08", border: "1px solid #2a2010", borderRadius: 10, padding: "12px 16px", minWidth: 150 }}>
-                <div style={{ fontFamily: "'Cinzel',serif", fontSize: 12, color: "#e8c060", fontWeight: 700, marginBottom: 4 }}>{d.name}</div>
-                <div style={{ fontSize: 10, color: "#806040", marginBottom: 10 }}>{d.cards?.length || 0} cards</div>
-                <button onClick={() => deleteDeck(i)} style={{ fontSize: 9, color: "#904040", background: "none", border: "1px solid #3a1818", borderRadius: 4, padding: "3px 8px", cursor: "pointer", fontFamily: "'Cinzel',serif" }}>DELETE</button>
-              </div>
-            ))}
-          </div>
-        </div>
       )}
     </div>
   );
@@ -3029,8 +3055,8 @@ function HomeScreen({ setTab, user }) {
       <section style={{ background:"linear-gradient(180deg,rgba(0,0,0,0.7) 0%,rgba(8,6,4,0.98) 100%)", borderTop:"1px solid #2a2010", padding:"40px 28px 36px", overflow:"hidden" }}>
         <div style={{ maxWidth:1100, margin:"0 auto" }}>
           <div style={{ textAlign:"center", marginBottom:28 }}>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#705040", letterSpacing:4, fontWeight:700 }}>🏝 ANIME ISLAND · FEATURED CARDS</div>
-            <div style={{ fontSize:9, color:"#3a2820", marginTop:6, letterSpacing:2 }}>Rares · Legendary · 1 Prismatic — hunt them in the Store</div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#e090d0", letterSpacing:4, fontWeight:700 }}>🏝 ANIME ISLAND · ALTERNATIVE ART</div>
+            <div style={{ fontSize:9, color:"#9070a0", marginTop:6, letterSpacing:2 }}>Alt art skins for the current base card set — unlock them in the Store</div>
           </div>
           <div style={{ display:"flex", gap:22, justifyContent:"center", flexWrap:"nowrap", overflowX:"auto", paddingBottom:8, alignItems:"flex-end", paddingTop:28 }}>
             {showcaseCards.map((card, i) => {
@@ -3235,11 +3261,10 @@ function StoreScreen({ user, onUpdateUser }) {
     const col = { ...(user.collection || {}) };
     let dupeShards = 0;
     cards.forEach((c) => {
-      const max = CFG.deck.copies[c.rarity] || 1;
-      if ((col[c.id] || 0) >= max + 1) {
+      {
         const gain = c.rarity === "Common" ? 2 : c.rarity === "Uncommon" ? 5 : c.rarity === "Rare" ? 10 : c.rarity === "Epic" ? 20 : 40;
         dupeShards += gain; SFX.play("flip");
-      } else { col[c.id] = (col[c.id] || 0) + 1; }
+      }
     });
     const finalShards = newShards + dupeShards;
     if (dupeShards > 0) { SFX.play("rare_reveal"); showDupeToast(dupeShards); }
@@ -3292,20 +3317,15 @@ function StoreScreen({ user, onUpdateUser }) {
       </div>
 
       {!opening ? (<>
-        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, color: "#a09060", letterSpacing: 2, marginBottom: 12 }}>CARD PACKS</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))", gap: 14, marginBottom: 32 }}>
-          {PACKS.map((p) => (
-            <div key={p.id} onClick={() => buyPack(p)} style={{ background: "#121008", border: "1px solid " + p.color + "33", borderRadius: 14, padding: 20, cursor: (p.cost === 0 || shards >= p.cost) ? "pointer" : "not-allowed", opacity: (p.cost === 0 || shards >= p.cost) ? 1 : 0.4, textAlign: "center", transition: "all .25s" }}
-              onMouseEnter={(e) => { if (p.cost === 0 || shards >= p.cost) { e.currentTarget.style.transform = "translateY(-6px)"; e.currentTarget.style.boxShadow = "0 14px 40px " + p.color + "33"; } }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
-              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 14, fontWeight: 700, color: p.color, marginBottom: 6 }}>{p.name}</div>
-              <p style={{ fontSize: 10, color: "#a09060", margin: "0 0 12px", lineHeight: 1.5 }}>{p.desc}</p>
-              {p.cost === 0 && user?.freePackUsed === new Date().toDateString() ? (<div style={{ padding:"8px 14px", background:"rgba(255,255,255,0.03)", border:"1px solid #282010", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:"#504030", fontWeight:700 }}>CLAIMED TODAY</div>) : (<div style={{ padding:"8px 14px", background:p.color+"18", border:"1px solid "+p.color+"44", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:p.color, fontWeight:700 }}>{p.cost===0?"FREE · 1/DAY":`${p.cost} SHARDS`}</div>)}
-            </div>
-          ))}
+        {/* Cosmetics header */}
+        <div style={{ marginBottom:28 }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#806040", letterSpacing:3, marginBottom:6, fontWeight:700 }}>COSMETICS</div>
+          <p style={{ fontSize:11, color:"#604838", margin:0, lineHeight:1.6 }}>All cards come with their base art. Chase alternate art variants to stand out — these are purely cosmetic and do not affect gameplay.</p>
         </div>
-        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, color: "#a09060", letterSpacing: 2, marginBottom: 12 }}>SPECIAL EDITIONS</div>
-        <div style={{ background:"linear-gradient(135deg,#0e0620,#180a2e,#0a1020)", border:"2px solid #ff80c044", borderRadius:16, overflow:"hidden", position:"relative" }}>
+
+        {/* Anime Island pack — featured */}
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, color: "#a09060", letterSpacing: 2, marginBottom: 12 }}>ALT ART — CURRENT SET</div>
+        <div style={{ background:"linear-gradient(135deg,#0e0620,#180a2e,#0a1020)", border:"2px solid #ff80c044", borderRadius:16, overflow:"hidden", position:"relative", marginBottom:24 }}>
           <div style={{ position:"absolute", inset:0, background:"linear-gradient(135deg,rgba(255,128,192,0.07),rgba(160,64,255,0.09),rgba(64,192,255,0.05))", pointerEvents:"none" }} />
           <div style={{ position:"absolute", top:0, left:0, right:0, height:3, background:"linear-gradient(90deg,#ff80c0,#a040ff,#40c0ff,#ff80c0)" }} />
           <div style={{ position:"relative", zIndex:1, display:"grid", gridTemplateColumns:"1fr auto", gap:0, alignItems:"center" }}>
@@ -3314,12 +3334,28 @@ function StoreScreen({ user, onUpdateUser }) {
                 <div style={{ width:6, height:6, borderRadius:"50%", background:"#ff80c0", boxShadow:"0 0 8px #ff80c0", animation:"pulse 2s infinite" }} />
                 <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#ff80c0", letterSpacing:3, fontWeight:700 }}>LIVE NOW</span>
               </div>
-              <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:"#f0a0c0", marginBottom:6, textShadow:"0 0 30px #ff80c044" }}>Anime Island</div>
-              <p style={{ fontSize:11, color:"#b090c0", marginBottom:14, lineHeight:1.7, maxWidth:320 }}>Anime-style alternate art for every region. Prismatic holofoil variants. No purchase limits — collect them all.</p>
-              <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:16 }}>{["0.1% Prismatic","All 7 Regions","No Limits","Dupe → Shards"].map(tag=>(<span key={tag} style={{ padding:"3px 10px", background:"rgba(255,128,192,0.1)", border:"1px solid #ff80c030", borderRadius:12, fontSize:9, color:"#c090b0", fontFamily:"'Cinzel',serif" }}>{tag}</span>))}</div>
-              <button onClick={()=>{ const p=PACKS.find(pk=>pk.id==="anime_island"); if(p&&(shards>=p.cost))buyPack(p); else SFX.play("defeat"); }} style={{ padding:"11px 28px", background:"linear-gradient(135deg,#a020c0,#ff40a0)", border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, color:"#fff", cursor:"pointer", letterSpacing:2, boxShadow:"0 6px 24px rgba(255,64,160,0.4)", transition:"all .2s" }} onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>OPEN PACK · 300 ◈</button>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:"#f0a0c0", marginBottom:4, textShadow:"0 0 30px #ff80c044" }}>Anime Island</div>
+              <div style={{ fontSize:10, color:"#c080b0", marginBottom:10, fontFamily:"'Cinzel',serif", letterSpacing:1 }}>Alternate art for the base Forge {"&"} Fable card set</div>
+              <p style={{ fontSize:11, color:"#b090c0", marginBottom:14, lineHeight:1.7, maxWidth:320 }}>Anime-style alternate art for every region. Prismatic holofoil variants included. Dupes convert to shards automatically.</p>
+              <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:16 }}>{["Alt Art Only","0.1% Prismatic","All 7 Regions","Dupe → Shards"].map(tag=>(<span key={tag} style={{ padding:"3px 10px", background:"rgba(255,128,192,0.1)", border:"1px solid #ff80c030", borderRadius:12, fontSize:9, color:"#c090b0", fontFamily:"'Cinzel',serif" }}>{tag}</span>))}</div>
+              <button onClick={()=>{ const p=PACKS.find(pk=>pk.id==="anime_island"); if(p&&(shards>=p.cost))buyPack(p); else SFX.play("defeat"); }} style={{ padding:"11px 28px", background:shards>=300?"linear-gradient(135deg,#a020c0,#ff40a0)":"rgba(255,255,255,0.05)", border:`1px solid ${shards>=300?"transparent":"#3a2020"}`, borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, color:shards>=300?"#fff":"#604040", cursor:shards>=300?"pointer":"not-allowed", letterSpacing:2, boxShadow:shards>=300?"0 6px 24px rgba(255,64,160,0.4)":"none", transition:"all .2s" }} onMouseEnter={e=>{if(shards>=300)e.currentTarget.style.transform="translateY(-2px)";}} onMouseLeave={e=>e.currentTarget.style.transform="none"}>OPEN PACK · 300 ◈</button>
             </div>
-            <div style={{ padding:"20px 24px 20px 0", display:"flex", alignItems:"center", gap:8 }}>{["🌸","✨","🌺"].map((em,i)=>(<div key={i} style={{ width:70, height:100, borderRadius:10, background:"linear-gradient(160deg,#1a0830,rgba(255,128,192,0.15))", border:"2px solid #ff80c044", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:4, transform:`rotate(${(i-1)*7}deg) translateY(${i===1?-8:4}px)`, boxShadow:"0 4px 16px rgba(255,80,160,0.2)" }}><div style={{ fontSize:24 }}>{em}</div><div style={{ fontSize:7, color:"#f0a0c0", fontFamily:"'Cinzel',serif", textAlign:"center" }}>ANIME</div></div>))}</div>
+            <div style={{ padding:"20px 24px 20px 0", display:"flex", alignItems:"center", gap:8 }}>{["🌸","✨","🌺"].map((em,i)=>(<div key={i} style={{ width:70, height:100, borderRadius:10, background:"linear-gradient(160deg,#1a0830,rgba(255,128,192,0.15))", border:"2px solid #ff80c044", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:4, transform:`rotate(${(i-1)*7}deg) translateY(${i===1?-8:4}px)`, boxShadow:"0 4px 16px rgba(255,80,160,0.2)" }}><div style={{ fontSize:24 }}>{em}</div><div style={{ fontSize:7, color:"#f0a0c0", fontFamily:"'Cinzel',serif", textAlign:"center" }}>ALT ART</div></div>))}</div>
+          </div>
+        </div>
+
+        {/* Fables Pack — Coming Soon */}
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, color: "#a09060", letterSpacing: 2, marginBottom: 12, marginTop: 28 }}>UPCOMING</div>
+        <div style={{ background:"#0a0808", border:"1px solid #2a1a08", borderRadius:16, padding:"24px 28px", opacity:0.55, position:"relative", overflow:"hidden" }}>
+          <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:"linear-gradient(90deg,#c8a040,#f0e060,#c8a040)" }} />
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:20, flexWrap:"wrap" }}>
+            <div>
+              <div style={{ display:"inline-block", padding:"3px 12px", background:"rgba(255,255,255,0.04)", border:"1px solid #3a2c10", borderRadius:20, fontFamily:"'Cinzel',serif", fontSize:9, color:"#706040", letterSpacing:3, marginBottom:10 }}>COMING SOON</div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:"#c8a040", marginBottom:6, letterSpacing:1 }}>Fables Pack</div>
+              <p style={{ fontSize:11, color:"#705030", margin:"0 0 12px", lineHeight:1.7, maxWidth:360 }}>A new chapter of alternate art. Deep lore illustrations for every card in the base set — a darker, painterly aesthetic.</p>
+              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>{["New Art Style","All Base Cards","Painterly Lore Art","TBA"].map(tag=>(<span key={tag} style={{ padding:"3px 10px", background:"rgba(200,160,64,0.08)", border:"1px solid #4a3010", borderRadius:12, fontSize:9, color:"#705030", fontFamily:"'Cinzel',serif" }}>{tag}</span>))}</div>
+            </div>
+            <div style={{ padding:"8px 28px", background:"rgba(255,255,255,0.03)", border:"1px solid #3a2c10", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:12, color:"#505030", letterSpacing:3, fontWeight:700 }}>IN DEVELOPMENT</div>
           </div>
         </div>
       </>) : (
@@ -3757,7 +3793,6 @@ const NAV = [
   { id: "store",      label: "Store",   icon: "◈" },
   { id: "collection", label: "Cards",   icon: "❖" },
   { id: "community",  label: "Hub",     icon: "✦" },
-  { id: "forge",      label: "Forge",   icon: "⚗" },
   { id: "howto",      label: "Guide",   icon: "◉" },
 ];
 
@@ -3805,7 +3840,7 @@ function AlphaKeyAdminPanel() {
             </div>
       }
       {usedKeys?.length > 0 && (
-        <div style={{ fontSize:7, color:"#304050", marginTop:6, textAlign:"right", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>
+        <div style={{ fontSize:7, color:"#60a0c0", marginTop:6, textAlign:"right", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>
           {usedKeys.length} claimed · {usedKeys.map(r => r.used_by_name).join(", ")}
         </div>
       )}
@@ -3962,7 +3997,7 @@ export default function App() {
               <div style={{ position:"absolute", top:"50%", left:106, transform:"translateY(-50%)", right:16 }}>
                 {avatarErr && <div style={{ fontSize:8, color:"#e05050", marginBottom:3, fontFamily:"'Cinzel',serif" }}>{avatarErr}</div>}
                 <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, color:"#f0d878", fontWeight:900, letterSpacing:1, lineHeight:1, marginBottom:4 }}>{user.name}</div>
-                <div style={{ fontSize:8, color:"#504030", marginBottom:6, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user.email}</div>
+                <div style={{ fontSize:8, color:"#907050", marginBottom:6, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user.email}</div>
                 <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
                   <div style={{ padding:"3px 8px", background:`${rank.color}20`, border:`1px solid ${rank.color}55`, borderRadius:8, fontSize:9, color:rank.color, fontFamily:"'Cinzel',serif", fontWeight:700 }}>{rank.icon} {rank.name} · {user.rankedRating||1000}</div>
                 </div>
@@ -3979,7 +4014,7 @@ export default function App() {
                 ["SHARDS", user.shards||0, "#60c8ff"],
               ].map(([l,v,c],i) => (
                 <div key={i} style={{ padding:"14px 4px", textAlign:"center", borderRight: i<5?"1px solid #1a1408":"none", background: i%2===0?"rgba(0,0,0,0.2)":"transparent" }}>
-                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#503828", letterSpacing:1, marginBottom:4 }}>{l}</div>
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#907050", letterSpacing:1, marginBottom:4 }}>{l}</div>
                   <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:900, color:c, lineHeight:1 }}>{v}</div>
                 </div>
               ))}
@@ -4007,8 +4042,8 @@ export default function App() {
                           </div>
                           {/* Name + date */}
                           <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ fontSize:10, color:"#b09060", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:600 }}>{m.opponent||"Unknown"}</div>
-                            <div style={{ fontSize:7, color:"#2a1a08" }}>{m.turns||0}T · {m.date ? new Date(m.date).toLocaleDateString() : ""}</div>
+                            <div style={{ fontSize:10, color:"#d0b080", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:600 }}>{m.opponent||"Unknown"}</div>
+                            <div style={{ fontSize:8, color:"#906848", fontFamily:"'Cinzel',serif" }}>{m.turns||0}T · {m.date ? new Date(m.date).toLocaleDateString() : ""}</div>
                           </div>
                           {/* Badge + MMR */}
                           <div style={{ flexShrink:0, textAlign:"right" }}>
@@ -4037,7 +4072,6 @@ export default function App() {
       {tab === "play" && <GameTab user={user} onUpdateUser={update} setInPvpMatch={setInPvpMatch} />}
       {tab === "store" && <StoreScreen user={user} onUpdateUser={update} />}
       {tab === "collection" && <CollectionScreen user={user} onUpdateUser={update} />}
-      {tab === "forge" && <ForgeScreen />}
       {tab === "community" && <CommunityScreen user={user} />}
       {tab === "howto" && <GuideScreen />}
       <footer style={{ borderTop: "1px solid #1e1a0e", padding: 22, textAlign: "center" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, color: "#40301a" }}>Forge {"&"} Fable</div><p style={{ fontSize: 9, color: "#30280e", margin: "4px 0 0", letterSpacing: 1 }}>{CURRENT_PATCH}: RANKED MODE · PER-PLAYER ENVIRONMENTS · VFX OVERHAUL · EUPHORIC SFX</p></footer>
