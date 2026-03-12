@@ -22,6 +22,7 @@ const ALPHA_KEYS_LIST = [
   "FLAME-WARDEN-2","DUSK-HERALD-05","BONE-TIDE-RISE","STAR-FORGED-01","KRAKEN-WAKES-1",
 ];
 const ALPHA_KEYS = new Set(ALPHA_KEYS_LIST);
+const CURRENT_PATCH = "v17";
 
 // ═══ AUDIO ═══════════════════════════════════════════════════════════════════
 const SFX = (() => {
@@ -649,12 +650,12 @@ function Token({ c, selected, isTarget, canSelect, onClick, onRightClick, animTy
     </div>
   );
 }
-function HandCard({ card, playable, onClick }) {
+function HandCard({ card, playable, onClick, onRightClick }) {
   const [hov, setHov] = useState(false);
   const isBP = card.bloodpact; const isEnv = card.type === "environment";
   return (
     <div style={{ position: "relative" }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}>
-      <div onClick={playable ? onClick : undefined} style={{ width: 88, height: 124, flexShrink: 0, cursor: playable ? "pointer" : "not-allowed", opacity: playable ? 1 : 0.35, border: `2px solid ${isBP ? "#a81830" : hov && playable ? card.border : "#201c10"}`, borderRadius: 10, overflow: "hidden", transform: hov && playable ? "translateY(-22px) scale(1.05)" : "none", boxShadow: hov && playable ? `0 22px 38px ${card.border}66` : "none", transition: "all .2s", userSelect: "none", position: "relative" }}>
+      <div onClick={playable ? onClick : undefined} onContextMenu={onRightClick ? (e) => { e.preventDefault(); onRightClick(); } : undefined} style={{ width: 88, height: 124, flexShrink: 0, cursor: playable ? "pointer" : "not-allowed", opacity: playable ? 1 : 0.35, border: `2px solid ${isBP ? "#a81830" : hov && playable ? card.border : "#201c10"}`, borderRadius: 10, overflow: "hidden", transform: hov && playable ? "translateY(-22px) scale(1.05)" : "none", boxShadow: hov && playable ? `0 22px 38px ${card.border}66` : "none", transition: "all .2s", userSelect: "none", position: "relative" }}>
         {/* Full art */}
         <div style={{ position: "absolute", inset: 0 }}><CardArt card={card} /></div>
         {/* Bottom gradient */}
@@ -1021,6 +1022,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     setAnimUids({ [att.uid]: "attacking" });
     await new Promise(r => setTimeout(r, 220));
     setAnimUids(p => ({ ...p, [tgt.uid]: "hit" }));
+    vfx.add("attackImpact", { duration: 400 });
     await new Promise(r => setTimeout(r, 180));
     const av = att.currentAtk + ((att.keywords || []).includes("Resonate") ? g.enemyHand.length : 0);
     const nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av;
@@ -1044,7 +1046,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     await new Promise(r => setTimeout(r, 200));
     setAnimUids({});
   };
-  const atkFace = async () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking" }); await new Promise(r => setTimeout(r, 280)); const dmg = att.currentAtk + ((att.keywords || []).includes("Resonate") ? g.enemyHand.length : 0); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if (nHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 200)); setAnimUids({}); };
+  const atkFace = async () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking" }); await new Promise(r => setTimeout(r, 280)); const dmg = att.currentAtk + ((att.keywords || []).includes("Resonate") ? g.enemyHand.length : 0); vfx.add("damage", { amount: dmg, duration: 500 }); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if (nHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 200)); setAnimUids({}); };
   const attCard = attacker ? g.playerBoard.find((c) => c.uid === attacker) : null;
 
   return (<div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 16px 60px" }} onClick={() => { SFX.init(); }}>
@@ -1148,7 +1150,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
           </div>
           <div style={{ borderTop: "1px solid #2a2010", paddingTop: 10, marginBottom: 10 }}>
             <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap" }}>
-              {g.playerHand.map((card) => { const isEnv = card.type === "environment"; const isSpl = card.type === "spell"; const cp = g.phase === "player" && !aiThink && (isEnv || isSpl || g.playerBoard.length < CFG.maxBoard) && (card.bloodpact ? card.cost < g.playerHP : card.cost <= g.playerEnergy); return (<HandCard key={card.uid} card={resolveCardArt(card, user?.selectedArts || {})} playable={cp} onClick={() => playCard(card)} />); })}
+              {g.playerHand.map((card) => { const isEnv = card.type === "environment"; const isSpl = card.type === "spell"; const cp = g.phase === "player" && !aiThink && (isEnv || isSpl || g.playerBoard.length < CFG.maxBoard) && (card.bloodpact ? card.cost < g.playerHP : card.cost <= g.playerEnergy); return (<HandCard key={card.uid} card={resolveCardArt(card, user?.selectedArts || {})} playable={cp} onClick={() => playCard(card)} onRightClick={() => { SFX.play("card_inspect"); setPreviewCard(card); }} />); })}
             </div>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1499,7 +1501,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         const init = {
           turn: 1, phase: firstPlayer, winner: null,
           drawAnim: { p1Card: dc, p2Card: ec, first: firstPlayer },
-          p1Arts: user?.selectedArts || {}, p1Avatar: user?.avatarUrl || "",
+          p1Arts: user?.selectedArts || {}, p1Avatar: user?.avatarUrl || "", p1Name: user?.name || "Player",
           p1HP: CFG.startHP, p1Energy: CFG.startEnergy, p1Max: CFG.startEnergy,
           p1Hand: d1.slice(0, CFG.startHand).map((c) => makeInst(c, "p1")),
           p1Deck: d1.slice(CFG.startHand), p1Board: [],
@@ -1519,7 +1521,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           const { data: fresh } = await supabase.from("matches").select("game_state").eq("id", matchId).single();
           if (fresh?.game_state) {
             clearInterval(pollRef.current); pollRef.current = null;
-            const withArts = { ...fresh.game_state, p2Arts: user?.selectedArts || {}, p2Avatar: user?.avatarUrl || "" };
+            const withArts = { ...fresh.game_state, p2Arts: user?.selectedArts || {}, p2Avatar: user?.avatarUrl || "", p2Name: user?.name || "Player" };
             await supabase.from("matches").update({ game_state: withArts }).eq("id", matchId);
             setGs(withArts);
           }
@@ -1862,7 +1864,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
                 const needsAllies=(card.type==="spell")&&(card.effects||[]).some(e=>["buff_allies","heal_all_allies","buff_random_ally","buff_keyword_allies"].includes(e.effect));
                 const canAfford=card.bloodpact?card.cost<ai.playerHP:card.cost<=ai.playerEnergy;
                 const cp=isMyTurn&&!syncing&&canAfford&&(card.type==="environment"||card.type==="spell"||ai.playerBoard.length<CFG.maxBoard)&&!(needsAllies&&ai.playerBoard.length===0);
-                return(<HandCard key={card.uid} card={resolveCardArt(card,myRole==="p1"?gs?.p1Arts||{}:gs?.p2Arts||{})} playable={cp} onClick={()=>playCard(card)}/>);
+                return(<HandCard key={card.uid} card={resolveCardArt(card,myRole==="p1"?gs?.p1Arts||{}:gs?.p2Arts||{})} playable={cp} onClick={()=>playCard(card)} onRightClick={()=>{ SFX.play("card_inspect"); setPreviewCard(card); }}/>);
               })}
             </div>
           </div>
@@ -2281,7 +2283,7 @@ const toAppUser = (p, email) => ({
   battlesWon: p.battles_won ?? 0, cardsForged: p.cards_forged ?? 0,
   collection: p.collection || {}, decks: p.decks || [], avatarUrl: p.avatar_url || null,
   selectedArts: p.selected_arts || {}, matchHistory: p.match_history || [], altOwned: p.alt_owned || {},
-  joined: p.joined || new Date().toLocaleDateString(),
+  joined: p.joined || new Date().toLocaleDateString(), lastPatchSeen: p.last_patch_seen || null,
 });
 function useAuth() {
   const [user, setUser] = useState(null); const [loading, setLoading] = useState(true);
@@ -2330,7 +2332,7 @@ function useAuth() {
     completeProfile: (row, email) => { setUser(toAppUser(row, email)); setLoading(false); },
     update: async (delta) => {
       const updated = { ...user, ...delta };
-      const dbMap = { battlesPlayed: "battles_played", battlesWon: "battles_won", shards: "shards", collection: "collection", decks: "decks", avatarUrl: "avatar_url", selectedArts: "selected_arts", matchHistory: "match_history", altOwned: "alt_owned", freePackUsed: "free_pack_used" };
+      const dbMap = { battlesPlayed: "battles_played", battlesWon: "battles_won", shards: "shards", collection: "collection", decks: "decks", avatarUrl: "avatar_url", selectedArts: "selected_arts", matchHistory: "match_history", altOwned: "alt_owned", freePackUsed: "free_pack_used", lastPatchSeen: "last_patch_seen" };
       const dbDelta = {};
       Object.entries(delta).forEach(([k, v]) => { if (dbMap[k]) dbDelta[dbMap[k]] = v; });
       if (Object.keys(dbDelta).length > 0) {
@@ -2620,15 +2622,12 @@ function HomeScreen({ setTab, user }) {
     // Fetch recent completed battles
     (async () => {
       try {
-        const { data: matches } = await supabase.from("matches").select("id,p1_id,p2_id,game_state,updated_at").not("game_state->>winner","is",null).order("updated_at",{ascending:false}).limit(10);
+        const { data: matches } = await supabase.from("matches").select("id,game_state,updated_at").not("game_state->>winner","is",null).order("updated_at",{ascending:false}).limit(10);
         if (!matches?.length) return;
-        const pids = [...new Set(matches.flatMap(m => [m.p1_id,m.p2_id].filter(Boolean)))];
-        const { data: profiles } = await supabase.from("profiles").select("id,name,avatar_url").in("id",pids);
-        const pMap = {}; (profiles||[]).forEach(p => { pMap[p.id] = p; });
         setRecentBattles(matches.map(m => ({
           id: m.id,
-          p1: pMap[m.p1_id] || { name:"Player", avatar_url:null },
-          p2: pMap[m.p2_id] || { name:"Player", avatar_url:null },
+          p1Name: m.game_state?.p1Name || m.game_state?.p1Avatar || "Player",
+          p2Name: m.game_state?.p2Name || m.game_state?.p2Avatar || "Player",
           winner: m.game_state?.winner,
           turns: m.game_state?.turn || 0,
           date: m.updated_at,
@@ -2755,6 +2754,47 @@ function HomeScreen({ setTab, user }) {
         </div>
       </div>
     </section>
+    {/* Patch Notes Hub Section */}
+    {(() => {
+      const patchRows = [
+        { icon:"⚔", label:"PvP Matchmaking live — find real opponents" },
+        { icon:"🌊", label:"Energy redesigned as blue water droplets on cards & meters" },
+        { icon:"🎴", label:"Community Card Forge — describe an idea, get a full card" },
+        { icon:"🔊", label:"Euphoric end-turn sound · card inspect sound on right-click" },
+        { icon:"📺", label:"Live Arena feed shows recent completed matches" },
+        { icon:"🛡", label:"Nav locks while in PvP — auto-forfeit if you confirm leaving" },
+        { icon:"🏝", label:"Anime Island: 32 alt arts · 0.1% Prismatic Sun Strike" },
+        { icon:"🔑", label:"Alpha key system — each key single-use, admin panel for tcombz" },
+        { icon:"⚗", label:"Coming next: Leaderboard · ELO · Thornwood Expansion", dim:true },
+      ];
+      const [open, setOpen] = useState(false);
+      return (
+        <section style={{ background:"linear-gradient(180deg,#0c0a06,#0a0806)", borderTop:"1px solid #2a2010", padding:"0 28px" }}>
+          <div style={{ maxWidth:1100, margin:"0 auto" }}>
+            <button onClick={()=>setOpen(o=>!o)} style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 0", background:"transparent", border:"none", cursor:"pointer", borderBottom: open ? "1px solid #2a2010" : "none" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#806040", letterSpacing:3, fontWeight:700 }}>📋 PATCH NOTES</span>
+                <span style={{ padding:"2px 8px", background:"rgba(232,192,96,0.1)", border:"1px solid #e8c06033", borderRadius:10, fontSize:8, color:"#e8c060", fontFamily:"'Cinzel',serif", letterSpacing:2 }}>{CURRENT_PATCH}</span>
+              </div>
+              <span style={{ fontSize:12, color:"#504030", transition:"transform .25s", display:"inline-block", transform: open ? "rotate(180deg)" : "none" }}>▼</span>
+            </button>
+            {open && (
+              <div style={{ padding:"12px 0 18px", display:"flex", flexDirection:"column", gap:2 }}>
+                {patchRows.map((r,i) => (
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"5px 6px", borderRadius:6, background: i%2===0?"rgba(255,255,255,0.015)":"transparent" }}>
+                    <span style={{ fontSize:12, flexShrink:0, width:20, textAlign:"center" }}>{r.icon}</span>
+                    <span style={{ fontSize:11, color: r.dim ? "#4a4030" : "#c0b490", lineHeight:1.4, flex:1 }}>{r.label}</span>
+                  </div>
+                ))}
+                <div style={{ marginTop:8, background:"rgba(232,160,32,0.06)", border:"1px solid #e8a02022", borderRadius:8, padding:"8px 12px" }}>
+                  <span style={{ fontSize:9, color:"#806838", lineHeight:1.7 }}>⚠ Alpha phase — you may experience lag or sync delays. Thanks for fighting with us! 🔥</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      );
+    })()}
     {/* Live Arena Feed — 8-bit arcade style */}
     <section style={{ background:"#020402", borderTop:"2px solid #1a2a10", borderBottom:"1px solid #0a1208", padding:"24px 28px 28px", fontFamily:"monospace" }}>
       <div style={{ maxWidth:1100, margin:"0 auto" }}>
@@ -2779,8 +2819,8 @@ function HomeScreen({ setTab, user }) {
             <div style={{ display:"flex", flexDirection:"column", gap:0, position:"relative", zIndex:2 }}>
               {recentBattles.map((b, i) => {
                 const p1Won = b.winner === "p1";
-                const winnerName = p1Won ? b.p1.name : b.p2.name;
-                const loserName = p1Won ? b.p2.name : b.p1.name;
+                const winnerName = p1Won ? b.p1Name : b.p2Name;
+                const loserName = p1Won ? b.p2Name : b.p1Name;
                 const minutesAgo = b.date ? Math.round((Date.now() - new Date(b.date).getTime()) / 60000) : null;
                 const timeStr = minutesAgo === null ? "" : minutesAgo < 1 ? "just now" : minutesAgo < 60 ? `${minutesAgo}m ago` : `${Math.round(minutesAgo/60)}h ago`;
                 return (
@@ -3043,66 +3083,95 @@ function ForgeScreen() {
 }
 // ─── AI Card Forge (rule-based generator, no external API key needed) ─────────
 function generateCardConcept(idea) {
-  const factions = ["Thornwood","Shattered Expanse","Azure Deep","Ashfen","Ironmarch","Sunveil","Bloodpact"];
-  const types = ["Creature","Spell","Environment"];
-  const keywords = ["Swift","Shield","Echo","Bleed","Fracture","Resonate","Anchor"];
   const idea_lower = idea.toLowerCase();
+  const words = idea.replace(/[^a-zA-Z ]/g,"").split(/\s+/).filter(w => w.length > 3);
+
   // Faction heuristics
-  let faction = factions[Math.floor(Math.random() * factions.length)];
-  if (/fire|flame|ash|burn|ember/.test(idea_lower)) faction = "Ashfen";
-  else if (/water|ocean|sea|tide|wave|deep/.test(idea_lower)) faction = "Azure Deep";
-  else if (/shadow|void|rift|crystal|shard/.test(idea_lower)) faction = "Shattered Expanse";
-  else if (/iron|steel|forge|war|march|machine/.test(idea_lower)) faction = "Ironmarch";
-  else if (/sun|gold|light|veil|dawn|glow/.test(idea_lower)) faction = "Sunveil";
-  else if (/blood|death|pact|sacrifice|dark/.test(idea_lower)) faction = "Bloodpact";
-  else if (/forest|grove|leaf|vine|thorn|wolf|beast/.test(idea_lower)) faction = "Thornwood";
+  let faction = ["Thornwood","Shattered Expanse","Azure Deep","Ashfen","Ironmarch","Sunveil","Bloodpact"][Math.floor(Math.random()*7)];
+  if (/fire|flame|ash|burn|ember|lava|inferno|pyre/.test(idea_lower)) faction = "Ashfen";
+  else if (/water|ocean|sea|tide|wave|deep|coral|fish|aqua|flood/.test(idea_lower)) faction = "Azure Deep";
+  else if (/shadow|void|rift|crystal|shard|prism|echo|ghost/.test(idea_lower)) faction = "Shattered Expanse";
+  else if (/iron|steel|forge|war|march|machine|golem|gear|armor/.test(idea_lower)) faction = "Ironmarch";
+  else if (/sun|gold|light|veil|dawn|glow|radiant|holy|divine/.test(idea_lower)) faction = "Sunveil";
+  else if (/blood|death|pact|sacrifice|dark|soul|curse|undead|dread/.test(idea_lower)) faction = "Bloodpact";
+  else if (/forest|grove|leaf|vine|thorn|wolf|beast|root|bark|tree/.test(idea_lower)) faction = "Thornwood";
+
   // Type heuristics
   let type = "Creature";
-  if (/spell|cast|magic|curse|bolt|wave|blast/.test(idea_lower)) type = "Spell";
-  else if (/zone|field|terrain|land|realm|enviro/.test(idea_lower)) type = "Environment";
-  // Keywords
+  if (/spell|cast|magic|curse|bolt|wave|blast|summon|invoke|ritual/.test(idea_lower)) type = "Spell";
+  else if (/zone|field|terrain|land|realm|enviro|alter|reshape|change the field/.test(idea_lower)) type = "Environment";
+
+  // Keyword detection
+  const keywords = ["Swift","Shield","Echo","Bleed","Fracture","Resonate","Anchor"];
   const pickedKws = keywords.filter(k => {
     const n = k.toLowerCase();
-    if (n === "swift" && /fast|quick|swift|speed|dash/.test(idea_lower)) return true;
-    if (n === "shield" && /shield|guard|protect|defend|armor/.test(idea_lower)) return true;
-    if (n === "echo" && /echo|ghost|copy|mirror/.test(idea_lower)) return true;
-    if (n === "bleed" && /bleed|wound|poison|drain|rot/.test(idea_lower)) return true;
-    if (n === "fracture" && /split|fracture|clone|two|double/.test(idea_lower)) return true;
+    if (n === "swift" && /fast|quick|swift|speed|dash|rush|agile/.test(idea_lower)) return true;
+    if (n === "shield" && /shield|guard|protect|defend|armor|tank/.test(idea_lower)) return true;
+    if (n === "echo" && /echo|ghost|copy|mirror|reflect|twin/.test(idea_lower)) return true;
+    if (n === "bleed" && /bleed|wound|poison|drain|rot|venom|toxin/.test(idea_lower)) return true;
+    if (n === "fracture" && /split|fracture|clone|two|double|divide/.test(idea_lower)) return true;
+    if (n === "resonate" && /resonate|sing|music|hum|vibrate/.test(idea_lower)) return true;
     return false;
   }).slice(0, 2);
-  if (pickedKws.length === 0 && Math.random() > 0.4) pickedKws.push(keywords[Math.floor(Math.random() * keywords.length)]);
-  // Stats
-  const atk = type === "Creature" ? 1 + Math.floor(Math.random() * 5) : null;
-  const hp  = type === "Creature" ? 1 + Math.floor(Math.random() * 6) : null;
+  if (pickedKws.length === 0 && Math.random() > 0.4) pickedKws.push(keywords[Math.floor(Math.random()*keywords.length)]);
+
+  // Stats — scale by aggression words in idea
+  const isAggressive = /attack|destroy|kill|powerful|strong|mighty|devastating|burst/.test(idea_lower);
+  const isDefensive = /heal|protect|guard|restore|block|absorb|tough|durable/.test(idea_lower);
+  const atk = type === "Creature" ? (isAggressive ? 3 + Math.floor(Math.random()*4) : 1 + Math.floor(Math.random()*4)) : null;
+  const hp  = type === "Creature" ? (isDefensive ? 3 + Math.floor(Math.random()*5) : 1 + Math.floor(Math.random()*5)) : null;
   const cost = 1 + Math.floor(Math.random() * 5);
-  // Name construction
-  const prefixes = { Thornwood:["Thorn","Grove","Wild","Root","Bark"], "Shattered Expanse":["Rift","Void","Shard","Echo","Prism"], "Azure Deep":["Tide","Coral","Deep","Wave","Shell"], Ashfen:["Ash","Ember","Scorch","Pyre","Char"], Ironmarch:["Iron","Steel","Forge","March","Bolt"], Sunveil:["Sun","Dawn","Veil","Gilded","Radiant"], Bloodpact:["Blood","Dread","Soul","Hex","Vile"] };
-  const suffixes = { Creature:["Walker","Warden","Stalker","Herald","Caller","Kin"], Spell:["Strike","Bolt","Surge","Wave","Pulse","Rend"], Environment:["Hollow","Expanse","Depths","Wastes","Fields","Fen"] };
-  const px = prefixes[faction]||[]; const sx = suffixes[type]||[];
-  const name = `${px[Math.floor(Math.random()*px.length)]||""}${sx[Math.floor(Math.random()*sx.length)]||""}`;
-  // Ability text
-  const abilityTemplates = {
-    Creature: [
-      `When ${name} enters the battlefield, deal 1 damage to the lowest-HP enemy.`,
-      `${name} gains +${Math.ceil(atk/2)} ATK for each friendly creature on the board.`,
-      `At the start of your turn, restore 1 HP to your hero.`,
-      `When ${name} is destroyed, draw a card.`,
-      `${pickedKws[0]||"Swift"}. ${name} cannot be targeted by spells.`,
-    ],
-    Spell: [
-      `Deal ${2+Math.floor(Math.random()*3)} damage to a target creature.`,
-      `Restore ${2+Math.floor(Math.random()*3)} HP to your hero.`,
-      `Give all friendly creatures +1/+1 until the end of your turn.`,
-      `Destroy a creature with ${Math.ceil(cost/2)} or less ATK.`,
-    ],
-    Environment: [
-      `While active, all creatures enter with +1 HP. Revert on opponent's third turn.`,
-      `At the start of each turn, deal 1 damage to the enemy hero.`,
-      `All spells cost 1 less energy while this environment is in play.`,
-    ],
-  };
-  const tmpl = abilityTemplates[type]||abilityTemplates.Creature;
-  const ability = tmpl[Math.floor(Math.random()*tmpl.length)];
+
+  // Name — extract key noun from idea, combine with faction flavor
+  const creatureNouns = { dragon:"Drake",wolf:"Wolf",knight:"Warden",mage:"Weaver",priest:"Herald",demon:"Fiend",serpent:"Coil",golem:"Titan",witch:"Hexer",archer:"Shot",guardian:"Sentinel",shadow:"Shade",spirit:"Wisp",hunter:"Stalker" };
+  let themeWord = "";
+  for (const [kw, suffix] of Object.entries(creatureNouns)) { if (idea_lower.includes(kw)) { themeWord = suffix; break; } }
+  const facPfx = { Thornwood:["Thorn","Grove","Wild","Root","Bark"], "Shattered Expanse":["Rift","Void","Shard","Echo","Prism"], "Azure Deep":["Tide","Coral","Deep","Wave","Shell"], Ashfen:["Ash","Ember","Scorch","Pyre","Char"], Ironmarch:["Iron","Steel","Forge","March","Bolt"], Sunveil:["Sun","Dawn","Veil","Gilded","Radiant"], Bloodpact:["Blood","Dread","Soul","Hex","Vile"] };
+  const typeSfx = { Creature:["Walker","Warden","Stalker","Herald","Caller","Kin"], Spell:["Strike","Bolt","Surge","Wave","Pulse","Rend"], Environment:["Hollow","Expanse","Depths","Wastes","Fields","Fen"] };
+  const px = facPfx[faction]||[]; const sx = typeSfx[type]||[];
+  // Prefer idea-extracted word, fall back to faction prefix
+  const ideaWord = words.find(w => w.length > 4 && !/when|that|this|with|from|into|over|have|will|make|does/.test(w.toLowerCase()));
+  const namePfx = ideaWord ? (ideaWord.charAt(0).toUpperCase() + ideaWord.slice(1).toLowerCase()) : px[Math.floor(Math.random()*px.length)] || "";
+  const nameSfx = themeWord || sx[Math.floor(Math.random()*sx.length)] || "";
+  const name = namePfx && nameSfx && namePfx !== nameSfx ? `${namePfx} ${nameSfx}` : `${px[Math.floor(Math.random()*px.length)]}${sx[Math.floor(Math.random()*sx.length)]}`;
+
+  // Ability — directly reflect intent from the idea
+  const dmgAmt = 1 + Math.floor(Math.random()*3);
+  const healAmt = 1 + Math.floor(Math.random()*3);
+  const buffAmt = Math.floor(Math.random()*2)+1;
+  let ability = "";
+  if (/enter|arrives|play|summon|cast/.test(idea_lower) && /damage|deal|hurt|hit|strike/.test(idea_lower)) {
+    ability = `When ${name} enters the battlefield, deal ${dmgAmt} damage to all enemies.`;
+  } else if (/heal|restore|recover/.test(idea_lower)) {
+    ability = `When ${name} enters or attacks, restore ${healAmt} HP to your hero.`;
+  } else if (/destroy|kill|eliminate/.test(idea_lower) && type === "Creature") {
+    ability = `When ${name} destroys a creature, gain +${buffAmt} ATK permanently.`;
+  } else if (/buff|boost|strengthen|empower|all.*friend|friend.*all/.test(idea_lower)) {
+    ability = `When ${name} enters, give all other friendly creatures +${buffAmt}/+${buffAmt} until end of turn.`;
+  } else if (/draw|card/.test(idea_lower)) {
+    ability = `When ${name} enters the battlefield, draw a card.`;
+  } else if (type === "Spell" && /damage|deal|hurt/.test(idea_lower)) {
+    ability = `Deal ${dmgAmt+1} damage to a target creature or hero.`;
+  } else if (type === "Spell" && /heal|restore/.test(idea_lower)) {
+    ability = `Restore ${healAmt+2} HP to your hero and remove Bleed from all friendly creatures.`;
+  } else if (type === "Environment") {
+    ability = /damage|burn|hurt/.test(idea_lower)
+      ? `While active, deal 1 damage to the enemy hero at the start of each turn.`
+      : `While active, all friendly creatures enter with +1/+1.`;
+  } else {
+    // Fallback: write something based on keywords
+    const kw = pickedKws[0];
+    const fallbacks = {
+      Swift: `Swift. ${name} can attack immediately and ignores guard effects.`,
+      Shield: `${name} enters with Shield. When Shield breaks, draw a card.`,
+      Bleed: `${name} inflicts 1 Bleed on all enemies it damages.`,
+      Echo: `Echo. When ${name} leaves play, a 1/1 Echo copy enters your hand.`,
+      Fracture: `Fracture. ${name} splits into two copies at half stats when destroyed.`,
+      Resonate: `Resonate. ${name} gains +1 ATK for each card in your opponent's hand.`,
+    };
+    ability = fallbacks[kw] || `When ${name} enters the battlefield, deal ${dmgAmt} damage to the lowest-HP enemy.`;
+  }
+
   const rarity = Math.random() < 0.08 ? "Legendary" : Math.random() < 0.2 ? "Epic" : Math.random() < 0.4 ? "Rare" : Math.random() < 0.6 ? "Uncommon" : "Common";
   return { name, faction, type, cost, atk, hp, ability, keywords: pickedKws, rarity };
 }
@@ -3141,18 +3210,25 @@ function CommunityScreen({ user }) {
     if (!generated || !user || posting) return;
     setPosting(true);
     try {
-      await supabase.from("community_cards").insert([{
+      const { error: insertErr } = await supabase.from("community_cards").insert([{
         user_id: user.id, user_name: user.name || "Anonymous",
         name: generated.name, faction: generated.faction, type: generated.type,
         cost: generated.cost, atk: generated.atk, hp: generated.hp,
         ability: generated.ability, keywords: generated.keywords, rarity: generated.rarity,
         original_idea: idea, votes: 0,
       }]);
+      if (insertErr) throw insertErr;
       SFX.play("victory");
       setGenerated(null); setIdea("");
       await loadCards();
       setActiveTab("wall");
-    } catch(e) { alert("Could not post — make sure community_cards table exists in Supabase."); }
+    } catch(e) {
+      const msg = e?.message || String(e);
+      const needsTable = msg.includes("does not exist") || msg.includes("relation");
+      alert(needsTable
+        ? "community_cards table missing. Run in Supabase SQL editor:\n\nCREATE TABLE community_cards (\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  user_id UUID, user_name TEXT, name TEXT, faction TEXT, type TEXT,\n  cost INT, atk INT, hp INT, ability TEXT, keywords TEXT[],\n  rarity TEXT, original_idea TEXT, votes INT DEFAULT 0,\n  created_at TIMESTAMPTZ DEFAULT NOW()\n);\nALTER TABLE community_cards ENABLE ROW LEVEL SECURITY;\nCREATE POLICY \"read\" ON community_cards FOR SELECT USING (true);\nCREATE POLICY \"insert\" ON community_cards FOR INSERT WITH CHECK (auth.role()=\'authenticated\');\nCREATE POLICY \"vote\" ON community_cards FOR UPDATE USING (true);"
+        : `Post failed: ${msg}`);
+    }
     setPosting(false);
   };
 
@@ -3351,7 +3427,8 @@ function AlphaKeyAdminPanel() {
 }
 
 export default function App() {
-  const [tab, setTab] = useState("home"); const { user, loading, login, logout, update, completeProfile } = useAuth(); const [showProfile, setShowProfile] = useState(false); const [showPatchNotes, setShowPatchNotes] = useState(true); const [inPvpMatch, setInPvpMatch] = useState(false);
+  const [tab, setTab] = useState("home"); const { user, loading, login, logout, update, completeProfile } = useAuth(); const [showProfile, setShowProfile] = useState(false); const [showPatchNotes, setShowPatchNotes] = useState(false); const [inPvpMatch, setInPvpMatch] = useState(false);
+  useEffect(() => { if (user && user.lastPatchSeen !== CURRENT_PATCH) setShowPatchNotes(true); }, [user?.id]); // eslint-disable-line
   if (loading) return (<div style={{ minHeight: "100vh", background: "#161210", display: "flex", alignItems: "center", justifyContent: "center" }}><div style={{ fontFamily: "'Cinzel',serif", color: "#e8c060", fontSize: 16, letterSpacing: 4, animation: "pulse 1.5s ease-in-out infinite" }}>FORGING...</div></div>);
   return (<div style={{ minHeight: "100vh", background: "#161210", color: "#e8e0d0", fontFamily: "'Lora',Georgia,serif", overflowX: "hidden" }} onClick={() => setShowProfile(false)}>
     <style>{`
@@ -3410,7 +3487,7 @@ export default function App() {
       }
     `}</style>
     {(!user || user.__needsProfile) && <LoginModal needsProfile={!!user?.__needsProfile} userId={user?.id} userEmail={user?.email} onSignOut={logout} onProfileCreated={completeProfile} />}
-    {user && showPatchNotes && <PatchNotesModal onDismiss={() => setShowPatchNotes(false)} />}
+    {user && showPatchNotes && <PatchNotesModal onDismiss={() => { update({ lastPatchSeen: CURRENT_PATCH }); setShowPatchNotes(false); }} />}
     <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "radial-gradient(ellipse at 15% 15%,rgba(200,140,20,0.11) 0%,transparent 50%),radial-gradient(ellipse at 85% 85%,rgba(30,120,200,0.08) 0%,transparent 50%)" }} />
     <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "linear-gradient(180deg,#201c10 0%,#181408 100%)", backdropFilter: "blur(20px)", borderBottom: "2px solid #4a3c18", padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 72, boxShadow: "0 4px 24px rgba(0,0,0,0.5)" }} onClick={(e) => e.stopPropagation()}>
       <button onClick={() => setTab("home")} style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}>
@@ -3449,58 +3526,100 @@ export default function App() {
       </div>
       {user && (<div style={{ position: "relative", flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
         <button onClick={() => setShowProfile((p) => !p)} style={{ background:"none", border:"2px solid #e8c06044", borderRadius:"50%", padding:0, cursor:"pointer", width:36, height:36, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:"#e8c060" }}>{user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user.name||"?").slice(0,2).toUpperCase()}</button>
-        {showProfile && (<div style={{ position:"absolute", top:50, right:0, background:"linear-gradient(160deg,#1e1c10,#12100a)", border:"1px solid #3a3018", borderRadius:16, padding:20, width:310, zIndex:200, boxShadow:"0 24px 70px rgba(0,0,0,0.97)", animation:"fadeIn 0.2s ease-out" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:16 }}>
-            <div style={{ width:56, height:56, borderRadius:"50%", overflow:"hidden", border:"2px solid #e8c06066", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", background:"#1a1610", fontFamily:"'Cinzel',serif", fontSize:18, color:"#e8c060" }}>
-              {user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user.name||"?").slice(0,2).toUpperCase()}
-            </div>
-            <div>
-              <div style={{ fontFamily:"'Cinzel',serif", fontSize:15, color:"#e8c060", fontWeight:700, marginBottom:2 }}>{user.name}</div>
-              <div style={{ fontSize:10, color:"#604030", overflow:"hidden", textOverflow:"ellipsis", maxWidth:180 }}>{user.email}</div>
-              <div style={{ fontSize:9, color:"#503828", marginTop:1, fontFamily:"'Cinzel',serif" }}>Joined {user.joined}</div>
-            </div>
-          </div>
-          <label style={{ display:"block", width:"100%", padding:"7px", background:"rgba(232,192,96,0.08)", border:"1px solid #3a3018", borderRadius:7, color:"#a09060", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer", textAlign:"center", marginBottom:14, letterSpacing:1, boxSizing:"border-box" }}>
-            📷 CHANGE PHOTO
-            <input type="file" accept="image/*" style={{ display:"none" }} onChange={async (e) => {
-              const file = e.target.files[0]; if (!file) return;
-              if (file.size > 2 * 1024 * 1024) { alert("Image must be under 2MB"); return; }
-              const ext = file.name.split(".").pop().toLowerCase();
-              const path = `avatars/${user.id}.${ext}`;
-              const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true, contentType: file.type });
-              if (upErr) { alert("Upload failed: " + upErr.message + "\n\nMake sure the 'avatars' storage bucket exists in Supabase and is public."); return; }
-              const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
-              if (urlData?.publicUrl) await update({ avatarUrl: urlData.publicUrl + "?t=" + Date.now() });
-            }} />
-          </label>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6, marginBottom:14 }}>{[["Battles",user.battlesPlayed||0],["Wins",user.battlesWon||0],["Cards",Object.values(user.collection||{}).filter((v)=>v>0).length],["Shards",user.shards||0]].map(([l,v],i) => (<div key={i} style={{ background:"rgba(0,0,0,0.35)", borderRadius:7, padding:"8px 4px", textAlign:"center" }}><div style={{ fontSize:7, color:"#806040", letterSpacing:1, marginBottom:3 }}>{l}</div><div style={{ fontFamily:"'Cinzel',serif", fontSize:16, fontWeight:700, color:"#e8c060" }}>{v}</div></div>))}</div>
-          <div style={{ marginBottom:14 }}>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#e8a020", letterSpacing:2, marginBottom:8, fontWeight:700, borderBottom:"1px solid #2a2010", paddingBottom:5 }}>⚔ RECENT BATTLES</div>
-            {(user.matchHistory||[]).length === 0
-              ? <div style={{ fontSize:11, color:"#504030", fontStyle:"italic", padding:"8px 0", textAlign:"center" }}>No battles yet — fight someone!</div>
-              : <div style={{ maxHeight:260, overflowY:"auto", paddingRight:2 }}>{(user.matchHistory||[]).map((m,i) => {
-                  const won = m.result==="W";
-                  const ff = m.result==="FF" || m.forfeit;
-                  const rc = won?"#78cc45":ff?"#e8a020":"#e05050";
-                  const rl = won?"WIN":ff?"FF":"LOSS";
-                  return (
-                  <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"5px 8px", marginBottom:3, background:"rgba(0,0,0,0.35)", borderRadius:7, borderLeft:`3px solid ${rc}` }}>
-                    <div style={{ width:26, height:26, borderRadius:"50%", overflow:"hidden", border:`1px solid ${rc}55`, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", background:"#1a1408", fontSize:8, color:rc, fontFamily:"'Cinzel',serif", fontWeight:700 }}>
-                      {user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (user.name||"?").slice(0,2).toUpperCase()}
-                    </div>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:10, color:"#c0a870", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>vs {m.opponent||"Unknown"}</div>
-                      <div style={{ fontSize:8, color:"#504030", marginTop:1 }}>{m.turns||0} turns · {m.date ? new Date(m.date).toLocaleDateString() : ""}</div>
-                    </div>
-                    <span style={{ fontSize:9, fontWeight:900, fontFamily:"'Cinzel',serif", color:rc, flexShrink:0, padding:"2px 6px", background:`${rc}14`, borderRadius:5, border:`1px solid ${rc}33` }}>{rl}</span>
+        {showProfile && (() => {
+          const totalBattles = user.battlesPlayed || 0;
+          const wins = user.battlesWon || 0;
+          const losses = Math.max(0, totalBattles - wins);
+          const winRate = totalBattles > 0 ? Math.round((wins / totalBattles) * 100) : 0;
+          const cardCount = Object.values(user.collection||{}).filter(v=>v>0).length;
+          const deckCount = (user.decks||[]).length;
+          return (
+          <div style={{ position:"absolute", top:50, right:0, background:"linear-gradient(160deg,#1e1c10,#12100a)", border:"1px solid #3a3018", borderRadius:16, width:330, zIndex:200, boxShadow:"0 24px 70px rgba(0,0,0,0.97)", animation:"fadeIn 0.2s ease-out", overflow:"hidden" }}>
+            {/* Hero banner */}
+            <div style={{ background:"linear-gradient(135deg,#1a1608,#100e04)", borderBottom:"1px solid #2a2010", padding:"18px 20px 14px" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+                <label style={{ flexShrink:0, cursor:"pointer", position:"relative" }}>
+                  <div style={{ width:60, height:60, borderRadius:"50%", overflow:"hidden", border:"2px solid #e8c06066", display:"flex", alignItems:"center", justifyContent:"center", background:"#1a1610", fontFamily:"'Cinzel',serif", fontSize:18, color:"#e8c060" }}>
+                    {user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user.name||"?").slice(0,2).toUpperCase()}
                   </div>
-                  );
-                })}</div>
-            }
+                  <div style={{ position:"absolute", bottom:0, right:0, width:18, height:18, background:"#2a2010", border:"1px solid #4a3820", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:9 }}>📷</div>
+                  <input type="file" accept="image/*" style={{ display:"none" }} onChange={async (e) => {
+                    const file = e.target.files[0]; if (!file) return;
+                    if (file.size > 2*1024*1024) { alert("Image must be under 2MB"); return; }
+                    const ext = file.name.split(".").pop().toLowerCase();
+                    const path = `avatars/${user.id}.${ext}`;
+                    const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert:true, contentType:file.type });
+                    if (upErr) { alert("Upload failed: " + upErr.message); return; }
+                    const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+                    if (urlData?.publicUrl) await update({ avatarUrl: urlData.publicUrl + "?t=" + Date.now() });
+                  }} />
+                </label>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:16, color:"#e8c060", fontWeight:900, letterSpacing:1 }}>{user.name}</div>
+                  <div style={{ fontSize:9, color:"#604030", overflow:"hidden", textOverflow:"ellipsis", marginTop:2 }}>{user.email}</div>
+                  <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:5 }}>
+                    <div style={{ padding:"2px 8px", background:"rgba(232,192,96,0.1)", border:"1px solid #e8c06033", borderRadius:10, fontSize:8, color:"#e8a020", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>
+                      {totalBattles >= 50 ? "⚔ VETERAN" : totalBattles >= 20 ? "🗡 DUELIST" : totalBattles >= 5 ? "🛡 FIGHTER" : "🌱 RECRUIT"}
+                    </div>
+                    <div style={{ fontSize:8, color:"#503828", fontFamily:"'Cinzel',serif" }}>since {user.joined}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {/* Stats grid */}
+            <div style={{ padding:"12px 20px 0" }}>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:6, marginBottom:10 }}>
+                {[["WIN RATE", winRate+"%", winRate>=50?"#78cc45":"#e8a020"],["WINS",wins,"#78cc45"],["LOSSES",losses,"#e05050"]].map(([l,v,c],i)=>(
+                  <div key={i} style={{ background:"rgba(0,0,0,0.35)", borderRadius:7, padding:"8px 4px", textAlign:"center" }}>
+                    <div style={{ fontSize:6, color:"#806040", letterSpacing:1, marginBottom:2, fontFamily:"'Cinzel',serif" }}>{l}</div>
+                    <div style={{ fontFamily:"'Cinzel',serif", fontSize:17, fontWeight:700, color:c }}>{v}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:6, marginBottom:12 }}>
+                {[["CARDS",cardCount,"#e8c060"],["DECKS",deckCount,"#c0a870"],["SHARDS",user.shards||0,"#60c8ff"]].map(([l,v,c],i)=>(
+                  <div key={i} style={{ background:"rgba(0,0,0,0.25)", borderRadius:7, padding:"7px 4px", textAlign:"center", border:"1px solid #1e1c10" }}>
+                    <div style={{ fontSize:6, color:"#604030", letterSpacing:1, marginBottom:2, fontFamily:"'Cinzel',serif" }}>{l}</div>
+                    <div style={{ fontFamily:"'Cinzel',serif", fontSize:15, fontWeight:700, color:c }}>{v}</div>
+                  </div>
+                ))}
+              </div>
+              {/* Recent Battles */}
+              <div style={{ marginBottom:12 }}>
+                <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#e8a020", letterSpacing:2, marginBottom:7, fontWeight:700, borderBottom:"1px solid #2a2010", paddingBottom:5 }}>⚔ RECENT BATTLES</div>
+                {(user.matchHistory||[]).length === 0
+                  ? <div style={{ fontSize:11, color:"#504030", fontStyle:"italic", padding:"6px 0", textAlign:"center" }}>No battles yet — fight someone!</div>
+                  : <div style={{ maxHeight:200, overflowY:"auto", paddingRight:2, display:"flex", flexDirection:"column", gap:3 }}>
+                      {(user.matchHistory||[]).map((m,i) => {
+                        const won = m.result==="W";
+                        const ff = m.result==="FF" || m.forfeit;
+                        const rc = won?"#78cc45":ff?"#e8a020":"#e05050";
+                        return (
+                          <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"5px 8px", background:"rgba(0,0,0,0.35)", borderRadius:7, borderLeft:`3px solid ${rc}` }}>
+                            <div style={{ width:24, height:24, borderRadius:"50%", overflow:"hidden", border:`1px solid ${rc}55`, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", background:"#1a1408", fontSize:7, color:rc, fontFamily:"'Cinzel',serif", fontWeight:700 }}>
+                              {user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (user.name||"?").slice(0,2).toUpperCase()}
+                            </div>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ fontSize:10, color:"#c0a870", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>vs {m.opponent||"Unknown"}</div>
+                              <div style={{ fontSize:7, color:"#504030" }}>{m.turns||0}T · {m.date ? new Date(m.date).toLocaleDateString() : ""}</div>
+                            </div>
+                            <span style={{ fontSize:9, fontWeight:900, fontFamily:"'Cinzel',serif", color:rc, padding:"2px 6px", background:`${rc}14`, borderRadius:5, border:`1px solid ${rc}33`, flexShrink:0 }}>{won?"WIN":ff?"FF":"LOSS"}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                }
+              </div>
+            </div>
+            {/* Admin panel + sign out */}
+            <div style={{ padding:"0 20px 16px" }}>
+              {user.name?.toLowerCase() === "tcombz" && <AlphaKeyAdminPanel />}
+              <button onClick={()=>{ update({ lastPatchSeen: null }); setShowPatchNotes(true); setShowProfile(false); }} style={{ width:"100%", padding:"7px", background:"rgba(232,192,96,0.05)", border:"1px solid #3a3018", borderRadius:7, color:"#706040", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer", letterSpacing:1, marginBottom:6 }}>📋 VIEW PATCH NOTES</button>
+              <button onClick={() => { logout(); setShowProfile(false); }} style={{ width:"100%", padding:"9px", background:"rgba(180,30,30,0.12)", border:"1px solid #5a1818", borderRadius:7, color:"#c07060", fontFamily:"'Cinzel',serif", fontSize:10, cursor:"pointer", letterSpacing:1 }}>SIGN OUT</button>
+            </div>
           </div>
-          {user.name?.toLowerCase() === "tcombz" && <AlphaKeyAdminPanel />}
-          <button onClick={() => { logout(); setShowProfile(false); }} style={{ width:"100%", padding:"9px", background:"rgba(180,30,30,0.12)", border:"1px solid #5a1818", borderRadius:7, color:"#c07060", fontFamily:"'Cinzel',serif", fontSize:10, cursor:"pointer", letterSpacing:1 }}>SIGN OUT</button>
-        </div>)}
+          );
+        })()}
       </div>)}
     </nav>
     <div style={{ position: "relative", zIndex: 1 }} onClick={() => setShowProfile(false)}>
