@@ -738,14 +738,15 @@ function Token({ c, selected, isTarget, canSelect, onClick, onRightClick, animTy
       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(4,2,0,0.96) 0%, rgba(4,2,0,0.75) 28%, rgba(4,2,0,0.25) 50%, transparent 68%)", zIndex: 1 }} />
       {/* Top badges */}
       <div style={{ position: "absolute", top: 4, left: 4, right: 4, display: "flex", justifyContent: "space-between", zIndex: 3 }}>
-        {c.shielded && <div style={{ fontSize: 7, background: "rgba(60,120,200,0.85)", borderRadius: 3, padding: "1px 4px", color: "#fff", fontWeight: 700 }}>SHIELD</div>}
-        {c.level > 1 && <div style={{ marginLeft: "auto", background: c.border + "ee", borderRadius: "50%", width: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: "#fff", fontWeight: 700, fontFamily: "'Cinzel',serif" }}>{c.level}</div>}
+        {c.shielded && <div style={{ fontSize: 7, background: "rgba(40,100,200,0.9)", borderRadius: 4, padding: "1px 5px", color: "#a8d8ff", fontWeight: 700, border:"1px solid #60a0ffaa", letterSpacing:0.5 }}>♦ SHIELD</div>}
+        {c.level > 1 && <div style={{ marginLeft: "auto", background: c.border + "cc", borderRadius: 10, padding: "1px 5px", fontSize: 7, color: "#fff", fontWeight: 700, fontFamily: "'Cinzel',serif", letterSpacing: 0.5, border:`1px solid ${c.border}88` }}>LV{c.level}</div>}
       </div>
       {/* Keywords row */}
       {kws.length > 0 && <div style={{ position: "absolute", top: 24, left: 4, right: 4, display: "flex", gap: 2, flexWrap: "wrap", zIndex: 3 }}>{kws.map((k) => (<span key={k.name} style={{ fontSize: 6, padding: "1px 3px", borderRadius: 6, background: `${k.color}44`, color: k.color, border: `1px solid ${k.color}55` }}>{k.icon}{k.name}</span>))}</div>}
       {/* Bottom text */}
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0 6px 4px", zIndex: 3 }}>
         {c.bleed > 0 && <div style={{ fontSize: 7, color: "#ff6060", fontWeight: 700, marginBottom: 1 }}>🩸 BLEED {c.bleed}</div>}
+        {c.buffNote && <div style={{ fontSize: 7, color: "#60e880", fontWeight: 700, marginBottom: 1 }}>⬆ {c.buffNote}</div>}
         <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, color: "#fff", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textShadow: "0 0 6px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.levelLabel || c.name}</div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 2 }}>
           <span style={{ fontSize: 15, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#ff7050", textShadow: "0 0 8px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.currentAtk}</span>
@@ -754,12 +755,15 @@ function Token({ c, selected, isTarget, canSelect, onClick, onRightClick, animTy
       </div>
       {/* HP bar */}
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 3, background: "#080604", zIndex: 4 }}><div style={{ height: "100%", width: `${Math.max(0, pct) * 100}%`, background: pct < 0.4 ? "#d84040" : "#48a028", transition: "width .3s" }} /></div>
+      {/* Shield glow overlay */}
+      {c.shielded && <div style={{ position:"absolute", inset:0, borderRadius:8, border:"2px solid #60a0ffcc", pointerEvents:"none", zIndex:6, animation:"shieldPulse 2s ease-in-out infinite" }} />}
     </div>
   );
 }
 function HandCard({ card, playable, onClick, onRightClick }) {
   const [hov, setHov] = useState(false);
   const isBP = card.bloodpact; const isEnv = card.type === "environment";
+  const kws = KW.filter(k => (card.keywords || []).includes(k.name));
   return (
     <div style={{ position: "relative" }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}>
       <div onClick={playable ? onClick : undefined} onContextMenu={onRightClick ? (e) => { e.preventDefault(); onRightClick(); } : undefined} style={{ width: 88, height: 124, flexShrink: 0, cursor: playable ? "pointer" : "not-allowed", opacity: playable ? 1 : 0.35, border: `2px solid ${isBP ? "#a81830" : hov && playable ? card.border : "#201c10"}`, borderRadius: 10, overflow: "hidden", transform: hov && playable ? "translateY(-22px) scale(1.05)" : "none", boxShadow: hov && playable ? `0 22px 38px ${card.border}66` : "none", transition: "all .2s", userSelect: "none", position: "relative" }}>
@@ -794,6 +798,16 @@ function HandCard({ card, playable, onClick, onRightClick }) {
           <div style={{ fontSize: 12, color: "#d0c098", lineHeight: 1.65, marginBottom: 6 }}>{card.ability}</div>
           {card.atk != null && <div style={{ fontSize: 12, color: "#a09060", marginBottom: 3 }}>ATK <span style={{ color: "#ff7050", fontWeight: 700 }}>{card.atk}</span> · HP <span style={{ color: "#50c060", fontWeight: 700 }}>{card.hp}</span></div>}
           <div style={{ fontSize: 10, fontStyle: "italic", color: "#706040", marginTop: 4, lineHeight:1.5 }}>"{card.flavor}"</div>
+          {kws.length > 0 && (
+            <div style={{ marginTop: 6, borderTop: "1px solid #2a2010", paddingTop: 5, display: "flex", flexDirection: "column", gap: 3 }}>
+              {kws.map(k => (
+                <div key={k.name} style={{ fontSize: 10, lineHeight: 1.4 }}>
+                  <span style={{ color: k.color, fontWeight: 700 }}>{k.icon} {k.name}:</span>
+                  <span style={{ color: "#907858" }}> {k.desc}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -845,11 +859,11 @@ function resolveEffects(trigger, card, state, side, vfx) {
       case "damage_all_enemies": s[thB] = s[thB].map((c) => ({ ...c, currentHp: c.currentHp - fx.amount })).filter((c) => c.currentHp > 0); L(`${card.name}: ${fx.amount} to all enemies!`); if (vfx) vfx.add("ability", { color: "#ff4040" }); break;
       case "damage_all": s[myB] = s[myB].map((c) => c.uid === card.uid ? c : { ...c, currentHp: c.currentHp - fx.amount }).filter((c) => c.currentHp > 0); s[thB] = s[thB].map((c) => ({ ...c, currentHp: c.currentHp - fx.amount })).filter((c) => c.currentHp > 0); L(`${card.name}: ${fx.amount} to ALL!`); if (vfx) vfx.add("ability", { color: "#ff8040" }); break;
       case "damage_random_enemy": if (s[thB].length > 0) { const idx = Math.floor(Math.random() * s[thB].length); const tgt = s[thB][idx]; s[thB] = s[thB].map((c, i) => i === idx ? { ...c, currentHp: c.currentHp - fx.amount } : c).filter((c) => c.currentHp > 0); L(`${card.name} hits ${tgt.name} for ${fx.amount}!`); } break;
-      case "buff_allies": s[myB] = s[myB].map((c) => ({ ...c, currentAtk: c.currentAtk + (fx.atk || 0), currentHp: c.currentHp + (fx.hp || 0), maxHp: c.maxHp + (fx.hp || 0) })); L(`${card.name} buffs +${fx.atk || 0}/+${fx.hp || 0}!`); if (vfx) vfx.add("ability", { color: "#40ff60" }); break;
-      case "buff_random_ally": { const allies = s[myB].filter((c) => c.uid !== card.uid); if (allies.length > 0) { const t = allies[Math.floor(Math.random() * allies.length)]; s[myB] = s[myB].map((c) => c.uid === t.uid ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0) } : c); L(`${card.name} buffs ${t.name}!`); } break; }
-      case "buff_keyword_allies": s[myB] = s[myB].map((c) => (c.keywords || []).length > 0 ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0) } : c); break;
+      case "buff_allies": { const buffStr = `+${fx.atk||0}/+${fx.hp||0} (${card.name})`; s[myB] = s[myB].map((c) => ({ ...c, currentAtk: c.currentAtk + (fx.atk || 0), currentHp: c.currentHp + (fx.hp || 0), maxHp: c.maxHp + (fx.hp || 0), buffNote: buffStr })); L(`${card.name} buffs +${fx.atk || 0}/+${fx.hp || 0}!`); if (vfx) vfx.add("ability", { color: "#40ff60" }); break; }
+      case "buff_random_ally": { const allies = s[myB].filter((c) => c.uid !== card.uid); if (allies.length > 0) { const t = allies[Math.floor(Math.random() * allies.length)]; s[myB] = s[myB].map((c) => c.uid === t.uid ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), buffNote: `+${fx.atk||0} ATK (${card.name})` } : c); L(`${card.name} buffs ${t.name}!`); } break; }
+      case "buff_keyword_allies": s[myB] = s[myB].map((c) => (c.keywords || []).length > 0 ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), buffNote: `+${fx.atk||0} ATK (${card.name})` } : c); break;
       case "heal_all_allies": s[myB] = s[myB].map((c) => ({ ...c, currentHp: Math.min(c.maxHp, c.currentHp + fx.amount) })); break;
-      case "self_buff": s[myB] = s[myB].map((c) => c.uid === card.uid ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0) } : c); break;
+      case "self_buff": s[myB] = s[myB].map((c) => c.uid === card.uid ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), buffNote: `+${fx.atk||0} ATK (${card.name})` } : c); break;
       case "draw": { const dk = side === "player" ? "playerDeck" : "enemyDeck", hd = side === "player" ? "playerHand" : "enemyHand"; for (let i = 0; i < fx.amount; i++) { if (s[dk].length > 0 && s[hd].length < CFG.maxHand) { s[hd] = [...s[hd], makeInst(s[dk][0], side === "player" ? "p" : "e")]; s[dk] = s[dk].slice(1); } } L(`${card.name}: Draw ${fx.amount}!`); break; }
       case "bleed_all_enemies": s[thB] = s[thB].map((c) => ({ ...c, bleed: (c.bleed || 0) + fx.amount })); L(`${card.name}: ${fx.amount} Bleed to all!`); break;
     }
@@ -1492,8 +1506,10 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     const oppRating = myRole === "p1" ? (gs?.p2Rating || 1000) : (gs?.p1Rating || 1000);
     const ratingDelta = isRanked ? calcRatingDelta(myStoredRating, oppRating, won) : 0;
     const newRating = Math.max(0, (user?.rankedRating||1000) + ratingDelta);
+    const opRole = myRole === "p1" ? "p2" : "p1";
     const histEntry = {
       opponent: opponentName, result: won ? "W" : "L",
+      opponentAvatar: gs[opRole+"Avatar"] || "",
       date: new Date().toISOString(), turns: gs.turn || 0,
       ranked: isRanked, ratingDelta: isRanked ? ratingDelta : undefined,
     };
@@ -1639,14 +1655,17 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       setMyRole(role);
       const fetchFresh = async () => {
         const { data: fresh } = await supabase.from("matches").select("game_state").eq("id", matchId).single();
-        if (fresh?.game_state) { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } setGs(fresh.game_state); }
+        if (fresh?.game_state) {
+          if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+          setGs(prev => ((fresh.game_state.seq||0) > (prev?.seq||-1)) ? fresh.game_state : prev);
+        }
       };
       // Fast broadcast — use embedded gs if present to skip the DB re-fetch round-trip
       pvpBcRef.current = supabase.channel("pvp_bc_" + matchId)
         .on("broadcast", { event: "updated" }, (msg) => {
           if (msg?.payload?.gs) {
             if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-            setGs(msg.payload.gs);
+            setGs(prev => ((msg.payload.gs.seq||0) > (prev?.seq||-1)) ? msg.payload.gs : prev);
           } else {
             fetchFresh();
           }
@@ -1667,7 +1686,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         const ec = POOL[Math.floor(Math.random() * POOL.length)];
         const firstPlayer = (dc.cost || 0) >= (ec.cost || 0) ? "p1" : "p2";
         const init = {
-          turn: 1, phase: firstPlayer, winner: null,
+          turn: 1, phase: firstPlayer, winner: null, seq: 0,
           ranked: matchConfig?.ranked === true,
           p1Rating: user?.rankedRating || 1000,
           p2Rating: oppProfile?.ranked_rating ?? 1000,
@@ -1809,7 +1828,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     if (syncing) return;
     setSyncing(true); setAttacker(null);
     try {
-      const newGs = applyPvpAction(gs, action, myRole, vfx);
+      const newGs = { ...applyPvpAction(gs, action, myRole, vfx), seq: (gs.seq||0)+1 };
       setGs(newGs); // optimistic — show result immediately, don't wait for DB
       await supabase.from("matches").update({ game_state: newGs }).eq("id", matchId);
       // Embed full gs in broadcast so opponent applies state immediately without re-fetching
@@ -1844,7 +1863,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     setAnimUids(p => ({ ...p, [tgt.uid]: "hit" }));
     await new Promise(r => setTimeout(r, 180));
     // Compute result to find dying cards before committing state
-    const newGs = applyPvpAction(gs, { type: "attack_creature", attackerUid: attUid, targetUid: tgt.uid }, myRole, vfx);
+    const newGs = { ...applyPvpAction(gs, { type: "attack_creature", attackerUid: attUid, targetUid: tgt.uid }, myRole, vfx), seq: (gs.seq||0)+1 };
     const aiOld = toAI(gs, myRole), aiNew = toAI(newGs, myRole);
     const dyingUids = {};
     aiOld.playerBoard.forEach(c => { if (!aiNew.playerBoard.find(n => n.uid === c.uid)) dyingUids[c.uid] = "dying"; });
@@ -1878,7 +1897,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
 
   const forfeit = async () => {
     const op = myRole === "p1" ? "p2" : "p1";
-    const newGs = { ...gs, winner: op, log: [...(gs.log||[]).slice(-20), `${user?.name||"Player"} forfeited.`] };
+    const newGs = { ...gs, winner: op, seq: (gs.seq||0)+1, log: [...(gs.log||[]).slice(-20), `${user?.name||"Player"} forfeited.`] };
     setForfeitConfirm(false);
     setGs(newGs); // optimistic
     try {
@@ -1890,7 +1909,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       const isRanked = matchConfig?.ranked === true;
       const ffDelta = isRanked ? calcRatingDelta(user?.rankedRating||1000, 1000, false) : undefined;
       const newRating = isRanked ? Math.max(0, (user?.rankedRating||1000) + ffDelta) : undefined;
-      const histEntry = { opponent: opponentName, result: "FF", forfeit: true, date: new Date().toISOString(), turns: gs?.turn || 0, ranked: isRanked, ratingDelta: isRanked ? ffDelta : undefined };
+      const histEntry = { opponent: opponentName, result: "FF", forfeit: true, opponentAvatar: gs?.[op+"Avatar"] || "", date: new Date().toISOString(), turns: gs?.turn || 0, ranked: isRanked, ratingDelta: isRanked ? ffDelta : undefined };
       const upd = { battlesPlayed: (user?.battlesPlayed||0)+1, matchHistory: [histEntry, ...(user?.matchHistory||[])].slice(0,50) };
       if (isRanked) { upd.rankedRating = newRating; upd.rankedLosses = (user?.rankedLosses||0)+1; }
       onUpdateUser(upd);
@@ -3888,6 +3907,7 @@ export default function App() {
       @keyframes nebulaDrift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
       @keyframes starTwinkle{0%,100%{opacity:0.2}50%{opacity:0.9}}
       @keyframes floatBadge{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+      @keyframes shieldPulse{0%,100%{opacity:0.7;box-shadow:0 0 10px #60a0ff44,inset 0 0 8px #4080c033}50%{opacity:1;box-shadow:0 0 20px #60a0ff99,inset 0 0 16px #4080c066}}
       @keyframes dupeToast{0%{opacity:0;transform:translateY(20px) scale(0.8)}15%{opacity:1;transform:translateY(0) scale(1)}75%{opacity:1}100%{opacity:0;transform:translateY(-30px) scale(0.9)}}
       @keyframes vfxHitFlash{0%{opacity:0}10%{opacity:1}100%{opacity:0}}
       @keyframes vfxHealFlash{0%{opacity:0}15%{opacity:1}60%{opacity:.7}100%{opacity:0}}
@@ -4000,9 +4020,6 @@ export default function App() {
                 <div style={{ fontSize:8, color:"#504030", marginBottom:6, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user.email}</div>
                 <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
                   <div style={{ padding:"3px 8px", background:`${rank.color}20`, border:`1px solid ${rank.color}55`, borderRadius:8, fontSize:9, color:rank.color, fontFamily:"'Cinzel',serif", fontWeight:700 }}>{rank.icon} {rank.name} · {user.rankedRating||1000}</div>
-                  <div style={{ padding:"3px 8px", background:"rgba(232,192,96,0.08)", border:"1px solid #e8c06033", borderRadius:8, fontSize:8, color:"#e8a020", fontFamily:"'Cinzel',serif" }}>
-                    {totalBattles >= 50 ? "⚔ VETERAN" : totalBattles >= 20 ? "🗡 DUELIST" : totalBattles >= 5 ? "🛡 FIGHTER" : "🌱 RECRUIT"}
-                  </div>
                 </div>
               </div>
             </div>
@@ -4016,9 +4033,9 @@ export default function App() {
                 ["DECKS", deckCount, "#c0a870"],
                 ["SHARDS", user.shards||0, "#60c8ff"],
               ].map(([l,v,c],i) => (
-                <div key={i} style={{ padding:"10px 4px", textAlign:"center", borderRight: i<5?"1px solid #1a1408":"none", background: i%2===0?"rgba(0,0,0,0.2)":"transparent" }}>
-                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:6, color:"#503828", letterSpacing:1, marginBottom:3 }}>{l}</div>
-                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:14, fontWeight:900, color:c, lineHeight:1 }}>{v}</div>
+                <div key={i} style={{ padding:"14px 4px", textAlign:"center", borderRight: i<5?"1px solid #1a1408":"none", background: i%2===0?"rgba(0,0,0,0.2)":"transparent" }}>
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#503828", letterSpacing:1, marginBottom:4 }}>{l}</div>
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:900, color:c, lineHeight:1 }}>{v}</div>
                 </div>
               ))}
             </div>
@@ -4039,8 +4056,10 @@ export default function App() {
                             {user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (user.name||"?").slice(0,2).toUpperCase()}
                           </div>
                           <span style={{ fontSize:7, color:"#3a2a10", fontFamily:"'Cinzel',serif" }}>VS</span>
-                          {/* Opp placeholder */}
-                          <div style={{ width:26, height:26, borderRadius:"50%", border:"1.5px solid #2a1a0855", flexShrink:0, background:"#0a0806", display:"flex", alignItems:"center", justifyContent:"center", fontSize:6, color:"#503020", fontFamily:"'Cinzel',serif", fontWeight:700 }}>{(m.opponent||"??").slice(0,2).toUpperCase()}</div>
+                          {/* Opp avatar */}
+                          <div style={{ width:26, height:26, borderRadius:"50%", border:"1.5px solid #2a1a0855", flexShrink:0, background:"#0a0806", display:"flex", alignItems:"center", justifyContent:"center", fontSize:6, color:"#503020", fontFamily:"'Cinzel',serif", fontWeight:700, overflow:"hidden" }}>
+                            {m.opponentAvatar ? <img src={m.opponentAvatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (m.opponent||"??").slice(0,2).toUpperCase()}
+                          </div>
                           {/* Name + date */}
                           <div style={{ flex:1, minWidth:0 }}>
                             <div style={{ fontSize:10, color:"#b09060", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:600 }}>{m.opponent||"Unknown"}</div>
