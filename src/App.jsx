@@ -254,55 +254,53 @@ function CardPreview({ card, onClose }) {
 
 // ═══ PATCH NOTES MODAL ═══════════════════════════════════════════════════════
 const PATCH_NOTES = {
-  version: "v16",
-  title: "Anime Island Update",
+  version: "v17",
+  title: "Multiplayer Alpha Launch",
   sections: [
     {
-      heading: "🏝 Anime Island — 32 New Alt Arts",
-      color: "#ff80c0",
+      heading: "✅ Matchmaking — Live & Working",
+      color: "#78cc45",
       items: [
-        "All 32 cards now have a full Anime Island alt art — collect them via the new Anime Island Pack",
-        "Prismatic Sun Strike (☀ 0.1% drop rate) — an ultra-rare holographic alt art, 1-in-1000",
-        "Anime Island Pack in the Store: 5 alt art unlocks per pack · 300 shards · gorgeous anime style",
-        "Alpha Founders (sncombz@gmail.com) automatically unlock all 32 Anime Island arts + Prismatic",
+        "Queue → match → battle fully working for all players",
+        "Both players load the board simultaneously, no stuck screens",
+        "Actions sync to opponent in real-time via dual broadcast channel",
       ]
     },
     {
-      heading: "🎮 Multiplayer & Matchmaking",
+      heading: "⚔ PvP Battle Upgrades",
       color: "#60a8e8",
       items: [
-        "Matchmaking fully rewritten — pure polling loop eliminates ghost-row stale match bugs",
-        "Both players now reliably transition to battle together with no stuck searching states",
-        "PvP moves validated server-side via Supabase Edge Function — cheat-proof",
-        "Emote system active in both AI and PvP battles",
+        "Opponent attack animations — see enemy cards lunge and deal damage on your screen",
+        "Battle log: hover any card name to see full card preview",
+        "Environment card active indicator in battle — click for full details",
+        "Forfeit button with confirm dialog",
+        "Opening draw determines who goes first (shown to both players)",
+        "Profile photos visible on both sides of the board",
       ]
     },
     {
-      heading: "🃏 Cards & Store",
+      heading: "🏝 Anime Island",
+      color: "#ff80c0",
+      items: [
+        "32 alt arts across all cards · Prismatic Sun Strike at 0.1%",
+        "Anime Island Pack in Store: 300 shards · no limits",
+      ]
+    },
+    {
+      heading: "🃏 Store & Collection",
       color: "#e8c060",
       items: [
-        "Updated gacha odds: Common 35% · Uncommon 35% · Rare 20% · Epic 8% · Legendary 2%",
-        "New alpha perk: all new accounts start with 1,000 shards",
-        "Full-art cards with 2× HiDPI rendering — crystal clear on all screens",
-        "Alt Art selector in Collection — pick your preferred art per card",
-      ]
-    },
-    {
-      heading: "📖 UI Improvements",
-      color: "#78cc78",
-      items: [
-        "Deck Builder upgraded to full-screen panel with clearly visible card previews",
-        "Navigation bar redesigned — larger tabs, card-game iconography, gold active indicator",
-        "Match history tracked: last 20 PvP battles with W/L, opponent, and turn count",
+        "Free daily pack limit now persists across sessions",
+        "Alt Art selector: choose your art per card",
       ]
     },
     {
       heading: "⚡ Coming Next",
       color: "#806040",
       items: [
-        "Leaderboard and ELO ranking",
-        "The Forge — card crafting and upgrades",
-        "Thornwood Expansion — new card set",
+        "Leaderboard & ELO ranking",
+        "The Forge — card crafting",
+        "Thornwood Expansion",
       ]
     },
   ]
@@ -477,9 +475,9 @@ function Card({ card, size = "md", onClick, animDelay = 0 }) {
   const rarityGlow = isPrismatic ? "#ffffff" : (RARITY_GLOW[card.rarity] || null);
   const handleClick = () => { if (onClick) onClick(card); else { SFX.play("flip"); setFlip((f) => !f); } };
   return (
-    <div style={{ perspective: 1000, width: W, flexShrink: 0, animation: animDelay ? `cardReveal 0.6s ease-out ${animDelay}s both` : undefined, filter: isPrismatic ? undefined : rarityGlow ? `drop-shadow(0 0 7px ${rarityGlow}99)` : undefined, ...(isPrismatic ? { animation: `prismPulse 3s ease-in-out infinite` } : {}) }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}>
-      <div onClick={handleClick} style={{ width: W, transformStyle: "preserve-3d", transition: "transform .5s cubic-bezier(.4,0,.2,1)", transform: flip ? "rotateY(180deg)" : hov ? "translateY(-8px) scale(1.02)" : "none", cursor: "pointer", filter: hov ? `drop-shadow(0 12px 28px ${isPrismatic ? "#ffffff" : border}88)` : "none" }}>
-        <div style={{ backfaceVisibility: "hidden", border: isPrismatic ? "2px solid transparent" : `2px solid ${rarityGlow || border}`, borderRadius: 14, overflow: "hidden", position: "relative", height: H, width: W, ...(isPrismatic ? { backgroundImage: "linear-gradient(#0a0806,#0a0806), linear-gradient(135deg,#ff0080,#ff8000,#ffff00,#00ff80,#0080ff,#8000ff,#ff0080)", backgroundOrigin: "border-box", backgroundClip: "padding-box, border-box", borderWidth: 3 } : {}) }}>
+    <div style={{ perspective: 1000, width: W, flexShrink: 0, animation: animDelay ? `cardReveal 0.6s ease-out ${animDelay}s both` : (isPrismatic ? `prismPulse 3s ease-in-out infinite` : undefined), transform: hov ? "translateY(-8px) scale(1.02)" : "none", transition: "transform .2s ease, filter .2s ease", filter: hov ? `drop-shadow(0 12px 28px ${isPrismatic ? "#ffffff" : border}88)` : (isPrismatic ? undefined : rarityGlow ? `drop-shadow(0 0 7px ${rarityGlow}99)` : undefined) }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}>
+      <div onClick={handleClick} style={{ width: W, transformStyle: "preserve-3d", transition: "transform .5s cubic-bezier(.4,0,.2,1)", transform: flip ? "rotateY(180deg)" : "none", cursor: "pointer" }}>
+        <div style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", border: isPrismatic ? "2px solid transparent" : `2px solid ${rarityGlow || border}`, borderRadius: 14, overflow: "hidden", position: "relative", height: H, width: W, ...(isPrismatic ? { backgroundImage: "linear-gradient(#0a0806,#0a0806), linear-gradient(135deg,#ff0080,#ff8000,#ffff00,#00ff80,#0080ff,#8000ff,#ff0080)", backgroundOrigin: "border-box", backgroundClip: "padding-box, border-box", borderWidth: 3 } : {}) }}>
           {/* Full-bleed art */}
           <div style={{ position: "absolute", inset: 0 }}><CardArt card={card} /></div>
           {/* Prismatic rainbow shimmer */}
@@ -521,17 +519,9 @@ function Card({ card, size = "md", onClick, animDelay = 0 }) {
           {/* Inner frame */}
           <div style={{ position: "absolute", inset: 4, borderRadius: 10, border: `1px solid ${border}30`, pointerEvents: "none", zIndex: 5 }} />
         </div>
-        {/* Back - generic card back design */}
-        <div style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)", position: "absolute", top: 0, left: 0, right: 0, background: "linear-gradient(160deg,#1c1810,#0e0c08)", border: `2px solid ${border}`, borderRadius: 14, minHeight: W * 1.75, overflow: "hidden", boxShadow: `0 0 28px ${border}44` }}>
-          <div style={{ position: "absolute", inset: 0, background: `repeating-conic-gradient(${border}08 0% 25%, transparent 0% 50%) 0 0 / 20px 20px` }} />
-          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ width: "70%", height: "80%", border: `2px solid ${border}33`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: `radial-gradient(circle,${border}0a,transparent 70%)` }}>
-              <div style={{ width: 50, height: 50, borderRadius: "50%", border: `2px solid ${border}44`, display: "flex", alignItems: "center", justifyContent: "center", background: `radial-gradient(circle,${border}18,transparent)` }}>
-                <div style={{ width: 24, height: 24, borderRadius: "50%", background: `${border}33`, boxShadow: `0 0 15px ${border}22` }} />
-              </div>
-            </div>
-          </div>
-          <div style={{ position: "absolute", top: 8, left: 8, right: 8, bottom: 8, border: `1px solid ${border}18`, borderRadius: 8 }} />
+        {/* Back - Forge and Fable card back */}
+        <div style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", transform: "rotateY(180deg)", position: "absolute", top: 0, left: 0, width: W, height: H, borderRadius: 14, overflow: "hidden", boxShadow: "0 0 36px #c8901066, 0 8px 32px rgba(0,0,0,0.8)" }}>
+          <img src="/card-back.png" alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
         </div>
       </div>
     </div>
@@ -1421,7 +1411,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
         const init = {
           turn: 1, phase: firstPlayer, winner: null,
           drawAnim: { p1Card: dc, p2Card: ec, first: firstPlayer },
-          p1Arts: user?.selectedArts || {},
+          p1Arts: user?.selectedArts || {}, p1Avatar: user?.avatarUrl || "",
           p1HP: CFG.startHP, p1Energy: CFG.startEnergy, p1Max: CFG.startEnergy,
           p1Hand: d1.slice(0, CFG.startHand).map((c) => makeInst(c, "p1")),
           p1Deck: d1.slice(CFG.startHand), p1Board: [],
@@ -1441,7 +1431,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
           const { data: fresh } = await supabase.from("matches").select("game_state").eq("id", matchId).single();
           if (fresh?.game_state) {
             clearInterval(pollRef.current); pollRef.current = null;
-            const withArts = { ...fresh.game_state, p2Arts: user?.selectedArts || {} };
+            const withArts = { ...fresh.game_state, p2Arts: user?.selectedArts || {}, p2Avatar: user?.avatarUrl || "" };
             await supabase.from("matches").update({ game_state: withArts }).eq("id", matchId);
             setGs(withArts);
           }
@@ -1654,13 +1644,23 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       <div style={{ display:"flex", flexDirection:"column", minHeight:600 }}>
         <BattleChat user={user} aiMode={false} matchId={matchId} />
       </div>
-      <div style={{ background: envTheme?envTheme.bg:"#0c0a08", border:`1px solid ${envTheme?envTheme.glow+"44":"#242010"}`, borderRadius:14, overflow:"hidden", position:"relative", transition:"background 1.5s, border-color 1s" }}>
+      <div style={{ background: envTheme?envTheme.bg:"#1e1c14", border:`1px solid ${envTheme?envTheme.glow+"44":"#2e2c18"}`, borderRadius:14, overflow:"hidden", position:"relative", transition:"background 1.5s ease, border-color 1s ease" }}>
         <VFXOverlay effects={vfx.effects} />
+        {/* Environment particles */}
+        {envTheme && <div style={{ position:"absolute", inset:0, pointerEvents:"none", zIndex:1 }}><FloatingParticles count={20} color={envTheme.particle} speed={0.6} /></div>}
+        {/* Environment banner */}
+        {gs.env && (<div style={{ padding:"7px 14px", background:`${gs.env.border}15`, borderBottom:`1px solid ${gs.env.border}33`, display:"flex", alignItems:"center", gap:10, position:"relative", zIndex:2, animation:"slideDown 0.4s ease-out" }}>
+          <div style={{ width:6, height:6, borderRadius:"50%", background:gs.env.border, boxShadow:`0 0 8px ${gs.env.border}88`, animation:"pulse 2s infinite" }} />
+          <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:gs.env.border, fontWeight:700 }}>{gs.env.name}</span>
+          <span style={{ fontSize:9, color:"#a09068", flex:1 }}>{gs.env.ability}</span>
+        </div>)}
         {/* Opponent zone */}
-        <div style={{ background:"rgba(180,40,40,0.04)", borderBottom:"1px solid #241010", padding:"10px 14px" }}>
+        <div style={{ background:"rgba(180,40,40,0.09)", borderBottom:"1px solid #3a1818", padding:"10px 14px", position:"relative", zIndex:2 }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <div style={{ width:28, height:28, borderRadius:"50%", background:"linear-gradient(135deg,#3a0c0c,#200808)", border:"2px solid #a0202044", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:"#cc6666", fontFamily:"'Cinzel',serif", fontWeight:700 }}>{(opponentName||"?").slice(0,2).toUpperCase()}</div>
+              <div style={{ width:28, height:28, borderRadius:"50%", background:"linear-gradient(135deg,#3a0c0c,#200808)", border:"2px solid #a0202044", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:"#cc6666", fontFamily:"'Cinzel',serif", fontWeight:700 }}>
+                {(myRole==="p1" ? gs?.p2Avatar : gs?.p1Avatar) ? <img src={myRole==="p1" ? gs.p2Avatar : gs.p1Avatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (opponentName||"?").slice(0,2).toUpperCase()}
+              </div>
               <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#cc4848", letterSpacing:2, fontWeight:700 }}>{(opponentName||"OPPONENT").toUpperCase()}</span>
               <div style={{ display:"flex", gap:2 }}>{Array.from({length:ai.enemyHand.length}).map((_,i)=>(<div key={i} style={{ width:14, height:20, background:"linear-gradient(135deg,#240c0c,#180808)", border:"1px solid #341818", borderRadius:2 }}/>))}</div>
               <span style={{ fontSize:8, color:"#604040" }}>Deck:{ai.enemyDeck.length}</span>
@@ -1670,19 +1670,20 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
               <span style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:700, color:hpCol(ai.enemyHP) }}>{ai.enemyHP}</span>
             </div>
           </div>
+          <div style={{ fontSize:8, color:"#3a1414", fontFamily:"'Cinzel',serif", letterSpacing:3, marginBottom:4, textAlign:"center", fontWeight:700 }}>ENEMY FIELD</div>
           <div style={{ minHeight:105, display:"flex", gap:8, flexWrap:"wrap", justifyContent:"center", alignItems:"center" }}>
             {ai.enemyBoard.length===0?<span style={{ fontSize:10, color:"#241010", letterSpacing:3 }}>---</span>:ai.enemyBoard.map((c)=>(<Token key={c.uid} c={resolveCardArt(c,myRole==="p1"?gs?.p2Arts||{}:gs?.p1Arts||{})} animType={animUids[c.uid]} isTarget={!!attacker} canSelect={false} onClick={()=>{ if(attacker)atkCreature(c); else setPreviewCard(c); }}/>))}
           </div>
         </div>
         {/* Divider */}
-        <div style={{ padding:"6px 14px", background:"#080608", borderBottom:"1px solid #181010", borderTop:"1px solid #181010", display:"flex", alignItems:"center", justifyContent:"center", gap:14 }}>
+        <div style={{ padding:"6px 14px", background:envTheme?"rgba(0,0,0,0.2)":"#1a1510", borderBottom:"1px solid #181010", borderTop:"1px solid #181010", display:"flex", alignItems:"center", justifyContent:"center", gap:14, position:"relative", zIndex:2 }}>
           <div style={{ flex:1, height:1, background:"linear-gradient(to right,transparent,#382e18)" }}/>
-          {gs.env && (<button onClick={()=>setPreviewCard(gs.env)} style={{ padding:"3px 12px", background:`${gs.env.border||"#40a020"}18`, border:`1px solid ${gs.env.border||"#40a020"}55`, borderRadius:14, color:gs.env.border||"#60c040", fontFamily:"'Cinzel',serif", fontSize:8, letterSpacing:2, cursor:"pointer", display:"flex", alignItems:"center", gap:5 }} title="Click to view environment card"><span>🌍</span><span>{gs.env.name}</span></button>)}
-          {attCard?(<button onClick={ai.enemyBoard.length===0?atkFace:undefined} style={{ padding:"5px 16px", background:ai.enemyBoard.length===0?"linear-gradient(135deg,#6a0808,#a01010)":"rgba(255,255,255,0.04)", border:`1px solid ${ai.enemyBoard.length===0?"#e04040":"#2a1a10"}`, borderRadius:20, color:ai.enemyBoard.length===0?"#ffaaaa":"#604030", fontFamily:"'Cinzel',serif", fontSize:9, cursor:ai.enemyBoard.length===0?"pointer":"default" }}>{ai.enemyBoard.length===0?"STRIKE HERO":"SELECT TARGET"}</button>):(<span style={{ fontSize:9, color:"#241a08", letterSpacing:3, fontFamily:"'Cinzel',serif" }}>TURN {gs.turn}</span>)}
+          {attCard?(<button onClick={ai.enemyBoard.length===0?atkFace:undefined} style={{ padding:"5px 16px", background:ai.enemyBoard.length===0?"linear-gradient(135deg,#6a0808,#a01010)":"rgba(255,255,255,0.04)", border:`1px solid ${ai.enemyBoard.length===0?"#e04040":"#2a1a10"}`, borderRadius:20, color:ai.enemyBoard.length===0?"#ffaaaa":"#604030", fontFamily:"'Cinzel',serif", fontSize:9, cursor:ai.enemyBoard.length===0?"pointer":"default" }}>{ai.enemyBoard.length===0?"STRIKE HERO":"SELECT TARGET"}</button>):(<span style={{ fontSize:9, color:envTheme?envTheme.glow+"88":"#241a08", letterSpacing:3, fontFamily:"'Cinzel',serif" }}>TURN {gs.turn}</span>)}
           <div style={{ flex:1, height:1, background:"linear-gradient(to left,transparent,#382e18)" }}/>
         </div>
         {/* My zone */}
-        <div style={{ background:"rgba(40,100,20,0.04)", padding:"10px 14px" }}>
+        <div style={{ background:"rgba(40,100,20,0.09)", padding:"10px 14px", position:"relative", zIndex:2 }}>
+          <div style={{ fontSize:8, color:"#1e3010", fontFamily:"'Cinzel',serif", letterSpacing:3, marginBottom:4, textAlign:"center", fontWeight:700 }}>YOUR FIELD</div>
           <div style={{ minHeight:105, display:"flex", gap:8, flexWrap:"wrap", justifyContent:"center", alignItems:"center", marginBottom:10 }}>
             {ai.playerBoard.length===0?<span style={{ fontSize:10, color:"#181408", letterSpacing:3 }}>{isMyTurn?"PLAY A CARD":"WAITING..."}</span>:ai.playerBoard.map((c)=>(<Token key={c.uid} c={resolveCardArt(c,myRole==="p1"?gs?.p1Arts||{}:gs?.p2Arts||{})} animType={animUids[c.uid]} selected={attacker===c.uid} isTarget={false} canSelect={isMyTurn&&c.canAttack&&!c.hasAttacked&&!syncing} onClick={()=>selectAtt(c)} onRightClick={()=>setPreviewCard(c)}/>))}
           </div>
@@ -1708,7 +1709,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               <div style={{ display:"flex", alignItems:"center", gap:3 }}>
                 <span style={{ fontSize:8, color:"#c0a060", fontFamily:"'Cinzel',serif" }}>ENERGY</span>
-                <div style={{ display:"flex", gap:2 }}>{Array.from({length:ai.maxEnergy}).map((_,i)=>(<div key={i} style={{ width:9, height:9, borderRadius:"50%", background:i<ai.playerEnergy?"#e8b828":"#241a08", border:`1px solid ${i<ai.playerEnergy?"#e89a10":"#14100a"}`, transition:"background .3s" }}/>))}</div>
+                <div style={{ display:"flex", gap:3 }}>{Array.from({length:ai.maxEnergy}).map((_,i)=>(<div key={i} style={{ width:18, height:18, borderRadius:"50%", background:i<ai.playerEnergy?"radial-gradient(circle at 35% 35%,#ffe860,#e89a10,#a06000)":"radial-gradient(circle at 35% 35%,#2a2010,#160e04)", border:`1px solid ${i<ai.playerEnergy?"#f0c040":"#1e1608"}`, transition:"all .3s", boxShadow:i<ai.playerEnergy?"0 0 6px #e8b82866":"none" }}/>))}</div>
+                <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#e8b828", fontWeight:700 }}>{ai.playerEnergy}/{ai.maxEnergy}</span>
               </div>
               <button onClick={endTurn} disabled={!isMyTurn||syncing} style={{ padding:"8px 16px", background:isMyTurn&&!syncing?"linear-gradient(135deg,#c89010,#f0c040)":"rgba(255,255,255,0.04)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, letterSpacing:2, color:isMyTurn&&!syncing?"#1a1000":"#404030", cursor:isMyTurn&&!syncing?"pointer":"not-allowed" }}>{syncing?"SYNCING...":"END TURN"}</button>
             </div>
@@ -2454,7 +2456,7 @@ function HomeScreen({ setTab, user }) {
           {/* Patch badge */}
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(220,160,30,0.14)", border: "1px solid #d8a03055", borderRadius: 30, padding: "5px 18px", marginBottom: 22 }}>
             <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#e8c060", boxShadow: "0 0 10px #e8c060cc", animation: "pulse 2s infinite" }} />
-            <span style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#d8a838", letterSpacing: 3, fontWeight: 700 }}>PATCH 1.6 · ANIME ISLAND UPDATE</span>
+            <span style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#d8a838", letterSpacing: 3, fontWeight: 700 }}>v17 · MULTIPLAYER ALPHA LIVE</span>
           </div>
           {/* Title */}
           <h1 style={{ fontFamily: "'Cinzel',serif", fontSize: "clamp(48px,6.5vw,80px)", fontWeight: 900, lineHeight: 0.95, color: "#f0d878", margin: "0 0 6px", textShadow: "0 0 80px #c89020bb, 0 0 140px #c8902055, 0 4px 8px rgba(0,0,0,0.9), 0 2px 2px rgba(0,0,0,1)" }}>
@@ -2489,6 +2491,20 @@ function HomeScreen({ setTab, user }) {
       </div>
     </section>
 
+    {/* Card showcase strip */}
+    <section style={{ background:"linear-gradient(180deg,rgba(0,0,0,0.6) 0%,rgba(10,8,4,0.95) 100%)", borderTop:"1px solid #2a2010", padding:"32px 28px 24px", overflow:"hidden" }}>
+      <div style={{ maxWidth:1100, margin:"0 auto" }}>
+        <div style={{ textAlign:"center", fontFamily:"'Cinzel',serif", fontSize:9, color:"#604838", letterSpacing:4, marginBottom:20, fontWeight:700 }}>CARD SHOWCASE</div>
+        <div style={{ display:"flex", gap:16, justifyContent:"center", flexWrap:"nowrap", overflowX:"auto", paddingBottom:8 }}>
+          {POOL.filter(c => c.rarity === "Legendary" || c.rarity === "Epic").slice(0, 6).map((c, i) => (
+            <div key={c.id} style={{ flexShrink:0, animation:`cardReveal 0.5s ease-out ${i*0.1}s both` }}>
+              <Card card={c} size="sm" animDelay={i*0.08} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
     {/* Anime Island Banner */}
     <section style={{ background:"linear-gradient(135deg,#0e0620,#140830)", borderTop:"2px solid #ff80c033", borderBottom:"1px solid #ff80c022", padding:"18px 28px" }}>
       <div style={{ maxWidth:1100, margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:12 }}>
@@ -2517,8 +2533,8 @@ function HomeScreen({ setTab, user }) {
     {/* Bottom info bar */}
     <div style={{ background:"rgba(0,0,0,0.5)", borderTop:"1px solid rgba(255,255,255,0.05)", padding:"10px 28px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
       <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#504038", letterSpacing:2 }}>FORGE {"&"} FABLE</div>
-      <div style={{ fontSize:9, color:"#3a3028", letterSpacing:2, fontFamily:"'Cinzel',serif" }}>PATCH 1.6 · {Object.values(HOME_CARDS[0]?.id||{}).length||32} CARDS · SHATTERED REGION · {user ? "ALPHA" : "GUEST"}</div>
-      <div style={{ fontSize:9, color:"#3a3028", letterSpacing:1 }}>v16 · ALPHA</div>
+      <div style={{ fontSize:9, color:"#3a3028", letterSpacing:2, fontFamily:"'Cinzel',serif" }}>v17 · 32 CARDS · 7 REGIONS · {user ? "ALPHA" : "GUEST"}</div>
+      <div style={{ fontSize:9, color:"#3a3028", letterSpacing:1 }}>MULTIPLAYER ALPHA</div>
     </div>
   </>);
 }
