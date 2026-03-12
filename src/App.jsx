@@ -598,7 +598,7 @@ function rollAltArtPack(pack) {
 }
 
 // ═══ CARD COMPONENT ══════════════════════════════════════════════════════════
-function Card({ card, size = "md", onClick, animDelay = 0, isThird = false }) {
+function Card({ card, size = "md", onClick, animDelay = 0, isThird = false, hideCost = false }) {
   const [hov, setHov] = useState(false);
   const [flip, setFlip] = useState(false);
   const W = size === "sm" ? 148 : size === "lg" ? 228 : 188;
@@ -634,7 +634,7 @@ function Card({ card, size = "md", onClick, animDelay = 0, isThird = false }) {
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(4,2,0,0.97) 0%, rgba(4,2,0,0.90) 28%, rgba(4,2,0,0.55) 52%, transparent 74%)", zIndex: 1 }} />
           {/* Top row: cost badge + type tags */}
           <div style={{ position: "absolute", top: 8, left: 8, right: 8, display: "flex", justifyContent: "space-between", alignItems: "flex-start", zIndex: 4 }}>
-            <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, background: isBP ? "radial-gradient(#ff3050,#a00018)" : isEnv ? "radial-gradient(#40c0e0,#1a6888)" : isPrismatic ? "radial-gradient(#ffffff,#c0a0ff)" : "radial-gradient(#ffe040,#d09000)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontWeight: 900, fontSize: 15, color: isBP ? "#fff" : "#1a1000", boxShadow: isPrismatic ? "0 0 14px #ffffff88, 0 2px 6px rgba(0,0,0,0.8)" : isBP ? "0 0 10px #ff305088, 0 2px 6px rgba(0,0,0,0.8)" : isEnv ? "0 0 10px #40c0e088, 0 2px 6px rgba(0,0,0,0.8)" : "0 0 10px #ffe04088, 0 2px 6px rgba(0,0,0,0.8)" }}>{isBP ? "B" : isEnv ? "E" : card.cost}</div>
+            {!hideCost && <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, background: isBP ? "radial-gradient(#ff3050,#a00018)" : isEnv ? "radial-gradient(#40c0e0,#1a6888)" : isPrismatic ? "radial-gradient(#ffffff,#c0a0ff)" : "radial-gradient(#ffe040,#d09000)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontWeight: 900, fontSize: 15, color: isBP ? "#fff" : "#1a1000", boxShadow: isPrismatic ? "0 0 14px #ffffff88, 0 2px 6px rgba(0,0,0,0.8)" : isBP ? "0 0 10px #ff305088, 0 2px 6px rgba(0,0,0,0.8)" : isEnv ? "0 0 10px #40c0e088, 0 2px 6px rgba(0,0,0,0.8)" : "0 0 10px #ffe04088, 0 2px 6px rgba(0,0,0,0.8)" }}>{isBP ? "B" : isEnv ? "E" : card.cost}</div>}
             <div style={{ display: "flex", flexDirection: "column", gap: 3, alignItems: "flex-end" }}>
               {isPrismatic && <div style={{ fontSize: 7, background: "linear-gradient(135deg,rgba(0,0,0,0.85),rgba(0,0,0,0.75))", color: "#ffffff", border: "1px solid rgba(255,255,255,0.6)", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700, backgroundImage:"linear-gradient(135deg,#ff008088,#8000ff88)", animation:"prismShimmer 4s linear infinite", backgroundSize:"400% 400%" }}>✦ PRISMATIC</div>}
               {isAnimeIsland && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.8)", color: "#ff80c0", border: "1px solid #ff80c055", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>🏝 AI</div>}
@@ -1451,7 +1451,7 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
                     onMouseEnter={e => { if (!blocked) e.currentTarget.style.transform="translateY(-4px)"; }}
                     onMouseLeave={e => { e.currentTarget.style.transform="none"; }}>
                     {inDeck > 0 && <div style={{ position:"absolute", top:-6, right:-6, zIndex:10, background:"#e8b828", borderRadius:"50%", width:20, height:20, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:900, color:"#1a1000", boxShadow:"0 2px 8px #e8b82888", border:"2px solid #1a1000" }}>{inDeck}</div>}
-                    <Card card={resolveCardArt(c, selectedArts)} size="sm" />
+                    <Card card={resolveCardArt(c, selectedArts)} size="sm" hideCost />
                   </div>
                 );
               })}
@@ -2787,7 +2787,7 @@ function CollectionScreen({ user, onUpdateUser }) {
   const decks = user?.decks || [];
   const saveDeck = async (deck, editIndex) => {
     let newDecks;
-    if (editIndex != null) {
+    if (editIndex != null && editIndex !== "starter") {
       newDecks = decks.map((d, i) => i === editIndex ? deck : d);
     } else {
       newDecks = [...decks, deck];
@@ -2821,7 +2821,7 @@ function CollectionScreen({ user, onUpdateUser }) {
       <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6, position:"relative" }} onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); SFX.play("card_inspect"); setPreviewCard(displayCard); }}>
         {/* Quantity badge */}
         <div style={{ position:"absolute", top:-6, right:-6, zIndex:10, background:"#e8b828", borderRadius:"50%", width:22, height:22, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:900, color:"#1a1000", boxShadow:"0 2px 8px #e8b82888", border:"2px solid #1a1000", pointerEvents:"none" }}>{qty}</div>
-        <Card card={displayCard} size="sm" animDelay={i * 0.04} />
+        <Card card={displayCard} size="sm" animDelay={i * 0.04} hideCost />
         {alts.length > 0 && (
           <div style={{ position:"relative" }}>
             <button onClick={() => setArtPicker(isOpen ? null : card.id)}
@@ -2900,8 +2900,25 @@ function CollectionScreen({ user, onUpdateUser }) {
                 <div style={{ fontSize:10, color:"#806040", marginTop:3 }}>Start fresh from 40 cards — Rule of 3, max 4 Champions</div>
               </div>
             </div>
-            {/* Existing decks */}
-            {decks.length === 0 && <div style={{ textAlign:"center", padding:"40px 0", color:"#503828", fontFamily:"'Cinzel',serif", fontSize:13 }}>No saved decks yet — create your first deck above</div>}
+            {/* Pinned: Starter Deck always first */}
+            {(() => {
+              const hasStarter = decks.some(d => d.name === "Starter Deck");
+              if (hasStarter) return null;
+              return (
+                <div style={{ display:"flex", alignItems:"center", gap:16, padding:"18px 22px", background:"rgba(232,192,96,0.04)", border:"1px solid #3a2c10", borderRadius:14 }}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                      <div style={{ fontFamily:"'Cinzel',serif", fontSize:16, fontWeight:700, color:"#f0e0c8", letterSpacing:1 }}>Starter Deck</div>
+                      <span style={{ fontSize:7, padding:"2px 7px", background:"rgba(232,192,96,0.12)", border:"1px solid #e8c06044", borderRadius:20, fontFamily:"'Cinzel',serif", color:"#a08040", letterSpacing:1 }}>DEFAULT</span>
+                    </div>
+                    <div style={{ fontSize:10, color:"#806040", marginTop:4 }}>{STARTER_DECK.length} cards</div>
+                  </div>
+                  <button onClick={() => setDeckBuilderState({ isNew:false, index:"starter", name:"Starter Deck", cards:STARTER_DECK })}
+                    style={{ padding:"9px 20px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:"#1a1000", cursor:"pointer", letterSpacing:1 }}>EDIT</button>
+                </div>
+              );
+            })()}
+            {/* Saved decks */}
             {decks.map((d, i) => (
               <div key={i} style={{ display:"flex", alignItems:"center", gap:16, padding:"18px 22px", background:"#0e0c08", border:"1px solid #2a2010", borderRadius:14 }}>
                 <div style={{ flex:1 }}>
@@ -2971,13 +2988,13 @@ function HomeScreen({ setTab, user }) {
     {/* HERO — space nebula background */}
     <section style={{ position: "relative", minHeight: 580, overflow: "hidden" }}>
       {/* Nebula animated background */}
-      <div style={{ position:"absolute", inset:0, background:"linear-gradient(120deg,#0a0420 0%,#10062a 25%,#060818 50%,#1a0828 75%,#060c1e 100%)", backgroundSize:"400% 400%", animation:"nebulaDrift 18s ease infinite", zIndex:0 }} />
+      <div style={{ position:"absolute", inset:0, background:"linear-gradient(120deg,#0a0420 0%,#10062a 25%,#060818 50%,#1a0828 75%,#060c1e 100%)", backgroundSize:"400% 400%", animation:"nebulaDrift 18s ease infinite", willChange:"background-position", zIndex:0 }} />
       {/* Purple/blue nebula clouds */}
       <div style={{ position:"absolute", top:"-20%", left:"-10%", width:"70%", height:"140%", background:"radial-gradient(ellipse at center,rgba(80,20,160,0.25) 0%,rgba(40,0,120,0.15) 40%,transparent 70%)", pointerEvents:"none", zIndex:1 }} />
       <div style={{ position:"absolute", top:"10%", right:"-5%", width:"60%", height:"120%", background:"radial-gradient(ellipse at center,rgba(180,100,20,0.12) 0%,rgba(120,60,0,0.08) 40%,transparent 70%)", pointerEvents:"none", zIndex:1 }} />
       <div style={{ position:"absolute", bottom:"0", left:"30%", width:"50%", height:"80%", background:"radial-gradient(ellipse at center,rgba(20,60,160,0.18) 0%,rgba(0,30,100,0.1) 50%,transparent 70%)", pointerEvents:"none", zIndex:1 }} />
-      {/* Star field */}
-      {Array.from({length:30}).map((_,i) => (<div key={i} style={{ position:"absolute", width:i%5===0?3:2, height:i%5===0?3:2, borderRadius:"50%", background:"#fff", top:`${(i*37)%90}%`, left:`${(i*61)%95}%`, opacity:0.3+((i*13)%6)*0.1, animation:`starTwinkle ${2+(i%4)*0.8}s ease-in-out ${(i*0.3)%3}s infinite`, zIndex:1 }} />))}
+      {/* Star field — 16 stars for perf */}
+      {Array.from({length:16}).map((_,i) => (<div key={i} style={{ position:"absolute", width:i%4===0?3:2, height:i%4===0?3:2, borderRadius:"50%", background:"#fff", top:`${(i*47)%90}%`, left:`${(i*67)%95}%`, opacity:0.3+((i*13)%6)*0.1, animation:`starTwinkle ${2.5+(i%3)*1}s ease-in-out ${(i*0.4)%2.5}s infinite`, willChange:"opacity", zIndex:1 }} />))}
       <FloatingParticles count={20} color="#a060ff" speed={0.4} />
 
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "56px 28px 44px", display: "grid", gridTemplateColumns: "1fr 400px", gap: 52, alignItems: "center", position: "relative", zIndex: 2 }}>
@@ -3313,7 +3330,7 @@ function StoreScreen({ user, onUpdateUser }) {
           <span style={{ fontFamily: "'Cinzel',serif", fontSize: 18, fontWeight: 900, color: "#e8c060" }}>{shards}</span>
           <span style={{ fontSize: 10, color: "#a09060" }}>SHARDS</span>
         </div>
-        <p style={{ fontSize: 10, color: "#605040", marginTop: 8 }}>Shards reset to 30 every Friday at midnight</p>
+        <p style={{ fontSize: 10, color: "#605040", marginTop: 8 }}>Alpha testers start with 1,000 shards · resets to 1,000 every Friday at midnight</p>
       </div>
 
       {!opening ? (<>
@@ -3863,6 +3880,8 @@ export default function App() {
     <style>{`
       @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Lora:ital,wght@0,400;0,500;1,400&display=swap');
       html{zoom:1.25}
+      @media(max-width:1280px){html{zoom:1}}
+      @media(max-width:768px){html{zoom:1}}
       *{box-sizing:border-box}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:#161210}::-webkit-scrollbar-thumb{background:#4a4022;border-radius:3px}select option{background:#1a1408}button{transition:all .18s}canvas{image-rendering:auto}
       @keyframes vfxShake{0%,100%{transform:translate(-50%,-50%)}25%{transform:translate(-55%,-45%)}75%{transform:translate(-45%,-55%)}}
       @keyframes vfxFloat{0%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(-50%,-120%)}}
@@ -3896,6 +3915,8 @@ export default function App() {
       @keyframes cardLunge{0%{transform:translateY(0) scale(1)}30%{transform:translateY(-44px) scale(1.1) rotate(-3deg)}55%{transform:translateY(-36px) scale(1.06) rotate(-1deg)}100%{transform:translateY(0) scale(1) rotate(0deg)}}
       @keyframes cardLungeDown{0%{transform:translateY(0) scale(1)}30%{transform:translateY(44px) scale(1.1) rotate(3deg)}55%{transform:translateY(36px) scale(1.06) rotate(1deg)}100%{transform:translateY(0) scale(1) rotate(0deg)}}
       @keyframes cardHit{0%{transform:translate(0,0) rotate(0deg);filter:none}8%{transform:translate(-14px,6px) rotate(-4deg);filter:brightness(5) saturate(0) drop-shadow(0 0 18px #ff1010)}22%{transform:translate(12px,5px) rotate(3deg);filter:brightness(3.5) saturate(0.1) drop-shadow(0 0 12px #ff2020)}40%{transform:translate(-8px,3px) rotate(-2deg);filter:brightness(2.5) drop-shadow(0 0 8px #ff3030)}58%{transform:translate(6px,1px) rotate(1deg);filter:brightness(1.8)}75%{transform:translate(-4px,0) rotate(0deg);filter:brightness(1.2)}100%{transform:translate(0,0) rotate(0deg);filter:none}}
+      @media(prefers-reduced-motion:reduce){*{animation-duration:0.01ms!important;transition-duration:0.01ms!important}}
+      @supports(-webkit-backdrop-filter:blur(0px)){nav{-webkit-backdrop-filter:blur(10px)!important;backdrop-filter:blur(10px)!important}}
       @media(max-width:768px){
         nav{height:60px!important;padding:0 6px!important}
         nav button{padding:6px 8px!important;min-width:44px!important}
@@ -4067,7 +4088,7 @@ export default function App() {
         })()}
       </div>)}
     </nav>
-    <div style={{ position: "relative", zIndex: 1 }} onClick={() => setShowProfile(false)}>
+    <div style={{ position: "relative" }} onClick={() => setShowProfile(false)}>
       {tab === "home" && <HomeScreen setTab={setTab} user={user} />}
       {tab === "play" && <GameTab user={user} onUpdateUser={update} setInPvpMatch={setInPvpMatch} />}
       {tab === "store" && <StoreScreen user={user} onUpdateUser={update} />}
