@@ -23,7 +23,7 @@ const ALPHA_KEYS_LIST = [
   "FLAME-WARDEN-2","DUSK-HERALD-05","BONE-TIDE-RISE","STAR-FORGED-01","KRAKEN-WAKES-1",
 ];
 const ALPHA_KEYS = new Set(ALPHA_KEYS_LIST);
-const CURRENT_PATCH = "v19.2";
+const CURRENT_PATCH = "v19.3";
 
 // ═══ AUDIO ═══════════════════════════════════════════════════════════════════
 const SFX = (() => {
@@ -448,15 +448,15 @@ function PatchNotesModal({ onDismiss }) {
     <span style={{ marginLeft:6, padding:"1px 6px", background:"rgba(120,204,69,0.18)", border:"1px solid #78cc4555", borderRadius:8, fontSize:8, color:"#78cc45", fontFamily:"'Cinzel',serif", fontWeight:700, letterSpacing:1, verticalAlign:"middle" }}>NEW</span>
   );
   const rows = [
-    { icon:"🪙", label:<>Opening draw coin flip animation — who goes first? Fate decides<NEW /></> },
-    { icon:"💀", label:<>Battle log shows death cause — "Slain by [attacker]"<NEW /></> },
-    { icon:"🎯", label:<>Ashfen Caldera now buffs your creatures +1 ATK instead of burning everyone<NEW /></> },
-    { icon:"🟢", label:<>Deck builder pip indicators — green dots go 3→2→1 as you add copies<NEW /></> },
-    { icon:"🔊", label:<>Card inspect sound updated — euphoric tone on right-click inspect<NEW /></> },
-    { icon:"⚔", label:<>PvP battle log uses player names instead of p1/p2<NEW /></> },
-    { icon:"🩸", label:<>Bleed now damages hero HP each turn — stacking board bleeds tick the face<NEW /></> },
-    { icon:"⚡", label:<>Player actions no longer delayed — UI releases lock immediately on play<NEW /></> },
-    { icon:"🌊", label:<>VFX cleaned up — no more stacking attack/death rings, all fluent cross-browser<NEW /></> },
+    { icon:"🏜", label:<>Shifting Dunes now reduces hand card costs by 1 when active<NEW /></> },
+    { icon:"⚡", label:<>Env effects fire instantly on play AND stack each turn until expiry<NEW /></> },
+    { icon:"⚔", label:<>Attack VFX timing fixed — lunge completes before impact, fluid kills<NEW /></> },
+    { icon:"🖼", label:<>Homepage showcase shows cards in full glory — no cost or rarity overlays<NEW /></> },
+    { icon:"🏷", label:<>All cards have correct type labels: Champion, Creature, Spell, Environment<NEW /></> },
+    { icon:"🪙", label:"Opening draw coin flip animation — who goes first? Fate decides" },
+    { icon:"💀", label:'Battle log shows death cause — "Slain by [attacker]"' },
+    { icon:"🎯", label:"Ashfen Caldera buffs your creatures +1 ATK each turn" },
+    { icon:"🟢", label:"Deck builder pip indicators — green dots go 3→2→1 as you add copies" },
     { icon:"🏆", label:"Ranked Mode · ELO rating · Iron to Grandmaster tiers" },
     { icon:"🌍", label:"Per-player environments · PvP matchmaking · alpha key system" },
     { icon:"⚗", label:"Coming next: Leaderboard · Thornwood Expansion · Draft Mode", dim:true },
@@ -856,6 +856,12 @@ function TurnTimer({ active, duration = CFG.turnTimer, onExpire }) {
 }
 
 // ═══ GAME ENGINE ═════════════════════════════════════════════════════════════
+// Returns effective cost of a card accounting for active environment cost reductions
+function getEffectiveCost(card, env) {
+  if (!env || card.type === "environment") return card.cost;
+  const reduction = (env.effects||[]).filter(e => e.effect === "cost_reduction").reduce((n,e) => n+(e.amount||0), 0);
+  return Math.max(1, card.cost - reduction);
+}
 function makeInst(c, p = "p") { return { ...c, uid: uid(p + c.id), currentHp: c.hp, maxHp: c.hp, currentAtk: c.atk, canAttack: false, hasAttacked: false, bleed: 0, echoQueued: false, shielded: (c.keywords || []).includes("Shield") }; }
 
 function resolveEffects(trigger, card, state, side, vfx) {
@@ -893,7 +899,7 @@ function computeEnemyPlayPhase(g, vfx) {
   if (s.enemyDeck.length > 0 && s.enemyHand.length < 6) { s.enemyHand = [...s.enemyHand, makeInst(s.enemyDeck[0], "e")]; s.enemyDeck = s.enemyDeck.slice(1); L("Enemy draws."); }
   let en = s.maxEnergy;
   [...s.enemyHand].sort((a, b) => b.cost - a.cost).forEach((card) => {
-    if (card.type === "environment") { if (!card.bloodpact && card.cost <= en) { en -= card.cost; s.environment = { ...card, owner: "enemy", turnsRemaining: 4 }; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid); L(`Enemy: ${card.name}! (2 rounds)`); s = resolveEffects("onPlay", card, s, "enemy", vfx); } return; }
+    if (card.type === "environment") { if (!card.bloodpact && card.cost <= en) { en -= card.cost; s.environment = { ...card, owner: "enemy", turnsRemaining: 4 }; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid); L(`Enemy: ${card.name}! (2 rounds)`); s = resolveEffects("onPlay", card, s, "enemy", vfx); s = resolveEffects("onTurnStart", card, s, "enemy", vfx); } return; }
     if (card.type === "spell") { if (card.bloodpact ? card.cost < s.enemyHP : card.cost <= en) { if (card.bloodpact) s.enemyHP -= card.cost; else en -= card.cost; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid); L(`Enemy casts ${card.name}!`); s = resolveEffects("onPlay", card, s, "enemy", vfx); } return; }
     if (s.enemyBoard.length >= CFG.maxBoard) return;
     const ec = card.bloodpact ? 0 : card.cost; if (ec > en) return;
@@ -935,7 +941,7 @@ function computeEnemyTurn(g, vfx) {
   if (s.enemyDeck.length > 0 && s.enemyHand.length < 6) { s.enemyHand = [...s.enemyHand, makeInst(s.enemyDeck[0], "e")]; s.enemyDeck = s.enemyDeck.slice(1); L("Enemy draws."); }
   let en = s.maxEnergy;
   [...s.enemyHand].sort((a, b) => b.cost - a.cost).forEach((card) => {
-    if (card.type === "environment") { if (!card.bloodpact && card.cost <= en) { en -= card.cost; s.environment = { ...card, owner: "enemy" }; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid); L(`Enemy: ${card.name}!`); s = resolveEffects("onPlay", card, s, "enemy", vfx); } return; }
+    if (card.type === "environment") { if (!card.bloodpact && card.cost <= en) { en -= card.cost; s.environment = { ...card, owner: "enemy" }; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid); L(`Enemy: ${card.name}!`); s = resolveEffects("onPlay", card, s, "enemy", vfx); s = resolveEffects("onTurnStart", card, s, "enemy", vfx); } return; }
     if (card.type === "spell") { if (card.bloodpact ? card.cost < s.enemyHP : card.cost <= en) { if (card.bloodpact) s.enemyHP -= card.cost; else en -= card.cost; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid); L(`Enemy casts ${card.name}!`); s = resolveEffects("onPlay", card, s, "enemy", vfx); } return; }
     if (s.enemyBoard.length >= CFG.maxBoard) return;
     const ec = card.bloodpact ? 0 : card.cost; if (ec > en) return;
@@ -1160,12 +1166,14 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   const playCard = (card) => {
     if (g.phase !== "player" || aiThink) return;
     if (card.type === "environment") {
-      if (card.bloodpact ? card.cost >= g.playerHP : card.cost > g.playerEnergy) return; SFX.play("env_play"); vfx.add("envchange", { color: card.border || "#40a020" }); setAttacker(null); setGame((prev) => { let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= card.cost; s.log = [...s.log, `${card.name} reshapes the field! (2 rounds)`]; } s.environment = { ...card, owner: "player", turnsRemaining: 4 }; s = resolveEffects("onPlay", card, s, "player", vfx); vfx.add("environment", { color: card.border, duration: 2000 }); return s; }); return; }
-    if (card.type === "spell") { if (card.bloodpact ? card.cost >= g.playerHP : card.cost > g.playerEnergy) return; SFX.play("ability"); vfx.add("spell", { color: card.border || "#c090d0" }); setAttacker(null); setGame((prev) => { let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= card.cost; s.log = [...s.log, `Cast ${card.name}!`]; } s = resolveEffects("onPlay", card, s, "player", vfx); return s; }); return; }
+      const ec = getEffectiveCost(card, g.environment);
+      if (card.bloodpact ? card.cost >= g.playerHP : ec > g.playerEnergy) return; SFX.play("env_play"); vfx.add("envchange", { color: card.border || "#40a020" }); setAttacker(null); setGame((prev) => { let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= ec; s.log = [...s.log, `${card.name} reshapes the field! (2 rounds)`]; } s.environment = { ...card, owner: "player", turnsRemaining: 4 }; s = resolveEffects("onPlay", card, s, "player", vfx); s = resolveEffects("onTurnStart", card, s, "player", vfx); vfx.add("environment", { color: card.border, duration: 2000 }); return s; }); return; }
+    if (card.type === "spell") { const ec = getEffectiveCost(card, g.environment); if (card.bloodpact ? card.cost >= g.playerHP : ec > g.playerEnergy) return; SFX.play("ability"); vfx.add("spell", { color: card.border || "#c090d0" }); setAttacker(null); setGame((prev) => { let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= getEffectiveCost(card, prev.environment); s.log = [...s.log, `Cast ${card.name}!`]; } s = resolveEffects("onPlay", card, s, "player", vfx); return s; }); return; }
     if (g.playerBoard.length >= CFG.maxBoard) return;
-    if (card.bloodpact ? card.cost >= g.playerHP : card.cost > g.playerEnergy) return;
+    const ecCreature = getEffectiveCost(card, g.environment);
+    if (card.bloodpact ? card.cost >= g.playerHP : ecCreature > g.playerEnergy) return;
     SFX.play("card"); setAttacker(null);
-    setGame((prev) => { let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= card.cost; s.log = [...s.log, `You play ${card.name}!`]; } const inst = { ...makeInst(card, "pb"), canAttack: (card.keywords || []).includes("Swift"), hasAttacked: false }; s.playerBoard = [...prev.playerBoard, inst]; if ((card.keywords || []).includes("Fracture") && s.playerBoard.length < CFG.maxBoard) { s.playerBoard = [...s.playerBoard, { ...inst, uid: uid("pf"), currentHp: Math.ceil(card.hp / 2), maxHp: Math.ceil(card.hp / 2), currentAtk: Math.ceil(card.atk / 2), name: card.name + " Frag", keywords: [], levelUp: [], effects: [] }]; s.log = [...s.log, "Fragment enters!"]; } s = resolveEffects("onPlay", card, s, "player", vfx); return s; });
+    setGame((prev) => { const eff = getEffectiveCost(card, prev.environment); let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= eff; s.log = [...s.log, `You play ${card.name}!`]; } const inst = { ...makeInst(card, "pb"), canAttack: (card.keywords || []).includes("Swift"), hasAttacked: false }; s.playerBoard = [...prev.playerBoard, inst]; if ((card.keywords || []).includes("Fracture") && s.playerBoard.length < CFG.maxBoard) { s.playerBoard = [...s.playerBoard, { ...inst, uid: uid("pf"), currentHp: Math.ceil(card.hp / 2), maxHp: Math.ceil(card.hp / 2), currentAtk: Math.ceil(card.atk / 2), name: card.name + " Frag", keywords: [], levelUp: [], effects: [] }]; s.log = [...s.log, "Fragment enters!"]; } s = resolveEffects("onPlay", card, s, "player", vfx); return s; });
   };
 
   const selectAtt = (c) => { if (g.phase !== "player" || aiThink) return; if (attacker === c.uid) { setAttacker(null); return; } if (c.canAttack && !c.hasAttacked) setAttacker(c.uid); };
@@ -1175,10 +1183,10 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     if (!att) return;
     SFX.play("attack");
     setAnimUids({ [att.uid]: "attacking" });
-    await new Promise(r => setTimeout(r, 220));
+    await new Promise(r => setTimeout(r, 380));
     setAnimUids(p => ({ ...p, [tgt.uid]: "hit" }));
-    vfx.add("attackImpact", { duration: 400 });
-    await new Promise(r => setTimeout(r, 180));
+    vfx.add("attackImpact", { duration: 500 });
+    await new Promise(r => setTimeout(r, 250));
     const av = att.currentAtk + ((att.keywords || []).includes("Resonate") ? g.enemyHand.length : 0);
     const nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av;
     const nAHP = att.currentHp - tgt.currentAtk;
@@ -1201,7 +1209,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     await new Promise(r => setTimeout(r, 200));
     setAnimUids({});
   };
-  const atkFace = async () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking" }); await new Promise(r => setTimeout(r, 280)); const dmg = att.currentAtk + ((att.keywords || []).includes("Resonate") ? g.enemyHand.length : 0); vfx.add("damage", { amount: dmg, duration: 500 }); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if (nHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 200)); setAnimUids({}); };
+  const atkFace = async () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking" }); await new Promise(r => setTimeout(r, 380)); const dmg = att.currentAtk + ((att.keywords || []).includes("Resonate") ? g.enemyHand.length : 0); vfx.add("damage", { amount: dmg, duration: 500 }); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if (nHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 200)); setAnimUids({}); };
   const attCard = attacker ? g.playerBoard.find((c) => c.uid === attacker) : null;
 
   return (<div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 16px 60px" }} onClick={() => { SFX.init(); }}>
@@ -1300,7 +1308,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
           </div>
           <div style={{ borderTop: "1px solid #2a2010", paddingTop: 10, marginBottom: 10 }}>
             <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap" }}>
-              {g.playerHand.map((card) => { const isEnv = card.type === "environment"; const isSpl = card.type === "spell"; const cp = g.phase === "player" && !aiThink && (isEnv || isSpl || g.playerBoard.length < CFG.maxBoard) && (card.bloodpact ? card.cost < g.playerHP : card.cost <= g.playerEnergy); return (<HandCard key={card.uid} card={resolveCardArt(card, user?.selectedArts || {})} playable={cp} onClick={() => playCard(card)} onRightClick={() => { SFX.play("card_inspect"); setPreviewCard(card); }} />); })}
+              {g.playerHand.map((card) => { const isEnv = card.type === "environment"; const isSpl = card.type === "spell"; const eff = getEffectiveCost(card, g.environment); const cp = g.phase === "player" && !aiThink && (isEnv || isSpl || g.playerBoard.length < CFG.maxBoard) && (card.bloodpact ? card.cost < g.playerHP : eff <= g.playerEnergy); return (<HandCard key={card.uid} card={resolveCardArt({ ...card, cost: eff }, user?.selectedArts || {})} playable={cp} onClick={() => playCard(card)} onRightClick={() => { SFX.play("card_inspect"); setPreviewCard(card); }} />); })}
             </div>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1645,12 +1653,16 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       let ai = toAI(gs, role);
       const card = ai.playerHand.find(c => c.uid === action.cardUid);
       if (!card) return gs;
+      const eff = getEffectiveCost(card, ai.environment);
       ai = { ...ai, playerHand: ai.playerHand.filter(c => c.uid !== card.uid), log: [...ai.log.slice(-20)] };
       if (card.bloodpact) { ai.playerHP -= card.cost; ai.log = [...ai.log, `Pay ${card.cost} HP: ${card.name}!`]; }
-      else { ai.playerEnergy -= card.cost; }
+      else { ai.playerEnergy -= eff; }
       if (card.type === "environment") {
         // Per-player env: each player owns their slot, lasts 4 half-turns (2 full rounds)
         ai.environment = { ...card, owner: "player", envOwner: role, turnsRemaining: 4 }; ai.log = [...ai.log, `${(gs[role+"Name"]||role.toUpperCase())} plays ${card.name}! (2 rounds)`];
+        ai = resolveEffects("onPlay", card, ai, "player", vfxInst);
+        ai = resolveEffects("onTurnStart", card, ai, "player", vfxInst); // fire instantly
+        return fromAI(ai, role, gs);
       } else if (card.type === "spell") {
         ai.log = [...ai.log, `${(gs[role+"Name"]||"You")} casts ${card.name}!`];
       } else {
@@ -1901,8 +1913,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
             setTimeout(() => {
               if (atkCard) setAnimUids(p => { const n={...p}; delete n[atkCard.uid]; return n; });
               if (tgtCard) setAnimUids(p => { const n={...p}; delete n[tgtCard.uid]; return n; });
-            }, 450);
-          }, 280);
+            }, 500);
+          }, 380);
         }, delay);
         delay += 950;
       });
@@ -2152,23 +2164,25 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
             ))}
           </div>
         )}
-        {/* Environment banners — per-player, one per side */}
+        {/* Environment banners — per-player, compact single row */}
         {(gs.p1Env || gs.p2Env || gs.env) && (() => {
           const myEnvSlot = gs[myRole+"Env"] || (gs.env?.envOwner===myRole ? gs.env : null);
-          const opEnvSlot = gs[(myRole==="p1"?"p2":"p1")+"Env"] || (gs.env?.envOwner!==myRole ? gs.env : null);
-          const EnvBanner = ({ env, label, color }) => !env ? null : (
-            <div style={{ padding:"5px 14px", background:`${env.border}18`, borderBottom:`1px solid ${env.border}33`, display:"flex", alignItems:"center", gap:10, position:"relative", zIndex:2, animation:"slideDown 0.4s ease-out" }}>
-              <div style={{ width:5, height:5, borderRadius:"50%", background:env.border, boxShadow:`0 0 8px ${env.border}`, animation:"pulse 2s infinite", flexShrink:0 }} />
-              <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:env.border, fontWeight:700 }}>{env.name}</span>
-              <span style={{ fontSize:8, color:"#a09068", flex:1 }}>{env.ability}</span>
-              <span style={{ fontSize:7, color:color, fontFamily:"'Cinzel',serif", fontWeight:700, letterSpacing:1, flexShrink:0 }}>{label}</span>
-              {env.turnsRemaining != null && <span style={{ fontSize:7, color:"#806040", flexShrink:0 }}>{Math.ceil(env.turnsRemaining/2)}R</span>}
+          const opEnvSlot = gs[(myRole==="p1"?"p2":"p1")+"Env"] || (gs.env?.envOwner!==myRole && gs.env?.envOwner ? gs.env : null);
+          const envs = [myEnvSlot && { env: myEnvSlot, label: "YOUR ENV", color: "#78cc45" }, opEnvSlot && { env: opEnvSlot, label: "OPP ENV", color: "#e05050" }].filter(Boolean);
+          if (!envs.length) return null;
+          return (
+            <div style={{ borderBottom:"1px solid #2a1a08", position:"relative", zIndex:2, animation:"slideDown 0.4s ease-out" }}>
+              {envs.map(({ env, label, color }) => (
+                <div key={env.id+label} style={{ padding:"4px 14px", background:`${env.border}12`, borderBottom:`1px solid ${env.border}22`, display:"flex", alignItems:"center", gap:8 }}>
+                  <div style={{ width:5, height:5, borderRadius:"50%", background:env.border, boxShadow:`0 0 6px ${env.border}`, animation:"pulse 2s infinite", flexShrink:0 }} />
+                  <span style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:env.border, fontWeight:700, flexShrink:0 }}>{env.name}</span>
+                  <span style={{ fontSize:8, color:"#a09068", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{env.ability}</span>
+                  <span style={{ fontSize:7, color:color, fontFamily:"'Cinzel',serif", fontWeight:700, letterSpacing:1, flexShrink:0, background:`${color}22`, padding:"1px 5px", borderRadius:4 }}>{label}</span>
+                  {env.turnsRemaining != null && <span style={{ fontSize:7, color:"#806040", flexShrink:0 }}>{Math.ceil(env.turnsRemaining/2)}R</span>}
+                </div>
+              ))}
             </div>
           );
-          return (<>
-            <EnvBanner env={myEnvSlot} label="YOUR ENV" color="#78cc45" />
-            <EnvBanner env={opEnvSlot} label="OPP ENV" color="#e05050" />
-          </>);
         })()}
         {/* Opponent zone — use opponent's env theme */}
         <div style={{ background: opEnvTheme ? opEnvTheme.bg : "rgba(180,40,40,0.09)", borderBottom:"1px solid #3a1818", padding:"10px 14px", position:"relative", zIndex:2, transition:"background 1.5s ease" }}>
@@ -2210,9 +2224,10 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
             <div style={{ display:"flex", gap:6, justifyContent:"center", flexWrap:"wrap" }}>
               {ai.playerHand.map((card)=>{
                 const needsAllies=(card.type==="spell")&&(card.effects||[]).some(e=>["buff_allies","heal_all_allies","buff_random_ally","buff_keyword_allies"].includes(e.effect));
-                const canAfford=card.bloodpact?card.cost<ai.playerHP:card.cost<=ai.playerEnergy;
+                const eff=getEffectiveCost(card,ai.environment);
+                const canAfford=card.bloodpact?card.cost<ai.playerHP:eff<=ai.playerEnergy;
                 const cp=isMyTurn&&!syncing&&canAfford&&(card.type==="environment"||card.type==="spell"||ai.playerBoard.length<CFG.maxBoard)&&!(needsAllies&&ai.playerBoard.length===0);
-                return(<HandCard key={card.uid} card={resolveCardArt(card,myRole==="p1"?gs?.p1Arts||{}:gs?.p2Arts||{})} playable={cp} onClick={()=>playCard(card)} onRightClick={()=>{ SFX.play("card_inspect"); setPreviewCard(card); }}/>);
+                return(<HandCard key={card.uid} card={resolveCardArt({...card,cost:eff},myRole==="p1"?gs?.p1Arts||{}:gs?.p2Arts||{})} playable={cp} onClick={()=>playCard(card)} onRightClick={()=>{ SFX.play("card_inspect"); setPreviewCard(card); }}/>);
               })}
             </div>
           </div>
@@ -3083,7 +3098,7 @@ function HomeScreen({ setTab, user }) {
           <div style={{ position: "relative" }}>
             <div style={{ position: "absolute", inset: -40, background: `radial-gradient(circle,${HOME_CARDS[active]?.border || "#9060ff"}30,rgba(60,20,120,0.2) 50%,transparent 70%)`, transition: "background 1.2s ease", pointerEvents: "none", borderRadius:"50%" }} />
             <div style={{ position: "absolute", inset: -10, background: `radial-gradient(circle,${HOME_CARDS[active]?.border || "#9060ff"}22,transparent 70%)`, transition: "background 1.2s ease", pointerEvents: "none" }} />
-            {HOME_CARDS[active] && <Card card={HOME_CARDS[active]} size="lg" key={HOME_CARDS[active].id + active} />}
+            {HOME_CARDS[active] && <Card card={HOME_CARDS[active]} size="lg" hideCost key={HOME_CARDS[active].id + active} />}
           </div>
           <div style={{ display: "flex", gap: 8 }}>{HOME_CARDS.map((c, i) => (<button key={i} onClick={() => setActive(i)} style={{ width: 12, height: 12, borderRadius: "50%", background: active === i ? c.border : "rgba(255,255,255,0.06)", border: `1px solid ${active === i ? c.border : "rgba(255,255,255,0.15)"}`, cursor: "pointer", padding: 0, transition: "all .3s", boxShadow: active === i ? `0 0 14px ${c.border}88` : "none" }} />))}</div>
         </div>
@@ -3134,17 +3149,7 @@ function HomeScreen({ setTab, user }) {
               const isLegendary = !isPrismatic && (card._altRarity === "Legendary" || card.rarity === "Legendary");
               return (
                 <div key={card.id+i} style={{ flexShrink:0, animation:`cardReveal 0.5s ease-out ${i*0.1}s both`, filter: isPrismatic ? "drop-shadow(0 0 32px #c080ffaa) drop-shadow(0 8px 20px #8040ff66)" : `drop-shadow(0 8px 28px ${card.border}66)`, transform: isPrismatic ? "scale(1.2) translateY(-14px)" : isLegendary ? "scale(1.12) translateY(-8px)" : "none", position:"relative" }}>
-                  {isPrismatic && (
-                    <div style={{ position:"absolute", top:-24, left:"50%", transform:"translateX(-50%)", background:"linear-gradient(90deg,#ff0080,#8000ff,#0080ff,#ff0080)", backgroundSize:"300% 100%", animation:"prismShimmer 2s linear infinite", borderRadius:20, padding:"4px 14px", fontFamily:"'Cinzel',serif", fontSize:8, fontWeight:900, color:"#fff", letterSpacing:2, whiteSpace:"nowrap", boxShadow:"0 2px 18px #c080ffaa", zIndex:5 }}>
-                      ✦ PRISMATIC
-                    </div>
-                  )}
-                  {isLegendary && (
-                    <div style={{ position:"absolute", top:-20, left:"50%", transform:"translateX(-50%)", background:"linear-gradient(135deg,#e8c060,#c89020)", borderRadius:20, padding:"3px 10px", fontFamily:"'Cinzel',serif", fontSize:7, fontWeight:900, color:"#1a1000", letterSpacing:2, whiteSpace:"nowrap", boxShadow:"0 2px 10px #e8c06066", zIndex:5 }}>
-                      ✦ ULTRA RARE
-                    </div>
-                  )}
-                  <Card card={card} size="sm" />
+                  <Card card={card} size="sm" hideCost />
                 </div>
               );
             })}
