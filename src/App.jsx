@@ -367,21 +367,25 @@ function VFXOverlay({ effects }) {
         </Fragment>);
         if (fx.type === "environment") return (<div key={fx.id} style={{ position:"absolute", inset:0, animation:"vfxEnv 2.5s ease-out forwards", background:`radial-gradient(ellipse at 50% 100%,${fx.color||"#4a9020"}40,transparent 70%)`, borderTop:`2px solid ${fx.color||"#4a9020"}44` }} />);
         if (fx.type === "spell") return (<Fragment key={fx.id}>
-          <div style={{ position:"absolute", top:"50%", left:"50%", width:260, height:260, borderRadius:"50%", animation:"spellCast 0.8s ease-out forwards", background:`radial-gradient(circle,${fx.color||"#c090d0"}66,${fx.color||"#c090d0"}22 50%,transparent 70%)`, border:`2px solid ${fx.color||"#c090d0"}88` }}/>
-          <div style={{ position:"absolute", top:"50%", left:"50%", width:360, height:360, borderRadius:"50%", animation:"vfxRingBurst 0.9s 0.1s ease-out forwards", border:`1px solid ${fx.color||"#c090d0"}44` }}/>
-          <div style={{ position:"absolute", inset:0, animation:"vfxSpellFlash 0.4s ease-out forwards", background:`${fx.color||"#c090d0"}14` }} />
+          <div style={{ position:"absolute", top:"50%", left:"50%", width:320, height:320, borderRadius:"50%", animation:"spellCast 0.9s ease-out forwards", background:`radial-gradient(circle,${fx.color||"#c090d0"}77,${fx.color||"#c090d0"}33 50%,transparent 70%)`, border:`3px solid ${fx.color||"#c090d0"}99` }}/>
+          <div style={{ position:"absolute", top:"50%", left:"50%", width:460, height:460, borderRadius:"50%", animation:"vfxRingBurst 1s 0.1s ease-out forwards", border:`2px solid ${fx.color||"#c090d0"}55` }}/>
+          <div style={{ position:"absolute", top:"50%", left:"50%", width:560, height:560, borderRadius:"50%", animation:"vfxRingBurst 1.2s 0.2s ease-out forwards", border:`1px solid ${fx.color||"#c090d0"}33` }}/>
+          <div style={{ position:"absolute", inset:0, animation:"vfxSpellFlash 0.5s ease-out forwards", background:`${fx.color||"#c090d0"}1a` }} />
         </Fragment>);
         if (fx.type === "envchange") return (<div key={fx.id} style={{ position:"absolute", inset:0, animation:"envFlash 1.5s ease-out forwards", background:`${fx.color||"#4a9020"}35`, pointerEvents:"none", borderRadius:"inherit" }}/>);
         if (fx.type === "attackImpact") return (<Fragment key={fx.id}>
-          <div style={{ position:"absolute", top:"50%", left:"50%", width:160, height:160, borderRadius:"50%", animation:"vfxRingBurst 0.45s ease-out forwards", border:"3px solid #ff804099" }} />
-          <div style={{ position:"absolute", top:"50%", left:"50%", width:80, height:80, borderRadius:"50%", animation:"vfxRingBurst 0.3s ease-out forwards", border:"2px solid #ffb06077" }} />
-          <div style={{ position:"absolute", inset:0, animation:"vfxHitFlash 0.3s ease-out forwards", background:"rgba(255,100,0,0.15)" }} />
+          <div style={{ position:"absolute", top:"50%", left:"50%", width:280, height:280, borderRadius:"50%", animation:"vfxRingBurst 0.5s ease-out forwards", border:"4px solid #ff804099" }} />
+          <div style={{ position:"absolute", top:"50%", left:"50%", width:160, height:160, borderRadius:"50%", animation:"vfxRingBurst 0.35s ease-out forwards", border:"3px solid #ffb060aa" }} />
+          <div style={{ position:"absolute", top:"50%", left:"50%", width:80, height:80, borderRadius:"50%", animation:"vfxRingBurst 0.22s ease-out forwards", border:"2px solid #ffd09088" }} />
+          <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", animation:"vfxPulse .45s ease-out forwards", background:"radial-gradient(circle,#ff800055,transparent 70%)", width:220, height:220, borderRadius:"50%" }} />
+          <div style={{ position:"absolute", inset:0, animation:"vfxHitFlash 0.4s ease-out forwards", background:"rgba(255,100,0,0.22)" }} />
         </Fragment>);
         if (fx.type === "creatureDie") return (<Fragment key={fx.id}>
-          <div style={{ position:"absolute", top:"50%", left:"50%", width:200, height:200, borderRadius:"50%", animation:"vfxRingBurst 0.55s ease-out forwards", border:`3px solid ${fx.color||"#e0604088"}` }} />
-          <div style={{ position:"absolute", top:"50%", left:"50%", width:110, height:110, borderRadius:"50%", animation:"vfxRingBurst 0.4s 0.05s ease-out forwards", border:`2px solid ${fx.color||"#e0604066"}` }} />
-          <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", animation:"vfxPulse 0.6s ease-out forwards", background:`radial-gradient(circle,${fx.color||"#e06040"}44,transparent 70%)`, width:240, height:240, borderRadius:"50%" }} />
-          <div style={{ position:"absolute", inset:0, animation:"vfxHitFlash 0.4s ease-out forwards", background:`${fx.color||"rgba(220,60,20"}0.08)` }} />
+          <div style={{ position:"absolute", top:"50%", left:"50%", width:320, height:320, borderRadius:"50%", animation:"vfxRingBurst 0.6s ease-out forwards", border:`4px solid ${fx.color||"#e06040"}88` }} />
+          <div style={{ position:"absolute", top:"50%", left:"50%", width:200, height:200, borderRadius:"50%", animation:"vfxRingBurst 0.45s 0.05s ease-out forwards", border:`3px solid ${fx.color||"#e06040"}77` }} />
+          <div style={{ position:"absolute", top:"50%", left:"50%", width:100, height:100, borderRadius:"50%", animation:"vfxRingBurst 0.3s 0.1s ease-out forwards", border:`2px solid ${fx.color||"#e06040"}66` }} />
+          <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", animation:"vfxPulse 0.7s ease-out forwards", background:`radial-gradient(circle,${fx.color||"#e06040"}55,transparent 65%)`, width:300, height:300, borderRadius:"50%" }} />
+          <div style={{ position:"absolute", inset:0, animation:"vfxHitFlash 0.5s ease-out forwards", background:`rgba(220,60,20,0.14)` }} />
         </Fragment>);
         if (fx.type === "summonBurst") return (<Fragment key={fx.id}>
           <div style={{ position:"absolute", top:"50%", left:"50%", width:220, height:220, borderRadius:"50%", animation:"vfxRingBurst 0.6s ease-out forwards", border:`2px solid ${fx.color||"#e8c06055"}` }} />
@@ -422,6 +426,7 @@ function CardPreview({ card, onClose }) {
           {kws.length > 0 && <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 8 }}>{kws.map((k) => (<span key={k.name} style={{ fontSize: 9, padding: "3px 8px", borderRadius: 20, background: k.color + "25", color: k.color, border: "1px solid " + k.color + "55" }}>{k.icon} {k.name}</span>))}{isBP && <span style={{ fontSize: 9, padding: "3px 8px", borderRadius: 20, background: "#cc203025", color: "#ee6688", border: "1px solid #cc203055" }}>Bloodpact</span>}</div>}
           <div style={{ fontSize: 12, color: isEnv ? "#80c0d0" : "#e0d0b0", lineHeight: 1.7, marginBottom: 10, padding: "8px 0", borderTop: "1px solid " + border + "22", borderBottom: "1px solid " + border + "22" }}>{card.ability}</div>
           {card.atk != null && <div style={{ display: "flex", gap: 20, marginBottom: 8 }}><div><span style={{ fontSize: 24, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#ff7750" }}>{card.currentAtk != null ? card.currentAtk : card.atk}</span><span style={{ fontSize: 9, color: "#996655", marginLeft: 4 }}>ATK</span></div><div><span style={{ fontSize: 24, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#50c065" }}>{card.currentHp != null ? card.currentHp : card.hp}</span><span style={{ fontSize: 9, color: "#448850", marginLeft: 4 }}>HP</span></div></div>}
+          {(card.statusLog||[]).length > 0 && <div style={{ marginBottom:8, borderTop:"1px solid #2a2010", paddingTop:6 }}><div style={{ fontSize:8, color:"#806040", letterSpacing:2, fontFamily:"'Cinzel',serif", marginBottom:4 }}>STATUS LOG</div>{(card.statusLog||[]).map((e,i)=><div key={i} style={{ fontSize:10, color:e.type==="buff"?"#60e880":"#ff6060", fontFamily:"'Cinzel',serif" }}>{e.type==="buff"?"⬆":"⬇"} {e.note}</div>)}</div>}
           <div style={{ fontSize: 10, fontStyle: "italic", color: "#70603a", lineHeight: 1.6 }}>"{card.flavor || "Lost to history."}"</div>
         </div>
         <button onClick={onClose} style={{ width: "100%", padding: "10px", background: "rgba(0,0,0,0.3)", border: "none", borderTop: "1px solid " + border + "22", color: "#806040", fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: 2, cursor: "pointer" }}>CLOSE</button>
@@ -859,11 +864,11 @@ function resolveEffects(trigger, card, state, side, vfx) {
       case "damage_all_enemies": s[thB] = s[thB].map((c) => ({ ...c, currentHp: c.currentHp - fx.amount })).filter((c) => c.currentHp > 0); L(`${card.name}: ${fx.amount} to all enemies!`); if (vfx) vfx.add("ability", { color: "#ff4040" }); break;
       case "damage_all": s[myB] = s[myB].map((c) => c.uid === card.uid ? c : { ...c, currentHp: c.currentHp - fx.amount }).filter((c) => c.currentHp > 0); s[thB] = s[thB].map((c) => ({ ...c, currentHp: c.currentHp - fx.amount })).filter((c) => c.currentHp > 0); L(`${card.name}: ${fx.amount} to ALL!`); if (vfx) vfx.add("ability", { color: "#ff8040" }); break;
       case "damage_random_enemy": if (s[thB].length > 0) { const idx = Math.floor(Math.random() * s[thB].length); const tgt = s[thB][idx]; s[thB] = s[thB].map((c, i) => i === idx ? { ...c, currentHp: c.currentHp - fx.amount } : c).filter((c) => c.currentHp > 0); L(`${card.name} hits ${tgt.name} for ${fx.amount}!`); } break;
-      case "buff_allies": { const isDebuff = (fx.atk||0) < 0 || (fx.hp||0) < 0; const noteStr = `${fx.atk>=0?"+":""}${fx.atk||0}/${fx.hp>=0?"+":""}${fx.hp||0} (${card.name})`; s[myB] = s[myB].map((c) => ({ ...c, currentAtk: c.currentAtk + (fx.atk || 0), currentHp: c.currentHp + (fx.hp || 0), maxHp: c.maxHp + (fx.hp || 0), ...(isDebuff ? { debuffNote: noteStr } : { buffNote: noteStr }) })); L(`${card.name} ${isDebuff?"debuffs":"buffs"} ${fx.atk||0}/${fx.hp||0}!`); if (vfx) vfx.add("ability", { color: isDebuff?"#ff6040":"#40ff60" }); break; }
-      case "buff_random_ally": { const allies = s[myB].filter((c) => c.id !== card.id); if (allies.length > 0) { const t = allies[Math.floor(Math.random() * allies.length)]; s[myB] = s[myB].map((c) => c.uid === t.uid ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), buffNote: `+${fx.atk||0} ATK (${card.name})` } : c); L(`${card.name} buffs ${t.name}!`); } break; }
-      case "buff_keyword_allies": s[myB] = s[myB].map((c) => (c.keywords || []).length > 0 ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), buffNote: `+${fx.atk||0} ATK (${card.name})` } : c); break;
+      case "buff_allies": { const isDebuff = (fx.atk||0) < 0 || (fx.hp||0) < 0; const noteStr = `${isDebuff?"":"+"} ${fx.atk||0}atk/${fx.hp||0}hp (${card.name})`; s[myB] = s[myB].map((c) => ({ ...c, currentAtk: c.currentAtk + (fx.atk || 0), currentHp: c.currentHp + (fx.hp || 0), maxHp: c.maxHp + (fx.hp || 0), statusLog: [...(c.statusLog||[]), { type:isDebuff?"debuff":"buff", note:noteStr }] })); L(`${card.name} ${isDebuff?"debuffs":"buffs"} ${fx.atk||0}/${fx.hp||0}!`); if (vfx) vfx.add("ability", { color: isDebuff?"#ff6040":"#40ff60" }); break; }
+      case "buff_random_ally": { const allies = s[myB].filter((c) => c.id !== card.id); if (allies.length > 0) { const t = allies[Math.floor(Math.random() * allies.length)]; s[myB] = s[myB].map((c) => c.uid === t.uid ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), statusLog: [...(c.statusLog||[]), { type:"buff", note:`+${fx.atk||0}atk (${card.name})` }] } : c); L(`${card.name} buffs ${t.name}!`); } break; }
+      case "buff_keyword_allies": s[myB] = s[myB].map((c) => (c.keywords || []).length > 0 ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), statusLog: [...(c.statusLog||[]), { type:"buff", note:`+${fx.atk||0}atk keyword (${card.name})` }] } : c); break;
       case "heal_all_allies": s[myB] = s[myB].map((c) => ({ ...c, currentHp: Math.min(c.maxHp, c.currentHp + fx.amount) })); break;
-      case "self_buff": s[myB] = s[myB].map((c) => c.uid === card.uid ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), buffNote: `+${fx.atk||0} ATK (${card.name})` } : c); break;
+      case "self_buff": s[myB] = s[myB].map((c) => c.uid === card.uid ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), statusLog: [...(c.statusLog||[]), { type:"buff", note:`+${fx.atk||0}atk self` }] } : c); break;
       case "draw": { const dk = side === "player" ? "playerDeck" : "enemyDeck", hd = side === "player" ? "playerHand" : "enemyHand"; for (let i = 0; i < fx.amount; i++) { if (s[dk].length > 0 && s[hd].length < CFG.maxHand) { s[hd] = [...s[hd], makeInst(s[dk][0], side === "player" ? "p" : "e")]; s[dk] = s[dk].slice(1); } } L(`${card.name}: Draw ${fx.amount}!`); break; }
       case "bleed_all_enemies": s[thB] = s[thB].map((c) => ({ ...c, bleed: (c.bleed || 0) + fx.amount })); L(`${card.name}: ${fx.amount} Bleed to all!`); break;
     }
@@ -905,8 +910,7 @@ function computeEnemyAttackPhase(g, vfx) {
   });
   if (s.playerHP <= 0) return { ...s, phase: "gameover", winner: "enemy", log: [...s.log, "Defeated..."] };
   const newTurn = g.turn + 1, newMax = Math.min(CFG.maxEnergy, newTurn + 1);
-  s.playerBoard = s.playerBoard.map((c) => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter((c) => c.currentHp > 0);
-  s.enemyBoard = s.enemyBoard.map((c) => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter((c) => c.currentHp > 0);
+  { const pbd = s.playerBoard.reduce((n,c)=>n+(c.bleed||0),0), ebd = s.enemyBoard.reduce((n,c)=>n+(c.bleed||0),0); s.playerBoard = s.playerBoard.map((c) => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter((c) => c.currentHp > 0); s.enemyBoard = s.enemyBoard.map((c) => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter((c) => c.currentHp > 0); if (pbd > 0) { s.playerHP -= pbd; L(`Bleed seeps: Player takes ${pbd}!`); } if (ebd > 0) { s.enemyHP -= ebd; L(`Bleed seeps: Enemy takes ${ebd}!`); } }
   s.playerBoard.forEach((c) => { if (c.effects && c.effects.length) s = resolveEffects("onTurnStart", c, s, "player", vfx); });
   s.playerBoard = s.playerBoard.map((c) => ({ ...c, canAttack: true, hasAttacked: false }));
   s.enemyBoard = s.enemyBoard.map((c) => ({ ...c, canAttack: true, hasAttacked: false }));
@@ -942,8 +946,7 @@ function computeEnemyTurn(g, vfx) {
   });
   if (s.playerHP <= 0) return { ...s, phase: "gameover", winner: "enemy", log: [...s.log, "Defeated..."] };
   const newTurn = g.turn + 1, newMax = Math.min(CFG.maxEnergy, newTurn + 1);
-  s.playerBoard = s.playerBoard.map((c) => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter((c) => c.currentHp > 0);
-  s.enemyBoard = s.enemyBoard.map((c) => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter((c) => c.currentHp > 0);
+  { const pbd = s.playerBoard.reduce((n,c)=>n+(c.bleed||0),0), ebd = s.enemyBoard.reduce((n,c)=>n+(c.bleed||0),0); s.playerBoard = s.playerBoard.map((c) => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter((c) => c.currentHp > 0); s.enemyBoard = s.enemyBoard.map((c) => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter((c) => c.currentHp > 0); if (pbd > 0) { s.playerHP -= pbd; L(`Bleed seeps: Player takes ${pbd}!`); } if (ebd > 0) { s.enemyHP -= ebd; L(`Bleed seeps: Enemy takes ${ebd}!`); } }
   s.playerBoard.forEach((c) => { if (c.effects && c.effects.length) s = resolveEffects("onTurnStart", c, s, "player", vfx); });
   s.playerBoard = s.playerBoard.map((c) => ({ ...c, canAttack: true, hasAttacked: false }));
   s.enemyBoard = s.enemyBoard.map((c) => ({ ...c, canAttack: true, hasAttacked: false }));
@@ -1409,7 +1412,7 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
       <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
         <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:18, color:"#e8c060", margin:0, letterSpacing:2 }}>⚒ {isNew ? "NEW DECK" : `EDIT: ${editDeck.name}`}</h3>
         <div style={{ display:"flex", gap:6, fontSize:10 }}>
-          <span style={{ fontFamily:"'Cinzel',serif", padding:"3px 8px", background:"rgba(232,160,20,0.1)", border:`1px solid ${champCount>=CFG.deck.maxChamp?"#f0c040":"#3a2810"}`, borderRadius:6, color:champCount>=CFG.deck.maxChamp?"#f0c040":"#604028" }}>👑 {champCount}/{CFG.deck.maxChamp} Champs · 1 each</span>
+          <span style={{ fontFamily:"'Cinzel',serif", padding:"5px 12px", fontSize:11, fontWeight:700, background:champCount>=CFG.deck.maxChamp?"rgba(240,192,64,0.25)":"rgba(232,160,20,0.12)", border:`2px solid ${champCount>=CFG.deck.maxChamp?"#f0c040":"#8a6020"}`, borderRadius:8, color:champCount>=CFG.deck.maxChamp?"#f0e060":"#c09040", letterSpacing:1, boxShadow:champCount>=CFG.deck.maxChamp?"0 0 12px #f0c04044":"none" }}>👑 {champCount}/{CFG.deck.maxChamp} CHAMPS · max 1 each</span>
           <span style={{ fontFamily:"'Cinzel',serif", padding:"3px 8px", background:"rgba(40,180,120,0.08)", border:`1px solid ${auraEnvCount>=CFG.deck.maxAuraEnv?"#40c090":"#2a3020"}`, borderRadius:6, color:auraEnvCount>=CFG.deck.maxAuraEnv?"#40c090":"#405030" }}>🌿 {auraEnvCount}/{CFG.deck.maxAuraEnv} Aura/Env</span>
           <span style={{ fontFamily:"'Cinzel',serif", padding:"3px 8px", background:"rgba(232,192,96,0.07)", border:`1px solid ${canSave?"#e8c060":"#3a2810"}`, borderRadius:6, color:canSave?"#e8c060":"#604028" }}>📚 {total}/{CFG.deck.size}</span>
         </div>
@@ -1450,7 +1453,7 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
                   <div key={i} onClick={() => !blocked && addCard(c)} onContextMenu={(e) => { e.preventDefault(); setDbPreview(resolveCardArt(c, selectedArts)); }} style={{ position:"relative", cursor:blocked?"not-allowed":"pointer", opacity:blocked?0.35:1, transition:"all .2s", transform:"none" }}
                     onMouseEnter={e => { if (!blocked) e.currentTarget.style.transform="translateY(-4px)"; }}
                     onMouseLeave={e => { e.currentTarget.style.transform="none"; }}>
-                    {inDeck > 0 && <div style={{ position:"absolute", top:-6, right:-6, zIndex:10, background:"#e8b828", borderRadius:"50%", width:20, height:20, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:900, color:"#1a1000", boxShadow:"0 2px 8px #e8b82888", border:"2px solid #1a1000" }}>{inDeck}</div>}
+                    {(() => { const maxC = c.type==="champion" ? 1 : CFG.deck.copies; const pips = Array.from({length:maxC},(_,j)=>j); return (<div style={{ position:"absolute", top:-8, right:-4, zIndex:10, display:"flex", gap:3, flexDirection:"column", alignItems:"center" }}>{pips.map(j=><div key={j} style={{ width:8, height:8, borderRadius:"50%", background: j < (maxC-inDeck) ? (c.type==="champion"?"#f0c040":"#78cc45") : "rgba(80,60,40,0.5)", border:`1px solid ${j < (maxC-inDeck) ? (c.type==="champion"?"#f0c04088":"#78cc4588") : "#3a2a1a"}`, boxShadow: j < (maxC-inDeck) ? `0 0 6px ${c.type==="champion"?"#f0c04066":"#78cc4566"}` : "none", transition:"all .2s" }} />)}</div>); })()}
                     <Card card={resolveCardArt(c, selectedArts)} size="sm" hideCost />
                   </div>
                 );
@@ -1671,8 +1674,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           s[role+"Env"] = { ...s[role+"Env"], turnsRemaining: remaining };
         }
       }
-      s[role+"Board"] = (s[role+"Board"]||[]).map(c => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter(c => c.currentHp > 0);
-      s[op+"Board"] = (s[op+"Board"]||[]).map(c => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter(c => c.currentHp > 0);
+      { const rbd=(s[role+"Board"]||[]).reduce((n,c)=>n+(c.bleed||0),0), obd=(s[op+"Board"]||[]).reduce((n,c)=>n+(c.bleed||0),0); s[role+"Board"] = (s[role+"Board"]||[]).map(c => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter(c => c.currentHp > 0); s[op+"Board"] = (s[op+"Board"]||[]).map(c => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter(c => c.currentHp > 0); if (rbd>0){s[role+"HP"]=(s[role+"HP"]||20)-rbd;s.log=[...(s.log||[]).slice(-20),`Bleed seeps: ${role} takes ${rbd}!`];} if (obd>0){s[op+"HP"]=(s[op+"HP"]||20)-obd;s.log=[...(s.log||[]).slice(-20),`Bleed seeps: ${op} takes ${obd}!`];} }
       // Check if bleed killed the hero
       if (!s.winner) { if ((s[role+"HP"]||20) <= 0) { s.winner = op; s.log = [...(s.log||[]).slice(-20), `${role} hero bled out!`]; } else if ((s[op+"HP"]||20) <= 0) { s.winner = role; s.log = [...(s.log||[]).slice(-20), `${op} hero bled out!`]; } }
       if (s.winner) return s;
@@ -1744,7 +1746,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         const oppId = match.player2_id;
         const { data: oppProfile } = oppId ? await supabase.from("profiles").select("ranked_rating").eq("id", oppId).single() : { data: null };
         const fb = [...POOL, ...POOL, ...POOL.slice(0, 5)];
-        const d1 = shuf([...fb]), d2 = shuf([...fb]);
+        const d1 = shuf(matchConfig?.playerDeck?.length >= CFG.deck.min ? [...matchConfig.playerDeck] : [...fb]), d2 = shuf([...fb]);
         const dc = POOL[Math.floor(Math.random() * POOL.length)];
         const ec = POOL[Math.floor(Math.random() * POOL.length)];
         const firstPlayer = (dc.cost || 0) >= (ec.cost || 0) ? "p1" : "p2";
@@ -1754,7 +1756,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           p1Rating: user?.rankedRating || 1000,
           p2Rating: oppProfile?.ranked_rating ?? 1000,
           drawAnim: { p1Card: dc, p2Card: ec, first: firstPlayer },
-          p1Arts: user?.selectedArts || {}, p1Avatar: user?.avatarUrl || "", p1Name: user?.name || "Player",
+          p1Arts: user?.selectedArts || {}, p1Avatar: user?.avatarUrl || "", p1Name: user?.name || "Player", p1Wins: user?.battlesWon||0, p1Battles: user?.battlesPlayed||0,
           p1HP: CFG.startHP, p1Energy: CFG.startEnergy, p1Max: CFG.startEnergy,
           p1Hand: d1.slice(0, CFG.startHand).map((c) => makeInst(c, "p1")),
           p1Deck: d1.slice(CFG.startHand), p1Board: [],
@@ -1774,7 +1776,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           const { data: fresh } = await supabase.from("matches").select("game_state").eq("id", matchId).single();
           if (fresh?.game_state) {
             clearInterval(pollRef.current); pollRef.current = null;
-            const withArts = { ...fresh.game_state, p2Arts: user?.selectedArts || {}, p2Avatar: user?.avatarUrl || "", p2Name: user?.name || "Player" };
+            const withArts = { ...fresh.game_state, p2Arts: user?.selectedArts || {}, p2Avatar: user?.avatarUrl || "", p2Name: user?.name || "Player", p2Rating: user?.rankedRating||1000, p2Wins: user?.battlesWon||0, p2Battles: user?.battlesPlayed||0 };
             await supabase.from("matches").update({ game_state: withArts }).eq("id", matchId);
             setGs(withArts);
           }
@@ -2045,7 +2047,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           </div>
           <div style={{ fontSize:9, color:"#e8c06088", fontFamily:"'Cinzel',serif", letterSpacing:2 }}>{(() => { const r = profilePopup.rating||1000; return r>=1800?"💎 DIAMOND":r>=1600?"🔮 PLATINUM":r>=1400?"🥇 GOLD":r>=1200?"🥈 SILVER":r>=1000?"🥉 BRONZE":"⚔ IRON"; })()}</div>
         </>)}
-        {profilePopup.role==="opp" && <div style={{ fontSize:11, color:"#806040", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>Opponent stats private</div>}
+        {profilePopup.role==="opp" && (<div style={{ display:"flex", gap:16, justifyContent:"center", marginBottom:8 }}><div style={{ textAlign:"center" }}><div style={{ fontFamily:"'Cinzel',serif", fontSize:14, fontWeight:700, color:"#60c8ff" }}>{profilePopup.rating||1000}</div><div style={{ fontSize:8, color:"#305060", letterSpacing:2 }}>RATING</div></div><div style={{ textAlign:"center" }}><div style={{ fontFamily:"'Cinzel',serif", fontSize:14, fontWeight:700, color:"#78cc45" }}>{profilePopup.wins||0}</div><div style={{ fontSize:8, color:"#506030", letterSpacing:2 }}>WINS</div></div></div>)}
         <button onClick={()=>setProfilePopup(null)} style={{ marginTop:16, padding:"7px 20px", background:"transparent", border:"1px solid #3a2010", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:10, color:"#806040", cursor:"pointer" }}>CLOSE</button>
       </div>
     </div>)}
@@ -2146,7 +2148,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           {opEnvTheme && <div style={{ position:"absolute", inset:0, pointerEvents:"none", zIndex:1 }}><FloatingParticles count={opEnvTheme.pCount||20} color={opEnvTheme.particle} speed={opEnvTheme.pSpeed||0.6} shape={opEnvTheme.pShape||"circle"} direction={opEnvTheme.pDir||"up"} /></div>}
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <div onClick={()=>setProfilePopup({ name:opponentName, avatar:myRole==="p1"?gs?.p2Avatar:gs?.p1Avatar, role:"opp" })} style={{ width:28, height:28, borderRadius:"50%", background:"linear-gradient(135deg,#3a0c0c,#200808)", border:"2px solid #a0202044", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:"#cc6666", fontFamily:"'Cinzel',serif", fontWeight:700, cursor:"pointer", transition:"border-color .18s", boxShadow:"none" }} title="View profile">
+              <div onClick={()=>setProfilePopup({ name:opponentName, avatar:myRole==="p1"?gs?.p2Avatar:gs?.p1Avatar, role:"opp", rating:myRole==="p1"?gs?.p2Rating:gs?.p1Rating, wins:myRole==="p1"?gs?.p2Wins:gs?.p1Wins })} style={{ width:28, height:28, borderRadius:"50%", background:"linear-gradient(135deg,#3a0c0c,#200808)", border:"2px solid #a0202044", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:"#cc6666", fontFamily:"'Cinzel',serif", fontWeight:700, cursor:"pointer", transition:"border-color .18s", boxShadow:"none" }} title="View profile">
                 {(myRole==="p1" ? gs?.p2Avatar : gs?.p1Avatar) ? <img src={myRole==="p1" ? gs.p2Avatar : gs.p1Avatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (opponentName||"?").slice(0,2).toUpperCase()}
               </div>
               <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#cc4848", letterSpacing:2, fontWeight:700 }}>{(opponentName||"OPPONENT").toUpperCase()}</span>
@@ -2481,7 +2483,7 @@ function GameTab({ user, onUpdateUser, setInPvpMatch }) {
   const [ranked, setRanked] = useState(false);
   const decks = user?.decks || [];
   const userRank = getRank(user?.rankedRating);
-  if (matchmaking) return (<MatchmakingScreen user={user} ranked={ranked} onMatch={(cfg) => { setMatchmaking(false); setMatchConfig({ mode:"pvp", ranked, ...cfg }); }} onCancel={() => setMatchmaking(false)} />);
+  if (matchmaking) return (<MatchmakingScreen user={user} ranked={ranked} onMatch={(cfg) => { setMatchmaking(false); setMatchConfig({ mode:"pvp", ranked, playerDeck: selectedDeck?.cards || null, ...cfg }); }} onCancel={() => setMatchmaking(false)} />);
   if (!matchConfig) return (<div style={{ maxWidth:720, margin:"0 auto", padding:"40px 24px 60px" }}>
     <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:28, fontWeight:700, color:"#e8c060", margin:"0 0 4px", textAlign:"center" }}>Battle Setup</h2>
     <p style={{ fontSize:13, color:"#a09070", margin:"0 0 28px", textAlign:"center" }}>Choose your battle mode!</p>
@@ -2490,10 +2492,11 @@ function GameTab({ user, onUpdateUser, setInPvpMatch }) {
         <div style={{ fontSize:32, marginBottom:12 }}>🤖</div>
         <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:15, color:"#e8c060", margin:"0 0 8px" }}>VS AI</h3>
         <p style={{ fontSize:11, color:"#806040", marginBottom:16, lineHeight:1.6 }}>Test your deck against the AI opponent. Great for practice!</p>
-        {decks.length > 0 && <select onChange={(e) => setSelectedDeck(e.target.value ? decks[parseInt(e.target.value)] : null)} style={{ width:"100%", padding:"7px", background:"#0c0a06", border:"1px solid #3a2010", borderRadius:7, color:"#f0e8d8", fontFamily:"'Cinzel',serif", fontSize:10, outline:"none", marginBottom:10 }}>
+        <select onChange={(e) => setSelectedDeck(e.target.value==="starter" ? { cards: STARTER_DECK } : e.target.value ? decks[parseInt(e.target.value)] : null)} style={{ width:"100%", padding:"7px", background:"#0c0a06", border:"1px solid #3a2010", borderRadius:7, color:"#f0e8d8", fontFamily:"'Cinzel',serif", fontSize:10, outline:"none", marginBottom:10 }}>
           <option value="">-- Random deck --</option>
+          <option value="starter">Starter Deck</option>
           {decks.map((d, i) => (<option key={i} value={i}>{d.name} ({d.cards?.length || 0} cards)</option>))}
-        </select>}
+        </select>
         <button onClick={() => { SFX.play("card"); setMatchConfig({ mode:"ai", playerDeck: selectedDeck?.cards || null }); }} style={{ width:"100%", padding:"12px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, letterSpacing:2, color:"#1a1000", cursor:"pointer" }}>START BATTLE</button>
       </div>
       <div style={{ background:"linear-gradient(160deg,#101420,#080c14)", border:`1px solid ${ranked?"#6040c0":"#102038"}`, borderRadius:14, padding:24, textAlign:"center", transition:"border-color .25s" }}>
@@ -2507,6 +2510,7 @@ function GameTab({ user, onUpdateUser, setInPvpMatch }) {
         {ranked && <div style={{ fontSize:9, color:userRank.color, fontFamily:"'Cinzel',serif", marginBottom:8, padding:"3px 10px", background:`${userRank.color}15`, border:`1px solid ${userRank.color}33`, borderRadius:8, display:"inline-block" }}>{userRank.icon} {userRank.name} · {user?.rankedRating||1000} MMR</div>}
         {!ranked && <p style={{ fontSize:11, color:"#6080a0", marginBottom:10, lineHeight:1.5 }}>Casual — no rating change</p>}
         {ranked && <p style={{ fontSize:11, color:"#8060a0", marginBottom:10, lineHeight:1.5 }}>Rating changes on win/loss. ELO-based.</p>}
+        {<select onChange={(e) => setSelectedDeck(e.target.value==="starter" ? { cards: STARTER_DECK } : e.target.value ? decks[parseInt(e.target.value)] : null)} style={{ width:"100%", padding:"7px", background:"#0c0a06", border:"1px solid #1a2038", borderRadius:7, color:"#f0e8d8", fontFamily:"'Cinzel',serif", fontSize:10, outline:"none", marginBottom:10 }}><option value="">-- Random deck --</option><option value="starter">Starter Deck</option>{decks.map((d, i) => (<option key={i} value={i}>{d.name} ({d.cards?.length || 0} cards)</option>))}</select>}
         <button onClick={() => { SFX.play("card"); setMatchmaking(true); }} style={{ width:"100%", padding:"12px", background:ranked?"linear-gradient(135deg,#5020a0,#8040d0)":"linear-gradient(135deg,#1060a0,#2080d0)", border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, letterSpacing:2, color:"#fff", cursor:"pointer" }}>{ranked?"RANKED MATCH":"FIND MATCH"}</button>
       </div>
     </div>
