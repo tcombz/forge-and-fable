@@ -138,13 +138,13 @@ const KW = [
 const REGIONS = ["Thornwood", "Shattered Expanse", "Azure Deep", "Ashfen", "Ironmarch", "Sunveil"];
 const GLOW = { Thornwood: "#70ff30", "Shattered Expanse": "#c090ff", "Azure Deep": "#30d0ff", Ashfen: "#ff6820", Ironmarch: "#9090ff", Sunveil: "#ffd030", Bloodpact: "#ff2848" };
 const ENV_THEMES = {
-  Thornwood: { bg: "linear-gradient(180deg,#040e02 0%,#0a1a06 40%,#081808 100%)", particle: "#60ff30", glow: "#40a020" },
-  "Shattered Expanse": { bg: "linear-gradient(180deg,#06001a 0%,#0c0030 40%,#080020 100%)", particle: "#c080ff", glow: "#8040d0" },
-  "Azure Deep": { bg: "linear-gradient(180deg,#010818 0%,#041030 40%,#030828 100%)", particle: "#40c0ff", glow: "#2080c0" },
-  Ashfen: { bg: "linear-gradient(180deg,#180400 0%,#2a0800 40%,#1a0400 100%)", particle: "#ff6020", glow: "#c04010" },
-  Ironmarch: { bg: "linear-gradient(180deg,#04040a 0%,#0a0a18 40%,#060614 100%)", particle: "#8888ff", glow: "#5050a0" },
-  Sunveil: { bg: "linear-gradient(180deg,#140a00 0%,#221400 40%,#180c00 100%)", particle: "#ffc020", glow: "#b08010" },
-  Bloodpact: { bg: "linear-gradient(180deg,#100004 0%,#1c000a 40%,#120006 100%)", particle: "#ff2040", glow: "#a01020" },
+  Thornwood:         { bg: "linear-gradient(180deg,#040e02 0%,#0a1a06 40%,#081808 100%)", particle: "#60dd28", glow: "#40a020", pShape: "leaf",   pDir: "down", pCount: 28, pSpeed: 0.5 },
+  "Shattered Expanse":{ bg: "linear-gradient(180deg,#06001a 0%,#0c0030 40%,#080020 100%)", particle: "#c080ff", glow: "#8040d0", pShape: "spark",  pDir: "up",   pCount: 35, pSpeed: 1.2 },
+  "Azure Deep":      { bg: "linear-gradient(180deg,#010818 0%,#041030 40%,#030828 100%)", particle: "#40c0ff", glow: "#2080c0", pShape: "bubble", pDir: "up",   pCount: 22, pSpeed: 0.4 },
+  Ashfen:            { bg: "linear-gradient(180deg,#180400 0%,#2a0800 40%,#1a0400 100%)", particle: "#ff7030", glow: "#c04010", pShape: "spark",  pDir: "up",   pCount: 45, pSpeed: 1.8 },
+  Ironmarch:         { bg: "linear-gradient(180deg,#04040a 0%,#0a0a18 40%,#060614 100%)", particle: "#9090cc", glow: "#5050a0", pShape: "spark",  pDir: "up",   pCount: 30, pSpeed: 1.0 },
+  Sunveil:           { bg: "linear-gradient(180deg,#140a00 0%,#221400 40%,#180c00 100%)", particle: "#ffc820", glow: "#b08010", pShape: "circle", pDir: "up",   pCount: 25, pSpeed: 0.6 },
+  Bloodpact:         { bg: "linear-gradient(180deg,#100004 0%,#1c000a 40%,#120006 100%)", particle: "#ff2040", glow: "#a01020", pShape: "drop",   pDir: "down", pCount: 20, pSpeed: 0.7 },
 };
 const BATTLE_MAPS = {
   default: { label: "Ruined Keep", enemyBg: "rgba(180,40,40,0.09)", playerBg: "rgba(40,100,20,0.09)", dividerBg: "#1a1510", accent: "#382e18" },
@@ -167,33 +167,68 @@ function safeRoundRect(ctx, x, y, w, h, r) {
 function getStarterCollection() { const c = {}; POOL.forEach((x) => { c[x.id] = x.rarity === "Common" ? 2 : x.rarity === "Uncommon" ? 1 : 0; }); return c; }
 
 // ═══ FLOATING PARTICLES ══════════════════════════════════════════════════════
-function FloatingParticles({ count = 30, color = "#e8c06015", speed = 1 }) {
+function FloatingParticles({ count = 30, color = "#e8c06015", speed = 1, shape = "circle", direction = "up" }) {
   const ref = useRef(null);
   const particles = useRef([]);
   useEffect(() => {
+    particles.current = [];
     const c = ref.current; if (!c) return;
     const ctx = c.getContext("2d");
-    const W = c.width = c.offsetWidth;
-    const H = c.height = c.offsetHeight;
-    if (particles.current.length === 0) {
-      for (let i = 0; i < count; i++) particles.current.push({ x: Math.random() * W, y: Math.random() * H, r: 0.5 + Math.random() * 2, vx: (Math.random() - 0.5) * 0.3 * speed, vy: -0.2 - Math.random() * 0.5 * speed, a: 0.1 + Math.random() * 0.4 });
+    const W = c.width = c.offsetWidth || 400;
+    const H = c.height = c.offsetHeight || 300;
+    const down = direction === "down";
+    for (let i = 0; i < count; i++) {
+      const r = 1 + Math.random() * (shape === "leaf" ? 4 : shape === "drop" ? 3 : 2.5);
+      particles.current.push({
+        x: Math.random() * W, y: Math.random() * H,
+        r,
+        vx: (Math.random() - 0.5) * (shape === "leaf" ? 0.8 : 0.4) * speed,
+        vy: down ? (0.3 + Math.random() * 0.8) * speed : -(0.3 + Math.random() * 0.8) * speed,
+        a: 0.2 + Math.random() * 0.5,
+        rot: Math.random() * Math.PI * 2,
+        rotV: (Math.random() - 0.5) * 0.04 * speed,
+        pulse: Math.random() * Math.PI * 2,
+      });
     }
     let af;
     const draw = () => {
       ctx.clearRect(0, 0, W, H);
       particles.current.forEach((p) => {
-        p.x += p.vx; p.y += p.vy;
-        if (p.y < -10) { p.y = H + 10; p.x = Math.random() * W; }
+        p.x += p.vx; p.y += p.vy; p.rot += p.rotV; p.pulse += 0.03;
+        if (down && p.y > H + 15) { p.y = -10; p.x = Math.random() * W; }
+        if (!down && p.y < -15) { p.y = H + 10; p.x = Math.random() * W; }
         if (p.x < -10) p.x = W + 10; if (p.x > W + 10) p.x = -10;
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, PI * 2);
-        ctx.fillStyle = color.replace(/[\d.]+\)$/, `${p.a})`).replace(/[0-9a-f]{2}$/i, Math.round(p.a * 255).toString(16).padStart(2, "0"));
-        ctx.fill();
+        const alpha = p.a * (shape === "spark" ? 0.5 + 0.5 * Math.abs(Math.sin(p.pulse)) : 1);
+        ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = color;
+        if (shape === "leaf") {
+          ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+          ctx.beginPath(); ctx.ellipse(0, 0, p.r * 2.2, p.r * 0.9, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.moveTo(0, -p.r * 0.9); ctx.lineTo(0, p.r * 0.9); ctx.strokeStyle = color; ctx.globalAlpha = alpha * 0.4; ctx.lineWidth = 0.5; ctx.stroke();
+        } else if (shape === "drop") {
+          ctx.translate(p.x, p.y);
+          ctx.beginPath(); ctx.arc(0, 0, p.r * 0.8, 0, Math.PI * 2);
+          ctx.moveTo(-p.r * 0.5, -p.r * 0.3); ctx.quadraticCurveTo(0, -p.r * 2.2, p.r * 0.5, -p.r * 0.3); ctx.fill();
+        } else if (shape === "spark") {
+          ctx.translate(p.x, p.y);
+          ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.fill();
+          ctx.globalAlpha = alpha * 0.3; ctx.beginPath(); ctx.arc(0, 0, p.r * 2.5, 0, Math.PI * 2); ctx.fill();
+        } else if (shape === "bubble") {
+          ctx.translate(p.x, p.y);
+          ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = "transparent"; ctx.strokeStyle = color; ctx.globalAlpha = alpha * 0.6; ctx.lineWidth = 0.8; ctx.stroke();
+          ctx.beginPath(); ctx.arc(-p.r * 0.3, -p.r * 0.3, p.r * 0.25, 0, Math.PI * 2); ctx.fillStyle = color; ctx.globalAlpha = alpha * 0.4; ctx.fill();
+        } else {
+          ctx.beginPath(); ctx.arc(p.x - (ctx.canvas.width > 0 ? 0 : 0), p.y - (ctx.canvas.height > 0 ? 0 : 0), p.r, 0, Math.PI * 2);
+          ctx.restore(); ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = color;
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.restore();
       });
       af = requestAnimationFrame(draw);
     };
     draw();
     return () => cancelAnimationFrame(af);
-  }, [count, color, speed]);
+  }, [count, color, speed, shape, direction]);
   return (<canvas ref={ref} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} />);
 }
 
@@ -1266,6 +1301,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
   const pollRef = useRef(null);
   const prevGsRef = useRef(null);
   const pvpBcRef = useRef(null);
+  const drawDismissedRef = useRef(false);
   const [turnBanner, setTurnBanner] = useState(null);
   const [forfeitConfirm, setForfeitConfirm] = useState(false);
   const showTurnBanner = (type) => { setTurnBanner(type); setTimeout(() => setTurnBanner(null), 1400); };
@@ -1462,27 +1498,36 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       // Opponent VFX: spell cast (detect from new log entries)
       const newEntries = (gs.log||[]).slice((prev.log||[]).length);
       if (newEntries.some(l => l.includes("casts ") || l.includes("Cast "))) { vfx.add("spell", { color:"#c090d0" }); SFX.play("ability"); }
-      // Opponent attack animation: parse "X(N) attacks Y" from log
-      const atkEntry = newEntries.find(l => / attacks /.test(l));
-      if (atkEntry) {
-        const m = atkEntry.match(/^(.+?)\(\d+\) attacks (.+?)(?:\s|$)/);
-        if (m) {
+      // Opponent attack animation: parse "X(N) attacks Y" from log, sequence full attack arc
+      const atkEntries = newEntries.filter(l => / attacks /.test(l));
+      if (atkEntries.length > 0) {
+        let delay = 0;
+        atkEntries.forEach(atkEntry => {
+          const m = atkEntry.match(/^(.+?)\(\d+\) attacks (.+?)(?:\s|$)/);
+          if (!m) return;
           const atkName = m[1].trim(), tgtName = m[2].trim();
           const atkCard = prevAi.enemyBoard.find(c => c.name === atkName);
           const tgtCard = prevAi.playerBoard.find(c => c.name === tgtName);
-          if (atkCard) {
+          setTimeout(() => {
             SFX.play("attack");
-            setAnimUids(p => ({ ...p, [atkCard.uid]: "attacking" }));
+            if (atkCard) setAnimUids(p => ({ ...p, [atkCard.uid]: "attacking" }));
             setTimeout(() => {
-              if (tgtCard) setAnimUids(p => ({ ...p, [atkCard.uid]: "attacking", [tgtCard.uid]: "hit" }));
-            }, 220);
-          }
-        }
+              if (tgtCard) { setAnimUids(p => ({ ...p, ...(atkCard?{[atkCard.uid]:"attacking"}:{}), [tgtCard.uid]: "hit" })); vfx.add("damage", { amount: 0, flash: true }); }
+              else { vfx.add("damage", { amount: 0, flash: true }); } // face attack
+            }, 240);
+          }, delay);
+          delay += 600;
+        });
       }
-      if (Object.keys(anims).length > 0) { if (Object.values(anims).includes("dying")) SFX.play("kill"); setAnimUids(p => ({ ...p, ...anims })); setTimeout(() => setAnimUids({}), 700); }
-      // VFX: my face was hit
+      if (Object.keys(anims).length > 0) {
+        const hasDying = Object.values(anims).includes("dying");
+        if (hasDying) SFX.play("kill");
+        const atkDelay = atkEntries.length * 600;
+        setTimeout(() => { setAnimUids(p => ({ ...p, ...anims })); setTimeout(() => setAnimUids({}), 700); }, atkDelay);
+      }
+      // VFX: my face was hit (HP loss)
       const myHPKey = myRole+"HP";
-      if (gs[myHPKey] < prev[myHPKey]) { vfx.add("damage", { amount: prev[myHPKey]-gs[myHPKey] }); }
+      if (gs[myHPKey] < prev[myHPKey]) { vfx.add("damage", { amount: prev[myHPKey]-gs[myHPKey] }); SFX.play("attack"); }
     }
     prevGsRef.current = gs;
   }, [gs]); // eslint-disable-line
@@ -1590,7 +1635,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       let found=false;
       for (const nm of CARD_NAMES_SORTED) {
         const idx=rem.indexOf(nm);
-        if (idx!==-1) { if(idx>0) parts.push(<span key={ki++}>{rem.slice(0,idx)}</span>); const cd=POOL.find(c=>c.name===nm); parts.push(<span key={ki++} style={{color:cd?.border||"#c0a040",fontWeight:700,cursor:"pointer",borderBottom:"1px dotted currentColor"}} onMouseEnter={()=>cd&&setPreviewCard(cd)} onMouseLeave={()=>setPreviewCard(null)}>{nm}</span>); rem=rem.slice(idx+nm.length); found=true; break; }
+        if (idx!==-1) { if(idx>0) parts.push(<span key={ki++}>{rem.slice(0,idx)}</span>); const cd=POOL.find(c=>c.name===nm); parts.push(<span key={ki++} style={{color:cd?.border||"#c0a040",fontWeight:700,cursor:"pointer",borderBottom:"1px dotted currentColor"}} onClick={(e)=>{e.stopPropagation();cd&&setPreviewCard(p=>p?.id===cd.id?null:cd);}}>{nm}</span>); rem=rem.slice(idx+nm.length); found=true; break; }
       }
       if (!found) { parts.push(<span key={ki++}>{rem}</span>); rem=""; }
     }
@@ -1611,7 +1656,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
       </div>
     </div>)}
     {/* Opening draw overlay */}
-    {gs?.drawAnim && !gs.winner && (<div style={{ position:"fixed", inset:0, zIndex:500, background:"rgba(0,0,0,0.9)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", animation:"fadeIn 0.4s" }}>
+    {gs?.drawAnim && !gs.winner && !drawDismissedRef.current && (<div style={{ position:"fixed", inset:0, zIndex:500, background:"rgba(0,0,0,0.9)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", animation:"fadeIn 0.4s" }}>
       <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#a09060", letterSpacing:4, marginBottom:20 }}>OPENING DRAW</div>
       <div style={{ display:"flex", gap:40, alignItems:"center", marginBottom:24 }}>
         <div style={{ textAlign:"center" }}><div style={{ fontSize:9, color:"#cc4848", fontFamily:"'Cinzel',serif", letterSpacing:2, marginBottom:8 }}>{(opponentName||"OPPONENT").toUpperCase()}</div>{gs.drawAnim.p2Card&&<Card card={gs.drawAnim.p2Card} size="sm"/>}<div style={{ fontFamily:"'Cinzel',serif", fontSize:16, color:"#e8c060", marginTop:6 }}>COST {gs.drawAnim.p2Card?.cost||0}</div></div>
@@ -1619,7 +1664,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser }) {
         <div style={{ textAlign:"center" }}><div style={{ fontSize:9, color:"#78cc45", fontFamily:"'Cinzel',serif", letterSpacing:2, marginBottom:8 }}>{(user?.name||"YOU").toUpperCase()}</div>{gs.drawAnim.p1Card&&<Card card={gs.drawAnim.p1Card} size="sm"/>}<div style={{ fontFamily:"'Cinzel',serif", fontSize:16, color:"#e8c060", marginTop:6 }}>COST {gs.drawAnim.p1Card?.cost||0}</div></div>
       </div>
       <div style={{ fontFamily:"'Cinzel',serif", fontSize:20, fontWeight:700, color:gs.drawAnim.first===myRole?"#78cc45":"#e05050", letterSpacing:2, marginBottom:18, animation:"pulse 0.8s infinite" }}>{gs.drawAnim.first===myRole?"YOU GO FIRST!":"OPPONENT GOES FIRST"}</div>
-      <button onClick={() => setGs(g => ({ ...g, drawAnim: null }))} style={{ padding:"10px 28px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, color:"#1a1000", cursor:"pointer", letterSpacing:2 }}>BEGIN BATTLE</button>
+      <button onClick={() => { drawDismissedRef.current = true; setGs(g => ({ ...g, drawAnim: null })); }} style={{ padding:"10px 28px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, color:"#1a1000", cursor:"pointer", letterSpacing:2 }}>BEGIN BATTLE</button>
     </div>)}
     {/* Turn banner */}
     {turnBanner && (<div style={{ position:"fixed", top:"44%", left:"50%", transform:"translate(-50%,-50%)", zIndex:300, pointerEvents:"none", animation:"turnBannerIn 1.4s ease-out forwards" }}><div style={{ background:turnBanner==="YOUR TURN"?"linear-gradient(135deg,rgba(30,70,10,0.97),rgba(20,50,8,0.97))":"linear-gradient(135deg,rgba(60,15,15,0.97),rgba(40,8,8,0.97))", border:"2px solid "+(turnBanner==="YOUR TURN"?"#78cc45":"#cc4848"), borderRadius:14, padding:"16px 42px", fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:turnBanner==="YOUR TURN"?"#78cc45":"#e05050", letterSpacing:4, whiteSpace:"nowrap", boxShadow:"0 8px 40px "+(turnBanner==="YOUR TURN"?"#78cc4555":"#cc484855") }}>{turnBanner}</div></div>)}
@@ -2434,7 +2479,30 @@ function CollectionScreen({ user, onUpdateUser }) {
 function HomeScreen({ setTab, user }) {
   const [active, setActive] = useState(0);
   const [entered, setEntered] = useState(false);
-  useEffect(() => { MusicCtx.play("home"); setEntered(true); const id = setInterval(() => setActive((c) => (c + 1) % HOME_CARDS.length), 4000); return () => clearInterval(id); }, []);
+  const [recentBattles, setRecentBattles] = useState([]);
+  useEffect(() => {
+    MusicCtx.play("home"); setEntered(true);
+    const id = setInterval(() => setActive((c) => (c + 1) % HOME_CARDS.length), 4000);
+    // Fetch recent completed battles
+    (async () => {
+      try {
+        const { data: matches } = await supabase.from("matches").select("id,p1_id,p2_id,game_state,updated_at").not("game_state->>winner","is",null).order("updated_at",{ascending:false}).limit(10);
+        if (!matches?.length) return;
+        const pids = [...new Set(matches.flatMap(m => [m.p1_id,m.p2_id].filter(Boolean)))];
+        const { data: profiles } = await supabase.from("profiles").select("id,name,avatar_url").in("id",pids);
+        const pMap = {}; (profiles||[]).forEach(p => { pMap[p.id] = p; });
+        setRecentBattles(matches.map(m => ({
+          id: m.id,
+          p1: pMap[m.p1_id] || { name:"Player", avatar_url:null },
+          p2: pMap[m.p2_id] || { name:"Player", avatar_url:null },
+          winner: m.game_state?.winner,
+          turns: m.game_state?.turn || 0,
+          date: m.updated_at,
+        })));
+      } catch(_) {}
+    })();
+    return () => clearInterval(id);
+  }, []);
 
   const REGION_ICONS = { Thornwood: "🌿", "Shattered Expanse": "💎", "Azure Deep": "🌊", Ashfen: "🔥", Ironmarch: "⚙", Sunveil: "☀", Bloodpact: "🩸" };
   return (<>
@@ -2530,6 +2598,45 @@ function HomeScreen({ setTab, user }) {
         </div>
       </div>
     </section>
+    {/* Recent Battles Feed */}
+    {recentBattles.length > 0 && (
+    <section style={{ background:"linear-gradient(180deg,#080608,#060408)", borderTop:"1px solid #1a1218", padding:"28px 28px 32px" }}>
+      <div style={{ maxWidth:1100, margin:"0 auto" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:18 }}>
+          <div style={{ width:7, height:7, borderRadius:"50%", background:"#78cc45", boxShadow:"0 0 10px #78cc4599", animation:"pulse 2s infinite" }} />
+          <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#78cc45", letterSpacing:4, fontWeight:700 }}>RECENT BATTLES</span>
+        </div>
+        <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
+          {recentBattles.map((b,i) => {
+            const p1Won = b.winner === "p1";
+            return (
+              <div key={b.id} style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.03)", border:"1px solid #201818", borderRadius:10, padding:"10px 14px", animation:`cardReveal 0.4s ease-out ${i*0.06}s both`, minWidth:240, flex:"0 0 auto" }}>
+                {/* P1 */}
+                <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+                  <div style={{ width:32, height:32, borderRadius:"50%", overflow:"hidden", border:`2px solid ${p1Won?"#78cc45":"#604040"}`, display:"flex", alignItems:"center", justifyContent:"center", background:"#1a1010", fontSize:11, fontFamily:"'Cinzel',serif", color:p1Won?"#78cc45":"#806060", fontWeight:700 }}>
+                    {b.p1.avatar_url ? <img src={b.p1.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (b.p1.name||"?").slice(0,2).toUpperCase()}
+                  </div>
+                  <span style={{ fontSize:8, color:p1Won?"#78cc45":"#604040", fontFamily:"'Cinzel',serif", fontWeight:700 }}>{p1Won?"WIN":"LOSS"}</span>
+                </div>
+                {/* VS + turns */}
+                <div style={{ textAlign:"center", flex:1 }}>
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#403030", letterSpacing:2, marginBottom:2 }}>VS</div>
+                  <div style={{ fontSize:8, color:"#504038" }}>{b.turns} turns</div>
+                  <div style={{ fontSize:7, color:"#302820", marginTop:2 }}>{b.date ? new Date(b.date).toLocaleDateString() : ""}</div>
+                </div>
+                {/* P2 */}
+                <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+                  <div style={{ width:32, height:32, borderRadius:"50%", overflow:"hidden", border:`2px solid ${!p1Won?"#78cc45":"#604040"}`, display:"flex", alignItems:"center", justifyContent:"center", background:"#1a1010", fontSize:11, fontFamily:"'Cinzel',serif", color:!p1Won?"#78cc45":"#806060", fontWeight:700 }}>
+                    {b.p2.avatar_url ? <img src={b.p2.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (b.p2.name||"?").slice(0,2).toUpperCase()}
+                  </div>
+                  <span style={{ fontSize:8, color:!p1Won?"#78cc45":"#604040", fontFamily:"'Cinzel',serif", fontWeight:700 }}>{!p1Won?"WIN":"LOSS"}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>)}
     {/* Bottom info bar */}
     <div style={{ background:"rgba(0,0,0,0.5)", borderTop:"1px solid rgba(255,255,255,0.05)", padding:"10px 28px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
       <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#504038", letterSpacing:2 }}>FORGE {"&"} FABLE</div>
@@ -2782,7 +2889,6 @@ const NAV = [
   { id: "play",       label: "Battle",  icon: "⚔" },
   { id: "store",      label: "Store",   icon: "◈" },
   { id: "collection", label: "Cards",   icon: "❖" },
-  { id: "forge",      label: "Forge",   icon: "⚒" },
   { id: "community",  label: "Hub",     icon: "✦" },
   { id: "howto",      label: "Guide",   icon: "◉" },
 ];
@@ -2849,7 +2955,7 @@ export default function App() {
         <div style={{ width: 36, height: 36, borderRadius: 8, background: "linear-gradient(135deg,#e8c060,#a07820)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontSize: 16, fontWeight: 900, color: "#1a1000", boxShadow: "0 2px 12px #e8c06044" }}>F</div>
         <div>
           <div style={{ fontFamily: "'Cinzel',serif", fontSize: 16, fontWeight: 900, color: "#e8c060", lineHeight: 1, letterSpacing: 1 }}>Forge {"&"} Fable</div>
-          <div style={{ fontSize: 8, color: "#6a5028", letterSpacing: 3, fontFamily: "'Cinzel',serif", marginTop: 3 }}>v16 · ALPHA</div>
+          <div style={{ fontSize: 8, color: "#6a5028", letterSpacing: 3, fontFamily: "'Cinzel',serif", marginTop: 3 }}>v17 · ALPHA</div>
         </div>
       </button>
       <div style={{ display: "flex", gap: 2 }}>
