@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Forge & Fable — A Card Game of Myth and War</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
+<style>
+/* ── Palette ─────────────────────────────── */
+:root{
+  --gold:#e8c060;--gold-dim:#c8a040;--gold-glow:#f0d080;
+  --crimson:#cc2030;--crimson-glow:#ff4050;
+  --purple:#9050d8;--purple-glow:#c080ff;
+  --bg:#04030a;--bg2:#070510;
+  --text:#f0e8d0;--text-dim:#a09070;--text-muted:#5a5040;
+  --nav-h:64px;
+  --ticker-h:38px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Crimson Text',Georgia,serif;
+  overflow-x:hidden;min-height:100vh;
+}
+
+/* ── Starfield canvas ───────────────────── */
+#starfield{
+  position:fixed;inset:0;z-index:0;
+  pointer-events:none;
+}
+
+/* ── Nav ────────────────────────────────── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  height:var(--nav-h);
+  background:rgba(4,3,10,0.82);
+  backdrop-filter:blur(18px);
+  border-bottom:1px solid rgba(232,192,96,0.12);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 40px;
+}
+.nav-logo{
+  font-family:'Cinzel Decorative',serif;
+  font-size:20px;font-weight:900;
+  color:var(--gold);
+  letter-spacing:2px;
+  text-shadow:0 0 28px rgba(232,192,96,0.45);
+  text-decoration:none;
+}
+.nav-links{display:flex;gap:36px;align-items:center}
+.nav-links a{
+  font-family:'Cinzel',serif;font-size:11px;font-weight:600;
+  color:var(--text-dim);letter-spacing:2.5px;text-decoration:none;
+  transition:color .2s,text-shadow .2s;
+}
+.nav-links a:hover{color:var(--gold);text-shadow:0 0 12px rgba(232,192,96,0.5)}
+.nav-cta{
+  font-family:'Cinzel',serif;font-size:11px;font-weight:700;
+  letter-spacing:2px;padding:9px 22px;
+  background:linear-gradient(135deg,#c89010,#f0c040);
+  color:#1a1000;border:none;border-radius:6px;cursor:pointer;
+  transition:all .2s;text-decoration:none;
+}
+.nav-cta:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(232,192,96,0.4)}
+
+/* ── Ticker ─────────────────────────────── */
+.ticker-wrap{
+  position:fixed;top:var(--nav-h);left:0;right:0;z-index:99;
+  height:var(--ticker-h);
+  background:rgba(3,2,8,0.9);
+  border-bottom:1px solid rgba(232,192,96,0.08);
+  overflow:hidden;display:flex;align-items:center;
+}
+.ticker-label{
+  flex-shrink:0;padding:0 20px;
+  font-family:'Cinzel',serif;font-size:9px;font-weight:700;
+  color:var(--crimson);letter-spacing:3px;
+  border-right:1px solid rgba(232,192,96,0.15);
+  height:100%;display:flex;align-items:center;
+  background:rgba(4,3,10,0.6);
+}
+.ticker-track{
+  display:flex;align-items:center;white-space:nowrap;
+  animation:ticker 60s linear infinite;
+  gap:0;
+}
+.ticker-item{
+  font-size:12px;color:var(--text-dim);
+  padding:0 40px;
+  border-right:1px solid rgba(232,192,96,0.1);
+}
+.ticker-item span{color:var(--gold);font-weight:600}
+@keyframes ticker{
+  0%{transform:translateX(0)}
+  100%{transform:translateX(-50%)}
+}
+
+/* ── Main layout ────────────────────────── */
+main{
+  padding-top:calc(var(--nav-h) + var(--ticker-h));
+  position:relative;z-index:1;
+}
+
+/* ── Hero ───────────────────────────────── */
+.hero{
+  min-height:calc(100vh - var(--nav-h) - var(--ticker-h));
+  display:flex;align-items:center;justify-content:center;
+  padding:80px 40px 60px;
+  gap:80px;
+  position:relative;
+}
+.hero-text{flex:1;max-width:520px}
+.hero-eyebrow{
+  font-family:'Cinzel',serif;font-size:10px;font-weight:700;
+  color:var(--crimson);letter-spacing:5px;margin-bottom:20px;
+  display:flex;align-items:center;gap:10px;
+}
+.hero-eyebrow::before{content:'';width:32px;height:1px;background:var(--crimson)}
+.hero-title{
+  font-family:'Cinzel Decorative',serif;
+  font-size:clamp(36px,5vw,68px);
+  font-weight:900;line-height:1.05;
+  color:var(--gold);
+  text-shadow:0 0 60px rgba(232,192,96,0.3),0 2px 0 rgba(0,0,0,0.8);
+  margin-bottom:10px;
+}
+.hero-title em{color:#fff;font-style:normal}
+.hero-sub{
+  font-family:'Cinzel',serif;font-size:13px;font-weight:400;
+  color:var(--text-dim);letter-spacing:3px;
+  margin-bottom:28px;
+}
+.hero-desc{
+  font-size:18px;color:rgba(240,232,208,0.75);
+  line-height:1.8;margin-bottom:40px;max-width:440px;
+}
+.hero-btns{display:flex;gap:14px;flex-wrap:wrap}
+.btn-battle{
+  font-family:'Cinzel',serif;font-size:13px;font-weight:700;
+  letter-spacing:3px;padding:16px 36px;
+  background:linear-gradient(135deg,#a81020,#e03040);
+  color:#fff;border:none;border-radius:8px;cursor:pointer;
+  animation:battleGlow 2.5s ease-in-out infinite;
+  transition:transform .15s;text-decoration:none;
+  display:inline-block;
+}
+.btn-battle:hover{transform:translateY(-2px) scale(1.02)}
+.btn-secondary{
+  font-family:'Cinzel',serif;font-size:12px;font-weight:600;
+  letter-spacing:2px;padding:16px 28px;
+  background:transparent;
+  color:var(--text-dim);
+  border:1px solid rgba(232,192,96,0.25);
+  border-radius:8px;cursor:pointer;
+  transition:all .2s;text-decoration:none;
+  display:inline-block;
+}
+.btn-secondary:hover{border-color:var(--gold);color:var(--gold)}
+@keyframes battleGlow{
+  0%,100%{box-shadow:0 0 12px rgba(200,30,50,0.4),0 4px 20px rgba(200,30,50,0.25)}
+  50%{box-shadow:0 0 32px rgba(255,60,80,0.75),0 8px 40px rgba(200,30,50,0.5),0 0 60px rgba(200,30,50,0.2)}
+}
+
+/* ── Card carousel ──────────────────────── */
+.carousel-wrap{
+  flex-shrink:0;
+  display:flex;flex-direction:column;align-items:center;gap:20px;
+  user-select:none;
+}
+.card-stage{
+  width:240px;height:340px;
+  perspective:900px;
+  position:relative;
+}
+.hero-card{
+  width:240px;height:340px;
+  border-radius:16px;overflow:hidden;
+  position:absolute;inset:0;
+  border:2px solid var(--card-border,#e8c06066);
+  box-shadow:0 0 40px var(--card-glow,rgba(232,192,96,0.2)),0 20px 60px rgba(0,0,0,0.7);
+  cursor:pointer;
+  transition:opacity .45s ease,transform .45s ease,box-shadow .2s;
+  opacity:0;transform:scale(0.92);
+  transform-style:preserve-3d;
+  will-change:transform;
+}
+.hero-card.active{opacity:1;transform:scale(1)}
+.hero-card.exit{opacity:0;transform:scale(1.04)}
+.hero-card.tilt{transition:transform .08s linear,box-shadow .2s,opacity .45s ease}
+.card-svg{width:100%;height:100%;display:block}
+.card-spotlight{
+  position:absolute;inset:0;border-radius:14px;
+  background:radial-gradient(
+    circle at calc(var(--mx,50%) * 1%) calc(var(--my,50%) * 1%),
+    rgba(255,255,255,0.12) 0%,
+    transparent 60%
+  );
+  pointer-events:none;z-index:5;
+  opacity:0;transition:opacity .2s;
+}
+.hero-card:hover .card-spotlight{opacity:1}
+
+/* Carousel dots */
+.carousel-dots{display:flex;gap:8px}
+.dot{
+  width:8px;height:8px;border-radius:50%;
+  background:rgba(232,192,96,0.25);
+  cursor:pointer;transition:all .2s;border:none;padding:0;
+}
+.dot.active{background:var(--gold);box-shadow:0 0 8px rgba(232,192,96,0.6);transform:scale(1.2)}
+
+/* ── Stats ──────────────────────────────── */
+.stats-section{
+  padding:80px 40px;
+  display:flex;justify-content:center;gap:80px;flex-wrap:wrap;
+  position:relative;
+  border-top:1px solid rgba(232,192,96,0.07);
+  border-bottom:1px solid rgba(232,192,96,0.07);
+}
+.stats-section::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 0%,rgba(144,80,216,0.06),transparent 65%);
+  pointer-events:none;
+}
+.stat-item{text-align:center}
+.stat-num{
+  font-family:'Cinzel Decorative',serif;
+  font-size:clamp(48px,6vw,80px);font-weight:900;
+  color:var(--gold);
+  text-shadow:0 0 40px rgba(232,192,96,0.35);
+  line-height:1;display:block;
+  transition:color .3s;
+}
+.stat-label{
+  font-family:'Cinzel',serif;font-size:10px;font-weight:700;
+  color:var(--text-muted);letter-spacing:4px;
+  margin-top:8px;display:block;
+}
+.stat-desc{
+  font-size:13px;color:rgba(160,144,112,0.7);
+  margin-top:4px;max-width:140px;
+}
+
+/* ── Faction strip ──────────────────────── */
+.faction-section{
+  padding:60px 0 80px;
+  position:relative;
+}
+.section-heading{
+  font-family:'Cinzel',serif;font-size:10px;font-weight:700;
+  color:var(--text-muted);letter-spacing:5px;
+  text-align:center;margin-bottom:32px;
+}
+.faction-scroll{
+  display:flex;gap:16px;
+  padding:0 40px 20px;
+  overflow-x:auto;
+  scrollbar-width:thin;scrollbar-color:rgba(232,192,96,0.2) transparent;
+}
+.faction-scroll::-webkit-scrollbar{height:4px}
+.faction-scroll::-webkit-scrollbar-track{background:transparent}
+.faction-scroll::-webkit-scrollbar-thumb{background:rgba(232,192,96,0.2);border-radius:2px}
+.faction-card{
+  flex-shrink:0;width:160px;
+  background:rgba(255,255,255,0.025);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:14px;padding:24px 18px 20px;
+  cursor:pointer;
+  transition:transform .2s,border-color .2s,box-shadow .2s;
+  position:relative;overflow:hidden;
+}
+.faction-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--faction-color),transparent);
+}
+.faction-card:hover{
+  transform:translateY(-4px);
+  border-color:var(--faction-color);
+  box-shadow:0 8px 32px color-mix(in srgb,var(--faction-color) 25%,transparent);
+}
+.faction-icon{font-size:28px;margin-bottom:12px;display:block}
+.faction-name{
+  font-family:'Cinzel',serif;font-size:11px;font-weight:700;
+  color:#fff;letter-spacing:1px;margin-bottom:4px;
+}
+.faction-tag{
+  font-size:11px;
+  color:var(--faction-color);
+  opacity:0.75;
+}
+
+/* ── Feature strip ──────────────────────── */
+.features-section{
+  padding:80px 40px;
+  max-width:1100px;margin:0 auto;
+}
+.features-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:24px;margin-top:40px;
+}
+.feature-card{
+  background:rgba(255,255,255,0.02);
+  border:1px solid rgba(232,192,96,0.08);
+  border-radius:14px;padding:28px 24px;
+  transition:border-color .2s,background .2s;
+}
+.feature-card:hover{
+  border-color:rgba(232,192,96,0.22);
+  background:rgba(255,255,255,0.03);
+}
+.feature-icon{font-size:26px;margin-bottom:14px}
+.feature-title{
+  font-family:'Cinzel',serif;font-size:13px;font-weight:700;
+  color:var(--gold);letter-spacing:1px;margin-bottom:8px;
+}
+.feature-desc{font-size:15px;color:var(--text-dim);line-height:1.7}
+
+/* ── CTA section ────────────────────────── */
+.cta-section{
+  padding:120px 40px;text-align:center;
+  position:relative;
+}
+.cta-section::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 50%,rgba(204,32,48,0.07),transparent 65%);
+  pointer-events:none;
+}
+.cta-title{
+  font-family:'Cinzel Decorative',serif;
+  font-size:clamp(28px,4vw,52px);font-weight:900;
+  color:#fff;margin-bottom:16px;
+}
+.cta-title span{color:var(--gold)}
+.cta-sub{
+  font-size:18px;color:var(--text-dim);
+  margin-bottom:40px;max-width:480px;margin-left:auto;margin-right:auto;
+}
+.alpha-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(120,204,69,0.1);
+  border:1px solid rgba(120,204,69,0.3);
+  border-radius:20px;padding:6px 16px;
+  font-family:'Cinzel',serif;font-size:9px;font-weight:700;
+  color:#78cc45;letter-spacing:3px;
+  margin-bottom:32px;
+}
+.alpha-dot{width:6px;height:6px;border-radius:50%;background:#78cc45;box-shadow:0 0 8px #78cc45;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* ── Footer ─────────────────────────────── */
+footer{
+  padding:40px;
+  border-top:1px solid rgba(232,192,96,0.08);
+  display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:16px;
+}
+.footer-logo{
+  font-family:'Cinzel Decorative',serif;font-size:14px;font-weight:900;
+  color:var(--text-muted);letter-spacing:2px;
+}
+.footer-copy{font-size:12px;color:var(--text-muted)}
+
+/* ── Particles ──────────────────────────── */
+.particle{
+  position:fixed;bottom:-20px;
+  width:5px;height:5px;border-radius:50%;
+  pointer-events:none;z-index:0;
+  animation:floatUp var(--dur,14s) ease-in forwards;
+  opacity:0.7;
+}
+@keyframes floatUp{
+  0%  {transform:translateY(0) scale(1);opacity:0.7}
+  20% {opacity:0.9}
+  80% {opacity:0.4}
+  100%{transform:translateY(-110vh) scale(0.3) rotate(var(--spin,180deg));opacity:0}
+}
+</style>
+</head>
+<body>
+
+<!-- Starfield -->
+<canvas id="starfield"></canvas>
+
+<!-- Nav -->
+<nav>
+  <a class="nav-logo" href="#">Forge &amp; Fable</a>
+  <div class="nav-links">
+    <a href="#factions">Factions</a>
+    <a href="#features">How to Play</a>
+    <a href="#">Patch Notes</a>
+    <a href="#">Leaderboard</a>
+  </div>
+  <a class="nav-cta" href="/">PLAY NOW</a>
+</nav>
+
+<!-- Ticker -->
+<div class="ticker-wrap">
+  <div class="ticker-label">LIVE</div>
+  <div class="ticker-track" id="ticker-track"></div>
+</div>
+
+<main>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-text">
+    <div class="hero-eyebrow">ALPHA — EARLY ACCESS</div>
+    <h1 class="hero-title">Forge &amp;<br/><em>Fable</em></h1>
+    <p class="hero-sub">A CARD GAME OF MYTH AND WAR</p>
+    <p class="hero-desc">
+      Seven factions. Thirty-two warriors. One battlefield.
+      Build your deck, command your forces, and forge your legend
+      across Thornwood, the Azure Deep, and beyond.
+    </p>
+    <div class="hero-btns">
+      <a class="btn-battle" href="/">ENTER THE ARENA</a>
+      <a class="btn-secondary" href="#features">HOW TO PLAY</a>
+    </div>
+  </div>
+
+  <!-- Card Carousel -->
+  <div class="carousel-wrap">
+    <div class="card-stage" id="card-stage">
+      <!-- Cards injected by JS -->
+    </div>
+    <div class="carousel-dots" id="carousel-dots"></div>
+  </div>
+</section>
+
+<!-- Stats -->
+<section class="stats-section" id="stats-section">
+  <div class="stat-item">
+    <span class="stat-num" data-target="32" id="stat-cards">0</span>
+    <span class="stat-label">BASE CARDS</span>
+    <p class="stat-desc">Hand-crafted warriors, spells & environments</p>
+  </div>
+  <div class="stat-item">
+    <span class="stat-num" data-target="7" id="stat-factions">0</span>
+    <span class="stat-label">FACTIONS</span>
+    <p class="stat-desc">From verdant Thornwood to the Bloodpact</p>
+  </div>
+  <div class="stat-item">
+    <span class="stat-num" data-target="12" id="stat-keywords">0</span>
+    <span class="stat-label">KEYWORDS</span>
+    <p class="stat-desc">Swift, Echo, Bleed, Shield, Fracture &amp; more</p>
+  </div>
+  <div class="stat-item">
+    <span class="stat-num" data-target="3" id="stat-modes">0</span>
+    <span class="stat-label">GAME MODES</span>
+    <p class="stat-desc">Solo, Casual PvP &amp; Ranked with ELO</p>
+  </div>
+</section>
+
+<!-- Faction Strip -->
+<section class="faction-section" id="factions">
+  <p class="section-heading">CHOOSE YOUR FACTION</p>
+  <div class="faction-scroll" id="faction-scroll"></div>
+</section>
+
+<!-- Features -->
+<section class="features-section" id="features">
+  <p class="section-heading">HOW IT WORKS</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">⚔️</div>
+      <div class="feature-title">Build Your Deck</div>
+      <p class="feature-desc">Craft a 40-card deck from any combination of factions. Mix warriors, spells, and environments to find your strategy.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🌿</div>
+      <div class="feature-title">Environments</div>
+      <p class="feature-desc">Play environment cards to reshape the battlefield for 2 rounds — only your side benefits. Ancient Grove heals. Ashfen Caldera burns.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🩸</div>
+      <div class="feature-title">Bloodpact</div>
+      <p class="feature-desc">Sacrifice your own HP to summon powerful creatures for free. High risk, extreme reward — the Bloodpact faction plays by its own rules.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🏆</div>
+      <div class="feature-title">Ranked Play</div>
+      <p class="feature-desc">Climb from Iron to Grandmaster. ELO-based matchmaking, live PvP, and a global leaderboard track every win and loss.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="alpha-badge"><div class="alpha-dot"></div>ALPHA TESTING LIVE</div>
+  <h2 class="cta-title">Your Legend<br/><span>Starts Now</span></h2>
+  <p class="cta-sub">Join the alpha. Build your collection. Claim your alpha key and take the field before launch.</p>
+  <a class="btn-battle" href="/" style="font-size:15px;padding:18px 48px;letter-spacing:4px">ENTER THE ARENA</a>
+</section>
+
+</main>
+
+<footer>
+  <div class="footer-logo">Forge &amp; Fable</div>
+  <div class="footer-copy">© 2025 Forge &amp; Fable · Alpha Build v20 · All rights reserved</div>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// 1. STARFIELD
+// ═══════════════════════════════════════════════════════════════════
+(function(){
+  const canvas = document.getElementById('starfield');
+  const ctx = canvas.getContext('2d');
+  let W, H, stars=[], mouse={x:0,y:0}, time=0;
+
+  function resize(){
+    W=canvas.width=window.innerWidth;
+    H=canvas.height=window.innerHeight;
+  }
+
+  function makeStar(layer){
+    return {
+      x: Math.random()*W, y: Math.random()*H,
+      r: layer===0 ? 0.5+Math.random()*0.8
+       : layer===1 ? 0.8+Math.random()*1.2
+       :             1.2+Math.random()*1.8,
+      speed: (layer+1)*0.012,
+      twinkleOffset: Math.random()*Math.PI*2,
+      twinkleSpeed: 0.6+Math.random()*1.2,
+      layer,
+      baseOpacity: 0.3+Math.random()*0.6,
+      dx: (Math.random()-0.5)*0.04*(layer+1),
+      dy: (Math.random()-0.5)*0.015*(layer+1),
+    };
+  }
+
+  function init(){
+    resize();
+    stars=[];
+    [180,90,40].forEach((count,layer)=>{
+      for(let i=0;i<count;i++) stars.push(makeStar(layer));
+    });
+  }
+
+  function drawNebula(cx,cy,rx,ry,color,alpha){
+    const g=ctx.createRadialGradient(cx,cy,0,cx,cy,Math.max(rx,ry));
+    g.addColorStop(0,color.replace(')',`,${alpha})`).replace('rgb','rgba'));
+    g.addColorStop(0.5,color.replace(')',`,${alpha*0.3})`).replace('rgb','rgba'));
+    g.addColorStop(1,color.replace(')',',0)').replace('rgb','rgba'));
+    ctx.save();
+    ctx.scale(rx/ry,1);
+    ctx.fillStyle=g;
+    ctx.beginPath();
+    ctx.arc(cx*(ry/rx)||cx,cy,ry,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function frame(){
+    time+=0.008;
+    ctx.clearRect(0,0,W,H);
+
+    // Nebula clouds
+    drawNebula(W*0.22,H*0.35,W*0.28,H*0.22,'rgb(120,60,220)',0.055);
+    drawNebula(W*0.78,H*0.55,W*0.24,H*0.18,'rgb(200,80,40)',0.04);
+
+    // Parallax offset from mouse
+    const ox=(mouse.x/W-0.5), oy=(mouse.y/H-0.5);
+
+    stars.forEach(s=>{
+      const px=ox*18*(s.layer+1), py=oy*10*(s.layer+1);
+      const tw=0.5+0.5*Math.sin(time*s.twinkleSpeed+s.twinkleOffset);
+      const op=s.baseOpacity*(0.5+0.5*tw);
+      ctx.beginPath();
+      ctx.arc(
+        ((s.x + px + W)%W),
+        ((s.y + py + H)%H),
+        s.r,0,Math.PI*2
+      );
+      ctx.fillStyle=`rgba(255,248,220,${op})`;
+      ctx.fill();
+      // Soft glow for larger stars
+      if(s.r>1.4){
+        ctx.beginPath();
+        ctx.arc(((s.x+px+W)%W),((s.y+py+H)%H),s.r*2.5,0,Math.PI*2);
+        ctx.fillStyle=`rgba(255,240,180,${op*0.12})`;
+        ctx.fill();
+      }
+    });
+
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY});
+  window.addEventListener('resize',()=>{init()});
+  init();
+  frame();
+})();
+
+// ═══════════════════════════════════════════════════════════════════
+// 2 & 3. CARD CAROUSEL + TILT
+// ═══════════════════════════════════════════════════════════════════
+(function(){
+  const CARDS=[
+    {
+      name:'Stonefang Wolf',region:'Thornwood',
+      color1:'#1a3010',color2:'#2a5020',accent:'#70ff30',
+      cost:3,atk:4,hp:3,type:'Creature',
+      svgPath:`<ellipse cx="120" cy="150" rx="52" ry="62" fill="#1d4515" opacity=".9"/>
+        <ellipse cx="120" cy="118" rx="40" ry="44" fill="#246020" opacity=".85"/>
+        <ellipse cx="100" cy="108" rx="11" ry="18" fill="#1a4010"/>
+        <ellipse cx="140" cy="108" rx="11" ry="18" fill="#1a4010"/>
+        <circle cx="111" cy="122" r="5" fill="#60ff20" opacity=".9"/>
+        <circle cx="129" cy="122" r="5" fill="#60ff20" opacity=".9"/>
+        <path d="M112 132 Q120 138 128 132" stroke="#70ff30" stroke-width="2" fill="none"/>
+        <circle cx="111" cy="122" r="2.5" fill="#fff"/>
+        <circle cx="129" cy="122" r="2.5" fill="#fff"/>
+      `
+    },
+    {
+      name:'Void Shard',region:'Shattered Expanse',
+      color1:'#0d0820',color2:'#1a1040',accent:'#9050d8',
+      cost:4,atk:5,hp:2,type:'Creature',
+      svgPath:`<polygon points="120,60 148,130 120,115 92,130" fill="#3020a0" opacity=".85"/>
+        <polygon points="120,60 148,130 120,115 92,130" fill="url(#vgrad)" opacity=".7"/>
+        <circle cx="120" cy="115" r="22" fill="#180e40"/>
+        <circle cx="120" cy="115" r="12" fill="#6030c0" opacity=".8"/>
+        <circle cx="120" cy="115" r="5" fill="#d0a0ff"/>
+        <line x1="120" y1="60" x2="148" y2="130" stroke="#9050d8" stroke-width="1.5" opacity=".5"/>
+        <line x1="120" y1="60" x2="92" y2="130" stroke="#9050d8" stroke-width="1.5" opacity=".5"/>
+        <defs><radialGradient id="vgrad" cx="50%" cy="40%"><stop offset="0%" stop-color="#c080ff" stop-opacity=".4"/><stop offset="100%" stop-color="#3020a0" stop-opacity="0"/></radialGradient></defs>
+      `
+    },
+    {
+      name:'Tidecaller',region:'Azure Deep',
+      color1:'#03101e',color2:'#061828',accent:'#40a8e0',
+      cost:2,atk:2,hp:4,type:'Creature',
+      svgPath:`<ellipse cx="120" cy="148" rx="40" ry="55" fill="#0a3060" opacity=".85"/>
+        <ellipse cx="120" cy="118" rx="32" ry="36" fill="#0e4080" opacity=".9"/>
+        <path d="M90 150 Q120 135 150 150 Q140 175 120 178 Q100 175 90 150Z" fill="#1060a0" opacity=".7"/>
+        <circle cx="112" cy="118" r="5" fill="#40d8ff" opacity=".9"/>
+        <circle cx="128" cy="118" r="5" fill="#40d8ff" opacity=".9"/>
+        <path d="M112 130 Q120 136 128 130" stroke="#40a8e0" stroke-width="2" fill="none"/>
+        <circle cx="112" cy="118" r="2" fill="#fff"/>
+        <circle cx="128" cy="118" r="2" fill="#fff"/>
+      `
+    },
+    {
+      name:'Ember Warden',region:'Ashfen',
+      color1:'#1a0500',color2:'#2a0a00',accent:'#e05020',
+      cost:5,atk:6,hp:5,type:'Champion',
+      svgPath:`<rect x="90" y="100" width="60" height="80" rx="4" fill="#3a1000" opacity=".9"/>
+        <rect x="98" y="80" width="44" height="50" rx="6" fill="#501800"/>
+        <rect x="110" y="68" width="20" height="24" rx="5" fill="#3a1000"/>
+        <rect x="106" y="80" width="12" height="30" fill="#601800" opacity=".6"/>
+        <circle cx="114" cy="90" r="4" fill="#ff6020" opacity=".9"/>
+        <circle cx="126" cy="90" r="4" fill="#ff6020" opacity=".9"/>
+        <rect x="78" y="105" width="14" height="60" rx="3" fill="#2a0800"/>
+        <rect x="148" y="105" width="14" height="60" rx="3" fill="#2a0800"/>
+        <rect x="83" y="162" width="14" height="40" rx="2" fill="#2a0800"/>
+        <rect x="143" y="162" width="14" height="40" rx="2" fill="#2a0800"/>
+      `
+    },
+    {
+      name:'Sunveil Dancer',region:'Sunveil',
+      color1:'#180e00',color2:'#251500',accent:'#f0c030',
+      cost:3,atk:3,hp:3,type:'Creature',
+      svgPath:`<ellipse cx="120" cy="148" rx="35" ry="52" fill="#3a2000" opacity=".85"/>
+        <ellipse cx="120" cy="115" rx="28" ry="32" fill="#503000" opacity=".9"/>
+        <path d="M88 130 Q75 110 88 95 Q95 112 100 118Z" fill="#604000" opacity=".7"/>
+        <path d="M152 130 Q165 110 152 95 Q145 112 140 118Z" fill="#604000" opacity=".7"/>
+        <circle cx="113" cy="115" r="4.5" fill="#ffc820" opacity=".9"/>
+        <circle cx="127" cy="115" r="4.5" fill="#ffc820" opacity=".9"/>
+        <path d="M114 126 Q120 132 126 126" stroke="#f0c030" stroke-width="1.8" fill="none"/>
+        <circle cx="113" cy="115" r="2" fill="#fff"/>
+        <circle cx="127" cy="115" r="2" fill="#fff"/>
+      `
+    },
+  ];
+
+  const stage=document.getElementById('card-stage');
+  const dotsEl=document.getElementById('carousel-dots');
+  let current=0, timer=null, cards=[];
+
+  function buildSVG(c){
+    return `<svg class="card-svg" viewBox="0 0 240 340" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="bg${c.region.replace(/\s/g,'')}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${c.color1}"/>
+          <stop offset="100%" stop-color="${c.color2}"/>
+        </linearGradient>
+        <radialGradient id="glow${c.region.replace(/\s/g,'')}" cx="50%" cy="40%">
+          <stop offset="0%" stop-color="${c.accent}" stop-opacity="0.22"/>
+          <stop offset="100%" stop-color="${c.accent}" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <!-- Background -->
+      <rect width="240" height="340" rx="14" fill="url(#bg${c.region.replace(/\s/g,'')})"/>
+      <rect width="240" height="340" rx="14" fill="url(#glow${c.region.replace(/\s/g,'')})"/>
+      <!-- Art area -->
+      <rect x="10" y="44" width="220" height="185" rx="8" fill="rgba(0,0,0,0.3)"/>
+      ${c.svgPath}
+      <!-- Bottom gradient -->
+      <rect x="0" y="200" width="240" height="140" rx="0" fill="url(#fade${c.region.replace(/\s/g,'')})"/>
+      <defs>
+        <linearGradient id="fade${c.region.replace(/\s/g,'')}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${c.color2}" stop-opacity="0.1"/>
+          <stop offset="100%" stop-color="${c.color1}" stop-opacity="0.98"/>
+        </linearGradient>
+      </defs>
+      <!-- Cost badge -->
+      <circle cx="28" cy="28" r="18" fill="${c.type==='Champion'?'#e8c060':c.accent}" fill-opacity="0.9"/>
+      <text x="28" y="34" text-anchor="middle" font-family="Cinzel,serif" font-size="14" font-weight="900" fill="#0a0800">${c.cost}</text>
+      <!-- Type badge -->
+      <rect x="168" y="12" width="58" height="18" rx="4" fill="rgba(0,0,0,0.7)"/>
+      <text x="197" y="25" text-anchor="middle" font-family="Cinzel,serif" font-size="7.5" font-weight="700" fill="${c.accent}">${c.type.toUpperCase()}</text>
+      <!-- Name -->
+      <text x="120" y="248" text-anchor="middle" font-family="Cinzel,serif" font-size="14" font-weight="700" fill="#fff"
+        style="text-shadow:0 0 8px #000">${c.name}</text>
+      <!-- Region -->
+      <text x="120" y="265" text-anchor="middle" font-family="Cinzel,serif" font-size="9" fill="${c.accent}" opacity=".85">${c.region}</text>
+      <!-- Stats bar -->
+      <rect x="18" y="280" width="204" height="40" rx="6" fill="rgba(0,0,0,0.55)"/>
+      <text x="52" y="306" text-anchor="middle" font-family="Cinzel,serif" font-size="22" font-weight="700" fill="#ff7050">${c.atk}</text>
+      <text x="52" y="318" text-anchor="middle" font-family="Cinzel,serif" font-size="7" fill="#996655">ATK</text>
+      <text x="188" y="306" text-anchor="middle" font-family="Cinzel,serif" font-size="22" font-weight="700" fill="#50c060">${c.hp}</text>
+      <text x="188" y="318" text-anchor="middle" font-family="Cinzel,serif" font-size="7" fill="#448850">HP</text>
+      <!-- Inner frame -->
+      <rect x="6" y="6" width="228" height="328" rx="12" fill="none" stroke="${c.accent}" stroke-width="1" stroke-opacity="0.3"/>
+    </svg>
+    <div class="card-spotlight"></div>`;
+  }
+
+  // Build card elements
+  CARDS.forEach((c,i)=>{
+    const el=document.createElement('div');
+    el.className='hero-card'+(i===0?' active':'');
+    el.style.setProperty('--card-border',c.accent+'88');
+    el.style.setProperty('--card-glow',c.accent+'33');
+    el.innerHTML=buildSVG(c);
+    stage.appendChild(el);
+    cards.push(el);
+
+    // Dot
+    const dot=document.createElement('button');
+    dot.className='dot'+(i===0?' active':'');
+    dot.setAttribute('aria-label',`Card ${i+1}`);
+    dot.addEventListener('click',()=>{goTo(i);restartTimer()});
+    dotsEl.appendChild(dot);
+  });
+
+  function goTo(idx){
+    const prev=current;
+    if(idx===prev) return;
+    cards[prev].classList.remove('active');
+    cards[prev].classList.add('exit');
+    setTimeout(()=>cards[prev].classList.remove('exit'),500);
+    cards[idx].classList.add('active');
+    dotsEl.children[prev].classList.remove('active');
+    dotsEl.children[idx].classList.add('active');
+    current=idx;
+  }
+
+  function next(){goTo((current+1)%CARDS.length)}
+  function restartTimer(){clearInterval(timer);timer=setInterval(next,3500)}
+  restartTimer();
+
+  // 3D tilt
+  stage.addEventListener('mousemove',e=>{
+    const rect=stage.getBoundingClientRect();
+    const xPct=(e.clientX-rect.left)/rect.width;
+    const yPct=(e.clientY-rect.top)/rect.height;
+    const rx=((yPct-0.5)*-24).toFixed(2);
+    const ry=((xPct-0.5)*24).toFixed(2);
+    const card=cards[current];
+    card.classList.add('tilt');
+    card.style.transform=`scale(1) rotateX(${rx}deg) rotateY(${ry}deg)`;
+    card.style.setProperty('--mx',(xPct*100).toFixed(1));
+    card.style.setProperty('--my',(yPct*100).toFixed(1));
+    const spot=card.querySelector('.card-spotlight');
+    if(spot){
+      spot.style.background=`radial-gradient(circle at ${xPct*100}% ${yPct*100}%,rgba(255,255,255,0.15) 0%,transparent 55%)`;
+      spot.style.opacity='1';
+    }
+  });
+  stage.addEventListener('mouseleave',()=>{
+    const card=cards[current];
+    card.classList.remove('tilt');
+    card.style.transform='scale(1)';
+    const spot=card.querySelector('.card-spotlight');
+    if(spot) spot.style.opacity='0';
+  });
+})();
+
+// ═══════════════════════════════════════════════════════════════════
+// 4. STAT COUNTERS
+// ═══════════════════════════════════════════════════════════════════
+(function(){
+  const statEls=document.querySelectorAll('[data-target]');
+  let fired=false;
+
+  function easeOut(t){return 1-Math.pow(1-t,3)}
+
+  function runCounters(){
+    if(fired) return;
+    fired=true;
+    statEls.forEach(el=>{
+      const target=+el.dataset.target;
+      const dur=1600;
+      const start=performance.now();
+      function tick(now){
+        const t=Math.min((now-start)/dur,1);
+        el.textContent=Math.round(easeOut(t)*target);
+        if(t<1) requestAnimationFrame(tick);
+        else el.textContent=target;
+      }
+      requestAnimationFrame(tick);
+    });
+  }
+
+  const obs=new IntersectionObserver(entries=>{
+    if(entries.some(e=>e.isIntersecting)) runCounters();
+  },{threshold:0.3});
+  obs.observe(document.getElementById('stats-section'));
+})();
+
+// ═══════════════════════════════════════════════════════════════════
+// 5. LIVE TICKER
+// ═══════════════════════════════════════════════════════════════════
+(function(){
+  const items=[
+    '📜 <span>v20 DEPLOYED</span> — Env effects now side-specific, summon animations live',
+    '⚔️ <span>META REPORT</span> — Bloodpact aggro leads ranked with 58% win rate this week',
+    '🌿 Thornwood combo decks rising — Ancient Grove + Echo synergy hitting Iron lobbies hard',
+    '🏆 <span>RANKED SEASON 1</span> — ELO now live · Iron → Bronze → Silver → Gold → Grandmaster',
+    '🎴 <span>COMING SOON</span> — Food Fight faction · 12 culinary warriors · 1 Rare guaranteed',
+    '📖 <span>COMING SOON</span> — The Fables expansion · Dragon Knights & Crystal Golems',
+    '🩸 Bloodpact spike: Venomlord at 4-cost clearing boards consistently in casual queue',
+    '✨ <span>ALPHA KEY GIVEAWAY</span> — Drop your username in Discord to enter the next wave',
+  ];
+  const track=document.getElementById('ticker-track');
+  const doubled=[...items,...items];
+  doubled.forEach(txt=>{
+    const d=document.createElement('div');
+    d.className='ticker-item';
+    d.innerHTML=txt;
+    track.appendChild(d);
+  });
+})();
+
+// ═══════════════════════════════════════════════════════════════════
+// 6. FACTION STRIP
+// ═══════════════════════════════════════════════════════════════════
+(function(){
+  const factions=[
+    {name:'Thornwood',icon:'🌿',color:'#70c030',tag:'Nature Fury'},
+    {name:'Shattered Expanse',icon:'💫',color:'#9050d8',tag:'Void Power'},
+    {name:'Azure Deep',icon:'🌊',color:'#3090d8',tag:'Tidal Force'},
+    {name:'Ashfen',icon:'🔥',color:'#e05020',tag:'Ember Wrath'},
+    {name:'Ironmarch',icon:'⚙️',color:'#7080a0',tag:'Steel Order'},
+    {name:'Sunveil',icon:'☀️',color:'#e8b820',tag:'Desert Wind'},
+    {name:'Bloodpact',icon:'🩸',color:'#cc2030',tag:'Dark Sacrifice'},
+  ];
+  const scroll=document.getElementById('faction-scroll');
+  factions.forEach(f=>{
+    const el=document.createElement('div');
+    el.className='faction-card';
+    el.style.setProperty('--faction-color',f.color);
+    el.innerHTML=`<span class="faction-icon">${f.icon}</span>
+      <div class="faction-name">${f.name}</div>
+      <div class="faction-tag">${f.tag}</div>`;
+    scroll.appendChild(el);
+  });
+})();
+
+// ═══════════════════════════════════════════════════════════════════
+// 7. FLOATING PARTICLES
+// ═══════════════════════════════════════════════════════════════════
+(function(){
+  const colors=['rgba(232,192,96,0.6)','rgba(144,80,216,0.55)','rgba(232,192,96,0.4)','rgba(200,80,180,0.4)'];
+  function spawn(){
+    const p=document.createElement('div');
+    p.className='particle';
+    const dur=10+Math.random()*10;
+    p.style.cssText=`
+      left:${Math.random()*100}vw;
+      width:${3+Math.random()*4}px;
+      height:${3+Math.random()*4}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      --dur:${dur}s;
+      --spin:${Math.random()*360}deg;
+    `;
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(),dur*1000+200);
+  }
+  setInterval(spawn,1200);
+  // Initial burst
+  for(let i=0;i<6;i++) setTimeout(spawn,i*200);
+})();
+</script>
+</body>
+</html>
