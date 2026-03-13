@@ -593,8 +593,8 @@ const HIDDEN_REGIONS = new Set(["Food Fight"]);
 const DEV_ACCOUNTS = new Set(["sncombz@gmail.com", "brebur32@gmail.com", "luisvarada@gmail.com"]);
 const FABLES_NAMES = new Set(["tcombz", "ustunned", "v4varada-ttv"]);
 function isFablesTester(user) {
-  // Matches by email (DEV_ACCOUNTS) or Supabase display name (FABLES_NAMES)
-  return DEV_ACCOUNTS.has((user?.email||"").toLowerCase()) ||
+  return user?.isFablesTesterFlag === true ||
+         DEV_ACCOUNTS.has((user?.email||"").toLowerCase()) ||
          FABLES_NAMES.has((user?.name||"").toLowerCase());
 }
 const GAMEPLAY_POOL = POOL.filter(c => !LOCKED_REGIONS.has(c.region));
@@ -3138,6 +3138,7 @@ const toAppUser = (p, email) => ({
   selectedArts: p.selected_arts || {}, matchHistory: p.match_history || [], altOwned: p.alt_owned || {},
   joined: p.joined || new Date().toLocaleDateString(), lastPatchSeen: p.last_patch_seen || null,
   rankedRating: p.ranked_rating ?? 1000, rankedWins: p.ranked_wins ?? 0, rankedLosses: p.ranked_losses ?? 0,
+  isFablesTesterFlag: p.is_fables_tester || false,
 });
 function useAuth() {
   const [user, setUser] = useState(null); const [loading, setLoading] = useState(true);
