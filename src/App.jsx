@@ -681,7 +681,7 @@ function Card({ card, size = "md", onClick, animDelay = 0, isThird = false, hide
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(4,2,0,0.97) 0%, rgba(4,2,0,0.90) 28%, rgba(4,2,0,0.55) 52%, transparent 74%)", zIndex: 1 }} />
           {/* Top row: cost badge + type tags */}
           <div style={{ position: "absolute", top: 8, left: 8, right: 8, display: "flex", justifyContent: "space-between", alignItems: "flex-start", zIndex: 4 }}>
-            {(!hideCost || blueCost) && <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, background: isBP ? "radial-gradient(#ff3050,#a00018)" : isEnv ? "radial-gradient(#40c0e0,#1a6888)" : isPrismatic ? "radial-gradient(#ffffff,#c0a0ff)" : blueCost ? "radial-gradient(#60b0ff,#1060c0)" : "radial-gradient(#ffe040,#d09000)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontWeight: 900, fontSize: 15, color: isBP ? "#fff" : "#1a1000", boxShadow: isPrismatic ? "0 0 14px #ffffff88, 0 2px 6px rgba(0,0,0,0.8)" : isBP ? "0 0 10px #ff305088, 0 2px 6px rgba(0,0,0,0.8)" : isEnv ? "0 0 10px #40c0e088, 0 2px 6px rgba(0,0,0,0.8)" : "0 0 10px #ffe04088, 0 2px 6px rgba(0,0,0,0.8)" }}>{isBP ? "B" : card.cost}</div>}
+            {!hideCost && <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, background: isBP ? "radial-gradient(#ff3050,#a00018)" : isEnv ? "radial-gradient(#40c0e0,#1a6888)" : isPrismatic ? "radial-gradient(#ffffff,#c0a0ff)" : "radial-gradient(#60b0ff,#1060c0)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontWeight: 900, fontSize: 15, color: "#fff", boxShadow: isPrismatic ? "0 0 14px #ffffff88, 0 2px 6px rgba(0,0,0,0.8)" : isBP ? "0 0 10px #ff305088, 0 2px 6px rgba(0,0,0,0.8)" : isEnv ? "0 0 10px #40c0e088, 0 2px 6px rgba(0,0,0,0.8)" : "0 0 10px #60b0ff88, 0 2px 6px rgba(0,0,0,0.8)" }}>{isBP ? "B" : card.cost}</div>}
             <div style={{ display: "flex", flexDirection: "column", gap: 3, alignItems: "flex-end" }}>
               {isPrismatic && <div style={{ fontSize: 7, background: "linear-gradient(135deg,rgba(0,0,0,0.85),rgba(0,0,0,0.75))", color: "#ffffff", border: "1px solid rgba(255,255,255,0.6)", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700, backgroundImage:"linear-gradient(135deg,#ff008088,#8000ff88)", animation:"prismShimmer 4s linear infinite", backgroundSize:"400% 400%" }}>✦ PRISMATIC</div>}
               {isAnimeIsland && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.8)", color: "#ff80c0", border: "1px solid #ff80c055", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>🏝 AI</div>}
@@ -781,17 +781,12 @@ function Token({ c, selected, isTarget, canSelect, onClick, onRightClick, animTy
       <div style={{ position: "absolute", inset: 0 }}><CardArt card={c} /></div>
       {/* Bottom gradient */}
       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(4,2,0,0.96) 0%, rgba(4,2,0,0.75) 28%, rgba(4,2,0,0.25) 50%, transparent 68%)", zIndex: 1 }} />
-      {/* Top badges */}
-      <div style={{ position: "absolute", top: 4, left: 4, right: 4, display: "flex", justifyContent: "space-between", zIndex: 3 }}>
-        {c.shielded && <div style={{ fontSize: 7, background: "rgba(40,100,200,0.9)", borderRadius: 4, padding: "1px 5px", color: "#a8d8ff", fontWeight: 700, border:"1px solid #60a0ffaa", letterSpacing:0.5 }}>♦ SHIELD</div>}
-      </div>
-      {/* Keywords row */}
-      {kws.length > 0 && <div style={{ position: "absolute", top: 24, left: 4, right: 4, display: "flex", gap: 2, flexWrap: "wrap", zIndex: 3 }}>{kws.map((k) => (<span key={k.name} style={{ fontSize: 6, padding: "1px 3px", borderRadius: 6, background: `${k.color}44`, color: k.color, border: `1px solid ${k.color}55` }}>{k.icon}{k.name}</span>))}</div>}
       {/* Bottom text */}
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0 6px 4px", zIndex: 3 }}>
         {c.bleed > 0 && <div style={{ fontSize: 7, color: "#ff6060", fontWeight: 700, marginBottom: 1 }}>🩸 BLEED {c.bleed}</div>}
         {c.buffNote && <div style={{ fontSize: 7, color: "#60e880", fontWeight: 700, marginBottom: 1 }}>⬆ {c.buffNote}</div>}
         {c.debuffNote && <div style={{ fontSize: 7, color: "#ff6060", fontWeight: 700, marginBottom: 1 }}>⬇ {c.debuffNote}</div>}
+        {(kws.length > 0 || c.shielded) && <div style={{ display: "flex", gap: 2, flexWrap: "wrap", marginBottom: 2 }}>{kws.map((k) => (<span key={k.name} style={{ fontSize: 6, padding: "1px 3px", borderRadius: 6, background: `${k.color}44`, color: k.color, border: `1px solid ${k.color}55` }}>{k.icon}{k.name}</span>))}{c.shielded && <span style={{ fontSize: 6, padding: "1px 3px", borderRadius: 6, background: "rgba(40,100,200,0.5)", color: "#a8d8ff", border: "1px solid #60a0ffaa", fontWeight: 700 }}>♦ SHIELD</span>}</div>}
         <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, color: "#fff", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textShadow: "0 0 6px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.name}</div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 2 }}>
           <span style={{ fontSize: 15, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#ff7050", textShadow: "0 0 8px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.currentAtk}</span>
