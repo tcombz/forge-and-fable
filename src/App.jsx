@@ -590,7 +590,7 @@ const LOCKED_REGIONS = new Set(["Food Fight", "Fables"]);
 // Cards hidden entirely — not counted, not shown, secret
 const HIDDEN_REGIONS = new Set(["Food Fight"]);
 // Dev accounts (email) + named Fables testers (display name) can access locked content
-const DEV_ACCOUNTS = new Set(["sncombz@gmail.com"]);
+const DEV_ACCOUNTS = new Set(["sncombz@gmail.com", "brebur32@gmail.com", "luisvarada@gmail.com"]);
 const FABLES_NAMES = new Set(["tcombz", "ustunned", "v4varada-ttv"]);
 function isFablesTester(user) {
   // Matches by email (DEV_ACCOUNTS) or Supabase display name (FABLES_NAMES)
