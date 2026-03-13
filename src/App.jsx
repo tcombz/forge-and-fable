@@ -4428,12 +4428,12 @@ export default function App() {
       const rank = getRank(user.rankedRating);
       return (<>
         <div style={{ position:"fixed", inset:0, zIndex:490 }} onClick={() => setShowProfile(false)} />
-        <div style={{ position:"fixed", top:76, right:20, background:"#0e0c08", border:"1px solid #2a2010", borderRadius:18, width:360, zIndex:500, boxShadow:"0 32px 80px rgba(0,0,0,0.98), 0 0 0 1px #1a1408", animation:"fadeIn 0.2s ease-out", overflow:"hidden" }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ position:"fixed", top:76, right:16, background:"#0e0c08", border:"1px solid #2a2010", borderRadius:16, width:330, zIndex:500, boxShadow:"0 24px 60px rgba(0,0,0,0.98), 0 0 0 1px #1a1408", animation:"fadeIn 0.2s ease-out", maxHeight:"calc(100vh - 90px)", display:"flex", flexDirection:"column", overflow:"hidden" }} onClick={(e) => e.stopPropagation()}>
           {/* Hero header */}
-          <div style={{ position:"relative", height:110, background:"linear-gradient(160deg,#1a1208,#0e0a04,#181208)", overflow:"hidden" }}>
+          <div style={{ position:"relative", height:90, flexShrink:0, background:"linear-gradient(160deg,#1a1208,#0e0a04,#181208)", overflow:"hidden" }}>
             <div style={{ position:"absolute", top:"50%", left:30, transform:"translateY(-50%)", width:100, height:100, borderRadius:"50%", background:`radial-gradient(circle, ${rank.color}22 0%, transparent 70%)`, pointerEvents:"none" }} />
             <label style={{ position:"absolute", top:"50%", left:20, transform:"translateY(-50%)", cursor:"pointer", flexShrink:0 }}>
-              <div style={{ width:72, height:72, borderRadius:"50%", overflow:"hidden", border:`3px solid ${rank.color}88`, display:"flex", alignItems:"center", justifyContent:"center", background:"#1a1408", fontFamily:"'Cinzel',serif", fontSize:20, color:"#e8c060", boxShadow:`0 0 20px ${rank.color}44` }}>
+              <div style={{ width:58, height:58, borderRadius:"50%", overflow:"hidden", border:`2px solid ${rank.color}88`, display:"flex", alignItems:"center", justifyContent:"center", background:"#1a1408", fontFamily:"'Cinzel',serif", fontSize:16, color:"#e8c060", boxShadow:`0 0 14px ${rank.color}44` }}>
                 {user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user.name||"?").slice(0,2).toUpperCase()}
               </div>
               <div style={{ position:"absolute", bottom:2, right:2, width:20, height:20, background:"#1a1408", border:`1px solid ${rank.color}55`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10 }}>📷</div>
@@ -4458,10 +4458,11 @@ export default function App() {
               </div>
             </div>
           </div>
+          <div style={{ overflowY:"auto", flex:1 }}>
           {/* Stats row */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", borderBottom:"1px solid #1a1408" }}>
             {[["W%",winRate+"%",winRate>=50?"#78cc45":"#e8a020"],["WIN",wins,"#78cc45"],["LOSS",losses,"#e05050"],["CARDS",cardCount,"#e8c060"],["DECKS",deckCount,"#c0a870"],["SHARDS",user.shards||0,"#60c8ff"]].map(([l,v,c],i) => (
-              <div key={i} style={{ padding:"14px 4px", textAlign:"center", borderRight:i<5?"1px solid #1a1408":"none", background:i%2===0?"rgba(0,0,0,0.2)":"transparent" }}>
+              <div key={i} style={{ padding:"10px 4px", textAlign:"center", borderRight:i<5?"1px solid #1a1408":"none", background:i%2===0?"rgba(0,0,0,0.2)":"transparent" }}>
                 <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#907050", letterSpacing:1, marginBottom:4 }}>{l}</div>
                 <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:900, color:c, lineHeight:1 }}>{v}</div>
               </div>
@@ -4500,11 +4501,12 @@ export default function App() {
             }
           </div>
           {/* Footer */}
-          <div style={{ padding:"8px 14px 14px", borderTop:"1px solid #1a1408", display:"flex", flexDirection:"column", gap:5 }}>
+          <div style={{ padding:"8px 14px 12px", borderTop:"1px solid #1a1408", display:"flex", flexDirection:"column", gap:5 }}>
             {user.name?.toLowerCase() === "tcombz" && <AlphaKeyAdminPanel />}
             <button onClick={()=>{ localStorage.removeItem(`patchSeen_${user.id}`); update({ lastPatchSeen: null }); setShowPatchNotes(true); setShowProfile(false); }} style={{ width:"100%", padding:"7px", background:"transparent", border:"1px solid #2a2010", borderRadius:7, color:"#504028", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer", letterSpacing:1 }}>📋 PATCH NOTES</button>
             <button onClick={() => { logout(); setShowProfile(false); }} style={{ width:"100%", padding:"8px", background:"rgba(160,20,20,0.1)", border:"1px solid #4a1010", borderRadius:7, color:"#a05040", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer", letterSpacing:1 }}>SIGN OUT</button>
           </div>
+          </div>{/* end scrollable body */}
         </div>
       </>);
     })()}
