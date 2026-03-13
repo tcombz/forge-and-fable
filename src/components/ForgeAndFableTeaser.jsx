@@ -57,7 +57,7 @@ function CardModal({ card, onClose }) {
       >
         {/* Art */}
         <div style={{ position: "relative", width: "100%", height: 240 }}>
-          <img src={card.img} alt={card.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }} />
+          <img src={card.img} alt={card.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" }} />
           <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to bottom, transparent 55%, ${bc}22 80%, #0a0414 100%)` }} />
           {/* Cost */}
           <div style={{ position:"absolute", top:10, left:10, width:34, height:34, borderRadius:"50%", background:"linear-gradient(135deg,#1a0a50,#3a1890)", border:`2px solid ${bc}`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:15, fontWeight:700, color:"#d0b0ff", boxShadow:`0 0 12px ${bc}88` }}>{card.cost}</div>
@@ -145,7 +145,7 @@ function FanCard({ card, fanCfg, isHovered, baseZ, onHover, onLeave, onClick, in
           {/* Art — objectPosition top so faces/heads show */}
           <img
             src={card.img} alt={card.name}
-            style={{ width:"100%", height:"72%", objectFit:"cover", objectPosition:"top", display:"block" }}
+            style={{ width:"100%", height:"72%", objectFit:"cover", objectPosition:"center", display:"block" }}
           />
           {/* Name bar */}
           <div style={{
