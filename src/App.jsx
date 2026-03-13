@@ -1797,8 +1797,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   // Convert DB state (p1/p2) to AI state format (player/enemy) from my perspective
   const toAI = (g, role) => {
     const me = role === "p1" ? "p1" : "p2", op = role === "p1" ? "p2" : "p1";
-    // Per-player envs: player sees their own env for effects only — no cross-player fallback
-    const myEnv = g[me+"Env"] || (g.env?.envOwner === role ? g.env : null) || null;
+    // Per-player envs: player sees ONLY their own slot — no cross-player fallback
+    const myEnv = g[me+"Env"] || null;
     return {
       turn: g.turn, winner: g.winner ? (g.winner === role ? "player" : "enemy") : null,
       phase: g.phase === role ? "player" : "enemy",
@@ -1988,7 +1988,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           p2HP: CFG.startHP, p2Energy: CFG.startEnergy, p2Max: CFG.startEnergy,
           p2Hand: d2.slice(0, CFG.startHand).map((c) => makeInst(c, "p2")),
           p2Deck: d2.slice(CFG.startHand), p2Board: [],
-          env: null, log: [firstPlayer === "p1" ? `Match started! ${user?.name||"P1"} goes first.` : `Match started! ${oppProfile?.name||"P2"} goes first.`]
+          p1Env: null, p2Env: null, env: null, log: [firstPlayer === "p1" ? `Match started! ${user?.name||"P1"} goes first.` : `Match started! ${oppProfile?.name||"P2"} goes first.`]
         };
         await supabase.from("matches").update({ game_state: init }).eq("id", matchId);
         setGs(init);
@@ -2243,8 +2243,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   const ai = toAI(gs, myRole);
   const attCard = attacker ? ai.playerBoard.find((c) => c.uid === attacker) : null;
   const opRole = myRole === "p1" ? "p2" : "p1";
-  const myEnvCard = gs[myRole+"Env"] || (gs.env?.envOwner === myRole ? gs.env : null);
-  const opEnvCard = gs[opRole+"Env"] || (gs.env?.envOwner === opRole ? gs.env : null);
+  const myEnvCard = gs[myRole+"Env"] || null;
+  const opEnvCard = gs[opRole+"Env"] || null;
   const myEnvTheme = myEnvCard ? ENV_THEMES[myEnvCard.region] || null : null;
   const opEnvTheme = opEnvCard ? ENV_THEMES[opEnvCard.region] || null : null;
   const envTheme = myEnvTheme || opEnvTheme;
