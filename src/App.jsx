@@ -593,6 +593,7 @@ const HIDDEN_REGIONS = new Set(["Food Fight"]);
 const DEV_ACCOUNTS = new Set(["sncombz@gmail.com"]);
 const FABLES_NAMES = new Set(["tcombz", "ustunned", "v4varada-ttv"]);
 function isFablesTester(user) {
+  // Matches by email (DEV_ACCOUNTS) or Supabase display name (FABLES_NAMES)
   return DEV_ACCOUNTS.has((user?.email||"").toLowerCase()) ||
          FABLES_NAMES.has((user?.name||"").toLowerCase());
 }
