@@ -601,7 +601,7 @@ const PACKS = [
   { id: "fables_pack",   name: "Fables Pack",     desc: "5 cards from the Fables faction. New keywords: Gilded.",       cost: 200, count: 5, color: "#9070ff", pool: "Fables",     guarantees: [{ rarity: "Rare", count: 1 }] },
 ];
 function rollPack(pack) {
-  const pool = pack.pool === "all" ? POOL : POOL.filter((c) => c.region === pack.pool);
+  const pool = pack.pool === "all" ? GAMEPLAY_POOL : GAMEPLAY_POOL.filter((c) => c.region === pack.pool);
   const weights = { Common: 35, Uncommon: 35, Rare: 20, Epic: 8, Legendary: 2 };
   const totalW = 100;
   const rollOne = () => { let r = Math.random() * totalW, acc = 0; for (const [rar, w] of Object.entries(weights)) { acc += w; if (r <= acc) { const opts = pool.filter((c) => c.rarity === rar); return opts.length > 0 ? opts[Math.floor(Math.random() * opts.length)] : pool[Math.floor(Math.random() * pool.length)]; } } return pool[0]; };
@@ -910,11 +910,11 @@ function resolveEffects(trigger, card, state, side, vfx) {
       case "damage_all_enemies": s[thB] = s[thB].map((c) => ({ ...c, currentHp: c.currentHp - fx.amount })).filter((c) => c.currentHp > 0); L(`${card.name}: ${fx.amount} to all enemies!`); if (vfx) vfx.add("ability", { color: "#ff4040" }); break;
       case "damage_all": s[myB] = s[myB].map((c) => c.uid === card.uid ? c : { ...c, currentHp: c.currentHp - fx.amount }).filter((c) => c.currentHp > 0); s[thB] = s[thB].map((c) => ({ ...c, currentHp: c.currentHp - fx.amount })).filter((c) => c.currentHp > 0); L(`${card.name}: ${fx.amount} to ALL!`); if (vfx) vfx.add("ability", { color: "#ff8040" }); break;
       case "damage_random_enemy": if (s[thB].length > 0) { const idx = Math.floor(Math.random() * s[thB].length); const tgt = s[thB][idx]; s[thB] = s[thB].map((c, i) => i === idx ? { ...c, currentHp: c.currentHp - fx.amount } : c).filter((c) => c.currentHp > 0); L(`${card.name} hits ${tgt.name} for ${fx.amount}!`); } break;
-      case "buff_allies": { const isDebuff = (fx.atk||0) < 0 || (fx.hp||0) < 0; const noteStr = `${isDebuff?"":"+"} ${fx.atk||0}atk/${fx.hp||0}hp (${card.name})`; s[myB] = s[myB].map((c) => ({ ...c, currentAtk: c.currentAtk + (fx.atk || 0), currentHp: c.currentHp + (fx.hp || 0), maxHp: c.maxHp + (fx.hp || 0), statusLog: [...(c.statusLog||[]), { type:isDebuff?"debuff":"buff", note:noteStr }] })); L(`${card.name} ${isDebuff?"debuffs":"buffs"} ${fx.atk||0}/${fx.hp||0}!`); if (vfx) vfx.add("ability", { color: isDebuff?"#ff6040":"#40ff60" }); break; }
-      case "buff_random_ally": { const allies = s[myB].filter((c) => c.id !== card.id); if (allies.length > 0) { const t = allies[Math.floor(Math.random() * allies.length)]; s[myB] = s[myB].map((c) => c.uid === t.uid ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), statusLog: [...(c.statusLog||[]), { type:"buff", note:`+${fx.atk||0}atk (${card.name})` }] } : c); L(`${card.name} buffs ${t.name}!`); } break; }
-      case "buff_keyword_allies": s[myB] = s[myB].map((c) => (c.keywords || []).length > 0 ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), statusLog: [...(c.statusLog||[]), { type:"buff", note:`+${fx.atk||0}atk keyword (${card.name})` }] } : c); break;
+      case "buff_allies": { const isDebuff = (fx.atk||0) < 0 || (fx.hp||0) < 0; const noteStr = `${isDebuff?"":"+"}${fx.atk||0}atk/${fx.hp||0}hp (${card.name})`; s[myB] = s[myB].map((c) => ({ ...c, currentAtk: c.currentAtk + (fx.atk || 0), currentHp: c.currentHp + (fx.hp || 0), maxHp: c.maxHp + (fx.hp || 0), [isDebuff?"debuffNote":"buffNote"]: noteStr, statusLog: [...(c.statusLog||[]), { type:isDebuff?"debuff":"buff", note:noteStr }] })); L(`${card.name} ${isDebuff?"debuffs":"buffs"} ${fx.atk||0}/${fx.hp||0}!`); if (vfx) vfx.add("ability", { color: isDebuff?"#ff6040":"#40ff60" }); break; }
+      case "buff_random_ally": { const allies = s[myB].filter((c) => c.id !== card.id); if (allies.length > 0) { const t = allies[Math.floor(Math.random() * allies.length)]; const bNote = `+${fx.atk||0}atk (${card.name})`; s[myB] = s[myB].map((c) => c.uid === t.uid ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), buffNote: bNote, statusLog: [...(c.statusLog||[]), { type:"buff", note:bNote }] } : c); L(`${card.name} buffs ${t.name}!`); } break; }
+      case "buff_keyword_allies": { const kbNote = `+${fx.atk||0}atk keyword (${card.name})`; s[myB] = s[myB].map((c) => (c.keywords || []).length > 0 ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), buffNote: kbNote, statusLog: [...(c.statusLog||[]), { type:"buff", note:kbNote }] } : c); break; }
       case "heal_all_allies": s[myB] = s[myB].map((c) => ({ ...c, currentHp: Math.min(c.maxHp, c.currentHp + fx.amount) })); break;
-      case "self_buff": s[myB] = s[myB].map((c) => c.uid === card.uid ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), statusLog: [...(c.statusLog||[]), { type:"buff", note:`+${fx.atk||0}atk self` }] } : c); break;
+      case "self_buff": { const sbNote = `+${fx.atk||0}atk self`; s[myB] = s[myB].map((c) => c.uid === card.uid ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), buffNote: sbNote, statusLog: [...(c.statusLog||[]), { type:"buff", note:sbNote }] } : c); break; }
       case "draw": { const dk = side === "player" ? "playerDeck" : "enemyDeck", hd = side === "player" ? "playerHand" : "enemyHand"; for (let i = 0; i < fx.amount; i++) { if (s[dk].length > 0 && s[hd].length < CFG.maxHand) { s[hd] = [...s[hd], makeInst(s[dk][0], side === "player" ? "p" : "e")]; s[dk] = s[dk].slice(1); } } L(`${card.name}: Draw ${fx.amount}!`); break; }
       case "bleed_all_enemies": s[thB] = s[thB].map((c) => ({ ...c, bleed: (c.bleed || 0) + fx.amount })); L(`${card.name}: ${fx.amount} Bleed to all!`); break;
     }
@@ -928,7 +928,7 @@ function computeEnemyPlayPhase(g, vfx) {
   let s = { ...g, playerBoard: g.playerBoard.map((c) => ({ ...c })), enemyBoard: g.enemyBoard.map((c) => ({ ...c })), playerHand: [...g.playerHand], enemyHand: [...g.enemyHand], enemyDeck: [...g.enemyDeck], playerDeck: [...g.playerDeck], log: [...g.log] };
   const L = (m) => { s.log = [...s.log.slice(-20), m]; };
   // Decrement environment duration each half-turn
-  if (s.environment) { const rem = (s.environment.turnsRemaining||4) - 1; if (rem <= 0) { s.environment = null; L("Environment fades."); } else { s.environment = { ...s.environment, turnsRemaining: rem }; s = resolveEffects("onTurnStart", s.environment, s, s.environment.owner, vfx); } }
+  if (s.environment) { const rem = (s.environment.turnsRemaining||4) - 1; if (rem <= 0) { s.environment = null; L("Environment fades."); } else { s.environment = { ...s.environment, turnsRemaining: rem }; if (s.environment.owner === "enemy") s = resolveEffects("onTurnStart", s.environment, s, "enemy", vfx); } }
   if (s.enemyDeck.length > 0 && s.enemyHand.length < 6) { s.enemyHand = [...s.enemyHand, makeInst(s.enemyDeck[0], "e")]; s.enemyDeck = s.enemyDeck.slice(1); L("Enemy draws."); }
   let en = s.maxEnergy;
   [...s.enemyHand].sort((a, b) => b.cost - a.cost).forEach((card) => {
@@ -958,6 +958,8 @@ function computeEnemyAttackPhase(g, vfx) {
   const newTurn = g.turn + 1, newMax = Math.min(CFG.maxEnergy, newTurn + 1);
   { const pbd = s.playerBoard.reduce((n,c)=>n+(c.bleed||0),0), ebd = s.enemyBoard.reduce((n,c)=>n+(c.bleed||0),0); s.playerBoard = s.playerBoard.map((c) => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter((c) => c.currentHp > 0); s.enemyBoard = s.enemyBoard.map((c) => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter((c) => c.currentHp > 0); if (pbd > 0) { s.playerHP -= pbd; L(`Bleed seeps: Player takes ${pbd}!`); } if (ebd > 0) { s.enemyHP -= ebd; L(`Bleed seeps: Enemy takes ${ebd}!`); } }
   s.playerBoard.forEach((c) => { if (c.effects && c.effects.length) s = resolveEffects("onTurnStart", c, s, "player", vfx); });
+  // Fire player-owned env at start of player's turn
+  if (s.environment?.owner === "player") s = resolveEffects("onTurnStart", s.environment, s, "player", vfx);
   s.playerBoard = s.playerBoard.map((c) => ({ ...c, canAttack: true, hasAttacked: false }));
   s.enemyBoard = s.enemyBoard.map((c) => ({ ...c, canAttack: true, hasAttacked: false }));
   s.playerBoard.filter((c) => (c.keywords || []).includes("Echo") && !c.echoQueued).forEach((src) => { if (s.playerBoard.length < CFG.maxBoard) { s.playerBoard = [...s.playerBoard, { ...makeInst({ ...src, id: src.id + "_e", hp: 1, atk: 1, keywords: [], effects: [] }, "pe"), uid: uid("echo"), currentHp: 1, maxHp: 1, currentAtk: 1, name: src.name + " Echo", canAttack: true }]; L(`Echo of ${src.name}!`); } });
@@ -970,7 +972,7 @@ function computeEnemyAttackPhase(g, vfx) {
 function computeEnemyTurn(g, vfx) {
   let s = { ...g, playerBoard: g.playerBoard.map((c) => ({ ...c })), enemyBoard: g.enemyBoard.map((c) => ({ ...c })), playerHand: [...g.playerHand], enemyHand: [...g.enemyHand], enemyDeck: [...g.enemyDeck], playerDeck: [...g.playerDeck], log: [...g.log] };
   const L = (m) => { s.log = [...s.log.slice(-20), m]; };
-  if (s.environment) { const rem = (s.environment.turnsRemaining||4) - 1; if (rem <= 0) { s.environment = null; L("Environment fades."); } else { s.environment = { ...s.environment, turnsRemaining: rem }; s = resolveEffects("onTurnStart", s.environment, s, s.environment.owner, vfx); } }
+  if (s.environment) { const rem = (s.environment.turnsRemaining||4) - 1; if (rem <= 0) { s.environment = null; L("Environment fades."); } else { s.environment = { ...s.environment, turnsRemaining: rem }; if (s.environment.owner === "enemy") s = resolveEffects("onTurnStart", s.environment, s, "enemy", vfx); } }
   if (s.enemyDeck.length > 0 && s.enemyHand.length < 6) { s.enemyHand = [...s.enemyHand, makeInst(s.enemyDeck[0], "e")]; s.enemyDeck = s.enemyDeck.slice(1); L("Enemy draws."); }
   let en = s.maxEnergy;
   [...s.enemyHand].sort((a, b) => b.cost - a.cost).forEach((card) => {
@@ -994,6 +996,8 @@ function computeEnemyTurn(g, vfx) {
   const newTurn = g.turn + 1, newMax = Math.min(CFG.maxEnergy, newTurn + 1);
   { const pbd = s.playerBoard.reduce((n,c)=>n+(c.bleed||0),0), ebd = s.enemyBoard.reduce((n,c)=>n+(c.bleed||0),0); s.playerBoard = s.playerBoard.map((c) => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter((c) => c.currentHp > 0); s.enemyBoard = s.enemyBoard.map((c) => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter((c) => c.currentHp > 0); if (pbd > 0) { s.playerHP -= pbd; L(`Bleed seeps: Player takes ${pbd}!`); } if (ebd > 0) { s.enemyHP -= ebd; L(`Bleed seeps: Enemy takes ${ebd}!`); } }
   s.playerBoard.forEach((c) => { if (c.effects && c.effects.length) s = resolveEffects("onTurnStart", c, s, "player", vfx); });
+  // Fire player-owned env at start of player's turn (transition from enemy turn back to player)
+  if (s.environment?.owner === "player") s = resolveEffects("onTurnStart", s.environment, s, "player", vfx);
   s.playerBoard = s.playerBoard.map((c) => ({ ...c, canAttack: true, hasAttacked: false }));
   s.enemyBoard = s.enemyBoard.map((c) => ({ ...c, canAttack: true, hasAttacked: false }));
   s.playerBoard.filter((c) => (c.keywords || []).includes("Echo") && !c.echoQueued).forEach((src) => { if (s.playerBoard.length < CFG.maxBoard) { s.playerBoard = [...s.playerBoard, { ...makeInst({ ...src, id: src.id + "_e", hp: 1, atk: 1, keywords: [], effects: [] }, "pe"), uid: uid("echo"), currentHp: 1, maxHp: 1, currentAtk: 1, name: src.name + " Echo", canAttack: true }]; L(`Echo of ${src.name}!`); } });
@@ -1206,7 +1210,11 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     const ecCreature = getEffectiveCost(card, g.environment);
     if (card.bloodpact ? card.cost >= g.playerHP : ecCreature > g.playerEnergy) return;
     SFX.play("card"); setAttacker(null);
-    setGame((prev) => { const eff = getEffectiveCost(card, prev.environment); let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= eff; s.log = [...s.log, `You play ${card.name}!`]; } const inst = { ...makeInst(card, "pb"), canAttack: (card.keywords || []).includes("Swift"), hasAttacked: false }; s.playerBoard = [...prev.playerBoard, inst]; if ((card.keywords || []).includes("Fracture") && s.playerBoard.length < CFG.maxBoard) { s.playerBoard = [...s.playerBoard, { ...inst, uid: uid("pf"), currentHp: Math.ceil(card.hp / 2), maxHp: Math.ceil(card.hp / 2), currentAtk: Math.ceil(card.atk / 2), name: card.name + " Frag", keywords: [], levelUp: [], effects: [] }]; s.log = [...s.log, "Fragment enters!"]; } s = resolveEffects("onPlay", card, s, "player", vfx); return s; });
+    const inst = { ...makeInst(card, "pb"), canAttack: (card.keywords || []).includes("Swift"), hasAttacked: false };
+    const summonUid = inst.uid;
+    setGame((prev) => { const eff = getEffectiveCost(card, prev.environment); let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= eff; s.log = [...s.log, `You play ${card.name}!`]; } s.playerBoard = [...prev.playerBoard, inst]; if ((card.keywords || []).includes("Fracture") && s.playerBoard.length < CFG.maxBoard) { s.playerBoard = [...s.playerBoard, { ...inst, uid: uid("pf"), currentHp: Math.ceil(card.hp / 2), maxHp: Math.ceil(card.hp / 2), currentAtk: Math.ceil(card.atk / 2), name: card.name + " Frag", keywords: [], levelUp: [], effects: [] }]; s.log = [...s.log, "Fragment enters!"]; } s = resolveEffects("onPlay", card, s, "player", vfx); return s; });
+    setAnimUids(p => ({ ...p, [summonUid]: "summoning" }));
+    setTimeout(() => setAnimUids(p => { const n = {...p}; delete n[summonUid]; return n; }), 550);
   };
 
   const selectAtt = (c) => { if (g.phase !== "player" || aiThink) return; if (attacker === c.uid) { setAttacker(null); return; } if (c.canAttack && !c.hasAttacked) setAttacker(c.uid); };
@@ -1969,6 +1977,17 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       // VFX: my creature healed
       const myHealedCard = currAi.playerBoard.find(c => { const prev = prevAi.playerBoard.find(p=>p.uid===c.uid); return prev && c.currentHp > prev.currentHp; });
       if (myHealedCard) { SFX.play("heal"); }
+
+      // Summon animation: newly appeared board cards
+      const myNewCards = currAi.playerBoard.filter(c => !prevAi.playerBoard.find(p => p.uid === c.uid));
+      const opNewCards = currAi.enemyBoard.filter(c => !prevAi.enemyBoard.find(p => p.uid === c.uid));
+      const summonAnims = {};
+      myNewCards.forEach(c => { summonAnims[c.uid] = "summoning"; });
+      opNewCards.forEach(c => { summonAnims[c.uid] = "summoning"; });
+      if (Object.keys(summonAnims).length > 0) {
+        setAnimUids(p => ({ ...p, ...summonAnims }));
+        setTimeout(() => setAnimUids(p => { const n = {...p}; Object.keys(summonAnims).forEach(k => delete n[k]); return n; }), 550);
+      }
     }
     prevGsRef.current = gs;
   }, [gs]); // eslint-disable-line
@@ -2787,7 +2806,7 @@ function LoginModal({ needsProfile = false, userId, userEmail, onSignOut, onProf
     if (error) { setErr(error.message); setBusy(false); return; }
     if (data.user) {
       const starter = getStarterCollection();
-      const isAdmin = ["sncombz@gmail.com","tcombzv2@gmail.com"].includes(email.trim().toLowerCase());
+      const isAdmin = ["sncombz@gmail.com","tylercombz2@me.com"].includes(email.trim().toLowerCase());
       const founderAltOwned = isAdmin ? Object.fromEntries(Object.entries(ALT_ARTS).map(([id, alts]) => [id, alts.map(a => a.setId)])) : {};
       const starterDeckEntry = { name: "Starter Deck", cards: STARTER_DECK };
       await supabase.from("profiles").upsert({
@@ -2815,7 +2834,7 @@ function LoginModal({ needsProfile = false, userId, userEmail, onSignOut, onProf
     const uid = userId || (await supabase.auth.getUser()).data?.user?.id;
     if (!uid) { setErr("Session expired. Please sign in again."); setBusy(false); return; }
     const starter = getStarterCollection();
-    const isAdmin = ["sncombz@gmail.com","tcombzv2@gmail.com"].includes((userEmail || email || "").trim().toLowerCase());
+    const isAdmin = ["sncombz@gmail.com","tylercombz2@me.com"].includes((userEmail || email || "").trim().toLowerCase());
     const founderAltOwned = isAdmin ? Object.fromEntries(Object.entries(ALT_ARTS).map(([id, alts]) => [id, alts.map(a => a.setId)])) : {};
     const starterDeckEntry = { name: "Starter Deck", cards: STARTER_DECK };
     const { error } = await supabase.from("profiles").upsert({
@@ -3558,7 +3577,7 @@ function StoreScreen({ user, onUpdateUser }) {
         <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#a09060", letterSpacing:2, marginBottom:12, marginTop:28 }}>NEW FACTION PACKS</div>
         <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
           {/* Food Fight — locked */}
-          <div style={{ background:"#0a0808", border:"1px solid rgba(200,40,40,0.15)", borderRadius:14, padding:"20px 22px", opacity:0.52, position:"relative", overflow:"hidden", filter:"grayscale(40%)" }}>
+          <div style={{ background:"#0a0808", border:"1px solid rgba(200,40,40,0.15)", borderRadius:14, padding:"20px 22px", position:"relative", overflow:"hidden" }}>
             <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:"linear-gradient(90deg,#661010,#993030,#661010)" }} />
             <div style={{ display:"inline-block", padding:"2px 10px", background:"rgba(200,40,40,0.08)", border:"1px solid rgba(200,40,40,0.15)", borderRadius:20, fontFamily:"'Cinzel',serif", fontSize:8, color:"#994040", letterSpacing:3, marginBottom:8 }}>NEW FACTION</div>
             <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:900, color:"#883040", marginBottom:4, letterSpacing:1 }}>Food Fight Pack</div>
@@ -3569,7 +3588,7 @@ function StoreScreen({ user, onUpdateUser }) {
             </div>
           </div>
           {/* Fables — locked */}
-          <div style={{ background:"#08080e", border:"1px solid rgba(144,100,255,0.15)", borderRadius:14, padding:"20px 22px", opacity:0.52, position:"relative", overflow:"hidden", filter:"grayscale(40%)" }}>
+          <div style={{ background:"#08080e", border:"1px solid rgba(144,100,255,0.15)", borderRadius:14, padding:"20px 22px", position:"relative", overflow:"hidden" }}>
             <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:"linear-gradient(90deg,#3a2880,#5a40b0,#3a2880)" }} />
             <div style={{ display:"inline-block", padding:"2px 10px", background:"rgba(100,70,200,0.08)", border:"1px solid rgba(100,70,200,0.15)", borderRadius:20, fontFamily:"'Cinzel',serif", fontSize:8, color:"#706090", letterSpacing:3, marginBottom:8 }}>NEW FACTION</div>
             <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:900, color:"#5a4090", marginBottom:4, letterSpacing:1 }}>Fables Pack</div>
