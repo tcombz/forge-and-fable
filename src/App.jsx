@@ -432,7 +432,7 @@ function CardPreview({ card, onClose }) {
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(2,1,0,0.92)", backdropFilter: "blur(10px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, animation: "fadeIn 0.2s ease-out" }}>
       <div onClick={(e) => e.stopPropagation()} style={{ background: "linear-gradient(160deg,#1e1c10,#0e0c06)", border: `2px solid ${border}`, borderRadius: 18, width: 320, overflow: "hidden", boxShadow: `0 30px 80px rgba(0,0,0,0.95), 0 0 40px ${border}22` }}>
-        <div style={{ height: 180, position: "relative" }}><CardArt card={card} /><div style={{ position: "absolute", top: 8, left: 8, width: isBP||isEnv?38:32, height: isBP||isEnv?38:44, borderRadius: isBP||isEnv?"50%":"50% 50% 45% 45% / 40% 40% 60% 60%", background: isBP ? "radial-gradient(#ff3050,#a00018)" : isEnv ? "radial-gradient(#40c0e0,#1a6888)" : "linear-gradient(160deg,#90e0ff 0%,#2090d0 40%,#0a60a0 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontWeight: 900, fontSize: 18, color: "#fff", boxShadow: isBP ? "0 0 12px #ff305088" : isEnv ? "0 0 12px #40c0e088" : "0 0 16px #2090ff88, inset 0 2px 0 rgba(255,255,255,0.35)" }}>{isBP ? "B" : isEnv ? "E" : card.cost}</div><div style={{ position: "absolute", top: 8, right: 8, fontSize: 9, color: RC[card.rarity] || "#aaa", background: "rgba(0,0,0,0.7)", padding: "3px 10px", borderRadius: 20, border: `1px solid ${RC[card.rarity] || "#888"}44`, fontWeight: 700 }}>{(card.rarity || "Common").toUpperCase()}</div></div>
+        <div style={{ height: 180, position: "relative" }}><CardArt card={card} /><div style={{ position: "absolute", top: 8, left: 8, width: isBP||isEnv?38:32, height: isBP||isEnv?38:44, borderRadius: isBP||isEnv?"50%":"50% 50% 45% 45% / 40% 40% 60% 60%", background: isBP ? "radial-gradient(#ff3050,#a00018)" : isEnv ? "radial-gradient(#40c0e0,#1a6888)" : "linear-gradient(160deg,#90e0ff 0%,#2090d0 40%,#0a60a0 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontWeight: 900, fontSize: 18, color: "#fff", boxShadow: isBP ? "0 0 12px #ff305088" : isEnv ? "0 0 12px #40c0e088" : "0 0 16px #2090ff88, inset 0 2px 0 rgba(255,255,255,0.35)" }}>{isBP ? "B" : card.cost}</div><div style={{ position: "absolute", top: 8, right: 8, fontSize: 9, color: RC[card.rarity] || "#aaa", background: "rgba(0,0,0,0.7)", padding: "3px 10px", borderRadius: 20, border: `1px solid ${RC[card.rarity] || "#888"}44`, fontWeight: 700 }}>{(card.rarity || "Common").toUpperCase()}</div></div>
         <div style={{ padding: "14px 18px 10px" }}>
           <div style={{ fontFamily: "'Cinzel',serif", fontSize: 18, fontWeight: 700, color: "#f8f0e0", marginBottom: 2 }}>{card.name}</div>
           <div style={{ fontSize: 10, color: "#a09060", marginBottom: 10 }}>{(card.type || "creature").charAt(0).toUpperCase() + (card.type || "").slice(1)} · <span style={{ color: border }}>{card.region}</span></div>
@@ -682,7 +682,7 @@ function Card({ card, size = "md", onClick, animDelay = 0, isThird = false, hide
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(4,2,0,0.97) 0%, rgba(4,2,0,0.90) 28%, rgba(4,2,0,0.55) 52%, transparent 74%)", zIndex: 1 }} />
           {/* Top row: cost badge + type tags */}
           <div style={{ position: "absolute", top: 8, left: 8, right: 8, display: "flex", justifyContent: "space-between", alignItems: "flex-start", zIndex: 4 }}>
-            {!hideCost && <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, background: isBP ? "radial-gradient(#ff3050,#a00018)" : isEnv ? "radial-gradient(#40c0e0,#1a6888)" : isPrismatic ? "radial-gradient(#ffffff,#c0a0ff)" : "radial-gradient(#ffe040,#d09000)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontWeight: 900, fontSize: 15, color: isBP ? "#fff" : "#1a1000", boxShadow: isPrismatic ? "0 0 14px #ffffff88, 0 2px 6px rgba(0,0,0,0.8)" : isBP ? "0 0 10px #ff305088, 0 2px 6px rgba(0,0,0,0.8)" : isEnv ? "0 0 10px #40c0e088, 0 2px 6px rgba(0,0,0,0.8)" : "0 0 10px #ffe04088, 0 2px 6px rgba(0,0,0,0.8)" }}>{isBP ? "B" : isEnv ? "E" : card.cost}</div>}
+            {!hideCost && <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, background: isBP ? "radial-gradient(#ff3050,#a00018)" : isEnv ? "radial-gradient(#40c0e0,#1a6888)" : isPrismatic ? "radial-gradient(#ffffff,#c0a0ff)" : "radial-gradient(#ffe040,#d09000)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontWeight: 900, fontSize: 15, color: isBP ? "#fff" : "#1a1000", boxShadow: isPrismatic ? "0 0 14px #ffffff88, 0 2px 6px rgba(0,0,0,0.8)" : isBP ? "0 0 10px #ff305088, 0 2px 6px rgba(0,0,0,0.8)" : isEnv ? "0 0 10px #40c0e088, 0 2px 6px rgba(0,0,0,0.8)" : "0 0 10px #ffe04088, 0 2px 6px rgba(0,0,0,0.8)" }}>{isBP ? "B" : card.cost}</div>}
             <div style={{ display: "flex", flexDirection: "column", gap: 3, alignItems: "flex-end" }}>
               {isPrismatic && <div style={{ fontSize: 7, background: "linear-gradient(135deg,rgba(0,0,0,0.85),rgba(0,0,0,0.75))", color: "#ffffff", border: "1px solid rgba(255,255,255,0.6)", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700, backgroundImage:"linear-gradient(135deg,#ff008088,#8000ff88)", animation:"prismShimmer 4s linear infinite", backgroundSize:"400% 400%" }}>✦ PRISMATIC</div>}
               {isAnimeIsland && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.8)", color: "#ff80c0", border: "1px solid #ff80c055", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>🏝 AI</div>}
@@ -819,7 +819,7 @@ function HandCard({ card, playable, onClick, onRightClick }) {
         {/* Bottom gradient */}
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(4,2,0,0.95) 0%, rgba(4,2,0,0.65) 35%, transparent 62%)" }} />
         {/* Cost badge top-left */}
-        <div style={{ position: "absolute", top: 4, left: 4, zIndex: 3, width: isBP||isEnv ? 26 : 22, height: isBP||isEnv ? 26 : 28, borderRadius: isBP||isEnv ? "50%" : "50% 50% 45% 45% / 40% 40% 60% 60%", background: isBP ? "radial-gradient(#ff3050,#a00018)" : isEnv ? "radial-gradient(#40c0e0,#1a6888)" : "linear-gradient(160deg,#90e0ff 0%,#2090d0 40%,#0a60a0 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontWeight: 900, fontSize: 12, color: "#fff", boxShadow: isBP ? "0 0 7px #ff305088,0 1px 4px rgba(0,0,0,0.8)" : isEnv ? "0 0 7px #40c0e088,0 1px 4px rgba(0,0,0,0.8)" : "0 0 10px #2090ff88, 0 1px 4px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.4)" }}>{isBP ? "B" : isEnv ? "E" : card.cost}</div>
+        <div style={{ position: "absolute", top: 4, left: 4, zIndex: 3, width: isBP||isEnv ? 26 : 22, height: isBP||isEnv ? 26 : 28, borderRadius: isBP||isEnv ? "50%" : "50% 50% 45% 45% / 40% 40% 60% 60%", background: isBP ? "radial-gradient(#ff3050,#a00018)" : isEnv ? "radial-gradient(#40c0e0,#1a6888)" : "linear-gradient(160deg,#90e0ff 0%,#2090d0 40%,#0a60a0 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontWeight: 900, fontSize: 12, color: "#fff", boxShadow: isBP ? "0 0 7px #ff305088,0 1px 4px rgba(0,0,0,0.8)" : isEnv ? "0 0 7px #40c0e088,0 1px 4px rgba(0,0,0,0.8)" : "0 0 10px #2090ff88, 0 1px 4px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.4)" }}>{isBP ? "B" : card.cost}</div>
         {/* Type tag top-right */}
         {(card.type === "spell" || card.type === "environment" || card.type === "champion") && (
           <div style={{ position: "absolute", top: 4, right: 4, zIndex: 3, fontSize: 6, background: "rgba(0,0,0,0.75)", color: isEnv ? "#28c0cc" : card.type === "champion" ? "#e8c060" : "#d090d0", border: `1px solid ${isEnv?"#28a0cc":card.type==="champion"?"#e8c060":"#d090d0"}55`, borderRadius: 3, padding: "1px 4px", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>{isEnv ? "ENV" : card.type === "champion" ? "CHP" : "SPL"}</div>
@@ -959,12 +959,12 @@ function resolveEffects(trigger, card, state, side, vfx) {
 function computeEnemyPlayPhase(g, vfx) {
   let s = { ...g, playerBoard: g.playerBoard.map((c) => ({ ...c })), enemyBoard: g.enemyBoard.map((c) => ({ ...c })), playerHand: [...g.playerHand], enemyHand: [...g.enemyHand], enemyDeck: [...g.enemyDeck], playerDeck: [...g.playerDeck], log: [...g.log] };
   const L = (m) => { s.log = [...s.log.slice(-20), m]; };
-  // Decrement environment duration each half-turn
-  if (s.environment) { const rem = (s.environment.turnsRemaining||4) - 1; if (rem <= 0) { s.environment = null; L("Environment fades."); } else { s.environment = { ...s.environment, turnsRemaining: rem }; if (s.environment.owner === "enemy") s = resolveEffects("onTurnStart", s.environment, s, "enemy", vfx); } }
+  // Fire enemy env effect at start of enemy turn, decrement
+  if (s.environment?.owner === "enemy") { s = resolveEffects("onTurnStart", s.environment, s, "enemy", vfx); const rem = (s.environment.turnsRemaining||2) - 1; if (rem <= 0) { s.environment = null; L("Environment fades."); } else { s.environment = { ...s.environment, turnsRemaining: rem }; } }
   if (s.enemyDeck.length > 0 && s.enemyHand.length < 6) { s.enemyHand = [...s.enemyHand, makeInst(s.enemyDeck[0], "e")]; s.enemyDeck = s.enemyDeck.slice(1); L("Enemy draws."); }
   let en = s.maxEnergy;
   [...s.enemyHand].sort((a, b) => b.cost - a.cost).forEach((card) => {
-    if (card.type === "environment") { if (!card.bloodpact && card.cost <= en) { en -= card.cost; s.environment = { ...card, owner: "enemy", turnsRemaining: 4 }; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid); L(`Enemy: ${card.name}! (2 rounds)`); s = resolveEffects("onPlay", card, s, "enemy", vfx); s = resolveEffects("onTurnStart", card, s, "enemy", vfx); } return; }
+    if (card.type === "environment") { if (!card.bloodpact && card.cost <= en) { en -= card.cost; s.environment = { ...card, owner: "enemy", turnsRemaining: 2 }; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid); L(`Enemy: ${card.name}! (2 rounds)`); s = resolveEffects("onPlay", card, s, "enemy", vfx); } return; }
     if (card.type === "spell") { if (card.bloodpact ? card.cost < s.enemyHP : card.cost <= en) { if (card.bloodpact) s.enemyHP -= card.cost; else en -= card.cost; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid); L(`Enemy casts ${card.name}!`); s = resolveEffects("onPlay", card, s, "enemy", vfx); } return; }
     if (s.enemyBoard.length >= CFG.maxBoard) return;
     const ec = card.bloodpact ? 0 : card.cost; if (ec > en) return;
@@ -1004,11 +1004,11 @@ function computeEnemyAttackPhase(g, vfx) {
 function computeEnemyTurn(g, vfx) {
   let s = { ...g, playerBoard: g.playerBoard.map((c) => ({ ...c })), enemyBoard: g.enemyBoard.map((c) => ({ ...c })), playerHand: [...g.playerHand], enemyHand: [...g.enemyHand], enemyDeck: [...g.enemyDeck], playerDeck: [...g.playerDeck], log: [...g.log] };
   const L = (m) => { s.log = [...s.log.slice(-20), m]; };
-  if (s.environment) { const rem = (s.environment.turnsRemaining||4) - 1; if (rem <= 0) { s.environment = null; L("Environment fades."); } else { s.environment = { ...s.environment, turnsRemaining: rem }; if (s.environment.owner === "enemy") s = resolveEffects("onTurnStart", s.environment, s, "enemy", vfx); } }
+  if (s.environment?.owner === "enemy") { s = resolveEffects("onTurnStart", s.environment, s, "enemy", vfx); const rem = (s.environment.turnsRemaining||2) - 1; if (rem <= 0) { s.environment = null; L("Environment fades."); } else { s.environment = { ...s.environment, turnsRemaining: rem }; } }
   if (s.enemyDeck.length > 0 && s.enemyHand.length < 6) { s.enemyHand = [...s.enemyHand, makeInst(s.enemyDeck[0], "e")]; s.enemyDeck = s.enemyDeck.slice(1); L("Enemy draws."); }
   let en = s.maxEnergy;
   [...s.enemyHand].sort((a, b) => b.cost - a.cost).forEach((card) => {
-    if (card.type === "environment") { if (!card.bloodpact && card.cost <= en) { en -= card.cost; s.environment = { ...card, owner: "enemy", turnsRemaining: 4 }; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid); L(`Enemy: ${card.name}! (2 rounds)`); s = resolveEffects("onPlay", card, s, "enemy", vfx); s = resolveEffects("onTurnStart", card, s, "enemy", vfx); } return; }
+    if (card.type === "environment") { if (!card.bloodpact && card.cost <= en) { en -= card.cost; s.environment = { ...card, owner: "enemy", turnsRemaining: 2 }; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid); L(`Enemy: ${card.name}! (2 rounds)`); s = resolveEffects("onPlay", card, s, "enemy", vfx); } return; }
     if (card.type === "spell") { if (card.bloodpact ? card.cost < s.enemyHP : card.cost <= en) { if (card.bloodpact) s.enemyHP -= card.cost; else en -= card.cost; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid); L(`Enemy casts ${card.name}!`); s = resolveEffects("onPlay", card, s, "enemy", vfx); } return; }
     if (s.enemyBoard.length >= CFG.maxBoard) return;
     const ec = card.bloodpact ? 0 : card.cost; if (ec > en) return;
@@ -1205,7 +1205,7 @@ function BattleChat({ user, aiMode, matchId }) {
 }
 
 function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
-  const initGame = () => { const fallback = [...GAMEPLAY_POOL, ...GAMEPLAY_POOL, ...GAMEPLAY_POOL.slice(0, 5)]; const pd = shuf(matchConfig?.playerDeck?.length >= CFG.deck.min ? [...matchConfig.playerDeck] : [...fallback]); const ed = shuf([...fallback]); return { matchId: uid("m"), turn: 1, phase: "opening", winner: null, playerHP: CFG.startHP, playerEnergy: CFG.startEnergy, maxEnergy: CFG.startEnergy, playerHand: pd.slice(0, CFG.startHand).map((c) => makeInst(c, "p")), playerDeck: pd.slice(CFG.startHand), playerBoard: [], enemyHP: CFG.startHP, enemyHand: ed.slice(0, CFG.startHand).map((c) => makeInst(c, "e")), enemyDeck: ed.slice(CFG.startHand), enemyBoard: [], environment: null, envLastTurn: null, mapTheme: "default", log: ["Draw for priority!"] }; };
+  const initGame = () => { const fallback = [...GAMEPLAY_POOL, ...GAMEPLAY_POOL, ...GAMEPLAY_POOL.slice(0, 5)]; const pd = shuf(matchConfig?.playerDeck?.length > 0 ? [...matchConfig.playerDeck] : [...fallback]); const ed = shuf([...fallback]); return { matchId: uid("m"), turn: 1, phase: "opening", winner: null, playerHP: CFG.startHP, playerEnergy: CFG.startEnergy, maxEnergy: CFG.startEnergy, playerHand: pd.slice(0, CFG.startHand).map((c) => makeInst(c, "p")), playerDeck: pd.slice(CFG.startHand), playerBoard: [], enemyHP: CFG.startHP, enemyHand: ed.slice(0, CFG.startHand).map((c) => makeInst(c, "e")), enemyDeck: ed.slice(CFG.startHand), enemyBoard: [], environment: null, envLastTurn: null, mapTheme: "default", log: ["Draw for priority!"] }; };
   const [game, setGame] = useState(initGame);
   const [animUids, setAnimUids] = useState({});
   const [attacker, setAttacker] = useState(null);
@@ -1232,18 +1232,20 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     showTurnBanner("ENEMY TURN");
     setAiThink(true);
     const wait = ms => new Promise(r => setTimeout(r, ms));
+    try {
     // Snapshot state
     let s = await new Promise(r => { setGame(p => { r({ ...p, playerBoard: p.playerBoard.map(c=>({...c})), enemyBoard: p.enemyBoard.map(c=>({...c})), playerHand:[...p.playerHand], enemyHand:[...p.enemyHand], enemyDeck:[...p.enemyDeck], playerDeck:[...p.playerDeck], log:[...p.log] }); return p; }); });
     const push = () => setGame(() => ({ ...s }));
     await wait(300);
     // Environment tick
-    if (s.environment) { const rem=(s.environment.turnsRemaining||4)-1; if(rem<=0){s.environment=null;s.log=[...s.log.slice(-20),"Environment fades."];}else{s.environment={...s.environment,turnsRemaining:rem};if(s.environment.owner==="enemy")s=resolveEffects("onTurnStart",s.environment,s,"enemy",vfx);} }
+    // Fire enemy env effect at start of enemy turn, then decrement
+    if (s.environment?.owner==="enemy") { s=resolveEffects("onTurnStart",s.environment,s,"enemy",vfx); const rem=(s.environment.turnsRemaining||2)-1; if(rem<=0){s.environment=null;s.log=[...s.log.slice(-20),"Environment fades."];}else{s.environment={...s.environment,turnsRemaining:rem};} }
     // Draw
     if (s.enemyDeck.length>0&&s.enemyHand.length<6) { s.enemyHand=[...s.enemyHand,makeInst(s.enemyDeck[0],"e")];s.enemyDeck=s.enemyDeck.slice(1);s.log=[...s.log.slice(-20),"Enemy draws."];push();flashAction("Enemy draws...");await wait(500); }
     // Play cards
     let en=s.maxEnergy;
     for (const card of [...s.enemyHand].sort((a,b)=>b.cost-a.cost)) {
-      if (card.type==="environment") { if(!card.bloodpact&&card.cost<=en){en-=card.cost;s.environment={...card,owner:"enemy",turnsRemaining:4};s.enemyHand=s.enemyHand.filter(c=>c.uid!==card.uid);s.log=[...s.log.slice(-20),`Enemy: ${card.name}! (2 rounds)`];s=resolveEffects("onPlay",card,s,"enemy",vfx);s=resolveEffects("onTurnStart",card,s,"enemy",vfx);push();flashAction(`Enemy plays ${card.name}!`);SFX.play("env_play");await wait(750);} continue; }
+      if (card.type==="environment") { if(!card.bloodpact&&card.cost<=en){en-=card.cost;s.environment={...card,owner:"enemy",turnsRemaining:2};s.enemyHand=s.enemyHand.filter(c=>c.uid!==card.uid);s.log=[...s.log.slice(-20),`Enemy: ${card.name}! (2 rounds)`];s=resolveEffects("onPlay",card,s,"enemy",vfx);push();flashAction(`Enemy plays ${card.name}!`);SFX.play("env_play");await wait(750);} continue; }
       if (card.type==="spell") { const canCast=card.bloodpact?card.cost<s.enemyHP:card.cost<=en; if(canCast){if(card.bloodpact)s.enemyHP-=card.cost;else en-=card.cost;s.enemyHand=s.enemyHand.filter(c=>c.uid!==card.uid);s.log=[...s.log.slice(-20),`Enemy casts ${card.name}!`];s=resolveEffects("onPlay",card,s,"enemy",vfx);push();flashAction(`Enemy casts ${card.name}!`);SFX.play("ability");await wait(700);} continue; }
       if(s.enemyBoard.length>=CFG.maxBoard)continue;
       const ec=card.bloodpact?0:card.cost; if(ec>en)continue;
@@ -1284,7 +1286,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
       push();await wait(400);setAnimUids({});if(s.playerHP<=0)break;
     }
     // Player death check
-    if(s.playerHP<=0){SFX.play("defeat");const histEntry={opponent:"AI",result:"L",date:new Date().toISOString(),turns:s.turn||0};if(onUpdateUser)onUpdateUser({battlesPlayed:(user?.battlesPlayed||0)+1,battlesWon:user?.battlesWon||0,matchHistory:[histEntry,...(user?.matchHistory||[])].slice(0,50)});setGame(()=>({...s,phase:"gameover",winner:"enemy",log:[...s.log,"Defeated..."]}));setAiThink(false);return;}
+    if(s.playerHP<=0){SFX.play("defeat");const histEntry={opponent:"AI",result:"L",date:new Date().toISOString(),turns:s.turn||0};if(onUpdateUser)onUpdateUser({battlesPlayed:(user?.battlesPlayed||0)+1,battlesWon:user?.battlesWon||0,matchHistory:[histEntry,...(user?.matchHistory||[])].slice(0,50)});setGame(()=>({...s,phase:"gameover",winner:"enemy",log:[...s.log,"Defeated..."]}));return;}
     // End-of-turn cleanup: bleed, echo, draw, energy
     const pbd=s.playerBoard.reduce((n,c)=>n+(c.bleed||0),0),ebd=s.enemyBoard.reduce((n,c)=>n+(c.bleed||0),0);
     s.playerBoard=s.playerBoard.map(c=>c.bleed>0?{...c,currentHp:c.currentHp-c.bleed}:c).filter(c=>c.currentHp>0);
@@ -1292,26 +1294,43 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     if(pbd>0){s.playerHP-=pbd;s.log=[...s.log,`Bleed seeps: Player takes ${pbd}!`];}
     if(ebd>0){s.enemyHP-=ebd;s.log=[...s.log,`Bleed seeps: Enemy takes ${ebd}!`];}
     s.playerBoard.forEach(c=>{if(c.effects&&c.effects.length)s=resolveEffects("onTurnStart",c,s,"player",vfx);});
-    if(s.environment?.owner==="player")s=resolveEffects("onTurnStart",s.environment,s,"player",vfx);
     s.playerBoard=s.playerBoard.map(c=>({...c,canAttack:true,hasAttacked:false}));
     s.enemyBoard=s.enemyBoard.map(c=>({...c,canAttack:true,hasAttacked:false}));
     s.playerBoard.filter(c=>(c.keywords||[]).includes("Echo")&&!c.echoQueued).forEach(src=>{if(s.playerBoard.length<CFG.maxBoard){s.playerBoard=[...s.playerBoard,{...makeInst({...src,id:src.id+"_e",hp:1,atk:1,keywords:[],effects:[]},"pe"),uid:uid("echo"),currentHp:1,maxHp:1,currentAtk:1,name:src.name+" Echo",canAttack:true}];s.log=[...s.log,`Echo of ${src.name}!`];}});
     s.playerBoard=s.playerBoard.map(c=>(c.keywords||[]).includes("Echo")?{...c,echoQueued:true}:c);
     if(s.playerDeck.length>0&&s.playerHand.length<CFG.maxHand){s.playerHand=[...s.playerHand,makeInst(s.playerDeck[0],"p")];s.playerDeck=s.playerDeck.slice(1);}
-    if(s.enemyHP<=0){SFX.play("victory");const histEntry={opponent:"AI",result:"W",date:new Date().toISOString(),turns:s.turn||0};if(onUpdateUser)onUpdateUser({battlesPlayed:(user?.battlesPlayed||0)+1,battlesWon:(user?.battlesWon||0)+1,matchHistory:[histEntry,...(user?.matchHistory||[])].slice(0,50)});setGame(()=>({...s,phase:"gameover",winner:"player",log:[...s.log,"Victory!"]}));setAiThink(false);return;}
+    if(s.enemyHP<=0){SFX.play("victory");const histEntry={opponent:"AI",result:"W",date:new Date().toISOString(),turns:s.turn||0};if(onUpdateUser)onUpdateUser({battlesPlayed:(user?.battlesPlayed||0)+1,battlesWon:(user?.battlesWon||0)+1,matchHistory:[histEntry,...(user?.matchHistory||[])].slice(0,50)});setGame(()=>({...s,phase:"gameover",winner:"player",log:[...s.log,"Victory!"]}));return;}
     const newTurn=s.turn+1,newMax=Math.min(CFG.maxEnergy,newTurn+1);
     s.log=[...s.log,`Turn ${newTurn}`];
     setGame(()=>({...s,turn:newTurn,phase:"player",playerEnergy:newMax,maxEnergy:newMax}));
-    setAiThink(false);setTimerKey(k=>k+1);setTimeout(()=>showTurnBanner("YOUR TURN"),200);
+    setTimerKey(k=>k+1);setTimeout(()=>showTurnBanner("YOUR TURN"),200);
+    } finally {
+      setAiThink(false);
+    }
   };
 
-  const endTurn = useCallback(() => { if (g.phase !== "player" || aiThink) return; setAttacker(null); SFX.play("timer_end"); setGame((p) => ({ ...p, phase: "enemy", log: [...p.log.slice(-20), "Your turn ends."] })); setTimeout(() => doEnemyTurn(), 300); }, [g.phase, aiThink]);
+  const endTurn = useCallback(() => {
+    if (g.phase !== "player" || aiThink) return;
+    setAttacker(null); SFX.play("timer_end");
+    setGame((p) => {
+      let s = { ...p, phase: "enemy", log: [...p.log.slice(-20), "Your turn ends."] };
+      // Fire env effect at end of player's turn, then decrement
+      if (s.environment?.owner === "player") {
+        s = resolveEffects("onTurnStart", s.environment, s, "player", vfx);
+        const rem = (s.environment.turnsRemaining || 2) - 1;
+        if (rem <= 0) { s.environment = null; s.log = [...s.log.slice(-20), "Environment fades."]; }
+        else s.environment = { ...s.environment, turnsRemaining: rem };
+      }
+      return s;
+    });
+    setTimeout(() => doEnemyTurn(), 300);
+  }, [g.phase, aiThink]);
 
   const playCard = (card) => {
     if (g.phase !== "player" || aiThink) return;
     if (card.type === "environment") {
       const ec = getEffectiveCost(card, g.environment);
-      if (card.bloodpact ? card.cost >= g.playerHP : ec > g.playerEnergy) return; SFX.play("env_play"); vfx.add("envchange", { color: card.border || "#40a020" }); setAttacker(null); setGame((prev) => { let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= ec; s.log = [...s.log, `${card.name} reshapes the field! (2 rounds)`]; } s.environment = { ...card, owner: "player", turnsRemaining: 4 }; s = resolveEffects("onPlay", card, s, "player", vfx); s = resolveEffects("onTurnStart", card, s, "player", vfx); vfx.add("environment", { color: card.border, duration: 2000 }); return s; }); return; }
+      if (card.bloodpact ? card.cost >= g.playerHP : ec > g.playerEnergy) return; SFX.play("env_play"); vfx.add("envchange", { color: card.border || "#40a020" }); setAttacker(null); setGame((prev) => { let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= ec; s.log = [...s.log, `${card.name} reshapes the field! (2 rounds)`]; } s.environment = { ...card, owner: "player", turnsRemaining: 2 }; s = resolveEffects("onPlay", card, s, "player", vfx); vfx.add("environment", { color: card.border, duration: 2000 }); return s; }); return; }
     if (card.type === "spell") { const ec = getEffectiveCost(card, g.environment); if (card.bloodpact ? card.cost >= g.playerHP : ec > g.playerEnergy) return; SFX.play("ability"); vfx.add("spell", { color: card.border || "#c090d0" }); setAttacker(null); setGame((prev) => { let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= getEffectiveCost(card, prev.environment); s.log = [...s.log, `Cast ${card.name}!`]; } s = resolveEffects("onPlay", card, s, "player", vfx); return s; }); return; }
     if (g.playerBoard.length >= CFG.maxBoard) return;
     const ecCreature = getEffectiveCost(card, g.environment);
@@ -1673,7 +1692,7 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
                     onMouseLeave={e => { e.currentTarget.style.transform="none"; }}>
                     <div style={{ animation: shakeId === c.id ? "deckCardShake 0.35s ease-out" : undefined, position:"relative" }}>
                       {(() => { const maxC = c.type==="champion" ? 1 : CFG.deck.copies; const left = maxC - inDeck; return left > 0 && left < maxC ? (<div style={{ position:"absolute", bottom:6, right:5, zIndex:10, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:900, color:"#e8c060", textShadow:"0 0 8px #e8c06088, 0 1px 3px rgba(0,0,0,0.95)", lineHeight:1 }}>{left}</div>) : null; })()}
-                      <Card card={resolveCardArt(c, selectedArts)} size="sm" hideCost onClick={() => {}} />
+                      <Card card={resolveCardArt(c, selectedArts)} size="sm" onClick={() => {}} />
                     </div>
                   </div>
                 );
@@ -1687,7 +1706,7 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
       <div style={{ display:"flex", flexDirection:"column", overflow:"hidden", background:"linear-gradient(180deg,#0e0c06,#0a0806)" }}>
         <div style={{ padding:"14px 18px", borderBottom:"1px solid #2a2010", flexShrink:0 }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#c09848", letterSpacing:2, fontWeight:700 }}>YOUR DECK — {total}/{CFG.deck.size}</div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#c09848", letterSpacing:2, fontWeight:700 }}>YOUR DECK — {total}/{CFG.deck.size} · <span style={{ color:"#60c0ff", fontWeight:700 }}>⚡{deck.reduce((s,c)=>s+(c.cost||0),0)} mana</span></div>
             {deck.length > 0 && <button onClick={() => { setErrMsg(""); setDeck([]); }} style={{ padding:"3px 10px", background:"rgba(180,40,20,0.12)", border:"1px solid #5a1810", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:8, color:"#a06040", cursor:"pointer", letterSpacing:1 }}>CLEAR ALL</button>}
           </div>
           {errMsg && <div style={{ fontSize:9, color:"#e06050", fontFamily:"'Cinzel',serif", marginBottom:4, letterSpacing:0.5 }}>⚠ {errMsg}</div>}
@@ -1706,6 +1725,7 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
                 <div style={{ width:30, height:42, borderRadius:4, overflow:"hidden", flexShrink:0, border:`1px solid ${c.border}44` }}>
                   <CardArt card={dc} />
                 </div>
+                <div style={{ width:18, height:18, borderRadius:"50%", background:"linear-gradient(160deg,#90e0ff,#1870a0)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontWeight:900, fontSize:9, color:"#fff", flexShrink:0, boxShadow:"0 0 6px #2090ff88" }}>{c.cost||0}</div>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#f0e0c8", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.name}</div>
                   <div style={{ fontSize:7, color:typeColor, fontFamily:"'Cinzel',serif", letterSpacing:0.5 }}>{(c.type||"creature").toUpperCase()}</div>
@@ -1731,6 +1751,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   const [previewCard, setPreviewCard] = useState(null);
   const [timerKey, setTimerKey] = useState(0);
   const [syncing, setSyncing] = useState(false);
+  const syncingRef = useRef(false);
   const wonSavedRef = useRef(false);
   const pollRef = useRef(null);
   const prevGsRef = useRef(null);
@@ -1841,9 +1862,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       else { ai.playerEnergy -= eff; }
       if (card.type === "environment") {
         // Per-player env: each player owns their slot, lasts 4 half-turns (2 full rounds)
-        ai.environment = { ...card, owner: "player", envOwner: role, turnsRemaining: 4 }; ai.log = [...ai.log, `${(gs[role+"Name"]||role.toUpperCase())} plays ${card.name}! (2 rounds)`];
+        ai.environment = { ...card, owner: "player", envOwner: role, turnsRemaining: 2 }; ai.log = [...ai.log, `${(gs[role+"Name"]||role.toUpperCase())} plays ${card.name}! (2 rounds)`];
         ai = resolveEffects("onPlay", card, ai, "player", vfxInst);
-        ai = resolveEffects("onTurnStart", card, ai, "player", vfxInst); // fire instantly
         return fromAI(ai, role, gs);
       } else if (card.type === "spell") {
         ai.log = [...ai.log, `${(gs[role+"Name"]||"You")} casts ${card.name}!`];
@@ -1887,13 +1907,14 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       const newTurn = gs.turn + 1;
       const newMax = Math.min(CFG.maxEnergy, newTurn + 1);
       let s = { ...gs };
-      // Decrement per-player env turnsRemaining for the current role
+      // Fire env effect at end of current player's turn, then decrement
       if (s[role+"Env"]) {
-        const remaining = (s[role+"Env"].turnsRemaining || 1) - 1;
+        let roleAi = toAI(s, role);
+        if (roleAi.environment) { roleAi = resolveEffects("onTurnStart", roleAi.environment, roleAi, "player", vfxInst); s = fromAI(roleAi, role, s); }
+        const remaining = (s[role+"Env"].turnsRemaining || 2) - 1;
         if (remaining <= 0) {
           s[role+"Env"] = null;
           s.log = [...(s.log||[]).slice(-20), `${role.toUpperCase()} environment fades.`];
-          // Update global env if it was this player's
           if (s.env?.envOwner === role) s.env = s[op+"Env"] || null;
         } else {
           s[role+"Env"] = { ...s[role+"Env"], turnsRemaining: remaining };
@@ -1924,10 +1945,9 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       s.turn = newTurn; s.phase = op;
       s[op+"Max"] = newMax; s[op+"Energy"] = newMax;
       s.log = [...(s.log||[]).slice(-20), `Turn ${newTurn}`];
-      // Fire onTurnStart effects for the new active player (op)
+      // Fire onTurnStart effects for the new active player's board (not env — env fires at their end_turn)
       let opAi = toAI(s, op);
       opAi.playerBoard.forEach(c => { if ((c.effects||[]).some(e => e.trigger === "onTurnStart")) opAi = resolveEffects("onTurnStart", c, opAi, "player", null); });
-      if (opAi.environment) opAi = resolveEffects("onTurnStart", opAi.environment, opAi, "player", null);
       s = fromAI(opAi, op, s);
       return s;
     }
@@ -1971,7 +1991,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         const oppId = match.player2_id;
         const { data: oppProfile } = oppId ? await supabase.from("profiles").select("ranked_rating").eq("id", oppId).single() : { data: null };
         const fb = [...GAMEPLAY_POOL, ...GAMEPLAY_POOL, ...GAMEPLAY_POOL.slice(0, 5)];
-        const d1 = shuf(matchConfig?.playerDeck?.length >= CFG.deck.min ? [...matchConfig.playerDeck] : [...fb]), d2 = shuf([...fb]);
+        const d1 = shuf(matchConfig?.playerDeck?.length > 0 ? [...matchConfig.playerDeck] : [...fb]), d2 = shuf([...fb]);
         const dc = GAMEPLAY_POOL[Math.floor(Math.random() * GAMEPLAY_POOL.length)];
         const ec = GAMEPLAY_POOL[Math.floor(Math.random() * GAMEPLAY_POOL.length)];
         const firstPlayer = (dc.cost || 0) >= (ec.cost || 0) ? "p1" : "p2";
@@ -2018,8 +2038,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   useEffect(() => {
     if (!gs || !myRole) { prevGsRef.current = gs; return; }
     const prev = prevGsRef.current;
-    if (prev && prev.phase !== myRole && gs.phase === myRole && !gs.winner) { showTurnBanner("YOUR TURN"); SFX.play("ability"); }
-    else if (prev && prev.phase === myRole && gs.phase !== myRole && !gs.winner) { showTurnBanner("OPPONENT'S TURN"); }
+    if (prev && prev.phase !== myRole && gs.phase === myRole && !gs.winner) { showTurnBanner("YOUR TURN"); SFX.play("ability"); setTimerKey(k => k + 1); }
+    else if (prev && prev.phase === myRole && gs.phase !== myRole && !gs.winner) { showTurnBanner("OPPONENT'S TURN"); setTimerKey(k => k + 1); }
     if (prev && prev.phase !== myRole) {
       const prevAi = toAI(prev, myRole), currAi = toAI(gs, myRole);
       const anims = {};
@@ -2134,11 +2154,18 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   }, [gs]); // eslint-disable-line
 
   const invokeAction = async (action) => {
-    if (syncing) return;
+    if (syncingRef.current) return;
+    syncingRef.current = true;
     setSyncing(true); setAttacker(null);
-    const newGs = { ...applyPvpAction(gs, action, myRole, vfx), seq: (gs.seq||0)+1 };
-    setGs(newGs); // optimistic — UI responds instantly
-    setSyncing(false); // release lock immediately; DB write is fire-and-forget
+    let newGs;
+    try {
+      newGs = { ...applyPvpAction(gs, action, myRole, vfx), seq: (gs.seq||0)+1 };
+      setGs(newGs); // optimistic — UI responds instantly
+    } finally {
+      syncingRef.current = false;
+      setSyncing(false);
+    }
+    if (!newGs) return;
     try {
       await supabase.from("matches").update({ game_state: newGs }).eq("id", matchId);
       if (pvpBcRef.current) pvpBcRef.current.send({ type:"broadcast", event:"updated", payload:{ gs: newGs } });
@@ -2149,7 +2176,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   const isMyTurn = gs && myRole && gs.phase === myRole && !gs.winner;
 
   const playCard = (card) => {
-    if (!isMyTurn || syncing) return;
+    if (!isMyTurn || syncingRef.current) return;
     const ai = toAI(gs, myRole);
     const canAfford = card.bloodpact ? card.cost < ai.playerHP : card.cost <= ai.playerEnergy;
     if (!canAfford) return;
@@ -2160,10 +2187,10 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     invokeAction({ type: "play_card", cardUid: card.uid });
   };
 
-  const selectAtt = (c) => { if (!isMyTurn || syncing) return; setAttacker(attacker === c.uid ? null : (c.canAttack && !c.hasAttacked ? c.uid : attacker)); };
+  const selectAtt = (c) => { if (!isMyTurn || syncingRef.current) return; setAttacker(attacker === c.uid ? null : (c.canAttack && !c.hasAttacked ? c.uid : attacker)); };
 
   const atkCreature = async (tgt) => {
-    if (!attacker || !isMyTurn || syncing) return;
+    if (!attacker || !isMyTurn || syncingRef.current) return;
     SFX.play("attack");
     const attUid = attacker;
     setAnimUids({ [attUid]: "attacking" });
@@ -2171,22 +2198,25 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     setAnimUids(p => ({ ...p, [tgt.uid]: "hit" }));
     await new Promise(r => setTimeout(r, 180));
     // Compute result to find dying cards before committing state
-    const newGs = { ...applyPvpAction(gs, { type: "attack_creature", attackerUid: attUid, targetUid: tgt.uid }, myRole, vfx), seq: (gs.seq||0)+1 };
+    let newGs;
+    try {
+      newGs = { ...applyPvpAction(gs, { type: "attack_creature", attackerUid: attUid, targetUid: tgt.uid }, myRole, vfx), seq: (gs.seq||0)+1 };
+    } catch (err) { console.error("atkCreature compute failed:", err); return; }
     const aiOld = toAI(gs, myRole), aiNew = toAI(newGs, myRole);
     const dyingUids = {};
     aiOld.playerBoard.forEach(c => { if (!aiNew.playerBoard.find(n => n.uid === c.uid)) dyingUids[c.uid] = "dying"; });
     aiOld.enemyBoard.forEach(c => { if (!aiNew.enemyBoard.find(n => n.uid === c.uid)) dyingUids[c.uid] = "dying"; });
     if (Object.keys(dyingUids).length > 0) { SFX.play("kill"); setAnimUids(p => ({ ...p, ...dyingUids })); await new Promise(r => setTimeout(r, 500)); }
-    setSyncing(true); setAttacker(null);
+    syncingRef.current = true; setSyncing(true); setAttacker(null);
     setGs(newGs); // optimistic
+    syncingRef.current = false; setSyncing(false);
     try { await supabase.from("matches").update({ game_state: newGs }).eq("id", matchId); if (pvpBcRef.current) pvpBcRef.current.send({ type:"broadcast", event:"updated", payload:{ gs: newGs } }); } catch (err) { console.error("PvP action failed:", err); }
-    setSyncing(false);
     await new Promise(r => setTimeout(r, 200));
     setAnimUids({});
   };
 
   const atkFace = async () => {
-    if (!attacker || !isMyTurn || syncing) return;
+    if (!attacker || !isMyTurn || syncingRef.current) return;
     SFX.play("attack");
     const attUid = attacker;
     setAnimUids({ [attUid]: "attacking" });
@@ -2197,7 +2227,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   };
 
   const endTurn = () => {
-    if (!isMyTurn || syncing) return;
+    if (!isMyTurn || syncingRef.current) return;
     SFX.play("timer_end");
     setTimerKey((k) => k + 1);
     invokeAction({ type: "end_turn" });
@@ -2396,9 +2426,9 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         </div>
         {/* Divider with timer */}
         <div style={{ padding:"5px 14px", background:envTheme?"rgba(0,0,0,0.25)":"#121008", borderBottom:"1px solid #1c1408", borderTop:"1px solid #1c1408", display:"flex", alignItems:"center", gap:10, position:"relative", zIndex:2 }}>
-          {isMyTurn && !gs.winner ? (
-            <TurnTimer key={timerKey} active={true} onExpire={endTurn} turnNum={gs.turn}>
-              {attCard ? (
+          {!gs.winner ? (
+            <TurnTimer key={timerKey} active={true} onExpire={isMyTurn ? endTurn : ()=>{}} turnNum={gs.turn}>
+              {isMyTurn && attCard ? (
                 <button onClick={ai.enemyBoard.length===0?atkFace:undefined} style={{ padding:"3px 12px", background:ai.enemyBoard.length===0?"linear-gradient(135deg,#6a0808,#a01010)":"rgba(255,255,255,0.04)", border:`1px solid ${ai.enemyBoard.length===0?"#e04040":"#2a1a10"}`, borderRadius:20, color:ai.enemyBoard.length===0?"#ffaaaa":"#604030", fontFamily:"'Cinzel',serif", fontSize:9, cursor:ai.enemyBoard.length===0?"pointer":"default" }}>
                   {ai.enemyBoard.length===0?"STRIKE HERO":"SELECT TARGET"}
                 </button>
@@ -2407,7 +2437,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           ) : (
             <>
               <div style={{ flex:1, height:1, background:"linear-gradient(to right,transparent,#382e18)" }}/>
-              {attCard?(<button onClick={ai.enemyBoard.length===0?atkFace:undefined} style={{ padding:"5px 16px", background:ai.enemyBoard.length===0?"linear-gradient(135deg,#6a0808,#a01010)":"rgba(255,255,255,0.04)", border:`1px solid ${ai.enemyBoard.length===0?"#e04040":"#2a1a10"}`, borderRadius:20, color:ai.enemyBoard.length===0?"#ffaaaa":"#604030", fontFamily:"'Cinzel',serif", fontSize:9, cursor:ai.enemyBoard.length===0?"pointer":"default" }}>{ai.enemyBoard.length===0?"STRIKE HERO":"SELECT TARGET"}</button>):(<span style={{ fontSize:9, color:envTheme?envTheme.glow+"88":"#241a08", letterSpacing:3, fontFamily:"'Cinzel',serif" }}>TURN {gs.turn}</span>)}
+              <span style={{ fontSize:9, color:envTheme?envTheme.glow+"88":"#241a08", letterSpacing:3, fontFamily:"'Cinzel',serif" }}>TURN {gs.turn}</span>
               <div style={{ flex:1, height:1, background:"linear-gradient(to left,transparent,#382e18)" }}/>
             </>
           )}
@@ -4589,7 +4619,7 @@ export default function App() {
       {tab === "collection" && <CollectionScreen user={user} onUpdateUser={update} />}
       {tab === "community" && <CommunityScreen user={user} />}
       {tab === "howto" && <GuideScreen />}
-      <footer style={{ borderTop: "1px solid #1e1a0e", padding: 22, textAlign: "center" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, color: "#40301a" }}>Forge {"&"} Fable</div><p style={{ fontSize: 9, color: "#30280e", margin: "4px 0 0", letterSpacing: 1 }}>{CURRENT_PATCH}: RARITY HOVER GLOW · BATTLE FIELD POLISH · NAV GHOST MODE · DECK COPY COUNT · ALPHA READY</p></footer>
+      {!inBattle && <footer style={{ borderTop: "1px solid #1e1a0e", padding: 22, textAlign: "center" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, color: "#40301a" }}>Forge {"&"} Fable</div><p style={{ fontSize: 9, color: "#30280e", margin: "4px 0 0", letterSpacing: 1 }}>{CURRENT_PATCH}: RARITY HOVER GLOW · BATTLE FIELD POLISH · NAV GHOST MODE · DECK COPY COUNT · ALPHA READY</p></footer>}
     </div>
     <MusicPlayer />
   </div>);
