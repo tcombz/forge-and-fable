@@ -1524,6 +1524,7 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
   const [deckName, setDeckName] = useState(editDeck ? editDeck.name : "Starter Deck");
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [shakeId, setShakeId] = useState(null);
   const filtered = owned.filter((c) => {
     if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false;
     if (typeFilter !== "all" && c.type !== typeFilter) return false;
@@ -1549,6 +1550,7 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
     if ((card.type === "aura" || card.type === "environment") && auraEnvCount >= CFG.deck.maxAuraEnv) { setErrMsg(`Aura/Environment cap reached (${auraEnvCount}/${CFG.deck.maxAuraEnv})`); return; }
     setErrMsg("");
     setDeck(d => [...d, card]);
+    setShakeId(card.id); setTimeout(() => setShakeId(null), 380);
   };
   const removeCard = (idx) => { setErrMsg(""); setDeck(d => d.filter((_, i) => i !== idx)); };
   const save = () => { if (!canSave) return; onSave({ name: deckName, cards: deck }, editDeck?.index); onClose(); };
@@ -1609,11 +1611,13 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
                 const inDeck = countInDeck(c);
                 const blocked = isBlocked(c);
                 return (
-                  <div key={i} onClick={() => !blocked && addCard(c)} onContextMenu={(e) => { e.preventDefault(); setDbPreview(resolveCardArt(c, selectedArts)); }} style={{ position:"relative", cursor:blocked?"not-allowed":"pointer", opacity:blocked?0.35:1, transition:"all .2s", transform:"none" }}
+                  <div key={i} onClick={() => !blocked && addCard(c)} onContextMenu={(e) => { e.preventDefault(); setDbPreview(resolveCardArt(c, selectedArts)); }} style={{ position:"relative", cursor:blocked?"not-allowed":"pointer", opacity:blocked?0.35:1, transition:"opacity .2s", transform:"none" }}
                     onMouseEnter={e => { if (!blocked) e.currentTarget.style.transform="translateY(-4px)"; }}
                     onMouseLeave={e => { e.currentTarget.style.transform="none"; }}>
-                    {(() => { const maxC = c.type==="champion" ? 1 : CFG.deck.copies; const left = maxC - inDeck; return left > 0 && left < maxC ? (<div style={{ position:"absolute", bottom:6, right:5, zIndex:10, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:900, color:"#e8c060", textShadow:"0 0 8px #e8c06088, 0 1px 3px rgba(0,0,0,0.95)", lineHeight:1 }}>{left}</div>) : null; })()}
-                    <Card card={resolveCardArt(c, selectedArts)} size="sm" hideCost />
+                    <div style={{ animation: shakeId === c.id ? "deckCardShake 0.35s ease-out" : undefined, position:"relative" }}>
+                      {(() => { const maxC = c.type==="champion" ? 1 : CFG.deck.copies; const left = maxC - inDeck; return left > 0 && left < maxC ? (<div style={{ position:"absolute", bottom:6, right:5, zIndex:10, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:900, color:"#e8c060", textShadow:"0 0 8px #e8c06088, 0 1px 3px rgba(0,0,0,0.95)", lineHeight:1 }}>{left}</div>) : null; })()}
+                      <Card card={resolveCardArt(c, selectedArts)} size="sm" hideCost onClick={() => {}} />
+                    </div>
                   </div>
                 );
               })}
@@ -4329,6 +4333,7 @@ export default function App() {
       @keyframes battleGlow{0%,100%{box-shadow:0 6px 28px rgba(200,30,30,0.5),0 0 40px rgba(200,30,30,0.2)}50%{box-shadow:0 6px 40px rgba(255,50,60,0.75),0 0 64px rgba(220,30,30,0.45),0 0 90px rgba(200,0,0,0.2)}}
       @keyframes starTwinkle{0%,100%{opacity:0.2}50%{opacity:0.9}}
       @keyframes floatBadge{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+      @keyframes deckCardShake{0%{transform:translateX(0) rotate(0deg)}15%{transform:translateX(-7px) rotate(-2deg)}30%{transform:translateX(7px) rotate(2deg)}45%{transform:translateX(-5px) rotate(-1deg)}60%{transform:translateX(5px) rotate(1deg)}75%{transform:translateX(-3px)}90%{transform:translateX(2px)}100%{transform:translateX(0) rotate(0deg)}}
       @keyframes shieldPulse{0%,100%{opacity:0.7;box-shadow:0 0 10px #60a0ff44,inset 0 0 8px #4080c033}50%{opacity:1;box-shadow:0 0 20px #60a0ff99,inset 0 0 16px #4080c066}}
       @keyframes dupeToast{0%{opacity:0;transform:translateY(20px) scale(0.8)}15%{opacity:1;transform:translateY(0) scale(1)}75%{opacity:1}100%{opacity:0;transform:translateY(-30px) scale(0.9)}}
       @keyframes vfxHitFlash{0%{opacity:0}10%{opacity:1}100%{opacity:0}}
@@ -4378,6 +4383,10 @@ export default function App() {
       </div>
     </div>)}
     <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "radial-gradient(ellipse at 15% 15%,rgba(200,140,20,0.11) 0%,transparent 50%),radial-gradient(ellipse at 85% 85%,rgba(30,120,200,0.08) 0%,transparent 50%)" }} />
+    {/* Battle nav hover trigger zone — wider invisible hit area for stability + F11 */}
+    {inBattle && <div style={{ position:"fixed", top:0, left:0, right:0, height:20, zIndex:98, cursor:"pointer" }} onMouseEnter={() => setNavHovered(true)} onClick={() => setNavHovered(true)} />}
+    {/* Battle nav toggle button — always reachable even in F11 */}
+    {inBattle && !navHovered && <div onClick={() => setNavHovered(true)} style={{ position:"fixed", top:5, right:20, zIndex:110, background:"rgba(8,6,3,0.88)", border:"1px solid #5a4a2044", borderRadius:5, padding:"2px 10px", cursor:"pointer", fontSize:9, color:"#806040", fontFamily:"'Cinzel',serif", letterSpacing:2, userSelect:"none" }}>≡</div>}
     <nav style={{ position: inBattle ? "fixed" : "sticky", width: "100%", top: 0, zIndex: 100, background: "linear-gradient(180deg,#201c10 0%,#181408 100%)", backdropFilter: "blur(20px)", borderBottom: `2px solid ${inBattle && !navHovered ? "transparent" : "#4a3c18"}`, padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: inBattle && !navHovered ? 4 : 72, boxShadow: "0 4px 24px rgba(0,0,0,0.5)", overflow: "hidden", transition: "height 0.3s ease, border-color 0.3s ease, opacity 0.3s ease", opacity: inBattle && !navHovered ? 0.08 : 1, cursor: inBattle && !navHovered ? "pointer" : "default" }} onClick={(e) => { e.stopPropagation(); if (inBattle && !navHovered) setNavHovered(true); }} onMouseEnter={() => inBattle && setNavHovered(true)} onMouseLeave={() => inBattle && setNavHovered(false)}>
       <button onClick={() => { if (inPvpMatch) { setNavLeaveModal({ targetTab:"home" }); return; } setTab("home"); }} style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}>
         <div style={{ width: 36, height: 36, borderRadius: 8, background: "linear-gradient(135deg,#e8c060,#a07820)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontSize: 16, fontWeight: 900, color: "#1a1000", boxShadow: "0 2px 12px #e8c06044" }}>F</div>
@@ -4415,7 +4424,7 @@ export default function App() {
           const deckCount = (user.decks||[]).length;
           const rank = getRank(user.rankedRating);
           return (
-          <div style={{ position:"absolute", top:50, right:0, background:"#0e0c08", border:"1px solid #2a2010", borderRadius:18, width:360, zIndex:200, boxShadow:"0 32px 80px rgba(0,0,0,0.98), 0 0 0 1px #1a1408", animation:"fadeIn 0.2s ease-out", overflow:"hidden" }}>
+          <div style={{ position:"fixed", top:76, right:20, background:"#0e0c08", border:"1px solid #2a2010", borderRadius:18, width:360, zIndex:500, boxShadow:"0 32px 80px rgba(0,0,0,0.98), 0 0 0 1px #1a1408", animation:"fadeIn 0.2s ease-out", overflow:"hidden" }}>
             {/* Hero header — full-width avatar banner */}
             <div style={{ position:"relative", height:110, background:"linear-gradient(160deg,#1a1208,#0e0a04,#181208)", overflow:"hidden" }}>
               {/* Ambient glow behind avatar */}
