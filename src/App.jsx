@@ -29,7 +29,7 @@ const CURRENT_PATCH = "v23";
 const SFX = (() => {
   let ctx = null;
   const init = () => { if (!ctx) try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} return ctx; };
-  const masterVolume = 0.08;
+  const masterVolume = 0.10;
   const tone = (f, type, vol, t0, dur) => {
     const c = init(); if (!c) return; if (c.state === "suspended") c.resume();
     try { const o = c.createOscillator(), g = c.createGain(); o.connect(g); g.connect(c.destination); o.type = type; o.frequency.value = Math.min(f, 880); g.gain.setValueAtTime(vol * masterVolume, c.currentTime + t0); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + t0 + dur); o.start(c.currentTime + t0); o.stop(c.currentTime + t0 + dur + 0.05); } catch (e) {}
@@ -44,6 +44,10 @@ const SFX = (() => {
         case "end_turn_go":
           [220,277,330,440,523,659,784].forEach((f,i) => tone(f,"sine",0.045,i*0.055,0.32));
           tone(440,"sine",0.03,0.32,0.55); tone(523,"sine",0.022,0.42,0.45);
+          break;
+        // ── Card hover: soft euphoric shimmer ────────────────────────────
+        case "card_hover":
+          tone(880,"sine",0.016,0,0.03); tone(1047,"sine",0.010,0.022,0.04); tone(1319,"sine",0.007,0.04,0.05);
           break;
         // ── Card inspect: crisp crystalline tick ─────────────────────────
         case "card_inspect":
@@ -808,7 +812,7 @@ function HandCard({ card, playable, onClick, onRightClick }) {
   const hasShield = (card.keywords || []).includes("Shield") || card.shielded;
   const kws = KW.filter(k => (card.keywords || []).includes(k.name));
   return (
-    <div style={{ position: "relative" }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}>
+    <div style={{ position: "relative" }} onMouseEnter={() => { setHov(true); if (playable) SFX.play("card_hover"); }} onMouseLeave={() => setHov(false)}>
       <div onClick={playable ? onClick : undefined} onContextMenu={onRightClick ? (e) => { e.preventDefault(); onRightClick(); } : undefined} style={{ width: 88, height: 124, flexShrink: 0, cursor: playable ? "pointer" : "not-allowed", opacity: playable ? 1 : 0.35, border: `2px solid ${isBP ? "#a81830" : hov && playable ? card.border : "#201c10"}`, borderRadius: 10, overflow: "hidden", transform: hov && playable ? "translateY(-22px) scale(1.05)" : "none", boxShadow: hov && playable ? `0 22px 38px ${card.border}66` : "none", transition: "all .2s", userSelect: "none", position: "relative" }}>
         {/* Full art */}
         <div style={{ position: "absolute", inset: 0 }}><CardArt card={card} /></div>
@@ -912,7 +916,18 @@ function resolveEffects(trigger, card, state, side, vfx) {
       case "buff_allies": { const isDebuff = (fx.atk||0) < 0 || (fx.hp||0) < 0; const noteStr = `${isDebuff?"":"+"}${fx.atk||0}atk/${fx.hp||0}hp (${card.name})`; s[myB] = s[myB].map((c) => ({ ...c, currentAtk: c.currentAtk + (fx.atk || 0), currentHp: c.currentHp + (fx.hp || 0), maxHp: c.maxHp + (fx.hp || 0), [isDebuff?"debuffNote":"buffNote"]: noteStr, statusLog: [...(c.statusLog||[]), { type:isDebuff?"debuff":"buff", note:noteStr }] })); L(`${card.name} ${isDebuff?"debuffs":"buffs"} ${fx.atk||0}/${fx.hp||0}!`); if (vfx) { if (card.type==="environment") vfx.add("floatText", { text:`${isDebuff?"":"+"}${fx.atk||0} ATK`, sub: card.name, color: isDebuff?"#ff6040":"#60e880", zone: side, duration:1600 }); else vfx.add("ability", { color: isDebuff?"#ff6040":"#40ff60" }); } break; }
       case "buff_random_ally": { const allies = s[myB].filter((c) => c.id !== card.id); if (allies.length > 0) { const t = allies[Math.floor(Math.random() * allies.length)]; const bNote = `+${fx.atk||0}atk (${card.name})`; s[myB] = s[myB].map((c) => c.uid === t.uid ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), buffNote: bNote, statusLog: [...(c.statusLog||[]), { type:"buff", note:bNote }] } : c); L(`${card.name} buffs ${t.name}!`); } break; }
       case "buff_keyword_allies": { const kbNote = `+${fx.atk||0}atk keyword (${card.name})`; s[myB] = s[myB].map((c) => (c.keywords || []).length > 0 ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), buffNote: kbNote, statusLog: [...(c.statusLog||[]), { type:"buff", note:kbNote }] } : c); break; }
-      case "heal_all_allies": s[myB] = s[myB].map((c) => ({ ...c, currentHp: Math.min(c.maxHp, c.currentHp + fx.amount) })); break;
+      case "heal_all_allies": {
+        s[myB] = s[myB].map((c) => {
+          const healed = Math.min(c.maxHp, c.currentHp + fx.amount) - c.currentHp;
+          return { ...c, currentHp: c.currentHp + healed, ...(healed > 0 ? { buffNote: `+${healed} HP (${card.name})` } : {}) };
+        });
+        if (s[myB].length > 0) L(`${card.name} heals allies +${fx.amount} HP!`);
+        if (vfx && s[myB].length > 0) {
+          vfx.add("heal", { amount: fx.amount });
+          if (card.type === "environment") vfx.add("floatText", { text: `+${fx.amount} HP`, sub: card.name, color: "#40ff70", duration: 1600, zone: side });
+        }
+        break;
+      }
       case "self_buff": { const sbNote = `+${fx.atk||0}atk self`; s[myB] = s[myB].map((c) => c.uid === card.uid ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), buffNote: sbNote, statusLog: [...(c.statusLog||[]), { type:"buff", note:sbNote }] } : c); break; }
       case "draw": { const dk = side === "player" ? "playerDeck" : "enemyDeck", hd = side === "player" ? "playerHand" : "enemyHand"; for (let i = 0; i < fx.amount; i++) { if (s[dk].length > 0 && s[hd].length < CFG.maxHand) { s[hd] = [...s[hd], makeInst(s[dk][0], side === "player" ? "p" : "e")]; s[dk] = s[dk].slice(1); } } L(`${card.name}: Draw ${fx.amount}!`); break; }
       case "bleed_all_enemies": s[thB] = s[thB].map((c) => ({ ...c, bleed: (c.bleed || 0) + fx.amount })); L(`${card.name}: ${fx.amount} Bleed to all!`); break;
@@ -975,7 +990,7 @@ function computeEnemyTurn(g, vfx) {
   if (s.enemyDeck.length > 0 && s.enemyHand.length < 6) { s.enemyHand = [...s.enemyHand, makeInst(s.enemyDeck[0], "e")]; s.enemyDeck = s.enemyDeck.slice(1); L("Enemy draws."); }
   let en = s.maxEnergy;
   [...s.enemyHand].sort((a, b) => b.cost - a.cost).forEach((card) => {
-    if (card.type === "environment") { if (!card.bloodpact && card.cost <= en) { en -= card.cost; s.environment = { ...card, owner: "enemy" }; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid); L(`Enemy: ${card.name}!`); s = resolveEffects("onPlay", card, s, "enemy", vfx); s = resolveEffects("onTurnStart", card, s, "enemy", vfx); } return; }
+    if (card.type === "environment") { if (!card.bloodpact && card.cost <= en) { en -= card.cost; s.environment = { ...card, owner: "enemy", turnsRemaining: 4 }; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid); L(`Enemy: ${card.name}! (2 rounds)`); s = resolveEffects("onPlay", card, s, "enemy", vfx); s = resolveEffects("onTurnStart", card, s, "enemy", vfx); } return; }
     if (card.type === "spell") { if (card.bloodpact ? card.cost < s.enemyHP : card.cost <= en) { if (card.bloodpact) s.enemyHP -= card.cost; else en -= card.cost; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid); L(`Enemy casts ${card.name}!`); s = resolveEffects("onPlay", card, s, "enemy", vfx); } return; }
     if (s.enemyBoard.length >= CFG.maxBoard) return;
     const ec = card.bloodpact ? 0 : card.cost; if (ec > en) return;
@@ -1210,7 +1225,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     // Play cards
     let en=s.maxEnergy;
     for (const card of [...s.enemyHand].sort((a,b)=>b.cost-a.cost)) {
-      if (card.type==="environment") { if(!card.bloodpact&&card.cost<=en){en-=card.cost;s.environment={...card,owner:"enemy"};s.enemyHand=s.enemyHand.filter(c=>c.uid!==card.uid);s.log=[...s.log.slice(-20),`Enemy: ${card.name}!`];s=resolveEffects("onPlay",card,s,"enemy",vfx);s=resolveEffects("onTurnStart",card,s,"enemy",vfx);push();flashAction(`Enemy plays ${card.name}!`);SFX.play("ability");await wait(750);} continue; }
+      if (card.type==="environment") { if(!card.bloodpact&&card.cost<=en){en-=card.cost;s.environment={...card,owner:"enemy",turnsRemaining:4};s.enemyHand=s.enemyHand.filter(c=>c.uid!==card.uid);s.log=[...s.log.slice(-20),`Enemy: ${card.name}! (2 rounds)`];s=resolveEffects("onPlay",card,s,"enemy",vfx);s=resolveEffects("onTurnStart",card,s,"enemy",vfx);push();flashAction(`Enemy plays ${card.name}!`);SFX.play("env_play");await wait(750);} continue; }
       if (card.type==="spell") { const canCast=card.bloodpact?card.cost<s.enemyHP:card.cost<=en; if(canCast){if(card.bloodpact)s.enemyHP-=card.cost;else en-=card.cost;s.enemyHand=s.enemyHand.filter(c=>c.uid!==card.uid);s.log=[...s.log.slice(-20),`Enemy casts ${card.name}!`];s=resolveEffects("onPlay",card,s,"enemy",vfx);push();flashAction(`Enemy casts ${card.name}!`);SFX.play("ability");await wait(700);} continue; }
       if(s.enemyBoard.length>=CFG.maxBoard)continue;
       const ec=card.bloodpact?0:card.cost; if(ec>en)continue;
@@ -1389,12 +1404,6 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         <VFXOverlay effects={vfx.effects} />
         {/* Environment particles */}
         {envTheme && <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1 }}><FloatingParticles count={20} color={envTheme.particle} speed={0.6} /></div>}
-        {/* Environment banner */}
-        {g.environment && (<div style={{ padding: "7px 14px", background: `${g.environment.border}15`, borderBottom: `1px solid ${g.environment.border}33`, display: "flex", alignItems: "center", gap: 10, position: "relative", zIndex: 2, animation: "slideDown 0.4s ease-out" }}>
-          <div style={{ width: 6, height: 6, borderRadius: "50%", background: g.environment.border, boxShadow: `0 0 8px ${g.environment.border}88`, animation: "pulse 2s infinite" }} />
-          <span style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: g.environment.border, fontWeight: 700 }}>{g.environment.name}</span>
-          <span style={{ fontSize: 9, color: "#a09068", flex: 1 }}>{g.environment.ability}</span>
-        </div>)}
         {/* Enemy zone */}
         <div style={{ background: "linear-gradient(180deg, rgba(160,30,20,0.22) 0%, rgba(100,18,12,0.18) 100%)", borderBottom: "1px solid #7a3020", padding: "10px 14px", position: "relative", zIndex: 2, boxShadow: "inset 0 -4px 20px rgba(180,40,20,0.12)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
@@ -1409,6 +1418,12 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
               <span style={{ fontFamily: "'Cinzel',serif", fontSize: 18, fontWeight: 700, color: hpCol(g.enemyHP) }}>{g.enemyHP}</span>
             </div>
           </div>
+          {g.environment?.owner === "enemy" && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"3px 10px", background:`${g.environment.border}18`, border:`1px solid ${g.environment.border}33`, borderRadius:6, marginBottom:5, animation:"slideDown 0.3s" }}>
+            <div style={{ width:5, height:5, borderRadius:"50%", background:g.environment.border, boxShadow:`0 0 5px ${g.environment.border}`, animation:"pulse 2s infinite", flexShrink:0 }} />
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:g.environment.border, fontWeight:700, flexShrink:0 }}>{g.environment.name}</span>
+            <span style={{ fontSize:7, color:"#a09068", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.environment.ability}</span>
+            <span style={{ fontSize:7, color:"#806040", fontFamily:"'Cinzel',serif", flexShrink:0 }}>{Math.ceil((g.environment.turnsRemaining||4)/2)}R</span>
+          </div>}
           <div style={{ fontSize: 8, color: "#3a1414", fontFamily: "'Cinzel',serif", letterSpacing: 3, marginBottom: 4, textAlign: "center", fontWeight: 700 }}>ENEMY FIELD</div>
           <div style={{ minHeight: 105, display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", alignItems: "center" }}>
             {g.enemyBoard.length === 0 ? <span style={{ fontSize: 10, color: "#241010", letterSpacing: 3 }}>---</span> : g.enemyBoard.map((c) => (<Token key={c.uid} c={resolveCardArt(c, {})} animType={animUids[c.uid]} isTarget={!!attacker} canSelect={false} onClick={() => { if (attacker) atkCreature(c); else { SFX.play("ability"); setPreviewCard(c); } }} />))}
@@ -1422,6 +1437,12 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         </div>
         {/* Player zone */}
         <div style={{ background: "linear-gradient(180deg, rgba(20,80,10,0.18) 0%, rgba(30,100,15,0.24) 100%)", padding: "10px 14px", position: "relative", zIndex: 2, boxShadow: "inset 0 4px 20px rgba(20,120,10,0.14)" }}>
+          {g.environment?.owner === "player" && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"3px 10px", background:`${g.environment.border}18`, border:`1px solid ${g.environment.border}33`, borderRadius:6, marginBottom:5, animation:"slideDown 0.3s" }}>
+            <div style={{ width:5, height:5, borderRadius:"50%", background:g.environment.border, boxShadow:`0 0 5px ${g.environment.border}`, animation:"pulse 2s infinite", flexShrink:0 }} />
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:g.environment.border, fontWeight:700, flexShrink:0 }}>{g.environment.name}</span>
+            <span style={{ fontSize:7, color:"#a09068", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.environment.ability}</span>
+            <span style={{ fontSize:7, color:"#806040", fontFamily:"'Cinzel',serif", flexShrink:0 }}>{Math.ceil((g.environment.turnsRemaining||4)/2)}R</span>
+          </div>}
           <div style={{ fontSize: 8, color: "#1e3010", fontFamily: "'Cinzel',serif", letterSpacing: 3, marginBottom: 4, textAlign: "center", fontWeight: 700 }}>YOUR FIELD</div>
           <div style={{ minHeight: 105, display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", alignItems: "center", marginBottom: 10 }}>
             {g.playerBoard.length === 0 ? <span style={{ fontSize: 10, color: "#181408", letterSpacing: 3 }}>PLAY A CARD</span> : g.playerBoard.map((c) => (<Token key={c.uid} c={resolveCardArt(c, user?.selectedArts || {})} animType={animUids[c.uid]} selected={attacker === c.uid} isTarget={false} canSelect={g.phase === "player" && c.canAttack && !c.hasAttacked && !aiThink} onClick={() => selectAtt(c)} onRightClick={() => { SFX.play("ability"); setPreviewCard(c); }} />))}
@@ -1680,6 +1701,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   const pvpBcRef = useRef(null);
   const drawDismissedRef = useRef(false);
   const [turnBanner, setTurnBanner] = useState(null);
+  const [logHoverCard, setLogHoverCard] = useState(null);
   const [forfeitConfirm, setForfeitConfirm] = useState(false);
   const [profilePopup, setProfilePopup] = useState(null); // { name, avatar, rating, wins, losses }
   const [dyingCards, setDyingCards] = useState([]); // cards mid-death animation
@@ -2210,22 +2232,32 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     {previewCard && <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />}
     {/* Forfeit confirm */}
     {/* In-battle profile popup */}
-    {profilePopup && (<div style={{ position:"fixed", inset:0, zIndex:620, background:"rgba(0,0,0,0.8)", display:"flex", alignItems:"center", justifyContent:"center" }} onClick={()=>setProfilePopup(null)}>
-      <div style={{ background:"linear-gradient(160deg,#1c1a0e,#0e0c06)", border:"1px solid #3a3018", borderRadius:16, padding:"28px 32px", minWidth:260, textAlign:"center", boxShadow:"0 30px 80px rgba(0,0,0,0.98)", animation:"fadeIn 0.2s ease-out" }} onClick={e=>e.stopPropagation()}>
-        <div style={{ width:64, height:64, borderRadius:"50%", overflow:"hidden", margin:"0 auto 12px", border:"2px solid #e8c06066", background:"#1a1610", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:22, color:"#e8c060" }}>
+    {profilePopup && (<div style={{ position:"fixed", inset:0, zIndex:620, background:"rgba(0,0,0,0.82)", display:"flex", alignItems:"center", justifyContent:"center" }} onClick={()=>setProfilePopup(null)}>
+      <div style={{ background:"linear-gradient(160deg,#1c1a0e,#0e0c06)", border:"1px solid #4a3a18", borderRadius:18, padding:"28px 36px", minWidth:280, textAlign:"center", boxShadow:"0 30px 80px rgba(0,0,0,0.98), 0 0 0 1px #3a2c10", animation:"fadeIn 0.2s ease-out" }} onClick={e=>e.stopPropagation()}>
+        {/* Avatar */}
+        <div style={{ width:72, height:72, borderRadius:"50%", overflow:"hidden", margin:"0 auto 14px", border:"2px solid #e8c06077", background:"#1a1610", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:26, color:"#e8c060", boxShadow:"0 4px 20px rgba(0,0,0,0.6)" }}>
           {profilePopup.avatar ? <img src={profilePopup.avatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (profilePopup.name||"?").slice(0,2).toUpperCase()}
         </div>
-        <div style={{ fontFamily:"'Cinzel',serif", fontSize:16, fontWeight:700, color:"#e8c060", marginBottom:4 }}>{profilePopup.name || "Unknown"}</div>
-        {profilePopup.role==="self" && (<>
-          <div style={{ display:"flex", gap:16, justifyContent:"center", marginBottom:10 }}>
-            <div style={{ textAlign:"center" }}><div style={{ fontFamily:"'Cinzel',serif", fontSize:14, fontWeight:700, color:"#78cc45" }}>{profilePopup.wins}</div><div style={{ fontSize:8, color:"#506030", letterSpacing:2 }}>WINS</div></div>
-            <div style={{ textAlign:"center" }}><div style={{ fontFamily:"'Cinzel',serif", fontSize:14, fontWeight:700, color:"#e05050" }}>{profilePopup.losses}</div><div style={{ fontSize:8, color:"#604030", letterSpacing:2 }}>LOSSES</div></div>
-            <div style={{ textAlign:"center" }}><div style={{ fontFamily:"'Cinzel',serif", fontSize:14, fontWeight:700, color:"#60c8ff" }}>{profilePopup.rating}</div><div style={{ fontSize:8, color:"#305060", letterSpacing:2 }}>RATING</div></div>
+        {/* Name */}
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:17, fontWeight:700, color:"#f0d878", marginBottom:3, letterSpacing:1 }}>{profilePopup.name || "Unknown"}</div>
+        {/* Rank badge */}
+        {(() => { const r = profilePopup.rating||1000; const rank = r>=1800?"💎 DIAMOND":r>=1600?"🔮 PLATINUM":r>=1400?"🥇 GOLD":r>=1200?"🥈 SILVER":r>=1000?"🥉 BRONZE":"⚔ IRON"; return <div style={{ fontSize:10, color:"#c0a040", fontFamily:"'Cinzel',serif", letterSpacing:2, marginBottom:16, opacity:0.8 }}>{rank}</div>; })()}
+        {/* Stats row */}
+        <div style={{ display:"flex", gap:0, justifyContent:"center", marginBottom:16, background:"rgba(255,255,255,0.03)", borderRadius:10, overflow:"hidden", border:"1px solid #2a2010" }}>
+          <div style={{ flex:1, padding:"12px 8px", borderRight:"1px solid #2a2010" }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:20, fontWeight:700, color:"#78cc45", lineHeight:1 }}>{profilePopup.wins||0}</div>
+            <div style={{ fontSize:8, color:"#50602e", letterSpacing:2, marginTop:4, fontFamily:"'Cinzel',serif" }}>WINS</div>
           </div>
-          <div style={{ fontSize:9, color:"#e8c06088", fontFamily:"'Cinzel',serif", letterSpacing:2 }}>{(() => { const r = profilePopup.rating||1000; return r>=1800?"💎 DIAMOND":r>=1600?"🔮 PLATINUM":r>=1400?"🥇 GOLD":r>=1200?"🥈 SILVER":r>=1000?"🥉 BRONZE":"⚔ IRON"; })()}</div>
-        </>)}
-        {profilePopup.role==="opp" && (<div style={{ display:"flex", gap:16, justifyContent:"center", marginBottom:8 }}><div style={{ textAlign:"center" }}><div style={{ fontFamily:"'Cinzel',serif", fontSize:14, fontWeight:700, color:"#60c8ff" }}>{profilePopup.rating||1000}</div><div style={{ fontSize:8, color:"#305060", letterSpacing:2 }}>RATING</div></div><div style={{ textAlign:"center" }}><div style={{ fontFamily:"'Cinzel',serif", fontSize:14, fontWeight:700, color:"#78cc45" }}>{profilePopup.wins||0}</div><div style={{ fontSize:8, color:"#506030", letterSpacing:2 }}>WINS</div></div></div>)}
-        <button onClick={()=>setProfilePopup(null)} style={{ marginTop:16, padding:"7px 20px", background:"transparent", border:"1px solid #3a2010", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:10, color:"#806040", cursor:"pointer" }}>CLOSE</button>
+          {profilePopup.losses != null && <div style={{ flex:1, padding:"12px 8px", borderRight:"1px solid #2a2010" }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:20, fontWeight:700, color:"#e05050", lineHeight:1 }}>{profilePopup.losses}</div>
+            <div style={{ fontSize:8, color:"#603030", letterSpacing:2, marginTop:4, fontFamily:"'Cinzel',serif" }}>LOSSES</div>
+          </div>}
+          <div style={{ flex:1, padding:"12px 8px" }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:20, fontWeight:700, color:"#60c8ff", lineHeight:1 }}>{profilePopup.rating||1000}</div>
+            <div style={{ fontSize:8, color:"#305060", letterSpacing:2, marginTop:4, fontFamily:"'Cinzel',serif" }}>RATING</div>
+          </div>
+        </div>
+        <button onClick={()=>setProfilePopup(null)} style={{ padding:"8px 24px", background:"transparent", border:"1px solid #3a2010", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, color:"#806040", cursor:"pointer", letterSpacing:1 }}>CLOSE</button>
       </div>
     </div>)}
     {forfeitConfirm && (<div style={{ position:"fixed", inset:0, zIndex:600, background:"rgba(0,0,0,0.85)", display:"flex", alignItems:"center", justifyContent:"center" }} onClick={()=>setForfeitConfirm(false)}>
@@ -2299,32 +2331,12 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
             ))}
           </div>
         )}
-        {/* Environment banners — per-player, compact single row */}
-        {(gs.p1Env || gs.p2Env || gs.env) && (() => {
-          const myEnvSlot = gs[myRole+"Env"] || (gs.env?.envOwner===myRole ? gs.env : null);
-          const opEnvSlot = gs[(myRole==="p1"?"p2":"p1")+"Env"] || (gs.env?.envOwner!==myRole && gs.env?.envOwner ? gs.env : null);
-          const envs = [myEnvSlot && { env: myEnvSlot, label: "YOUR ENV", color: "#78cc45" }, opEnvSlot && { env: opEnvSlot, label: "OPP ENV", color: "#e05050" }].filter(Boolean);
-          if (!envs.length) return null;
-          return (
-            <div style={{ borderBottom:"1px solid #2a1a08", position:"relative", zIndex:2, animation:"slideDown 0.4s ease-out" }}>
-              {envs.map(({ env, label, color }) => (
-                <div key={env.id+label} style={{ padding:"4px 14px", background:`${env.border}12`, borderBottom:`1px solid ${env.border}22`, display:"flex", alignItems:"center", gap:8 }}>
-                  <div style={{ width:5, height:5, borderRadius:"50%", background:env.border, boxShadow:`0 0 6px ${env.border}`, animation:"pulse 2s infinite", flexShrink:0 }} />
-                  <span style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:env.border, fontWeight:700, flexShrink:0 }}>{env.name}</span>
-                  <span style={{ fontSize:8, color:"#a09068", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{env.ability}</span>
-                  <span style={{ fontSize:7, color:color, fontFamily:"'Cinzel',serif", fontWeight:700, letterSpacing:1, flexShrink:0, background:`${color}22`, padding:"1px 5px", borderRadius:4 }}>{label}</span>
-                  {env.turnsRemaining != null && <span style={{ fontSize:7, color:"#806040", flexShrink:0 }}>{Math.ceil(env.turnsRemaining/2)}R</span>}
-                </div>
-              ))}
-            </div>
-          );
-        })()}
         {/* Opponent zone — use opponent's env theme */}
         <div style={{ background: opEnvTheme ? opEnvTheme.bg : "rgba(180,40,40,0.09)", borderBottom:"1px solid #3a1818", padding:"10px 14px", position:"relative", zIndex:2, transition:"background 1.5s ease" }}>
           {opEnvTheme && <div style={{ position:"absolute", inset:0, pointerEvents:"none", zIndex:1 }}><FloatingParticles count={opEnvTheme.pCount||20} color={opEnvTheme.particle} speed={opEnvTheme.pSpeed||0.6} shape={opEnvTheme.pShape||"circle"} direction={opEnvTheme.pDir||"up"} /></div>}
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <div onClick={()=>setProfilePopup({ name:opponentName, avatar:myRole==="p1"?gs?.p2Avatar:gs?.p1Avatar, role:"opp", rating:myRole==="p1"?gs?.p2Rating:gs?.p1Rating, wins:myRole==="p1"?gs?.p2Wins:gs?.p1Wins })} style={{ width:28, height:28, borderRadius:"50%", background:"linear-gradient(135deg,#3a0c0c,#200808)", border:"2px solid #a0202044", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:"#cc6666", fontFamily:"'Cinzel',serif", fontWeight:700, cursor:"pointer", transition:"border-color .18s", boxShadow:"none" }} title="View profile">
+              <div onClick={()=>setProfilePopup({ name:opponentName, avatar:myRole==="p1"?gs?.p2Avatar:gs?.p1Avatar, role:"opp", rating:myRole==="p1"?gs?.p2Rating:gs?.p1Rating, wins:myRole==="p1"?gs?.p2Wins:gs?.p1Wins, losses:myRole==="p1"?gs?.p2Losses:gs?.p1Losses })} style={{ width:28, height:28, borderRadius:"50%", background:"linear-gradient(135deg,#3a0c0c,#200808)", border:"2px solid #a0202044", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:"#cc6666", fontFamily:"'Cinzel',serif", fontWeight:700, cursor:"pointer", transition:"border-color .18s", boxShadow:"none" }} title="View profile">
                 {(myRole==="p1" ? gs?.p2Avatar : gs?.p1Avatar) ? <img src={myRole==="p1" ? gs.p2Avatar : gs.p1Avatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (opponentName||"?").slice(0,2).toUpperCase()}
               </div>
               <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#cc4848", letterSpacing:2, fontWeight:700 }}>{(opponentName||"OPPONENT").toUpperCase()}</span>
@@ -2337,6 +2349,12 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
               <span style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:700, color:hpCol(ai.enemyHP) }}>{ai.enemyHP}</span>
             </div>
           </div>
+          {opEnvCard && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"3px 10px", background:`${opEnvCard.border}18`, border:`1px solid ${opEnvCard.border}33`, borderRadius:6, marginBottom:5, position:"relative", zIndex:2, animation:"slideDown 0.3s" }}>
+            <div style={{ width:5, height:5, borderRadius:"50%", background:opEnvCard.border, boxShadow:`0 0 5px ${opEnvCard.border}`, animation:"pulse 2s infinite", flexShrink:0 }} />
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:opEnvCard.border, fontWeight:700, flexShrink:0 }}>{opEnvCard.name}</span>
+            <span style={{ fontSize:7, color:"#a09068", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{opEnvCard.ability}</span>
+            <span style={{ fontSize:7, color:"#e05050", fontFamily:"'Cinzel',serif", flexShrink:0, background:"rgba(200,50,50,0.15)", padding:"1px 5px", borderRadius:4 }}>OPP · {Math.ceil((opEnvCard.turnsRemaining||4)/2)}R</span>
+          </div>}
           <div style={{ fontSize:8, color:"#3a1414", fontFamily:"'Cinzel',serif", letterSpacing:3, marginBottom:4, textAlign:"center", fontWeight:700 }}>ENEMY FIELD</div>
           <div style={{ minHeight:105, display:"flex", gap:8, flexWrap:"wrap", justifyContent:"center", alignItems:"center" }}>
             {ai.enemyBoard.length===0?<span style={{ fontSize:10, color:"#241010", letterSpacing:3 }}>---</span>:ai.enemyBoard.map((c)=>(<Token key={c.uid} c={resolveCardArt(c,myRole==="p1"?gs?.p2Arts||{}:gs?.p1Arts||{})} animType={animUids[c.uid]} isTarget={!!attacker} canSelect={false} onClick={()=>{ if(attacker)atkCreature(c); else setPreviewCard(c); }}/>))}
@@ -2351,6 +2369,12 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         {/* My zone — use my env theme */}
         <div style={{ background: myEnvTheme ? myEnvTheme.bg : "rgba(40,100,20,0.09)", padding:"10px 14px", position:"relative", zIndex:2, transition:"background 1.5s ease" }}>
           {myEnvTheme && <div style={{ position:"absolute", inset:0, pointerEvents:"none", zIndex:1 }}><FloatingParticles count={myEnvTheme.pCount||20} color={myEnvTheme.particle} speed={myEnvTheme.pSpeed||0.6} shape={myEnvTheme.pShape||"circle"} direction={myEnvTheme.pDir||"up"} /></div>}
+          {myEnvCard && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"3px 10px", background:`${myEnvCard.border}18`, border:`1px solid ${myEnvCard.border}44`, borderRadius:6, marginBottom:5, position:"relative", zIndex:2, animation:"slideDown 0.3s" }}>
+            <div style={{ width:5, height:5, borderRadius:"50%", background:myEnvCard.border, boxShadow:`0 0 6px ${myEnvCard.border}`, animation:"pulse 2s infinite", flexShrink:0 }} />
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:myEnvCard.border, fontWeight:700, flexShrink:0 }}>{myEnvCard.name}</span>
+            <span style={{ fontSize:7, color:"#a09068", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{myEnvCard.ability}</span>
+            <span style={{ fontSize:7, color:"#78cc45", fontFamily:"'Cinzel',serif", flexShrink:0, background:"rgba(80,180,50,0.15)", padding:"1px 5px", borderRadius:4 }}>YOURS · {Math.ceil((myEnvCard.turnsRemaining||4)/2)}R</span>
+          </div>}
           <div style={{ fontSize:8, color:"#1e3010", fontFamily:"'Cinzel',serif", letterSpacing:3, marginBottom:4, textAlign:"center", fontWeight:700, position:"relative", zIndex:2 }}>YOUR FIELD</div>
           <div style={{ minHeight:105, display:"flex", gap:8, flexWrap:"wrap", justifyContent:"center", alignItems:"center", marginBottom:10 }}>
             {ai.playerBoard.length===0?<span style={{ fontSize:10, color:"#181408", letterSpacing:3 }}>{isMyTurn?"PLAY A CARD":"WAITING..."}</span>:ai.playerBoard.map((c)=>(<Token key={c.uid} c={resolveCardArt(c,myRole==="p1"?gs?.p1Arts||{}:gs?.p2Arts||{})} animType={animUids[c.uid]} selected={attacker===c.uid} isTarget={false} canSelect={isMyTurn&&c.canAttack&&!c.hasAttacked&&!syncing} onClick={()=>selectAtt(c)} onRightClick={()=>setPreviewCard(c)}/>))}
@@ -2746,7 +2770,9 @@ function PackOpening({ user, onUpdateUser }) {
             <div style={{ width: 50, height: 50, borderRadius: 12, background: `linear-gradient(135deg,${p.color}22,${p.color}08)`, border: `1px solid ${p.color}44`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", fontFamily: "'Cinzel',serif", fontSize: 20, fontWeight: 900, color: p.color }}>{p.count}</div>
             <div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, color: p.color, marginBottom: 6 }}>{p.name}</div>
             <p style={{ fontSize: 10, color: "#a09060", margin: "0 0 12px", lineHeight: 1.5 }}>{p.desc}</p>
-            <div style={{ padding: "8px 12px", background: `${p.color}15`, border: `1px solid ${p.color}33`, borderRadius: 8, fontFamily: "'Cinzel',serif", fontSize: 10, color: p.color, fontWeight: 600, letterSpacing: 1 }}>{p.cost === 0 ? "FREE" : `${p.cost} SHARDS`}</div>
+            {p.cost === 0 && (user?.freePackUsed || localStorage.getItem("freePackUsed_" + (user?.id||"anon"))) === new Date().toDateString()
+              ? <div style={{ padding:"8px 12px", background:"rgba(255,255,255,0.03)", border:"1px solid #282010", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, color:"#504030", fontWeight:600, letterSpacing:1 }}>CLAIMED TODAY</div>
+              : <div style={{ padding:"8px 12px", background:`${p.color}15`, border:`1px solid ${p.color}33`, borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, color:p.color, fontWeight:600, letterSpacing:1 }}>{p.cost===0?"FREE · 1/DAY":`${p.cost} SHARDS`}</div>}
           </div>
         ))}
       </div>
