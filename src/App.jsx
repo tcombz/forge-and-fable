@@ -23,7 +23,7 @@ const ALPHA_KEYS_LIST = [
   "FLAME-WARDEN-2","DUSK-HERALD-05","BONE-TIDE-RISE","STAR-FORGED-01","KRAKEN-WAKES-1",
 ];
 const ALPHA_KEYS = new Set(ALPHA_KEYS_LIST);
-const CURRENT_PATCH = "v19.4";
+const CURRENT_PATCH = "v21";
 
 // ═══ AUDIO ═══════════════════════════════════════════════════════════════════
 const SFX = (() => {
@@ -450,16 +450,18 @@ function PatchNotesModal({ onDismiss }) {
     <span style={{ marginLeft:6, padding:"1px 6px", background:"rgba(120,204,69,0.18)", border:"1px solid #78cc4555", borderRadius:8, fontSize:8, color:"#78cc45", fontFamily:"'Cinzel',serif", fontWeight:700, letterSpacing:1, verticalAlign:"middle" }}>NEW</span>
   );
   const rows = [
-    { icon:"🍓", label:<>Food Fight faction — 13 culinary warriors join the battlefield<NEW /></> },
-    { icon:"📖", label:<>Fables faction — 13 fairy tale warriors, Dragon Knights {"&"} Golems<NEW /></> },
-    { icon:"🍅", label:<>New keyword: Sauced — splashes 1 damage to a random enemy each turn<NEW /></> },
-    { icon:"✨", label:<>New keyword: Gilded — gains +1 ATK every time you cast a spell<NEW /></> },
-    { icon:"🎴", label:<>Food Fight Pack {"&"} Fables Pack — 200 shards each, 1 Rare guaranteed<NEW /></> },
-    { icon:"🏜", label:"Shifting Dunes reduces hand card costs by 1 while active" },
-    { icon:"⚡", label:"Env effects fire instantly on play AND stack each turn" },
-    { icon:"⚔", label:"Attack VFX timing fixed — fluid lunges, no snap kills" },
-    { icon:"🏆", label:"Ranked Mode · ELO rating · Iron to Grandmaster tiers" },
-    { icon:"🌍", label:"Per-player environments · PvP matchmaking · alpha keys" },
+    { icon:"🌌", label:<>Animated starfield home — 3-layer parallax, nebula clouds, mouse drift<NEW /></> },
+    { icon:"🃏", label:<>Featured card 3D tilt with cursor spotlight on home screen<NEW /></> },
+    { icon:"📊", label:<>Stat counters animate count-up from zero on scroll<NEW /></> },
+    { icon:"📰", label:<>Live ticker strip — ranked news, meta reports, patch alerts<NEW /></> },
+    { icon:"⚔", label:<>Battle button battleGlow pulse — can't miss it<NEW /></> },
+    { icon:"🌍", label:<>Env effects now fire only for the owning side — no more board takeovers<NEW /></> },
+    { icon:"💬", label:<>Buff / debuff text visible on Token cards after effects land<NEW /></> },
+    { icon:"✨", label:<>Card summon animation when played to the field<NEW /></> },
+    { icon:"🍓", label:<>Food Fight {"&"} Fables packs show in full color in the Store (Coming Soon)<NEW /></> },
+    { icon:"🔒", label:"rollPack locked to gameplay cards only — no locked-faction cards slip through" },
+    { icon:"🏆", label:"Ranked Mode · ELO · Iron → Bronze → Silver → Gold → Grandmaster" },
+    { icon:"🌐", label:"PvP matchmaking · pair_players RPC · Realtime + polling fallback · 5-min timeout" },
     { icon:"⚗", label:"Coming next: Leaderboard · Thornwood Expansion · Draft Mode", dim:true },
   ];
   return (
@@ -1829,10 +1831,10 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         // Fetch opponent profile to store their rating for accurate ELO
         const oppId = match.player2_id;
         const { data: oppProfile } = oppId ? await supabase.from("profiles").select("ranked_rating").eq("id", oppId).single() : { data: null };
-        const fb = [...POOL, ...POOL, ...POOL.slice(0, 5)];
+        const fb = [...GAMEPLAY_POOL, ...GAMEPLAY_POOL, ...GAMEPLAY_POOL.slice(0, 5)];
         const d1 = shuf(matchConfig?.playerDeck?.length >= CFG.deck.min ? [...matchConfig.playerDeck] : [...fb]), d2 = shuf([...fb]);
-        const dc = POOL[Math.floor(Math.random() * POOL.length)];
-        const ec = POOL[Math.floor(Math.random() * POOL.length)];
+        const dc = GAMEPLAY_POOL[Math.floor(Math.random() * GAMEPLAY_POOL.length)];
+        const ec = GAMEPLAY_POOL[Math.floor(Math.random() * GAMEPLAY_POOL.length)];
         const firstPlayer = (dc.cost || 0) >= (ec.cost || 0) ? "p1" : "p2";
         const init = {
           turn: 1, phase: firstPlayer, winner: null, seq: 0,
@@ -3097,29 +3099,123 @@ function CollectionScreen({ user, onUpdateUser }) {
 }
 
 // ═══ HOME ════════════════════════════════════════════════════════════════════
+const TICKER_ITEMS = [
+  '🏆 RANKED SEASON 1 LIVE — ELO matchmaking active · Iron → Bronze → Silver → Gold → Grandmaster',
+  '⚔️ META REPORT — Bloodpact aggro leads ranked with 58% win rate this week',
+  '🌿 Thornwood combo: Ancient Grove + Echo synergy dominating Iron lobbies',
+  `📜 ${CURRENT_PATCH} DEPLOYED — Starfield home · 3D card tilt · env side-specific · summon animations · battleGlow`,
+  '🎴 COMING SOON — Food Fight faction · 12 culinary warriors · 1 Rare guaranteed per pack',
+  '📖 COMING SOON — The Fables expansion · Dragon Knights & Crystal Golems · Enchanted Glade',
+  '🩸 Bloodpact spike: Venomlord at 4-cost clearing boards consistently in casual queue',
+  '✨ ALPHA KEY GIVEAWAY — Limited wave open · Secure your spot before launch',
+];
 function HomeScreen({ setTab, user }) {
   const [active, setActive] = useState(0);
   const [entered, setEntered] = useState(false);
   const [ffHover, setFfHover] = useState(false);
+  const [statCounts, setStatCounts] = useState({ cards: 32, factions: 7, keywords: 7 });
+  const [cardTilt, setCardTilt] = useState({ rx: 0, ry: 0, mx: 50, my: 50 });
+  const starCanvasRef = useRef(null);
+  const mouseRef = useRef({ x: 0, y: 0 });
+  const statsRef = useRef(null);
+  const statsCountedRef = useRef(false);
+
   useEffect(() => {
     MusicCtx.play("home"); setEntered(true);
-    const id = setInterval(() => setActive((c) => (c + 1) % HOME_CARDS.length), 4000);
-    return () => clearInterval(id);
+    const carouselId = setInterval(() => setActive((c) => (c + 1) % HOME_CARDS.length), 3500);
+
+    // ── Animated canvas starfield ──────────────────────────
+    const canvas = starCanvasRef.current;
+    let animId, stars = [], W = 0, H = 0, time = 0;
+    function resize() {
+      if (!canvas) return;
+      W = canvas.width = canvas.offsetWidth; H = canvas.height = canvas.offsetHeight;
+    }
+    function makeStar(layer) {
+      return { x: Math.random()*W, y: Math.random()*H, r: layer===0?0.4+Math.random()*0.7:layer===1?0.7+Math.random()*1.1:1.1+Math.random()*1.6, twinkleOffset: Math.random()*Math.PI*2, twinkleSpeed: 0.5+Math.random()*1.4, layer, base: 0.2+Math.random()*0.65 };
+    }
+    if (canvas) {
+      resize();
+      [160,70,28].forEach((n,l)=>{ for(let i=0;i<n;i++) stars.push(makeStar(l)); });
+      function frame() {
+        time += 0.007;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0,0,W,H);
+        const ox=(mouseRef.current.x/W-0.5), oy=(mouseRef.current.y/H-0.5);
+        stars.forEach(s=>{
+          const px=ox*18*(s.layer+1), py=oy*10*(s.layer+1);
+          const tw=0.5+0.5*Math.sin(time*s.twinkleSpeed+s.twinkleOffset);
+          const op=s.base*(0.4+0.6*tw);
+          ctx.beginPath(); ctx.arc(((s.x+px+W)%W),((s.y+py+H)%H),s.r,0,Math.PI*2);
+          ctx.fillStyle=`rgba(255,248,220,${op})`; ctx.fill();
+          if(s.r>1.3){ ctx.beginPath(); ctx.arc(((s.x+px+W)%W),((s.y+py+H)%H),s.r*2.8,0,Math.PI*2); ctx.fillStyle=`rgba(255,240,180,${op*0.1})`; ctx.fill(); }
+        });
+        animId=requestAnimationFrame(frame);
+      }
+      frame();
+      window.addEventListener('resize', resize);
+    }
+
+    // ── Mouse tracking for parallax ────────────────────────
+    const onMouse = e => { mouseRef.current = { x: e.clientX, y: e.clientY }; };
+    window.addEventListener('mousemove', onMouse);
+
+    // ── Stat counter IntersectionObserver ──────────────────
+    const statsEl = statsRef.current;
+    let obs;
+    if (statsEl) {
+      obs = new IntersectionObserver(entries => {
+        if (entries.some(e=>e.isIntersecting) && !statsCountedRef.current) {
+          statsCountedRef.current = true;
+          const targets = { cards:32, factions:7, keywords:7 };
+          const dur = 1600; const start = performance.now();
+          const tick = now => {
+            const t = Math.min((now-start)/dur,1), ease=1-Math.pow(1-t,3);
+            setStatCounts({ cards:Math.round(ease*targets.cards), factions:Math.round(ease*targets.factions), keywords:Math.round(ease*targets.keywords) });
+            if(t<1) requestAnimationFrame(tick);
+          };
+          setStatCounts({ cards:0, factions:0, keywords:0 });
+          requestAnimationFrame(tick);
+        }
+      }, { threshold: 0.3 });
+      obs.observe(statsEl);
+    }
+
+    return () => {
+      clearInterval(carouselId);
+      cancelAnimationFrame(animId);
+      window.removeEventListener('resize', resize);
+      window.removeEventListener('mousemove', onMouse);
+      if(obs && statsEl) obs.unobserve(statsEl);
+    };
   }, []);
 
   const REGION_ICONS = { Thornwood: "🌿", "Shattered Expanse": "💎", "Azure Deep": "🌊", Ashfen: "🔥", Ironmarch: "⚙", Sunveil: "☀", Bloodpact: "🩸", "Food Fight": "🍓", Fables: "📖" };
   const REGION_ICON_SIZE = { fontSize: 16 };
+  // Ticker items doubled for seamless loop
+  const tickerDoubled = [...TICKER_ITEMS, ...TICKER_ITEMS];
+
   return (<>
+    {/* Live ticker strip */}
+    <div style={{ overflow:"hidden", height:36, background:"rgba(3,2,8,0.92)", borderBottom:"1px solid rgba(232,192,96,0.08)", display:"flex", alignItems:"center", position:"sticky", top:0, zIndex:50 }}>
+      <div style={{ flexShrink:0, padding:"0 18px", fontFamily:"'Cinzel',serif", fontSize:9, fontWeight:700, color:"#cc2030", letterSpacing:3, borderRight:"1px solid rgba(232,192,96,0.12)", height:"100%", display:"flex", alignItems:"center", background:"rgba(4,3,10,0.6)", whiteSpace:"nowrap" }}>LIVE</div>
+      <div style={{ display:"flex", alignItems:"center", animation:"tickerScroll 80s linear infinite", whiteSpace:"nowrap", willChange:"transform" }}>
+        {tickerDoubled.map((item, i) => (
+          <span key={i} style={{ fontSize:11, color:"rgba(160,148,120,0.85)", padding:"0 36px", borderRight:"1px solid rgba(232,192,96,0.08)" }} dangerouslySetInnerHTML={{ __html: item.replace(/([A-Z]{2,}(?:\s[A-Z0-9]+)*\s(?:LIVE|DEPLOYED|SOON|REPORT|GIVEAWAY))/g, '<span style="color:#e8c060;font-weight:600">$1</span>') }} />
+        ))}
+      </div>
+    </div>
+
     {/* HERO — space nebula background */}
     <section style={{ position: "relative", minHeight: 580, overflow: "hidden" }}>
       {/* Nebula animated background */}
       <div style={{ position:"absolute", inset:0, background:"linear-gradient(120deg,#0a0420 0%,#10062a 25%,#060818 50%,#1a0828 75%,#060c1e 100%)", backgroundSize:"400% 400%", animation:"nebulaDrift 18s ease infinite", willChange:"background-position", zIndex:0 }} />
-      {/* Purple/blue nebula clouds */}
+      {/* Nebula clouds */}
       <div style={{ position:"absolute", top:"-20%", left:"-10%", width:"70%", height:"140%", background:"radial-gradient(ellipse at center,rgba(80,20,160,0.25) 0%,rgba(40,0,120,0.15) 40%,transparent 70%)", pointerEvents:"none", zIndex:1 }} />
       <div style={{ position:"absolute", top:"10%", right:"-5%", width:"60%", height:"120%", background:"radial-gradient(ellipse at center,rgba(180,100,20,0.12) 0%,rgba(120,60,0,0.08) 40%,transparent 70%)", pointerEvents:"none", zIndex:1 }} />
       <div style={{ position:"absolute", bottom:"0", left:"30%", width:"50%", height:"80%", background:"radial-gradient(ellipse at center,rgba(20,60,160,0.18) 0%,rgba(0,30,100,0.1) 50%,transparent 70%)", pointerEvents:"none", zIndex:1 }} />
-      {/* Star field — 16 stars for perf */}
-      {Array.from({length:16}).map((_,i) => (<div key={i} style={{ position:"absolute", width:i%4===0?3:2, height:i%4===0?3:2, borderRadius:"50%", background:"#fff", top:`${(i*47)%90}%`, left:`${(i*67)%95}%`, opacity:0.3+((i*13)%6)*0.1, animation:`starTwinkle ${2.5+(i%3)*1}s ease-in-out ${(i*0.4)%2.5}s infinite`, willChange:"opacity", zIndex:1 }} />))}
+      {/* Animated canvas starfield — 3 parallax layers */}
+      <canvas ref={starCanvasRef} style={{ position:"absolute", inset:0, width:"100%", height:"100%", zIndex:1, pointerEvents:"none" }} />
       <FloatingParticles count={20} color="#a060ff" speed={0.4} />
 
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "56px 28px 44px", display: "grid", gridTemplateColumns: "1fr 400px", gap: 52, alignItems: "center", position: "relative", zIndex: 2 }}>
@@ -3139,23 +3235,31 @@ function HomeScreen({ setTab, user }) {
           </h1>
           <p style={{ fontSize: 15, lineHeight: 1.9, color: "#b8aad0", margin: "0 0 24px", maxWidth: 420, textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>32 cards across 7 regions. Real abilities. Environment cards that reshape the battlefield. Your creatures level up, bleed, and echo.</p>
           {/* Stat boxes */}
-          <div style={{ display: "flex", gap: 10, marginBottom: 28 }}>
-            {[{ label: "32", sub: "CARDS" }, { label: "7", sub: "FACTIONS" }, { label: "7", sub: "KEYWORDS" }].map((s) => (<div key={s.sub} style={{ background: "rgba(232,192,96,0.08)", border: "1px solid rgba(232,192,96,0.2)", borderRadius: 10, padding: "12px 20px", textAlign: "center", backdropFilter:"blur(4px)" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 22, fontWeight: 900, color: "#e8c060", textShadow:"0 0 20px #e8c06066" }}>{s.label}</div><div style={{ fontSize: 8, color: "#806040", letterSpacing: 2, fontFamily: "'Cinzel',serif", marginTop: 2 }}>{s.sub}</div></div>))}
+          <div ref={statsRef} style={{ display: "flex", gap: 10, marginBottom: 28 }}>
+            {[{ val: statCounts.cards, sub: "CARDS" }, { val: statCounts.factions, sub: "FACTIONS" }, { val: statCounts.keywords, sub: "KEYWORDS" }].map((s) => (<div key={s.sub} style={{ background: "rgba(232,192,96,0.08)", border: "1px solid rgba(232,192,96,0.2)", borderRadius: 10, padding: "12px 20px", textAlign: "center", backdropFilter:"blur(4px)" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 22, fontWeight: 900, color: "#e8c060", textShadow:"0 0 20px #e8c06066" }}>{s.val}</div><div style={{ fontSize: 8, color: "#806040", letterSpacing: 2, fontFamily: "'Cinzel',serif", marginTop: 2 }}>{s.sub}</div></div>))}
           </div>
           {/* CTA Buttons */}
           {user && (<div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <button onClick={() => setTab("play")} style={{ padding: "14px 32px", background: "linear-gradient(135deg,#7a0808,#c82020)", border: "1px solid #e84040aa", borderRadius: 8, color: "#ffe0e0", fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, letterSpacing: 3, cursor: "pointer", boxShadow: "0 6px 28px rgba(200,30,30,0.5), 0 0 40px rgba(200,30,30,0.2)", transition: "all .2s" }} onMouseEnter={(e) => { e.currentTarget.style.transform="translateY(-3px)"; e.currentTarget.style.boxShadow="0 10px 36px rgba(200,30,30,0.6), 0 0 50px rgba(200,30,30,0.3)"; }} onMouseLeave={(e) => { e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="0 6px 28px rgba(200,30,30,0.5), 0 0 40px rgba(200,30,30,0.2)"; }}>BATTLE</button>
+            <button onClick={() => setTab("play")} style={{ padding: "14px 32px", background: "linear-gradient(135deg,#7a0808,#c82020)", border: "1px solid #e84040aa", borderRadius: 8, color: "#ffe0e0", fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, letterSpacing: 3, cursor: "pointer", boxShadow: "0 6px 28px rgba(200,30,30,0.5), 0 0 40px rgba(200,30,30,0.2)", animation: "battleGlow 2.4s ease-in-out infinite", transition: "transform .2s" }} onMouseEnter={(e) => { e.currentTarget.style.transform="translateY(-3px) scale(1.03)"; }} onMouseLeave={(e) => { e.currentTarget.style.transform="none"; }}>BATTLE</button>
             <button onClick={() => setTab("store")} style={{ padding: "14px 28px", background: "linear-gradient(135deg,#503006,#8a5010)", border: "1px solid #d8901055", borderRadius: 8, color: "#f0d880", fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, letterSpacing: 3, cursor: "pointer", boxShadow: "0 6px 24px rgba(180,120,0,0.3)", transition: "all .2s" }} onMouseEnter={(e) => { e.currentTarget.style.transform="translateY(-3px)"; }} onMouseLeave={(e) => { e.currentTarget.style.transform="none"; }}>STORE</button>
             <button onClick={() => setTab("collection")} style={{ padding: "14px 28px", background: "rgba(232,192,96,0.06)", border: "1px solid #e8c06066", borderRadius: 8, color: "#e8c060", fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: 3, cursor: "pointer", fontWeight: 600, backdropFilter:"blur(4px)", transition: "all .2s" }} onMouseEnter={(e) => { e.currentTarget.style.transform="translateY(-3px)"; e.currentTarget.style.background="rgba(232,192,96,0.12)"; }} onMouseLeave={(e) => { e.currentTarget.style.transform="none"; e.currentTarget.style.background="rgba(232,192,96,0.06)"; }}>COLLECTION</button>
           </div>)}
           {!user && (<div style={{ padding:"16px 22px", background:"rgba(232,192,96,0.06)", border:"1px solid #e8c06033", borderRadius:10, fontSize:12, color:"#a09060", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>Sign in to start your journey ⚔</div>)}
         </div>
-        {/* RIGHT: Featured card */}
+        {/* RIGHT: Featured card with 3D tilt */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, animation: entered ? "slideInRight 0.8s ease-out" : undefined }}>
-          <div style={{ position: "relative" }}>
+          <div
+            style={{ position: "relative", perspective: 900 }}
+            onMouseMove={e => { const r=e.currentTarget.getBoundingClientRect(),xp=(e.clientX-r.left)/r.width,yp=(e.clientY-r.top)/r.height; setCardTilt({ rx:(yp-0.5)*-24, ry:(xp-0.5)*24, mx:xp*100, my:yp*100 }); }}
+            onMouseLeave={() => setCardTilt({ rx:0, ry:0, mx:50, my:50 })}
+          >
             <div style={{ position: "absolute", inset: -40, background: `radial-gradient(circle,${HOME_CARDS[active]?.border || "#9060ff"}30,rgba(60,20,120,0.2) 50%,transparent 70%)`, transition: "background 1.2s ease", pointerEvents: "none", borderRadius:"50%" }} />
             <div style={{ position: "absolute", inset: -10, background: `radial-gradient(circle,${HOME_CARDS[active]?.border || "#9060ff"}22,transparent 70%)`, transition: "background 1.2s ease", pointerEvents: "none" }} />
-            {HOME_CARDS[active] && <Card card={HOME_CARDS[active]} size="lg" hideCost key={HOME_CARDS[active].id + active} />}
+            <div style={{ transform:`rotateX(${cardTilt.rx}deg) rotateY(${cardTilt.ry}deg)`, transition: cardTilt.rx===0 ? "transform 0.4s ease" : "transform 0.07s linear", transformStyle:"preserve-3d", position:"relative" }}>
+              {HOME_CARDS[active] && <Card card={HOME_CARDS[active]} size="lg" hideCost key={HOME_CARDS[active].id + active} />}
+              {/* Cursor spotlight */}
+              <div style={{ position:"absolute", inset:0, borderRadius:14, background:`radial-gradient(circle at ${cardTilt.mx}% ${cardTilt.my}%,rgba(255,255,255,0.13) 0%,transparent 58%)`, opacity:cardTilt.rx===0?0:1, transition:"opacity 0.2s", pointerEvents:"none", zIndex:6 }} />
+            </div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>{HOME_CARDS.map((c, i) => (<button key={i} onClick={() => setActive(i)} style={{ width: 12, height: 12, borderRadius: "50%", background: active === i ? c.border : "rgba(255,255,255,0.06)", border: `1px solid ${active === i ? c.border : "rgba(255,255,255,0.15)"}`, cursor: "pointer", padding: 0, transition: "all .3s", boxShadow: active === i ? `0 0 14px ${c.border}88` : "none" }} />))}</div>
         </div>
@@ -4131,6 +4235,8 @@ export default function App() {
       @keyframes prismShimmer{0%{background-position:0% 50%;filter:hue-rotate(0deg) brightness(1.2)}50%{background-position:100% 50%;filter:hue-rotate(180deg) brightness(1.5)}100%{background-position:0% 50%;filter:hue-rotate(360deg) brightness(1.2)}}
       @keyframes prismPulse{0%,100%{box-shadow:0 0 18px #ff808088,0 0 36px #8080ff66,0 0 54px #80ff8044}33%{box-shadow:0 0 18px #80ff8088,0 0 36px #ff808066,0 0 54px #8080ff44}66%{box-shadow:0 0 18px #8080ff88,0 0 36px #80ff8066,0 0 54px #ff808044}}
       @keyframes nebulaDrift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+      @keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+      @keyframes battleGlow{0%,100%{box-shadow:0 6px 28px rgba(200,30,30,0.5),0 0 40px rgba(200,30,30,0.2)}50%{box-shadow:0 6px 40px rgba(255,50,60,0.75),0 0 64px rgba(220,30,30,0.45),0 0 90px rgba(200,0,0,0.2)}}
       @keyframes starTwinkle{0%,100%{opacity:0.2}50%{opacity:0.9}}
       @keyframes floatBadge{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
       @keyframes shieldPulse{0%,100%{opacity:0.7;box-shadow:0 0 10px #60a0ff44,inset 0 0 8px #4080c033}50%{opacity:1;box-shadow:0 0 20px #60a0ff99,inset 0 0 16px #4080c066}}
@@ -4323,7 +4429,7 @@ export default function App() {
       {tab === "collection" && <CollectionScreen user={user} onUpdateUser={update} />}
       {tab === "community" && <CommunityScreen user={user} />}
       {tab === "howto" && <GuideScreen />}
-      <footer style={{ borderTop: "1px solid #1e1a0e", padding: 22, textAlign: "center" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, color: "#40301a" }}>Forge {"&"} Fable</div><p style={{ fontSize: 9, color: "#30280e", margin: "4px 0 0", letterSpacing: 1 }}>{CURRENT_PATCH}: PVP FIXES · DECK FATIGUE · BUFF SYSTEM · ALPHA READY</p></footer>
+      <footer style={{ borderTop: "1px solid #1e1a0e", padding: 22, textAlign: "center" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, color: "#40301a" }}>Forge {"&"} Fable</div><p style={{ fontSize: 9, color: "#30280e", margin: "4px 0 0", letterSpacing: 1 }}>{CURRENT_PATCH}: VISUAL OVERHAUL · ENV SIDE-SPECIFIC · SUMMON ANIMS · MATCHMAKING LIVE · ALPHA READY</p></footer>
     </div>
     <MusicPlayer />
   </div>);

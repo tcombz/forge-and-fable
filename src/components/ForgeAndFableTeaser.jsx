@@ -73,7 +73,7 @@ export default function ForgeAndFableTeaser({ inline = false }) {
         <div style={{ fontFamily:"'Cinzel',Georgia,serif", fontSize: inline?9:11, letterSpacing: inline?4:6, color: hovered?"#c8a040":"#3a2810", textTransform:"uppercase", transition:"color 0.4s", marginBottom:6 }}>
           A card game of myth and war
         </div>
-        <div style={{ fontFamily:"'Cinzel',Georgia,serif", fontSize: inline?8:10, letterSpacing:3, color: hovered?"#806040":"#2a1808", textTransform:"uppercase", transition:"color 0.4s", padding: inline?"2px 14px":"3px 18px", border:`1px solid ${hovered?"#60401866":"transparent"}`, borderRadius:20, display:"inline-block", background: hovered?"rgba(232,192,96,0.04)":"transparent", transition:"all 0.4s" }}>
+        <div style={{ fontFamily:"'Cinzel',Georgia,serif", fontSize: inline?8:10, letterSpacing:3, color: hovered?"#806040":"#2a1808", textTransform:"uppercase", padding: inline?"2px 14px":"3px 18px", border:`1px solid ${hovered?"#60401866":"transparent"}`, borderRadius:20, display:"inline-block", background: hovered?"rgba(232,192,96,0.04)":"transparent", transition:"all 0.4s" }}>
           — Coming Soon —
         </div>
       </div>
