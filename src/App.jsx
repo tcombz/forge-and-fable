@@ -913,7 +913,8 @@ if (typeof document !== "undefined" && !document.getElementById("timerBlinkStyle
 // Returns effective cost of a card accounting for active environment cost reductions
 function getEffectiveCost(card, env) {
   if (!env || card.type === "environment") return card.cost;
-  const reduction = (env.effects||[]).filter(e => e.effect === "cost_reduction").reduce((n,e) => n+(e.amount||0), 0);
+  const envEffects = (env.effects && env.effects.length > 0) ? env.effects : ((GAMEPLAY_POOL.find(c => c.id === env.id) || env).effects || []);
+  const reduction = envEffects.filter(e => e.effect === "cost_reduction").reduce((n,e) => n+(e.amount||0), 0);
   return Math.max(1, card.cost - reduction);
 }
 function makeInst(c, p = "p") { return { ...c, uid: uid(p + c.id), currentHp: c.hp, maxHp: c.hp, currentAtk: c.atk, canAttack: false, hasAttacked: false, bleed: 0, echoQueued: false, shielded: (c.keywords || []).includes("Shield") }; }
@@ -990,7 +991,7 @@ function computeEnemyAttackPhase(g, vfx) {
   if (s.playerHP <= 0) return { ...s, phase: "gameover", winner: "enemy", log: [...s.log, "Defeated..."] };
   const newTurn = g.turn + 1, newMax = Math.min(CFG.maxEnergy, newTurn + 1);
   // End of enemy turn: fire + clear bleed on player board only
-  { const pbd = s.playerBoard.reduce((n,c)=>n+(c.bleed||0),0); s.playerBoard = s.playerBoard.map(c => c.bleed>0?{...c,currentHp:c.currentHp-c.bleed,bleed:0}:c).filter(c=>c.currentHp>0); if(pbd>0){s.playerHP-=pbd;L(`Bleed seeps: Player takes ${pbd}!`);} }
+  { s.playerBoard = s.playerBoard.map(c => c.bleed>0?{...c,currentHp:c.currentHp-c.bleed,bleed:0}:c).filter(c=>c.currentHp>0); }
   s.playerBoard.forEach((c) => { if (c.effects && c.effects.length) s = resolveEffects("onTurnStart", c, s, "player", vfx); });
   // Fire player-owned env at start of player's turn
   if (s.environment?.owner === "player") s = resolveEffects("onTurnStart", s.environment, s, "player", vfx);
@@ -1028,7 +1029,7 @@ function computeEnemyTurn(g, vfx) {
   if (s.playerHP <= 0) return { ...s, phase: "gameover", winner: "enemy", log: [...s.log, "Defeated..."] };
   const newTurn = g.turn + 1, newMax = Math.min(CFG.maxEnergy, newTurn + 1);
   // End of enemy turn: fire + clear bleed on player board only
-  { const pbd = s.playerBoard.reduce((n,c)=>n+(c.bleed||0),0); s.playerBoard = s.playerBoard.map(c => c.bleed>0?{...c,currentHp:c.currentHp-c.bleed,bleed:0}:c).filter(c=>c.currentHp>0); if(pbd>0){s.playerHP-=pbd;L(`Bleed seeps: Player takes ${pbd}!`);} }
+  { s.playerBoard = s.playerBoard.map(c => c.bleed>0?{...c,currentHp:c.currentHp-c.bleed,bleed:0}:c).filter(c=>c.currentHp>0); }
   s.playerBoard.forEach((c) => { if (c.effects && c.effects.length) s = resolveEffects("onTurnStart", c, s, "player", vfx); });
   // Fire player-owned env at start of player's turn (transition from enemy turn back to player)
   if (s.environment?.owner === "player") s = resolveEffects("onTurnStart", s.environment, s, "player", vfx);
@@ -1289,9 +1290,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     // Player death check
     if(s.playerHP<=0){SFX.play("defeat");const histEntry={opponent:"AI",result:"L",date:new Date().toISOString(),turns:s.turn||0};if(onUpdateUser)onUpdateUser({battlesPlayed:(user?.battlesPlayed||0)+1,battlesWon:user?.battlesWon||0,matchHistory:[histEntry,...(user?.matchHistory||[])].slice(0,50)});setGame(()=>({...s,phase:"gameover",winner:"enemy",log:[...s.log,"Defeated..."]}));return;}
     // End of enemy turn: fire + clear bleed on player board only
-    const pbd=s.playerBoard.reduce((n,c)=>n+(c.bleed||0),0);
     s.playerBoard=s.playerBoard.map(c=>c.bleed>0?{...c,currentHp:c.currentHp-c.bleed,bleed:0}:c).filter(c=>c.currentHp>0);
-    if(pbd>0){s.playerHP-=pbd;s.log=[...s.log,`Bleed seeps: Player takes ${pbd}!`];}
     s.playerBoard.forEach(c=>{if(c.effects&&c.effects.length)s=resolveEffects("onTurnStart",c,s,"player",vfx);});
     s.playerBoard=s.playerBoard.map(c=>({...c,canAttack:true,hasAttacked:false}));
     s.enemyBoard=s.enemyBoard.map(c=>({...c,canAttack:true,hasAttacked:false}));
@@ -1312,9 +1311,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     setGame((p) => {
       let s = { ...p, phase: "enemy", log: [...p.log.slice(-20), "Your turn ends."] };
       // End of player turn: fire + clear bleed on enemy board
-      const ebd = s.enemyBoard.reduce((n,c)=>n+(c.bleed||0),0);
       s.enemyBoard = s.enemyBoard.map(c=>c.bleed>0?{...c,currentHp:c.currentHp-c.bleed,bleed:0}:c).filter(c=>c.currentHp>0);
-      if(ebd>0){s.enemyHP-=ebd;s.log=[...s.log.slice(-20),`Bleed seeps: Enemy takes ${ebd}!`];}
       // Fire env effect at end of player's turn, then decrement
       if (s.environment?.owner === "player") {
         s = resolveEffects("onTurnStart", s.environment, s, "player", vfx);
@@ -1346,7 +1343,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
       s.playerBoard = [...prev.playerBoard, finalInst];
       if ((card.keywords || []).includes("Fracture") && s.playerBoard.length < CFG.maxBoard) { s.playerBoard = [...s.playerBoard, { ...finalInst, uid: uid("pf"), currentHp: Math.ceil(card.hp / 2), maxHp: Math.ceil(card.hp / 2), currentAtk: Math.ceil(card.atk / 2), name: card.name + " Frag", keywords: [], levelUp: [], effects: [] }]; s.log = [...s.log, "Fragment enters!"]; }
       // Echo: add 1/1 ghost to hand immediately
-      if ((card.keywords||[]).includes("Echo") && s.playerHand.length < CFG.maxHand) { const ghost = { ...makeInst({ ...card, id: card.id+"_e", hp:1, atk:1, keywords:[], effects:[] }, "p"), uid: uid("echo"), currentHp:1, maxHp:1, currentAtk:1, name: card.name+" Echo" }; s.playerHand = [...s.playerHand, ghost]; s.log = [...s.log, `Echo: ${card.name} ghost enters hand!`]; }
+      if ((card.keywords||[]).includes("Echo") && s.playerHand.length < CFG.maxHand) { const ghost = { ...makeInst({ ...card, id: card.id+"_e", cost:1, hp:1, atk:1, keywords:[], effects:[] }, "p"), uid: uid("echo"), currentHp:1, maxHp:1, currentAtk:1, name: card.name+" Echo" }; s.playerHand = [...s.playerHand, ghost]; s.log = [...s.log, `Echo: ${card.name} ghost enters hand!`]; }
       s = resolveEffects("onPlay", card, s, "player", vfx); return s; });
     setAnimUids(p => ({ ...p, [summonUid]: "summoning" }));
     setTimeout(() => setAnimUids(p => { const n = {...p}; delete n[summonUid]; return n; }), 550);
@@ -1393,7 +1390,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   const atkFace = async () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking" }); await new Promise(r => setTimeout(r, 380)); const dmg = att.currentAtk; vfx.add("damage", { amount: dmg, duration: 500 }); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if (nHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 200)); setAnimUids({}); };
   const attCard = attacker ? g.playerBoard.find((c) => c.uid === attacker) : null;
 
-  return (<div style={{ maxWidth: "100%", margin: "0 auto", padding: "0 12px 0", background: "linear-gradient(180deg,#1e1208 0%,#160e06 40%,#1c1208 100%)", height: "100vh", overflow: "hidden", display: "flex", flexDirection: "column" }} onClick={() => { SFX.init(); }}>
+  return (<div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 12px 12px", background: "linear-gradient(180deg,#1e1208 0%,#160e06 40%,#1c1208 100%)" }} onClick={() => { SFX.init(); }}>
     {previewCard && <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />}
     {/* Live Action Ticker */}
     {liveAction && (
@@ -1435,11 +1432,14 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         <button onClick={onExit} style={{ padding: "11px 22px", background: "transparent", border: "1px solid #3a2c10", borderRadius: 8, fontFamily: "'Cinzel',serif", fontSize: 11, color: "#a09058", cursor: "pointer" }}>EXIT</button>
       </div>
     </div>)}
-    <div style={{ display: "grid", gridTemplateColumns: "250px 1fr 270px", gap: 14, flex: 1, minHeight: 0, overflow: "hidden" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "250px 1fr 270px", gap: 14 }}>
       {/* Chat panel — LEFT */}
-      <div style={{ display:"flex", flexDirection:"column", minHeight: 0, overflow: "hidden", gap: 6 }}>
-        <BattleChat user={user} aiMode={true} />
-        <button onClick={onExit} style={{ flexShrink:0, padding:"8px", background:"rgba(180,40,20,0.12)", border:"1px solid #5a1810", borderRadius:8, color:"#a06040", fontFamily:"'Cinzel',serif", fontSize:10, cursor:"pointer", letterSpacing:1 }}>⬅ EXIT BATTLE</button>
+      <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+        <div style={{ height:320, overflow:"hidden" }}><BattleChat user={user} aiMode={true} /></div>
+        <div style={{ display:"flex", gap:4, paddingTop:4 }}>
+          <button onClick={onExit} style={{ flex:1, padding:"8px 4px", background:"rgba(180,40,20,0.15)", border:"1px solid #5a1810", borderRadius:8, color:"#a06040", fontFamily:"'Cinzel',serif", fontSize:10, cursor:"pointer", letterSpacing:1 }}>⬅ EXIT</button>
+          <button onClick={()=>{ const el=document.documentElement; if(!document.fullscreenElement){el.requestFullscreen?.();}else{document.exitFullscreen?.();} }} style={{ flex:1, padding:"8px 4px", background:"rgba(14,12,8,0.8)", border:"1px solid #604028aa", borderRadius:8, color:"#a08050", fontFamily:"'Cinzel',serif", fontSize:13, cursor:"pointer" }} title="Fullscreen">⛶</button>
+        </div>
       </div>
       <div style={{ background: envTheme ? envTheme.bg : "linear-gradient(180deg,#2a1c0c 0%,#1e1408 50%,#281a08 100%)", border: `1px solid ${envTheme ? envTheme.glow + "44" : "#5a3c1a55"}`, borderRadius: 14, overflow: "hidden", position: "relative", transition: "background 1.5s ease, border-color 1s ease", boxShadow: envTheme ? undefined : "inset 0 0 60px rgba(0,0,0,0.4), 0 0 0 1px #3a2010" }}>
         {g.phase === "opening" && <OpeningDraw onResult={handleOpeningResult} />}
@@ -1533,9 +1533,9 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
       {/* Sidebar log */}
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {attCard && (<div style={{ background: `${attCard.border}15`, border: `1px solid ${attCard.border}55`, borderRadius: 10, padding: 10 }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, color: attCard.border, fontWeight: 600 }}>ATTACKING</div><div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#f0e8d8", fontWeight: 700 }}>{attCard.name}</div><div style={{ fontSize: 12, color: "#ff7050", fontWeight: 700 }}>ATK {attCard.currentAtk}</div><button onClick={() => setAttacker(null)} style={{ marginTop: 6, width: "100%", padding: "3px", background: "transparent", border: "1px solid #241408", borderRadius: 4, color: "#806040", fontFamily: "'Cinzel',serif", fontSize: 8, cursor: "pointer" }}>Cancel</button></div>)}
-        <div style={{ flex: 1, background: "#080604", border: "1px solid #161408", borderRadius: 10, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        <div style={{ background: "#080604", border: "1px solid #161408", borderRadius: 10, overflow: "hidden", display: "flex", flexDirection: "column", maxHeight: 500 }}>
           <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, color: "#c09048", letterSpacing: 3, padding: "8px 12px", borderBottom: "1px solid #281e08", fontWeight: 700 }}>BATTLE LOG</div>
-          <div ref={logRef} style={{ overflowY: "auto", padding: "8px 12px", flex: 1, maxHeight: 460 }}>{g.log.map((l, i) => {
+          <div ref={logRef} style={{ overflowY: "auto", padding: "8px 12px", maxHeight: 460 }}>{g.log.map((l, i) => {
             const col = logColor(l);
             const isLast = i === g.log.length - 1;
             // Highlight card names in log
@@ -1882,7 +1882,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         }
         // Echo: add 1/1 ghost to hand immediately
         if ((card.keywords||[]).includes("Echo") && ai.playerHand.length < CFG.maxHand) {
-          const ghost = { ...makeInst({ ...card, id: card.id+"_e", hp:1, atk:1, keywords:[], effects:[] }, "p"), uid: uid("echo"), currentHp:1, maxHp:1, currentAtk:1, name: card.name+" Echo" };
+          const ghost = { ...makeInst({ ...card, id: card.id+"_e", cost:1, hp:1, atk:1, keywords:[], effects:[] }, "p"), uid: uid("echo"), currentHp:1, maxHp:1, currentAtk:1, name: card.name+" Echo" };
           ai.playerHand = [...ai.playerHand, ghost]; ai.log = [...ai.log, `Echo: ${card.name} ghost enters hand!`];
         }
       }
@@ -1932,7 +1932,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         }
       }
       // End of player's turn: fire + clear bleed on OPPONENT's board only
-      { const obd=(s[op+"Board"]||[]).reduce((n,c)=>n+(c.bleed||0),0); s[op+"Board"]=(s[op+"Board"]||[]).map(c=>c.bleed>0?{...c,currentHp:c.currentHp-c.bleed,bleed:0}:c).filter(c=>c.currentHp>0); if(obd>0){s[op+"HP"]=(s[op+"HP"]||20)-obd;s.log=[...(s.log||[]).slice(-20),`Bleed seeps: ${op} takes ${obd}!`];} }
+      { s[op+"Board"]=(s[op+"Board"]||[]).map(c=>c.bleed>0?{...c,currentHp:c.currentHp-c.bleed,bleed:0}:c).filter(c=>c.currentHp>0); }
       // Check if bleed killed the hero
       if (!s.winner) { if ((s[role+"HP"]||20) <= 0) { s.winner = op; s.log = [...(s.log||[]).slice(-20), `${role} hero bled out!`]; } else if ((s[op+"HP"]||20) <= 0) { s.winner = role; s.log = [...(s.log||[]).slice(-20), `${op} hero bled out!`]; } }
       if (s.winner) return s;
@@ -2033,7 +2033,11 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           const { data: fresh } = await supabase.from("matches").select("game_state").eq("id", matchId).single();
           if (fresh?.game_state) {
             clearInterval(pollRef.current); pollRef.current = null;
-            const withArts = { ...fresh.game_state, p2Arts: user?.selectedArts || {}, p2Avatar: user?.avatarUrl || "", p2Name: user?.name || "Player", p2Rating: user?.rankedRating||1000, p2Wins: user?.battlesWon||0, p2Battles: user?.battlesPlayed||0 };
+            const p2fb = [...GAMEPLAY_POOL, ...GAMEPLAY_POOL, ...GAMEPLAY_POOL.slice(0, 5)];
+            const p2d = shuf(matchConfig?.playerDeck?.length > 0 ? [...matchConfig.playerDeck] : [...p2fb]);
+            const withArts = { ...fresh.game_state, p2Arts: user?.selectedArts || {}, p2Avatar: user?.avatarUrl || "", p2Name: user?.name || "Player", p2Rating: user?.rankedRating||1000, p2Wins: user?.battlesWon||0, p2Battles: user?.battlesPlayed||0,
+              p2Hand: p2d.slice(0, CFG.startHand).map((c) => makeInst(c, "p2")),
+              p2Deck: p2d.slice(CFG.startHand) };
             await supabase.from("matches").update({ game_state: withArts }).eq("id", matchId);
             setGs(withArts);
           }
@@ -2306,7 +2310,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     }
     return <span key={key}>{parts}</span>;
   };
-  return (<div style={{ maxWidth:"100%", margin:"0 auto", padding:"0 12px 0", background:"linear-gradient(180deg,#0a0806 0%,#06080a 100%)", height:"100vh", overflow:"hidden", display:"flex", flexDirection:"column" }} onClick={() => { SFX.init(); }}>
+  return (<div style={{ maxWidth:1400, margin:"0 auto", padding:"0 12px 12px", background:"linear-gradient(180deg,#0a0806 0%,#06080a 100%)" }} onClick={() => { SFX.init(); }}>
     {previewCard && <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />}
     {/* Forfeit confirm */}
     {/* In-battle profile popup */}
@@ -2368,30 +2372,29 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         </div>
       </div>
     </div>)}
-    {/* Top bar: centered turn status + fullscreen */}
-    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6, flexShrink:0 }}>
-      <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-        <button onClick={()=>{ const el=document.documentElement; if(!document.fullscreenElement){el.requestFullscreen?.();}else{document.exitFullscreen?.();} }} style={{ padding:"7px 12px", background:"rgba(14,12,8,0.8)", border:"1px solid #604028aa", borderRadius:7, color:"#a08050", fontFamily:"'Cinzel',serif", fontSize:13, cursor:"pointer" }} title="Fullscreen">⛶</button>
-      </div>
-      {!gs.winner && (<div style={{ display:"flex", alignItems:"center", gap:8, position:"absolute", left:"50%", transform:"translateX(-50%)" }}>
+    {/* Top bar: centered turn status */}
+    {!gs.winner && (<div style={{ display:"flex", justifyContent:"center", alignItems:"center", marginBottom:6 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
         <div style={{ width:7, height:7, borderRadius:"50%", background:isMyTurn?"#78cc45":"#e8c060", boxShadow:`0 0 8px ${isMyTurn?"#78cc45":"#e8c060"}`, animation:"pulse 1.5s infinite" }} />
         <span style={{ fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, letterSpacing:2, color:isMyTurn?"#78cc45":"#e8c060" }}>{isMyTurn ? "YOUR TURN" : `${(opponentName||"OPP").toUpperCase()}'S TURN`}</span>
         {syncing && <span style={{ fontSize:8, color:"#806040", fontFamily:"'Cinzel',serif" }}>SYNC…</span>}
-      </div>)}
-      <div style={{ width:44 }} />
-    </div>
+      </div>
+    </div>)}
     {gs.winner && (<div style={{ textAlign:"center", background: myWon?"linear-gradient(135deg,#060e04,#0e0c08)":"linear-gradient(135deg,#120404,#0e0c08)", border:`1px solid ${myWon?"#4a9020":"#b83030"}`, borderRadius:14, padding:36, marginBottom:20, animation:"fadeIn 0.5s" }}>
       <div style={{ fontSize:56, marginBottom:10 }}>{myWon?"✨":"💀"}</div>
       <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:28, color:myWon?"#78cc45":"#e05050", margin:"0 0 18px" }}>{myWon?"VICTORY":"DEFEATED"}</h3>
       <p style={{ fontSize:13, color:"#a09070" }}>{myWon?`You defeated ${opponentName}!`:`${opponentName} wins this round.`}</p>
       <button onClick={onExit} style={{ marginTop:16, padding:"11px 28px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontWeight:700, fontSize:12, letterSpacing:2, color:"#1a1000", cursor:"pointer" }}>EXIT</button>
     </div>)}
-    <div style={{ display:"grid", gridTemplateColumns:"240px 1fr 310px", gap:12, flex:1, minHeight:0, overflow:"hidden" }}>
+    <div style={{ display:"grid", gridTemplateColumns:"240px 1fr 310px", gap:12 }}>
       {/* Chat panel — LEFT */}
-      <div style={{ display:"flex", flexDirection:"column", minHeight:0, overflow:"hidden", gap:6 }}>
-        <BattleChat user={user} aiMode={false} matchId={matchId} />
-        <button onClick={onExit} style={{ flexShrink:0, padding:"8px", background:"rgba(180,40,20,0.12)", border:"1px solid #5a1810", borderRadius:8, color:"#a06040", fontFamily:"'Cinzel',serif", fontSize:10, cursor:"pointer", letterSpacing:1 }}>⬅ EXIT BATTLE</button>
-        {!gs?.winner && <button onClick={()=>setForfeitConfirm(true)} style={{ flexShrink:0, padding:"8px", background:"rgba(120,10,10,0.15)", border:"1px solid #8a2020", borderRadius:8, color:"#e05050", fontFamily:"'Cinzel',serif", fontSize:10, cursor:"pointer", letterSpacing:1 }}>🏳 FORFEIT</button>}
+      <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+        <div style={{ height:320, overflow:"hidden" }}><BattleChat user={user} aiMode={false} matchId={matchId} /></div>
+        <div style={{ display:"flex", gap:4, paddingTop:4 }}>
+          <button onClick={onExit} style={{ flex:1, padding:"8px 4px", background:"rgba(180,40,20,0.15)", border:"1px solid #5a1810", borderRadius:8, color:"#a06040", fontFamily:"'Cinzel',serif", fontSize:10, cursor:"pointer", letterSpacing:1 }}>⬅ EXIT</button>
+          {!gs?.winner && <button onClick={()=>setForfeitConfirm(true)} style={{ flex:1, padding:"8px 4px", background:"rgba(120,10,10,0.15)", border:"1px solid #8a2020", borderRadius:8, color:"#e05050", fontFamily:"'Cinzel',serif", fontSize:10, cursor:"pointer", letterSpacing:1 }}>🏳 FF</button>}
+          <button onClick={()=>{ const el=document.documentElement; if(!document.fullscreenElement){el.requestFullscreen?.();}else{document.exitFullscreen?.();} }} style={{ flex:1, padding:"8px 4px", background:"rgba(14,12,8,0.8)", border:"1px solid #604028aa", borderRadius:8, color:"#a08050", fontFamily:"'Cinzel',serif", fontSize:13, cursor:"pointer" }} title="Fullscreen">⛶</button>
+        </div>
       </div>
       <div style={{ background:"#1e1c14", border:`1px solid ${envTheme?envTheme.glow+"44":"#2e2c18"}`, borderRadius:14, overflow:"hidden", position:"relative", transition:"border-color 1s ease" }}>
         <VFXOverlay effects={vfx.effects} />
@@ -2501,9 +2504,9 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       {/* Log */}
       <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
         {attCard&&(<div style={{ background:`${attCard.border}15`, border:`1px solid ${attCard.border}55`, borderRadius:10, padding:10 }}><div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:attCard.border, fontWeight:600 }}>ATTACKING</div><div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#f0e8d8", fontWeight:700 }}>{attCard.name}</div><div style={{ fontSize:12, color:"#ff7050", fontWeight:700 }}>ATK {attCard.currentAtk}</div><button onClick={()=>setAttacker(null)} style={{ marginTop:6, width:"100%", padding:"3px", background:"transparent", border:"1px solid #241408", borderRadius:4, color:"#806040", fontFamily:"'Cinzel',serif", fontSize:8, cursor:"pointer" }}>Cancel</button></div>)}
-        <div style={{ flex:1, background:"#080604", border:"1px solid #161408", borderRadius:10, overflow:"hidden", display:"flex", flexDirection:"column", minHeight:400 }}>
+        <div style={{ background:"#080604", border:"1px solid #161408", borderRadius:10, overflow:"hidden", display:"flex", flexDirection:"column", maxHeight:500 }}>
           <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#c09048", letterSpacing:3, padding:"8px 12px", borderBottom:"1px solid #281e08", fontWeight:700, display:"flex", justifyContent:"space-between", alignItems:"center" }}><span>BATTLE LOG</span><span style={{ fontSize:8, color:"#403828" }}>TURN {gs.turn}</span></div>
-          <div ref={logRef} style={{ overflowY:"auto", padding:"8px 12px", flex:1, maxHeight:560 }}>{(gs.log||[]).map((l,i)=>{const isLast=i===(gs.log||[]).length-1;return(<div key={i} style={{ fontSize:10, lineHeight:1.7, marginBottom:5, color:logColor(l), borderLeft:isLast?`2px solid ${logColor(l)}`:"2px solid #1a160e", paddingLeft:6, fontFamily:"'Cinzel',serif", fontWeight:isLast?700:400, display:"flex", alignItems:"flex-start", gap:4 }}><span style={{ opacity:0.5, flexShrink:0 }}>{logIcon(l)}</span>{renderLogLine(l, i)}</div>);})}</div>
+          <div ref={logRef} style={{ overflowY:"auto", padding:"8px 12px", maxHeight:460 }}>{(gs.log||[]).map((l,i)=>{const isLast=i===(gs.log||[]).length-1;return(<div key={i} style={{ fontSize:10, lineHeight:1.7, marginBottom:5, color:logColor(l), borderLeft:isLast?`2px solid ${logColor(l)}`:"2px solid #1a160e", paddingLeft:6, fontFamily:"'Cinzel',serif", fontWeight:isLast?700:400, display:"flex", alignItems:"flex-start", gap:4 }}><span style={{ opacity:0.5, flexShrink:0 }}>{logIcon(l)}</span>{renderLogLine(l, i)}</div>);})}</div>
         </div>
       </div>
     </div>
