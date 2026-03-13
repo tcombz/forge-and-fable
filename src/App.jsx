@@ -23,7 +23,7 @@ const ALPHA_KEYS_LIST = [
   "FLAME-WARDEN-2","DUSK-HERALD-05","BONE-TIDE-RISE","STAR-FORGED-01","KRAKEN-WAKES-1",
 ];
 const ALPHA_KEYS = new Set(ALPHA_KEYS_LIST);
-const CURRENT_PATCH = "v22";
+const CURRENT_PATCH = "v23";
 
 // ═══ AUDIO ═══════════════════════════════════════════════════════════════════
 const SFX = (() => {
@@ -450,15 +450,12 @@ function PatchNotesModal({ onDismiss }) {
     <span style={{ marginLeft:6, padding:"1px 6px", background:"rgba(120,204,69,0.18)", border:"1px solid #78cc4555", borderRadius:8, fontSize:8, color:"#78cc45", fontFamily:"'Cinzel',serif", fontWeight:700, letterSpacing:1, verticalAlign:"middle" }}>NEW</span>
   );
   const rows = [
-    { icon:"⭐", label:<>Rarity pip badges (1–5 colored dots) on all cards — yellow = Legendary<NEW /></> },
-    { icon:"🆕", label:<>NEW! badge pops on first-time card collection in pack opening<NEW /></> },
-    { icon:"🌍", label:<>Env buff/damage float text routes to the correct side of the board<NEW /></> },
-    { icon:"⚔", label:<>Counter-hit recoil: attacker takes damage back with a hit flash<NEW /></> },
-    { icon:"🏰", label:<>Battle screen full-width + warm tavern-wood background<NEW /></> },
-    { icon:"👁", label:<>Nav auto-hides during battle — hover the strip to reveal it<NEW /></> },
-    { icon:"📖", label:<>Guide + ranked text brighter and easier to read<NEW /></> },
-    { icon:"🔧", label:<>Sign-up starter deck now correctly granted in all registration paths<NEW /></> },
-    { icon:"🌌", label:"Starfield home · 3D card tilt · live ticker · battleGlow (v21)" },
+    { icon:"✨", label:<>Rare/Epic/Legendary/Prismatic cards glow with rarity color on hover<NEW /></> },
+    { icon:"🂠", label:<>Deck builder: clean yellow copy count instead of pip dots<NEW /></> },
+    { icon:"👁", label:<>Nav nearly invisible in battle (4px strip) — hover to reveal<NEW /></> },
+    { icon:"🏟", label:<>Battle fields richer — enemy zone deeper red, player zone deeper green<NEW /></> },
+    { icon:"🆕", label:"NEW! badge on first-time pack pulls · env cards only buff their owner" },
+    { icon:"⚔", label:"Counter-hit recoil flash · tavern-wood arena · sign-up starter deck fix" },
     { icon:"🏆", label:"Ranked Mode · ELO · Iron → Bronze → Silver → Gold → Grandmaster" },
     { icon:"🌐", label:"PvP matchmaking · pair_players RPC · Realtime + polling fallback" },
     { icon:"⚗", label:"Coming next: Leaderboard · Thornwood Expansion · Draft Mode", dim:true },
@@ -659,7 +656,8 @@ function Card({ card, size = "md", onClick, animDelay = 0, isThird = false, hide
   const rarityGlow = isPrismatic ? "#ffffff" : (RARITY_GLOW[card.rarity] || null);
   const handleClick = () => { if (onClick) onClick(card); else { SFX.play("flip"); setFlip((f) => !f); } };
   return (
-    <div style={{ perspective: 1000, width: W, flexShrink: 0, animation: animDelay ? `cardReveal 0.6s ease-out ${animDelay}s both` : (isPrismatic ? `prismPulse 3s ease-in-out infinite` : undefined), transform: hov ? "translateY(-8px) scale(1.02)" : "none", transition: "transform .2s ease, filter .2s ease", filter: hov ? `drop-shadow(0 12px 28px ${isPrismatic ? "#ffffff" : border}88)` : (isPrismatic ? undefined : rarityGlow ? `drop-shadow(0 0 7px ${rarityGlow}99)` : undefined) }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} className={`
+    <div style={{ perspective: 1000, width: W, flexShrink: 0, animation: animDelay ? `cardReveal 0.6s ease-out ${animDelay}s both` : (isPrismatic ? `prismPulse 3s ease-in-out infinite` : undefined), transform: hov ? "translateY(-8px) scale(1.02)" : "none", transition: "transform .2s ease, filter .2s ease", filter: hov ? `drop-shadow(0 12px 28px ${isPrismatic ? "#ffffff" : border}88)` : (isPrismatic ? undefined : rarityGlow ? `drop-shadow(0 0 7px ${rarityGlow}99)` : undefined),
+      boxShadow: hov && rarityGlow ? `0 0 32px ${rarityGlow}aa, 0 0 72px ${rarityGlow}44` : undefined }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} className={`
         border-2 border-[#b8860b] rounded-lg
         ${isThird ? 'shadow-[0_0_12px_#ffd700]' : ''}
         transition-all duration-500
@@ -687,14 +685,6 @@ function Card({ card, size = "md", onClick, animDelay = 0, isThird = false, hide
               {isEnv && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.75)", color: "#28c0cc", border: "1px solid #28a0cc66", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>ENV</div>}
               {card.type === "spell" && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.75)", color: "#d090d0", border: "1px solid #d090d066", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>SPELL</div>}
               {card.type === "champion" && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.75)", color: "#e8c060", border: "1px solid #e8c06066", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>CHAMPION</div>}
-              {/* Rarity pips — 1 Common → 5 Legendary */}
-              {!isPrismatic && card.rarity && (
-                <div style={{ display:"flex", gap:2, justifyContent:"flex-end", marginTop:1 }}>
-                  {Array.from({length:{Common:1,Uncommon:2,Rare:3,Epic:4,Legendary:5}[card.rarity]||1}).map((_,i)=>(
-                    <div key={i} style={{ width: size==="sm"?4:5, height: size==="sm"?4:5, borderRadius:"50%", background: RC[card.rarity]||"#888", boxShadow:`0 0 5px ${RC[card.rarity]||"#888"}bb`, flexShrink:0 }} />
-                  ))}
-                </div>
-              )}
             </div>
           </div>
           {/* Bottom text overlay */}
@@ -1331,7 +1321,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
           <span style={{ fontSize: 9, color: "#a09068", flex: 1 }}>{g.environment.ability}</span>
         </div>)}
         {/* Enemy zone */}
-        <div style={{ background: "rgba(200,60,40,0.13)", borderBottom: "1px solid #5a2a18", padding: "10px 14px", position: "relative", zIndex: 2 }}>
+        <div style={{ background: "linear-gradient(180deg, rgba(160,30,20,0.22) 0%, rgba(100,18,12,0.18) 100%)", borderBottom: "1px solid #7a3020", padding: "10px 14px", position: "relative", zIndex: 2, boxShadow: "inset 0 -4px 20px rgba(180,40,20,0.12)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ width: 28, height: 28, borderRadius: "50%", background: "linear-gradient(135deg,#3a0c0c,#200808)", border: "2px solid #a0202044", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#cc6666", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>AI</div>
@@ -1356,7 +1346,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
           <div style={{ flex: 1, height: 1, background: "linear-gradient(to left,transparent,#382e18)" }} />
         </div>
         {/* Player zone */}
-        <div style={{ background: "rgba(40,110,20,0.13)", padding: "10px 14px", position: "relative", zIndex: 2 }}>
+        <div style={{ background: "linear-gradient(180deg, rgba(20,80,10,0.18) 0%, rgba(30,100,15,0.24) 100%)", padding: "10px 14px", position: "relative", zIndex: 2, boxShadow: "inset 0 4px 20px rgba(20,120,10,0.14)" }}>
           <div style={{ fontSize: 8, color: "#1e3010", fontFamily: "'Cinzel',serif", letterSpacing: 3, marginBottom: 4, textAlign: "center", fontWeight: 700 }}>YOUR FIELD</div>
           <div style={{ minHeight: 105, display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", alignItems: "center", marginBottom: 10 }}>
             {g.playerBoard.length === 0 ? <span style={{ fontSize: 10, color: "#181408", letterSpacing: 3 }}>PLAY A CARD</span> : g.playerBoard.map((c) => (<Token key={c.uid} c={resolveCardArt(c, user?.selectedArts || {})} animType={animUids[c.uid]} selected={attacker === c.uid} isTarget={false} canSelect={g.phase === "player" && c.canAttack && !c.hasAttacked && !aiThink} onClick={() => selectAtt(c)} onRightClick={() => { SFX.play("ability"); setPreviewCard(c); }} />))}
@@ -1547,7 +1537,7 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
                   <div key={i} onClick={() => !blocked && addCard(c)} onContextMenu={(e) => { e.preventDefault(); setDbPreview(resolveCardArt(c, selectedArts)); }} style={{ position:"relative", cursor:blocked?"not-allowed":"pointer", opacity:blocked?0.35:1, transition:"all .2s", transform:"none" }}
                     onMouseEnter={e => { if (!blocked) e.currentTarget.style.transform="translateY(-4px)"; }}
                     onMouseLeave={e => { e.currentTarget.style.transform="none"; }}>
-                    {(() => { const maxC = c.type==="champion" ? 1 : CFG.deck.copies; const pips = Array.from({length:maxC},(_,j)=>j); return (<div style={{ position:"absolute", top:-8, right:-4, zIndex:10, display:"flex", gap:3, flexDirection:"column", alignItems:"center" }}>{pips.map(j=><div key={j} style={{ width:8, height:8, borderRadius:"50%", background: j < (maxC-inDeck) ? (c.type==="champion"?"#f0c040":"#78cc45") : "rgba(80,60,40,0.5)", border:`1px solid ${j < (maxC-inDeck) ? (c.type==="champion"?"#f0c04088":"#78cc4588") : "#3a2a1a"}`, boxShadow: j < (maxC-inDeck) ? `0 0 6px ${c.type==="champion"?"#f0c04066":"#78cc4566"}` : "none", transition:"all .2s" }} />)}</div>); })()}
+                    {(() => { const maxC = c.type==="champion" ? 1 : CFG.deck.copies; const left = maxC - inDeck; return left > 0 && left < maxC ? (<div style={{ position:"absolute", bottom:6, right:5, zIndex:10, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:900, color:"#e8c060", textShadow:"0 0 8px #e8c06088, 0 1px 3px rgba(0,0,0,0.95)", lineHeight:1 }}>{left}</div>) : null; })()}
                     <Card card={resolveCardArt(c, selectedArts)} size="sm" hideCost />
                   </div>
                 );
@@ -3125,7 +3115,7 @@ const TICKER_ITEMS = [
   '🏆 RANKED SEASON 1 LIVE — ELO matchmaking active · Iron → Bronze → Silver → Gold → Grandmaster',
   '⚔️ META REPORT — Bloodpact aggro leads ranked with 58% win rate this week',
   '🌿 Thornwood combo: Ancient Grove + Echo synergy dominating Iron lobbies',
-  `📜 ${CURRENT_PATCH} DEPLOYED — Rarity icons · NEW badge packs · counter-hit recoil · tavern arena · nav auto-hide`,
+  `📜 ${CURRENT_PATCH} DEPLOYED — Rarity hover glow · card polish · battle field rework · nav ghost mode`,
   '🎴 COMING SOON — Food Fight faction · 12 culinary warriors · 1 Rare guaranteed per pack',
   '📖 COMING SOON — The Fables expansion · Dragon Knights & Crystal Golems · Enchanted Glade',
   '🩸 Bloodpact spike: Venomlord at 4-cost clearing boards consistently in casual queue',
@@ -4311,7 +4301,7 @@ export default function App() {
       </div>
     </div>)}
     <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "radial-gradient(ellipse at 15% 15%,rgba(200,140,20,0.11) 0%,transparent 50%),radial-gradient(ellipse at 85% 85%,rgba(30,120,200,0.08) 0%,transparent 50%)" }} />
-    <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "linear-gradient(180deg,#201c10 0%,#181408 100%)", backdropFilter: "blur(20px)", borderBottom: `2px solid ${inBattle && !navHovered ? "transparent" : "#4a3c18"}`, padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: inBattle && !navHovered ? 28 : 72, boxShadow: "0 4px 24px rgba(0,0,0,0.5)", overflow: "hidden", transition: "height 0.3s ease, border-color 0.3s ease", opacity: inBattle && !navHovered ? 0.35 : 1, cursor: inBattle && !navHovered ? "pointer" : "default" }} onClick={(e) => { e.stopPropagation(); if (inBattle && !navHovered) setNavHovered(true); }} onMouseEnter={() => inBattle && setNavHovered(true)} onMouseLeave={() => inBattle && setNavHovered(false)}>
+    <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "linear-gradient(180deg,#201c10 0%,#181408 100%)", backdropFilter: "blur(20px)", borderBottom: `2px solid ${inBattle && !navHovered ? "transparent" : "#4a3c18"}`, padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: inBattle && !navHovered ? 4 : 72, boxShadow: "0 4px 24px rgba(0,0,0,0.5)", overflow: "hidden", transition: "height 0.3s ease, border-color 0.3s ease, opacity 0.3s ease", opacity: inBattle && !navHovered ? 0.08 : 1, cursor: inBattle && !navHovered ? "pointer" : "default" }} onClick={(e) => { e.stopPropagation(); if (inBattle && !navHovered) setNavHovered(true); }} onMouseEnter={() => inBattle && setNavHovered(true)} onMouseLeave={() => inBattle && setNavHovered(false)}>
       <button onClick={() => { if (inPvpMatch) { setNavLeaveModal({ targetTab:"home" }); return; } setTab("home"); }} style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}>
         <div style={{ width: 36, height: 36, borderRadius: 8, background: "linear-gradient(135deg,#e8c060,#a07820)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontSize: 16, fontWeight: 900, color: "#1a1000", boxShadow: "0 2px 12px #e8c06044" }}>F</div>
         <div>
@@ -4452,7 +4442,7 @@ export default function App() {
       {tab === "collection" && <CollectionScreen user={user} onUpdateUser={update} />}
       {tab === "community" && <CommunityScreen user={user} />}
       {tab === "howto" && <GuideScreen />}
-      <footer style={{ borderTop: "1px solid #1e1a0e", padding: 22, textAlign: "center" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, color: "#40301a" }}>Forge {"&"} Fable</div><p style={{ fontSize: 9, color: "#30280e", margin: "4px 0 0", letterSpacing: 1 }}>{CURRENT_PATCH}: RARITY ICONS · NEW BADGE · COUNTER-HIT · TAVERN ARENA · NAV HIDE · ALPHA READY</p></footer>
+      <footer style={{ borderTop: "1px solid #1e1a0e", padding: 22, textAlign: "center" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, color: "#40301a" }}>Forge {"&"} Fable</div><p style={{ fontSize: 9, color: "#30280e", margin: "4px 0 0", letterSpacing: 1 }}>{CURRENT_PATCH}: RARITY HOVER GLOW · BATTLE FIELD POLISH · NAV GHOST MODE · DECK COPY COUNT · ALPHA READY</p></footer>
     </div>
     <MusicPlayer />
   </div>);
