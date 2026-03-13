@@ -3579,39 +3579,48 @@ function CardOfTheWeek() {
   if (!card) return null;
   const bc = card.border || "#9050d0";
   return (
-    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:14 }}>
-      <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#c090ff", letterSpacing:5, fontWeight:700, textShadow:"0 0 14px #9070ff88" }}>✦ CARD OF THE WEEK ✦</div>
-      <div style={{ position:"relative", cursor:"pointer" }}
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => { setOpen(false); setTilt({ rx:0, ry:0 }); }}>
-        {/* Card floating above chest */}
-        <div style={{ position:"absolute", bottom:"108%", left:"50%", transform:`translateX(-50%) translateY(${open?"-10px":"30px"})`, opacity:open?1:0, transition:"all 0.45s cubic-bezier(0.34,1.36,0.64,1)", zIndex:10, perspective:800, pointerEvents:open?"auto":"none" }}>
+    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:0, cursor:"pointer" }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => { setOpen(false); setTilt({ rx:0, ry:0 }); }}>
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#c090ff", letterSpacing:5, fontWeight:700, textShadow:"0 0 14px #9070ff88", marginBottom:12 }}>✦ CARD OF THE WEEK ✦</div>
+      {/* Fixed-height card slot — card lives here, never escapes into nav */}
+      <div style={{ height:230, width:180, display:"flex", alignItems:"flex-end", justifyContent:"center", position:"relative", overflow:"visible" }}>
+        {/* Light beam cone from chest opening */}
+        <div style={{ position:"absolute", bottom:0, left:"50%", transform:"translateX(-50%)", width:open?150:0, height:open?220:0, background:"linear-gradient(to top,rgba(255,200,40,0.28),rgba(255,220,80,0.08),transparent)", clipPath:"polygon(35% 100%,65% 100%,100% 0%,0% 0%)", transition:"all 0.5s ease", pointerEvents:"none", opacity:open?1:0 }} />
+        {/* Light rays */}
+        {["-40deg","-20deg","0deg","20deg","40deg"].map((r,i) => (
+          <div key={i} style={{ position:"absolute", bottom:0, left:"50%", width:3, height:open?200:0, transformOrigin:"bottom center", transform:`translateX(-50%) rotate(${r})`, background:"linear-gradient(to top,rgba(255,210,60,0.5),transparent)", transition:`height 0.4s ${i*0.04}s ease, opacity 0.4s`, opacity:open?0.6:0, pointerEvents:"none" }} />
+        ))}
+        {/* The card */}
+        <div style={{ transform:`translateY(${open?0:20}px)`, opacity:open?1:0, transition:"all 0.42s cubic-bezier(0.34,1.2,0.64,1)", perspective:800, position:"relative", zIndex:2 }}>
           <div style={{ transform:`rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`, transition:"transform 0.08s linear", transformStyle:"preserve-3d" }}
-            onMouseMove={e => { const r=e.currentTarget.getBoundingClientRect(),xp=(e.clientX-r.left)/r.width,yp=(e.clientY-r.top)/r.height; setTilt({ rx:(yp-0.5)*-22, ry:(xp-0.5)*22 }); }}>
+            onMouseMove={e => { const r=e.currentTarget.getBoundingClientRect(),xp=(e.clientX-r.left)/r.width,yp=(e.clientY-r.top)/r.height; setTilt({ rx:(yp-0.5)*-20, ry:(xp-0.5)*20 }); }}>
             <Card card={card} size="lg" hideCost />
-            <div style={{ position:"absolute", inset:0, borderRadius:14, background:"radial-gradient(circle at 50% 40%,rgba(255,255,255,0.1) 0%,transparent 60%)", pointerEvents:"none", zIndex:6 }} />
           </div>
-          <div style={{ textAlign:"center", marginTop:8, fontFamily:"'Cinzel',serif", fontSize:9, color:bc, letterSpacing:2, fontWeight:700, textShadow:`0 0 12px ${bc}` }}>{card.name.toUpperCase()}</div>
         </div>
-        {/* Chest glow */}
-        <div style={{ position:"absolute", inset:-24, background:`radial-gradient(circle,${bc}${open?"44":"22"} 0%,transparent 70%)`, transition:"opacity 0.4s", pointerEvents:"none", borderRadius:"50%" }} />
-        {/* Chest lid */}
-        <div style={{ perspective:500, width:170 }}>
-          <div style={{ width:"100%", height:58, background:"linear-gradient(135deg,#3c1e06,#5c3210,#7a4818)", borderRadius:"12px 12px 3px 3px", border:`2px solid ${open?"#f0d060":"#7a5020"}`, borderBottom:"none", transformOrigin:"bottom center", transform:open?"rotateX(-118deg)":"rotateX(0deg)", transition:"transform 0.5s cubic-bezier(0.34,1.1,0.64,1)", position:"relative", zIndex:4, display:"flex", alignItems:"center", justifyContent:"center", gap:10, boxShadow:`0 -3px 14px ${open?"#e8c06066":"#00000066"}`, backfaceVisibility:"hidden" }}>
-            <span style={{ fontSize:22, filter:open?"drop-shadow(0 0 8px #f0d060)":"none", transition:"filter .3s" }}>⚔</span>
-            <div style={{ width:28, height:10, background:"linear-gradient(90deg,#b07010,#f0d050,#b07010)", borderRadius:5, boxShadow:open?"0 0 12px #f0d050":"0 0 4px #906020" }} />
+      </div>
+      {/* Chest sits right below card slot */}
+      <div style={{ position:"relative", width:170 }}>
+        {/* Ground glow */}
+        <div style={{ position:"absolute", bottom:-8, left:"50%", transform:"translateX(-50%)", width:200, height:30, background:`radial-gradient(ellipse,${bc}${open?"55":"1a"} 0%,transparent 70%)`, transition:"all 0.4s", pointerEvents:"none" }} />
+        <div style={{ perspective:500 }}>
+          {/* Lid */}
+          <div style={{ width:"100%", height:52, background:"linear-gradient(135deg,#3c1e06,#5c3210,#7c4a18)", borderRadius:"12px 12px 3px 3px", border:`2px solid ${open?"#f0d060":"#6a4010"}`, borderBottom:"none", transformOrigin:"bottom center", transform:open?"rotateX(-118deg)":"rotateX(0deg)", transition:"transform 0.48s cubic-bezier(0.34,1.1,0.64,1)", position:"relative", zIndex:4, display:"flex", alignItems:"center", justifyContent:"center", gap:8, backfaceVisibility:"hidden", boxShadow:open?"0 -4px 18px #e8c06055":"none" }}>
+            <span style={{ fontSize:20, filter:open?"drop-shadow(0 0 8px #f0d060)":"none", transition:"filter .3s" }}>⚔</span>
+            <div style={{ width:26, height:9, background:"linear-gradient(90deg,#b07010,#f0d050,#b07010)", borderRadius:5, boxShadow:open?"0 0 14px #f0d050":"0 0 3px #906020", transition:"box-shadow .3s" }} />
           </div>
-          {/* Chest body */}
-          <div style={{ width:"100%", height:70, background:"linear-gradient(180deg,#281406 0%,#1a0c04 100%)", borderRadius:"3px 3px 12px 12px", border:`2px solid ${open?"#f0d060":"#6a4010"}`, borderTop:"none", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:4, boxShadow:`0 8px 30px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.04)` }}>
-            <div style={{ width:36, height:14, background:"linear-gradient(90deg,#a06010,#f0c030,#a06010)", borderRadius:7, boxShadow:open?"0 0 16px #e8c060cc, 0 0 30px #c89020aa":"0 0 4px #c8902044", transition:"all 0.4s" }} />
-            <span style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:open?"#e8c060":"#705020", letterSpacing:2, transition:"color 0.3s", fontWeight:700 }}>{open ? "HADES AWAITS" : "HOVER TO OPEN"}</span>
+          {/* Body */}
+          <div style={{ width:"100%", height:62, background:"linear-gradient(180deg,#241004,#160a02)", borderRadius:"3px 3px 12px 12px", border:`2px solid ${open?"#f0d060":"#5a3810"}`, borderTop:"none", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:4, boxShadow:"0 8px 28px rgba(0,0,0,0.85)" }}>
+            <div style={{ width:34, height:12, background:"linear-gradient(90deg,#a06010,#f0c030,#a06010)", borderRadius:6, boxShadow:open?"0 0 16px #e8c060cc, 0 0 28px #c89020aa":"0 0 3px #c8902033", transition:"all 0.4s" }} />
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:open?"#e8c060":"#705020", letterSpacing:2, fontWeight:700, transition:"color 0.3s" }}>{open?"HADES AWAITS":"HOVER TO OPEN"}</span>
           </div>
         </div>
         {/* Sparkles */}
-        {[[-22,-8],[24,2],[-16,20],[20,18],[-9,-22],[10,-20],[30,-5],[-30,10]].map(([ox,oy],i) => (
-          <div key={i} style={{ position:"absolute", top:`calc(50% + ${oy}px)`, left:`calc(50% + ${ox}px)`, width:5, height:5, background:"#f0e040", borderRadius:"50%", boxShadow:"0 0 8px #f0e040, 0 0 14px #f0a000", opacity:open?0.9:0, transform:open?`translate(${ox*0.7}px,${oy*0.9-14}px) scale(1)`:"scale(0) translate(0,0)", transition:`all 0.5s ${i*0.055}s`, pointerEvents:"none" }} />
+        {[[-22,-6],[24,4],[-16,22],[20,20],[-8,-18],[10,-16]].map(([ox,oy],i) => (
+          <div key={i} style={{ position:"absolute", top:`calc(40% + ${oy}px)`, left:`calc(50% + ${ox}px)`, width:4, height:4, background:"#f0e040", borderRadius:"50%", boxShadow:"0 0 7px #f0e040, 0 0 13px #f0a000", opacity:open?0.9:0, transform:open?`translate(${ox*0.7}px,${oy-12}px) scale(1)`:"scale(0)", transition:`all 0.45s ${i*0.06}s`, pointerEvents:"none" }} />
         ))}
       </div>
+      <div style={{ marginTop:10, fontFamily:"'Cinzel',serif", fontSize:9, color:bc, letterSpacing:2, fontWeight:700, textShadow:`0 0 10px ${bc}`, opacity:open?1:0, transform:open?"translateY(0)":"translateY(4px)", transition:"all 0.3s" }}>{card.name.toUpperCase()}</div>
     </div>
   );
 }
