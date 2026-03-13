@@ -434,22 +434,11 @@ function CardPreview({ card, onClose }) {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => { if (card.rarity === "Prismatic" || card.altSetId === "prismatic") SFX.play("prismatic"); }, [card.id]);
   const border = card.border || "#e8c060";
-  const isEnv = card.type === "environment";
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(2,1,0,0.92)", backdropFilter: "blur(10px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, padding: 24, animation: "fadeIn 0.2s ease-out" }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
-        {/* Actual card render — same as in-game, scaled up */}
-        <div style={{ transform: "scale(1.18)", transformOrigin: "top center", marginBottom: 56 }}>
-          <Card card={card} size="lg" />
-        </div>
-        {/* Ability + status + flavor panel */}
-        <div style={{ width: 260, background: "linear-gradient(160deg,#1e1c10,#0e0c06)", border: `1px solid ${border}33`, borderRadius: 12, padding: "12px 16px", boxShadow: `0 0 24px ${border}11` }}>
-          <div style={{ fontSize: 12, color: isEnv ? "#80c0d0" : "#e0d0b0", lineHeight: 1.75, paddingBottom: 8, borderBottom: `1px solid ${border}22`, marginBottom: 8 }}>{card.ability}</div>
-          {card.atk != null && <div style={{ display:"flex", gap:18, marginBottom:8 }}><div><span style={{ fontSize:22, fontFamily:"'Cinzel',serif", fontWeight:700, color:"#ff7750" }}>{card.currentAtk != null ? card.currentAtk : card.atk}</span><span style={{ fontSize:9, color:"#996655", marginLeft:4 }}>ATK</span></div><div><span style={{ fontSize:22, fontFamily:"'Cinzel',serif", fontWeight:700, color:"#50c065" }}>{card.currentHp != null ? card.currentHp : card.hp}</span><span style={{ fontSize:9, color:"#448850", marginLeft:4 }}>HP</span></div></div>}
-          {(card.statusLog||[]).length > 0 && <div style={{ marginBottom:8 }}>{(card.statusLog||[]).map((e,i)=><div key={i} style={{ fontSize:10, color:e.type==="buff"?"#60e880":"#ff6060", fontFamily:"'Cinzel',serif" }}>{e.type==="buff"?"⬆":"⬇"} {e.note}</div>)}</div>}
-          <div style={{ fontSize: 10, fontStyle: "italic", color: "#706048", lineHeight: 1.6 }}>"{card.flavor || "Lost to history."}"</div>
-        </div>
-        <button onClick={onClose} style={{ padding: "8px 40px", background: "rgba(0,0,0,0.4)", border: `1px solid ${border}33`, borderRadius: 8, color: "#806040", fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: 3, cursor: "pointer" }}>CLOSE</button>
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(2,1,0,0.92)", backdropFilter: "blur(10px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: 24, animation: "fadeIn 0.2s ease-out" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+        <Card card={card} size="lg" />
+        <button onClick={onClose} style={{ padding: "7px 36px", background: "rgba(0,0,0,0.4)", border: `1px solid ${border}33`, borderRadius: 8, color: "#806040", fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: 3, cursor: "pointer" }}>CLOSE</button>
       </div>
     </div>
   );
@@ -3339,7 +3328,7 @@ function LoginModal({ needsProfile = false, userId, userEmail, onSignOut, onProf
 }
 
 // ═══ COLLECTION ══════════════════════════════════════════════════════════════
-function CollectionScreen({ user, onUpdateUser }) {
+function CollectionScreen({ user, onUpdateUser, onDeckBuilding }) {
   const col = user?.collection || {};
   const selectedArts = user?.selectedArts || {};
   const fablesTester = isFablesTester(user);
@@ -3359,6 +3348,8 @@ function CollectionScreen({ user, onUpdateUser }) {
   const [previewCard, setPreviewCard] = useState(null);
   // Deck builder: null=closed, "select"=deck picker, { index, name, cards }=editing
   const [deckBuilderState, setDeckBuilderState] = useState(null);
+  const openDeckBuilder = (state) => { setDeckBuilderState(state); if (onDeckBuilding) onDeckBuilding(state && state !== "select"); };
+  const closeDeckBuilder = () => { setDeckBuilderState(null); if (onDeckBuilding) onDeckBuilding(false); };
   const decks = user?.decks || [];
   const saveDeck = async (deck, editIndex) => {
     let newDecks;
@@ -3450,7 +3441,7 @@ function CollectionScreen({ user, onUpdateUser }) {
         <DeckBuilderModal
           user={user}
           onSave={saveDeck}
-          onClose={() => setDeckBuilderState(null)}
+          onClose={closeDeckBuilder}
           editDeck={deckBuilderState.isNew ? null : deckBuilderState}
         />
       )}
@@ -3459,11 +3450,11 @@ function CollectionScreen({ user, onUpdateUser }) {
         <div style={{ position:"fixed", inset:0, zIndex:600, background:"rgba(2,1,0,0.97)", display:"flex", flexDirection:"column" }}>
           <div style={{ padding:"18px 24px", borderBottom:"2px solid #3a2c10", background:"linear-gradient(180deg,#1a1608,#0e0c06)", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
             <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:20, color:"#e8c060", margin:0, letterSpacing:2 }}>⚒ YOUR DECKS</h3>
-            <button onClick={() => setDeckBuilderState(null)} style={{ padding:"8px 18px", background:"transparent", border:"1px solid #4a2010", borderRadius:8, color:"#806040", fontFamily:"'Cinzel',serif", fontSize:11, cursor:"pointer" }}>✕ CLOSE</button>
+            <button onClick={closeDeckBuilder} style={{ padding:"8px 18px", background:"transparent", border:"1px solid #4a2010", borderRadius:8, color:"#806040", fontFamily:"'Cinzel',serif", fontSize:11, cursor:"pointer" }}>✕ CLOSE</button>
           </div>
           <div style={{ flex:1, overflowY:"auto", padding:"28px 32px", display:"flex", flexDirection:"column", gap:14, maxWidth:700, margin:"0 auto", width:"100%" }}>
             {/* Create new */}
-            <div onClick={() => setDeckBuilderState({ isNew:true })}
+            <div onClick={() => openDeckBuilder({ isNew:true })}
               style={{ display:"flex", alignItems:"center", gap:16, padding:"18px 22px", background:"rgba(232,192,96,0.06)", border:"2px dashed #e8c06055", borderRadius:14, cursor:"pointer", transition:"all .2s" }}
               onMouseEnter={e=>{e.currentTarget.style.background="rgba(232,192,96,0.12)";e.currentTarget.style.borderColor="#e8c060aa";}}
               onMouseLeave={e=>{e.currentTarget.style.background="rgba(232,192,96,0.06)";e.currentTarget.style.borderColor="#e8c06055";}}>
@@ -3486,7 +3477,7 @@ function CollectionScreen({ user, onUpdateUser }) {
                     </div>
                     <div style={{ fontSize:10, color:"#806040", marginTop:4 }}>{STARTER_DECK.length} cards</div>
                   </div>
-                  <button onClick={() => setDeckBuilderState({ isNew:false, index:"starter", name:"Starter Deck", cards:STARTER_DECK })}
+                  <button onClick={() => openDeckBuilder({ isNew:false, index:"starter", name:"Starter Deck", cards:STARTER_DECK })}
                     style={{ padding:"9px 20px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:"#1a1000", cursor:"pointer", letterSpacing:1 }}>EDIT</button>
                 </div>
               );
@@ -3498,7 +3489,7 @@ function CollectionScreen({ user, onUpdateUser }) {
                   <div style={{ fontFamily:"'Cinzel',serif", fontSize:16, fontWeight:700, color:"#f0e0c8", letterSpacing:1 }}>{d.name}</div>
                   <div style={{ fontSize:10, color:"#806040", marginTop:4 }}>{d.cards?.length || 0} cards</div>
                 </div>
-                <button onClick={() => setDeckBuilderState({ isNew:false, index:i, name:d.name, cards:d.cards||[] })}
+                <button onClick={() => openDeckBuilder({ isNew:false, index:i, name:d.name, cards:d.cards||[] })}
                   style={{ padding:"9px 20px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:"#1a1000", cursor:"pointer", letterSpacing:1 }}>EDIT</button>
                 <button onClick={() => deleteDeck(i)}
                   style={{ padding:"9px 14px", background:"transparent", border:"1px solid #5a1010", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:"#904040", cursor:"pointer" }}>DELETE</button>
@@ -3513,7 +3504,7 @@ function CollectionScreen({ user, onUpdateUser }) {
           <h2 style={{ fontFamily: "'Cinzel',serif", fontSize: 24, fontWeight: 700, color: "#e8c060", margin: 0 }}>Collection</h2>
           <div style={{ fontSize: 11, color: "#806040", marginTop: 3 }}>{owned.length} / {ownablePool.length} cards obtained</div>
         </div>
-        <button onClick={() => setDeckBuilderState("select")}
+        <button onClick={() => openDeckBuilder("select")}
           style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 22px", background: "linear-gradient(135deg,#1a1608,#2a2010)", border: "2px solid #e8c06055", borderRadius: 12, cursor: "pointer", fontFamily: "'Cinzel',serif", color: "#e8c060", transition: "all .2s" }}
           onMouseEnter={e => { e.currentTarget.style.borderColor="#e8c060aa"; e.currentTarget.style.background="linear-gradient(135deg,#2a2010,#3a3018)"; }}
           onMouseLeave={e => { e.currentTarget.style.borderColor="#e8c06055"; e.currentTarget.style.background="linear-gradient(135deg,#1a1608,#2a2010)"; }}>
@@ -4768,7 +4759,7 @@ function AlphaKeyAdminPanel() {
 }
 
 export default function App() {
-  const [tab, setTab] = useState("home"); const { user, loading, login, logout, update, completeProfile } = useAuth(); const [showProfile, setShowProfile] = useState(false); const [showPatchNotes, setShowPatchNotes] = useState(false); const [inPvpMatch, setInPvpMatch] = useState(false); const [navLeaveModal, setNavLeaveModal] = useState(null); const [avatarErr, setAvatarErr] = useState(""); const [navHovered, setNavHovered] = useState(false); const [matchActive, setMatchActive] = useState(false); const [histPopup, setHistPopup] = useState(null); // { targetTab }
+  const [tab, setTab] = useState("home"); const { user, loading, login, logout, update, completeProfile } = useAuth(); const [showProfile, setShowProfile] = useState(false); const [showPatchNotes, setShowPatchNotes] = useState(false); const [inPvpMatch, setInPvpMatch] = useState(false); const [navLeaveModal, setNavLeaveModal] = useState(null); const [avatarErr, setAvatarErr] = useState(""); const [navHovered, setNavHovered] = useState(false); const [matchActive, setMatchActive] = useState(false); const [histPopup, setHistPopup] = useState(null); const [deckBuilding, setDeckBuilding] = useState(false); // { targetTab }
   const inBattle = matchActive;
   // Show patch notes once per account+device — triggers only when user logs in
   useEffect(() => {
@@ -4849,11 +4840,11 @@ export default function App() {
     {!user && !loading && <ForgeAndFableTeaser />}
     {(!user || user.__needsProfile) && <LoginModal needsProfile={!!user?.__needsProfile} userId={user?.id} userEmail={user?.email} onSignOut={logout} onProfileCreated={completeProfile} />}
     {user && showPatchNotes && <PatchNotesModal onDismiss={() => { localStorage.setItem(`patchSeen_${user.id}`, CURRENT_PATCH); update({ lastPatchSeen: CURRENT_PATCH }); setShowPatchNotes(false); }} />}
-    {/* Floating Discord badge */}
-    <a href="https://discord.gg/RrjBaN8Akk" target="_blank" rel="noopener noreferrer" style={{ position:"fixed", bottom:20, left:20, zIndex:9999, display:"flex", alignItems:"center", gap:8, padding:"10px 16px", background:"linear-gradient(135deg,#4752c4,#5865F2)", border:"1px solid #7289daaa", borderRadius:28, color:"#fff", fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, letterSpacing:1, textDecoration:"none", boxShadow:"0 4px 24px rgba(88,101,242,0.5), 0 2px 8px rgba(0,0,0,0.6)", transition:"all .2s", userSelect:"none" }} onMouseEnter={(e)=>{e.currentTarget.style.transform="translateY(-3px) scale(1.04)";e.currentTarget.style.boxShadow="0 8px 32px rgba(88,101,242,0.7), 0 2px 8px rgba(0,0,0,0.6)";}} onMouseLeave={(e)=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="0 4px 24px rgba(88,101,242,0.5), 0 2px 8px rgba(0,0,0,0.6)";}}>
+    {/* Floating Discord badge — hidden while deck builder is open */}
+    {!deckBuilding && <a href="https://discord.gg/RrjBaN8Akk" target="_blank" rel="noopener noreferrer" style={{ position:"fixed", bottom:20, left:20, zIndex:9999, display:"flex", alignItems:"center", gap:8, padding:"10px 16px", background:"linear-gradient(135deg,#4752c4,#5865F2)", border:"1px solid #7289daaa", borderRadius:28, color:"#fff", fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, letterSpacing:1, textDecoration:"none", boxShadow:"0 4px 24px rgba(88,101,242,0.5), 0 2px 8px rgba(0,0,0,0.6)", transition:"all .2s", userSelect:"none" }} onMouseEnter={(e)=>{e.currentTarget.style.transform="translateY(-3px) scale(1.04)";e.currentTarget.style.boxShadow="0 8px 32px rgba(88,101,242,0.7), 0 2px 8px rgba(0,0,0,0.6)";}} onMouseLeave={(e)=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="0 4px 24px rgba(88,101,242,0.5), 0 2px 8px rgba(0,0,0,0.6)";}}>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.032.054a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
       JOIN DISCORD
-    </a>
+    </a>}
     {/* Nav leave warning — shows instead of window.confirm when leaving active PvP */}
     {navLeaveModal && (<div style={{ position:"fixed", inset:0, zIndex:700, background:"rgba(0,0,0,0.88)", display:"flex", alignItems:"center", justifyContent:"center" }} onClick={()=>setNavLeaveModal(null)}>
       <div style={{ background:"linear-gradient(160deg,#1c140a,#100c06)", border:"1px solid #b84020", borderRadius:16, padding:"32px 40px", textAlign:"center", maxWidth:340, boxShadow:"0 30px 80px rgba(0,0,0,0.98)", animation:"fadeIn 0.2s ease-out" }} onClick={e=>e.stopPropagation()}>
@@ -5018,7 +5009,7 @@ export default function App() {
       {tab === "home" && <HomeScreen setTab={setTab} user={user} />}
       {tab === "play" && <GameTab user={user} onUpdateUser={update} setInPvpMatch={setInPvpMatch} setMatchActive={setMatchActive} />}
       {tab === "store" && <StoreScreen user={user} onUpdateUser={update} />}
-      {tab === "collection" && <CollectionScreen user={user} onUpdateUser={update} />}
+      {tab === "collection" && <CollectionScreen user={user} onUpdateUser={update} onDeckBuilding={setDeckBuilding} />}
       {tab === "community" && <CommunityScreen user={user} />}
       {tab === "howto" && <GuideScreen />}
       {!inBattle && <footer style={{ borderTop: "1px solid #1e1a0e", padding: 22, textAlign: "center" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, color: "#40301a" }}>Forge {"&"} Fable</div><p style={{ fontSize: 9, color: "#30280e", margin: "4px 0 0", letterSpacing: 1 }}>{CURRENT_PATCH}: FABLES CARDS LIVE · ZEUS LIGHTNING METER · HADES SOUL HARVEST · CERBERUS WHELP · MEDUSA'S GAZE</p></footer>}
