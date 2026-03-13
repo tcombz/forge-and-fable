@@ -522,7 +522,7 @@ function CardArt({ card }) {
   if (card.imageUrl && !imgFailed) return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
       <ArtCanvas card={card} style={{ position: "absolute", inset: 0 }} />
-      <img src={card.imageUrl} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", zIndex: 1, imageRendering: "high-quality", transform: "translateZ(0)", willChange: "transform" }} referrerPolicy="no-referrer" onError={() => setImgFailed(true)} />
+      <img src={card.imageUrl} alt="" loading="lazy" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", zIndex: 1, imageRendering: "high-quality", transform: "translateZ(0)", willChange: "transform" }} referrerPolicy="no-referrer" onError={() => setImgFailed(true)} />
     </div>
   );
   return (<div style={{ position: "relative", width: "100%", height: "100%" }}><ArtCanvas card={card} style={{ position: "absolute", inset: 0 }} /></div>);
@@ -972,7 +972,7 @@ function computeEnemyPlayPhase(g, vfx) {
     const inst = { ...makeInst(card, "eb"), canAttack: (card.keywords || []).includes("Swift"), currentAtk: card.atk + resBonus };
     if (card.bloodpact) { s.enemyHP -= card.cost; L(`Enemy blood-plays ${card.name}!`); } else { en -= ec; L(`Enemy plays ${card.name}!`); }
     s.enemyBoard = [...s.enemyBoard, inst]; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid);
-    if ((card.keywords || []).includes("Fracture") && s.enemyBoard.length < CFG.maxBoard) s.enemyBoard = [...s.enemyBoard, { ...inst, uid: uid("ef"), currentHp: Math.ceil(card.hp / 2), maxHp: Math.ceil(card.hp / 2), currentAtk: Math.ceil(card.atk / 2), name: card.name + " Frag", keywords: [], effects: [] }];
+    if ((card.keywords || []).includes("Fracture") && s.enemyBoard.length < CFG.maxBoard) s.enemyBoard = [...s.enemyBoard, { ...inst, uid: uid("ef"), shielded: false, currentHp: Math.ceil(card.hp / 2), maxHp: Math.ceil(card.hp / 2), currentAtk: Math.ceil(card.atk / 2), name: card.name + " Frag", keywords: [], effects: [] }];
     s = resolveEffects("onPlay", card, s, "enemy", vfx);
   });
   return s;
@@ -1016,7 +1016,7 @@ function computeEnemyTurn(g, vfx) {
     const inst = { ...makeInst(card, "eb"), canAttack: (card.keywords || []).includes("Swift"), currentAtk: card.atk + resBonus };
     if (card.bloodpact) { s.enemyHP -= card.cost; L(`Enemy blood-plays ${card.name}!`); } else { en -= ec; L(`Enemy plays ${card.name}!`); }
     s.enemyBoard = [...s.enemyBoard, inst]; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid);
-    if ((card.keywords || []).includes("Fracture") && s.enemyBoard.length < CFG.maxBoard) s.enemyBoard = [...s.enemyBoard, { ...inst, uid: uid("ef"), currentHp: Math.ceil(card.hp / 2), maxHp: Math.ceil(card.hp / 2), currentAtk: Math.ceil(card.atk / 2), name: card.name + " Frag", keywords: [], effects: [] }];
+    if ((card.keywords || []).includes("Fracture") && s.enemyBoard.length < CFG.maxBoard) s.enemyBoard = [...s.enemyBoard, { ...inst, uid: uid("ef"), shielded: false, currentHp: Math.ceil(card.hp / 2), maxHp: Math.ceil(card.hp / 2), currentAtk: Math.ceil(card.atk / 2), name: card.name + " Frag", keywords: [], effects: [] }];
     s = resolveEffects("onPlay", card, s, "enemy", vfx);
   });
   s.enemyBoard.filter((c) => c.canAttack && !c.hasAttacked).forEach((att) => {
@@ -1253,7 +1253,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
       const inst={...makeInst(card,"eb"),canAttack:(card.keywords||[]).includes("Swift"),currentAtk:card.atk+resBonus};
       if(card.bloodpact){s.enemyHP-=card.cost;s.log=[...s.log.slice(-20),`Enemy blood-plays ${card.name}!`];}else{en-=ec;s.log=[...s.log.slice(-20),`Enemy plays ${card.name}!`];}
       s.enemyBoard=[...s.enemyBoard,inst];s.enemyHand=s.enemyHand.filter(c=>c.uid!==card.uid);
-      if((card.keywords||[]).includes("Fracture")&&s.enemyBoard.length<CFG.maxBoard)s.enemyBoard=[...s.enemyBoard,{...inst,uid:uid("ef"),currentHp:Math.ceil(card.hp/2),maxHp:Math.ceil(card.hp/2),currentAtk:Math.ceil(card.atk/2),name:card.name+" Frag",keywords:[],effects:[]}];
+      if((card.keywords||[]).includes("Fracture")&&s.enemyBoard.length<CFG.maxBoard)s.enemyBoard=[...s.enemyBoard,{...inst,uid:uid("ef"),shielded:false,currentHp:Math.ceil(card.hp/2),maxHp:Math.ceil(card.hp/2),currentAtk:Math.ceil(card.atk/2),name:card.name+" Frag",keywords:[],effects:[]}];
       s=resolveEffects("onPlay",card,s,"enemy",vfx);
       setAnimUids(p=>({...p,[inst.uid]:"summon"}));
       setTimeout(()=>setAnimUids(p=>{const n={...p};delete n[inst.uid];return n;}),550);
@@ -1340,7 +1340,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
       const resonateBonus = (card.keywords||[]).includes("Resonate") ? prev.enemyBoard.length : 0;
       const finalInst = resonateBonus > 0 ? { ...inst, currentAtk: inst.currentAtk + resonateBonus } : inst;
       s.playerBoard = [...prev.playerBoard, finalInst];
-      if ((card.keywords || []).includes("Fracture") && s.playerBoard.length < CFG.maxBoard) { s.playerBoard = [...s.playerBoard, { ...finalInst, uid: uid("pf"), currentHp: Math.ceil(card.hp / 2), maxHp: Math.ceil(card.hp / 2), currentAtk: Math.ceil(card.atk / 2), name: card.name + " Frag", keywords: [], levelUp: [], effects: [] }]; s.log = [...s.log, "Fragment enters!"]; }
+      if ((card.keywords || []).includes("Fracture") && s.playerBoard.length < CFG.maxBoard) { s.playerBoard = [...s.playerBoard, { ...finalInst, uid: uid("pf"), shielded: false, currentHp: Math.ceil(card.hp / 2), maxHp: Math.ceil(card.hp / 2), currentAtk: Math.ceil(card.atk / 2), name: card.name + " Frag", keywords: [], levelUp: [], effects: [] }]; s.log = [...s.log, "Fragment enters!"]; }
       // Echo: add 1/1 ghost to hand immediately
       if ((card.keywords||[]).includes("Echo") && s.playerHand.length < CFG.maxHand) { const ghost = { ...makeInst({ ...card, id: card.id+"_e", cost:1, hp:1, atk:1, keywords:[], effects:[] }, "p"), uid: uid("echo"), currentHp:1, maxHp:1, currentAtk:1, name: card.name+" Echo" }; s.playerHand = [...s.playerHand, ghost]; s.log = [...s.log, `Echo: ${card.name} ghost enters hand!`]; }
       s = resolveEffects("onPlay", card, s, "player", vfx); return s; });
@@ -1876,7 +1876,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         const inst = { ...makeInst(card, "pb"), canAttack: (card.keywords||[]).includes("Swift"), hasAttacked: false, currentAtk: card.atk + resBonus };
         ai.playerBoard = [...ai.playerBoard, inst]; ai.log = [...ai.log, `${(gs[role+"Name"]||"You")} plays ${card.name}!`];
         if ((card.keywords||[]).includes("Fracture") && ai.playerBoard.length < CFG.maxBoard) {
-          ai.playerBoard = [...ai.playerBoard, { ...inst, uid: uid("pf"), currentHp: Math.ceil(card.hp/2), maxHp: Math.ceil(card.hp/2), currentAtk: Math.ceil(card.atk/2), name: card.name+" Frag", keywords:[], effects:[] }];
+          ai.playerBoard = [...ai.playerBoard, { ...inst, uid: uid("pf"), shielded: false, currentHp: Math.ceil(card.hp/2), maxHp: Math.ceil(card.hp/2), currentAtk: Math.ceil(card.atk/2), name: card.name+" Frag", keywords:[], effects:[] }];
           ai.log = [...ai.log, "Fragment enters!"];
         }
         // Echo: add 1/1 ghost to hand immediately
@@ -3614,13 +3614,14 @@ function HomeScreen({ setTab, user }) {
     {/* Patch Notes Hub Section */}
     {(() => {
       const patchRows = [
-        { icon:"⚔", label:"PvP Matchmaking live — find real opponents" },
-        { icon:"🏆", label:"Ranked Mode — ELO rating, rank tiers from Iron to Grandmaster" },
-        { icon:"🌊", label:"Per-player environments · Community Card Forge" },
-        { icon:"🎵", label:"Euphoric SFX overhaul · card inspect · shield glow · buff notes" },
-        { icon:"🛡", label:"Nav locks while in PvP — auto-forfeit if you confirm leaving" },
+        { icon:"⚔", label:"IRON CRUCIBLE α — first official alpha multiplayer test" },
+        { icon:"⚖", label:"Balance: Timeline Weaver 3→2 ATK · Velrun 6/6 + Shield · Fractured Rift +1 ATK" },
+        { icon:"🩸", label:"Siphon Wraith: double bleed — each attack applies 2 stacks" },
+        { icon:"🛡", label:"Velrun Shield stays on original — Fracture copy spawns unshielded" },
+        { icon:"🖼", label:"Alt art cards: full image display with correct head framing" },
+        { icon:"💙", label:"Collection: always show mana cost in blue · right-click shows clean art preview" },
         { icon:"🏝", label:"Anime Island: 32 alt arts · 0.1% Prismatic Sun Strike" },
-        { icon:"🔑", label:"Alpha key system — each key single-use, admin panel for tcombz" },
+        { icon:"💬", label:"Feedback Wall — submit bugs, balance ideas & questions from the Hub" },
         { icon:"⚗", label:"Coming next: Leaderboard · Thornwood Expansion · Draft Mode", dim:true },
       ];
       return (
