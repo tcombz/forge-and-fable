@@ -2728,7 +2728,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
 // Phase lifecycle: waiting → found → accepted → entering
 //                 waiting → timeout | error
 //                 found / accepted → declined
-function MatchmakingScreen({ user, onMatch, onCancel }) {
+function MatchmakingScreen({ user, onMatch, onCancel, onRetry }) {
   const [phase, setPhase] = useState('waiting');
   const [dots, setDots] = useState(0);
   const [oppName, setOppName] = useState('');
@@ -2954,8 +2954,11 @@ function MatchmakingScreen({ user, onMatch, onCancel }) {
     <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
       <div style={{ fontSize:48, marginBottom:16 }}>⏱</div>
       <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:22, color:'#a09070', margin:'0 0 12px' }}>No Opponents Found</h2>
-      <p style={{ fontSize:13, color:'#806040', marginBottom:4 }}>Queue timed out after 5 minutes. Try again!</p>
-      {backBtn('BACK')}
+      <p style={{ fontSize:13, color:'#806040', marginBottom:24 }}>Queue timed out after 5 minutes.</p>
+      <div style={{ display:'flex', gap:12, justifyContent:'center' }}>
+        <button onClick={onRetry || onCancel} style={{ padding:'11px 28px', background:'linear-gradient(135deg,#1060a0,#2080d0)', border:'none', borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, letterSpacing:2, color:'#fff', cursor:'pointer' }}>TRY AGAIN</button>
+        {backBtn('BACK')}
+      </div>
     </div>
   );
 
@@ -2981,12 +2984,13 @@ function MatchmakingScreen({ user, onMatch, onCancel }) {
 // ═══ MATCH SETUP ═════════════════════════════════════════════
 function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive }) {
   const [matchConfig, setMatchConfig] = useState(null);
-  const [selectedDeck, setSelectedDeck] = useState(null);
+  const [selectedDeck, setSelectedDeck] = useState(null); // VS AI
+  const [pvpDeck, setPvpDeck] = useState(null);           // VS Player
   const [matchmaking, setMatchmaking] = useState(false);
   const [ranked, setRanked] = useState(false);
   const decks = user?.decks || [];
   const userRank = getRank(user?.rankedRating);
-  if (matchmaking) return (<MatchmakingScreen user={user} ranked={ranked} onMatch={(cfg) => { setMatchmaking(false); const cfg2 = { mode:"pvp", ranked, playerDeck: selectedDeck?.cards || null, ...cfg }; setMatchConfig(cfg2); setMatchActive?.(true); }} onCancel={() => setMatchmaking(false)} />);
+  if (matchmaking) return (<MatchmakingScreen key={matchmaking} user={user} ranked={ranked} onMatch={(cfg) => { setMatchmaking(false); const cfg2 = { mode:"pvp", ranked, playerDeck: pvpDeck?.cards || null, ...cfg }; setMatchConfig(cfg2); setMatchActive?.(true); }} onCancel={() => setMatchmaking(false)} onRetry={() => { setMatchmaking(false); setTimeout(() => setMatchmaking(true), 80); }} />);
   if (!matchConfig) return (<div style={{ maxWidth:720, margin:"0 auto", padding:"60px 24px 60px", display:"flex", flexDirection:"column", alignItems:"center" }}><div style={{ width:"100%" }}>
     <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:28, fontWeight:700, color:"#e8c060", margin:"0 0 4px", textAlign:"center" }}>Battle Setup</h2>
     <p style={{ fontSize:13, color:"#a09070", margin:"0 0 28px", textAlign:"center" }}>Choose your battle mode!</p>
@@ -3013,7 +3017,8 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive }) {
         {ranked && <div style={{ fontSize:9, color:userRank.color, fontFamily:"'Cinzel',serif", marginBottom:8, padding:"3px 10px", background:`${userRank.color}15`, border:`1px solid ${userRank.color}33`, borderRadius:8, display:"inline-block" }}>{userRank.icon} {userRank.name} · {user?.rankedRating||1000} MMR</div>}
         {!ranked && <p style={{ fontSize:11, color:"#6080a0", marginBottom:10, lineHeight:1.5 }}>Casual — no rating change</p>}
         {ranked && <p style={{ fontSize:11, color:"#8060a0", marginBottom:10, lineHeight:1.5 }}>Rating changes on win/loss. ELO-based.</p>}
-        {<select onChange={(e) => setSelectedDeck(e.target.value==="starter" ? { cards: STARTER_DECK } : e.target.value ? decks[parseInt(e.target.value)] : null)} style={{ width:"100%", padding:"7px", background:"#0c0a06", border:"1px solid #1a2038", borderRadius:7, color:"#f0e8d8", fontFamily:"'Cinzel',serif", fontSize:10, outline:"none", marginBottom:10 }}><option value="">-- Random deck --</option><option value="starter">Starter Deck</option>{decks.map((d, i) => (<option key={i} value={i}>{d.name} ({d.cards?.length || 0} cards)</option>))}</select>}
+        <select onChange={(e) => setPvpDeck(e.target.value==="starter" ? { name:"Starter Deck", cards: STARTER_DECK } : e.target.value ? decks[parseInt(e.target.value)] : null)} style={{ width:"100%", padding:"7px", background:"#0c0a06", border:"1px solid #1a2038", borderRadius:7, color:"#f0e8d8", fontFamily:"'Cinzel',serif", fontSize:10, outline:"none", marginBottom:10 }}><option value="">-- Random deck --</option><option value="starter">Starter Deck</option>{decks.map((d, i) => (<option key={i} value={i}>{d.name} ({d.cards?.length || 0} cards)</option>))}</select>
+        <div style={{ fontSize:9, color:"#405060", fontFamily:"'Cinzel',serif", marginBottom:10, letterSpacing:1 }}>Using: {pvpDeck?.name || "Random deck"}</div>
         <button onClick={() => { SFX.play("card"); setMatchmaking(true); }} style={{ width:"100%", padding:"12px", background:ranked?"linear-gradient(135deg,#5020a0,#8040d0)":"linear-gradient(135deg,#1060a0,#2080d0)", border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, letterSpacing:2, color:"#fff", cursor:"pointer" }}>{ranked?"RANKED MATCH":"FIND MATCH"}</button>
       </div>
     </div>
