@@ -433,25 +433,23 @@ function CardPreview({ card, onClose }) {
   if (!card) return null;
   // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => { if (card.rarity === "Prismatic" || card.altSetId === "prismatic") SFX.play("prismatic"); }, [card.id]);
-  const kws = KW.filter((k) => (card.keywords || []).includes(k.name));
   const border = card.border || "#e8c060";
-  const isBP = card.bloodpact || card.region === "Bloodpact";
   const isEnv = card.type === "environment";
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(2,1,0,0.92)", backdropFilter: "blur(10px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, animation: "fadeIn 0.2s ease-out" }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: "linear-gradient(160deg,#1e1c10,#0e0c06)", border: `2px solid ${border}`, borderRadius: 18, width: 320, overflow: "hidden", boxShadow: `0 30px 80px rgba(0,0,0,0.95), 0 0 40px ${border}22` }}>
-        <div style={{ height: 280, position: "relative", overflow:"hidden" }}><CardArt card={card} /><div style={{ position: "absolute", top: 8, right: 8, fontSize: 9, color: RC[card.rarity] || "#aaa", background: "rgba(0,0,0,0.7)", padding: "3px 10px", borderRadius: 20, border: `1px solid ${RC[card.rarity] || "#888"}44`, fontWeight: 700 }}>{(card.rarity || "Common").toUpperCase()}</div></div>
-        <div style={{ padding: "14px 18px 10px" }}>
-          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 18, fontWeight: 700, color: "#f8f0e0", marginBottom: 2 }}>{card.name}</div>
-          <div style={{ fontSize: 10, color: "#a09060", marginBottom: (card.altSetId === "anime_island") ? 4 : 10 }}>{(card.type || "creature").charAt(0).toUpperCase() + (card.type || "").slice(1)} · <span style={{ color: REGION_COLORS[card.region] || border }}>{card.region}</span></div>
-          {(card.altSetId === "anime_island" || (card.imageUrl && card.imageUrl.includes("anime-island"))) && <div style={{ fontSize: 9, color: "#ff80c0", marginBottom: 10 }}>🌸 Anime Island</div>}
-          {kws.length > 0 && <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 8 }}>{kws.map((k) => (<span key={k.name} style={{ fontSize: 9, padding: "3px 8px", borderRadius: 20, background: k.color + "bb", color: "#fff", border: "1px solid " + k.color + "dd", fontWeight: 700, textShadow: "0 1px 3px rgba(0,0,0,0.9)" }}>{k.icon} {k.name}</span>))}{isBP && <span style={{ fontSize: 9, padding: "3px 8px", borderRadius: 20, background: "#cc2030bb", color: "#fff", border: "1px solid #cc2030dd", fontWeight: 700, textShadow: "0 1px 3px rgba(0,0,0,0.9)" }}>Bloodpact</span>}</div>}
-          <div style={{ fontSize: 12, color: isEnv ? "#80c0d0" : "#e0d0b0", lineHeight: 1.7, marginBottom: 10, padding: "8px 0", borderTop: "1px solid " + border + "22", borderBottom: "1px solid " + border + "22" }}>{card.ability}</div>
-          {card.atk != null && <div style={{ display: "flex", gap: 20, marginBottom: 8 }}><div><span style={{ fontSize: 24, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#ff7750" }}>{card.currentAtk != null ? card.currentAtk : card.atk}</span><span style={{ fontSize: 9, color: "#996655", marginLeft: 4 }}>ATK</span></div><div><span style={{ fontSize: 24, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#50c065" }}>{card.currentHp != null ? card.currentHp : card.hp}</span><span style={{ fontSize: 9, color: "#448850", marginLeft: 4 }}>HP</span></div></div>}
-          {(card.statusLog||[]).length > 0 && <div style={{ marginBottom:8, borderTop:"1px solid #2a2010", paddingTop:6 }}><div style={{ fontSize:8, color:"#806040", letterSpacing:2, fontFamily:"'Cinzel',serif", marginBottom:4 }}>STATUS LOG</div>{(card.statusLog||[]).map((e,i)=><div key={i} style={{ fontSize:10, color:e.type==="buff"?"#60e880":"#ff6060", fontFamily:"'Cinzel',serif" }}>{e.type==="buff"?"⬆":"⬇"} {e.note}</div>)}</div>}
-          <div style={{ fontSize: 10, fontStyle: "italic", color: "#70603a", lineHeight: 1.6 }}>"{card.flavor || "Lost to history."}"</div>
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(2,1,0,0.92)", backdropFilter: "blur(10px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, padding: 24, animation: "fadeIn 0.2s ease-out" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+        {/* Actual card render — same as in-game, scaled up */}
+        <div style={{ transform: "scale(1.18)", transformOrigin: "top center", marginBottom: 56 }}>
+          <Card card={card} size="lg" />
         </div>
-        <button onClick={onClose} style={{ width: "100%", padding: "10px", background: "rgba(0,0,0,0.3)", border: "none", borderTop: "1px solid " + border + "22", color: "#806040", fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: 2, cursor: "pointer" }}>CLOSE</button>
+        {/* Ability + status + flavor panel */}
+        <div style={{ width: 260, background: "linear-gradient(160deg,#1e1c10,#0e0c06)", border: `1px solid ${border}33`, borderRadius: 12, padding: "12px 16px", boxShadow: `0 0 24px ${border}11` }}>
+          <div style={{ fontSize: 12, color: isEnv ? "#80c0d0" : "#e0d0b0", lineHeight: 1.75, paddingBottom: 8, borderBottom: `1px solid ${border}22`, marginBottom: 8 }}>{card.ability}</div>
+          {card.atk != null && <div style={{ display:"flex", gap:18, marginBottom:8 }}><div><span style={{ fontSize:22, fontFamily:"'Cinzel',serif", fontWeight:700, color:"#ff7750" }}>{card.currentAtk != null ? card.currentAtk : card.atk}</span><span style={{ fontSize:9, color:"#996655", marginLeft:4 }}>ATK</span></div><div><span style={{ fontSize:22, fontFamily:"'Cinzel',serif", fontWeight:700, color:"#50c065" }}>{card.currentHp != null ? card.currentHp : card.hp}</span><span style={{ fontSize:9, color:"#448850", marginLeft:4 }}>HP</span></div></div>}
+          {(card.statusLog||[]).length > 0 && <div style={{ marginBottom:8 }}>{(card.statusLog||[]).map((e,i)=><div key={i} style={{ fontSize:10, color:e.type==="buff"?"#60e880":"#ff6060", fontFamily:"'Cinzel',serif" }}>{e.type==="buff"?"⬆":"⬇"} {e.note}</div>)}</div>}
+          <div style={{ fontSize: 10, fontStyle: "italic", color: "#706048", lineHeight: 1.6 }}>"{card.flavor || "Lost to history."}"</div>
+        </div>
+        <button onClick={onClose} style={{ padding: "8px 40px", background: "rgba(0,0,0,0.4)", border: `1px solid ${border}33`, borderRadius: 8, color: "#806040", fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: 3, cursor: "pointer" }}>CLOSE</button>
       </div>
     </div>
   );

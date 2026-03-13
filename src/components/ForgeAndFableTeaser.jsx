@@ -30,78 +30,65 @@ function CardModal({ card, onClose }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  const bc = card.border;
   return (
     <div
       onClick={onClose}
       style={{
         position: "fixed", inset: 0, zIndex: 1000,
-        background: "rgba(0,0,0,0.82)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        backdropFilter: "blur(6px)",
+        background: "rgba(2,1,8,0.92)",
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16,
+        backdropFilter: "blur(10px)",
         animation: "modalFadeIn 0.18s ease-out",
+        padding: 24,
       }}
     >
+      {/* Card frame — mimics in-game card at enlarged size */}
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          position: "relative", width: 320, borderRadius: 16,
-          border: `2px solid ${card.border}`,
-          background: "linear-gradient(180deg, #0e0820 0%, #080414 100%)",
-          boxShadow: `0 0 60px ${card.border}55, 0 0 120px ${card.border}22, 0 24px 80px rgba(0,0,0,0.9)`,
+          position: "relative", width: 260, borderRadius: 14,
+          border: `2px solid ${bc}`,
+          background: "linear-gradient(180deg,#12091e 0%,#0a0414 100%)",
+          boxShadow: `0 0 50px ${bc}44, 0 0 100px ${bc}18, 0 28px 80px rgba(0,0,0,0.96)`,
           overflow: "hidden",
           animation: "modalSlideUp 0.22s cubic-bezier(0.25,0.46,0.45,0.94)",
         }}
       >
-        {/* Art — full width, show top so heads are visible */}
-        <div style={{ position: "relative", width: "100%", height: 280 }}>
+        {/* Art */}
+        <div style={{ position: "relative", width: "100%", height: 240 }}>
           <img src={card.img} alt={card.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }} />
-          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 80, background: "linear-gradient(to bottom, transparent, #0e0820)" }} />
-          <div style={{
-            position: "absolute", top: 12, left: 12, width: 36, height: 36, borderRadius: "50%",
-            background: "linear-gradient(135deg,#1a0a50,#3a1890)", border: `2px solid ${card.border}`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontFamily: "'Cinzel',serif", fontSize: 16, fontWeight: 700, color: "#d0b0ff",
-            boxShadow: `0 0 12px ${card.border}88`,
-          }}>{card.cost}</div>
-          <div style={{
-            position: "absolute", top: 12, right: 12, padding: "3px 10px", borderRadius: 20,
-            background: "rgba(0,0,0,0.7)", border: `1px solid ${RARITY_COLOR[card.rarity]}55`,
-            fontFamily: "'Cinzel',serif", fontSize: 9, fontWeight: 700, color: RARITY_COLOR[card.rarity], letterSpacing: 1,
-          }}>{card.rarity}</div>
-          {card.rarity === "Legendary" && (
-            <div style={{ position: "absolute", inset: 0, boxShadow: "inset 0 0 40px rgba(240,200,30,0.15)", pointerEvents: "none" }} />
-          )}
+          <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to bottom, transparent 55%, ${bc}22 80%, #0a0414 100%)` }} />
+          {/* Cost */}
+          <div style={{ position:"absolute", top:10, left:10, width:34, height:34, borderRadius:"50%", background:"linear-gradient(135deg,#1a0a50,#3a1890)", border:`2px solid ${bc}`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:15, fontWeight:700, color:"#d0b0ff", boxShadow:`0 0 12px ${bc}88` }}>{card.cost}</div>
+          {/* Rarity */}
+          <div style={{ position:"absolute", top:10, right:10, padding:"3px 10px", borderRadius:20, background:"rgba(0,0,0,0.75)", border:`1px solid ${RARITY_COLOR[card.rarity]}55`, fontFamily:"'Cinzel',serif", fontSize:8, fontWeight:700, color:RARITY_COLOR[card.rarity], letterSpacing:1 }}>{card.rarity}</div>
+          {card.rarity === "Legendary" && <div style={{ position:"absolute", inset:0, boxShadow:"inset 0 0 40px rgba(240,200,30,0.12)", pointerEvents:"none" }} />}
         </div>
-        <div style={{ padding: "16px 20px 20px" }}>
-          <div style={{ marginBottom: 10 }}>
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 18, fontWeight: 700, color: "#f0e8ff", letterSpacing: 0.5, lineHeight: 1.2 }}>{card.name}</div>
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: card.border, letterSpacing: 3, marginTop: 3 }}>{card.type.toUpperCase()} · <span style={{ color: "#9070ff" }}>FABLES</span></div>
+        {/* Name bar */}
+        <div style={{ padding:"12px 16px 8px", borderBottom:`1px solid ${bc}22` }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:17, fontWeight:700, color:"#f0e8ff", lineHeight:1.2 }}>{card.name}</div>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:bc, letterSpacing:3, marginTop:3 }}>{card.type.toUpperCase()} · <span style={{ color:"#9070ff" }}>FABLES</span></div>
+        </div>
+        {/* Stats */}
+        {card.atk != null && (
+          <div style={{ display:"flex", gap:14, padding:"8px 16px 0", marginBottom:2 }}>
+            <div style={{ display:"flex", alignItems:"baseline", gap:4 }}><span style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:700, color:"#ff9070" }}>{card.atk}</span><span style={{ fontSize:8, color:"#a06050", letterSpacing:2 }}>ATK</span></div>
+            <div style={{ display:"flex", alignItems:"baseline", gap:4 }}><span style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:700, color:"#70e890" }}>{card.hp}</span><span style={{ fontSize:8, color:"#408050", letterSpacing:2 }}>HP</span></div>
           </div>
-          {card.atk != null && (
-            <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
-              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", background:"rgba(255,80,40,0.12)", border:"1px solid #ff604044", borderRadius:8, padding:"6px 16px" }}>
-                <span style={{ fontFamily:"'Cinzel',serif", fontSize:20, fontWeight:700, color:"#ff9070", lineHeight:1 }}>{card.atk}</span>
-                <span style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#a06050", letterSpacing:2, marginTop:2 }}>ATK</span>
-              </div>
-              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", background:"rgba(40,200,80,0.12)", border:"1px solid #40c06044", borderRadius:8, padding:"6px 16px" }}>
-                <span style={{ fontFamily:"'Cinzel',serif", fontSize:20, fontWeight:700, color:"#70e890", lineHeight:1 }}>{card.hp}</span>
-                <span style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#408050", letterSpacing:2, marginTop:2 }}>HP</span>
-              </div>
-            </div>
-          )}
-          {card.keywords.length > 0 && (
-            <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:12 }}>
-              {card.keywords.map(kw => (
-                <span key={kw} style={{ fontSize:9, padding:"3px 10px", background:`${card.border}22`, border:`1px solid ${card.border}66`, borderRadius:20, color:"#d0c0ff", fontFamily:"'Cinzel',serif", letterSpacing:1, fontWeight:600 }}>{kw}</span>
-              ))}
-            </div>
-          )}
-          <div style={{ fontSize:12, color:"#c8bcdc", lineHeight:1.7, padding:"10px 12px", background:"rgba(144,112,255,0.07)", border:`1px solid ${card.border}22`, borderRadius:8 }}>
-            {card.ability}
+        )}
+        {/* Keywords */}
+        {card.keywords.length > 0 && (
+          <div style={{ display:"flex", gap:5, flexWrap:"wrap", padding:"6px 16px 0" }}>
+            {card.keywords.map(kw => <span key={kw} style={{ fontSize:8, padding:"2px 9px", background:`${bc}22`, border:`1px solid ${bc}55`, borderRadius:20, color:"#d0c0ff", fontFamily:"'Cinzel',serif", letterSpacing:1, fontWeight:600 }}>{kw}</span>)}
           </div>
-          <div style={{ textAlign:"center", marginTop:14, fontFamily:"'Cinzel',serif", fontSize:8, color:"#60508a", letterSpacing:3 }}>CLICK ANYWHERE TO CLOSE · ESC</div>
+        )}
+        {/* Ability */}
+        <div style={{ fontSize:11, color:"#c8bcdc", lineHeight:1.75, padding:"10px 16px 14px", background:`${bc}08` }}>
+          {card.ability}
         </div>
       </div>
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#40304a", letterSpacing:3 }}>CLICK ANYWHERE TO CLOSE · ESC</div>
       <style>{`
         @keyframes modalFadeIn { from{opacity:0} to{opacity:1} }
         @keyframes modalSlideUp { from{transform:translateY(20px) scale(0.97);opacity:0} to{transform:translateY(0) scale(1);opacity:1} }
