@@ -3052,7 +3052,8 @@ function PackOpening({ user, onUpdateUser }) {
     } else {
       const col = { ...(user.collection || {}) };
       const isNew = (col[card.id] || 0) === 0;
-      col[card.id] = (col[card.id] || 0) + 1;
+      // First time unlocking a card → award max copies so it's deck-ready immediately
+      col[card.id] = isNew ? (CFG.deck?.copies || 3) : (col[card.id] || 0) + 1;
       onUpdateUser({ collection: col });
       if (isNew && revealIdx != null) setNewCardIdxs(p => new Set([...p, revealIdx]));
     }
@@ -3341,9 +3342,11 @@ function LoginModal({ needsProfile = false, userId, userEmail, onSignOut, onProf
 function CollectionScreen({ user, onUpdateUser }) {
   const col = user?.collection || {};
   const selectedArts = user?.selectedArts || {};
-  const FACTION_LOCKED_REGIONS = ["Food Fight", "Fables"];
-  const owned = POOL.filter((c) => (col[c.id] || 0) > 0);
-  const locked = POOL.filter((c) => !(col[c.id] > 0) && !FACTION_LOCKED_REGIONS.includes(c.region));
+  // Obtainable = GAMEPLAY_POOL (base + Food Fight when unlocked, no Fables yet)
+  const owned      = GAMEPLAY_POOL.filter((c) => (col[c.id] || 0) > 0);
+  const notYet     = GAMEPLAY_POOL.filter((c) => (col[c.id] || 0) === 0);
+  // Coming Soon = locked region cards shown as teasers
+  const comingSoon = POOL.filter((c) => LOCKED_REGIONS.has(c.region));
   const [search, setSearch] = useState("");
   const [regFilter, setRegFilter] = useState("all");
   const [artPicker, setArtPicker] = useState(null);
@@ -3502,7 +3505,7 @@ function CollectionScreen({ user, onUpdateUser }) {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
         <div>
           <h2 style={{ fontFamily: "'Cinzel',serif", fontSize: 24, fontWeight: 700, color: "#e8c060", margin: 0 }}>Collection</h2>
-          <div style={{ fontSize: 11, color: "#806040", marginTop: 3 }}>{owned.length} / {POOL.length} cards owned</div>
+          <div style={{ fontSize: 11, color: "#806040", marginTop: 3 }}>{owned.length} / {GAMEPLAY_POOL.length} cards obtained</div>
         </div>
         <button onClick={() => setDeckBuilderState("select")}
           style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 22px", background: "linear-gradient(135deg,#1a1608,#2a2010)", border: "2px solid #e8c06055", borderRadius: 12, cursor: "pointer", fontFamily: "'Cinzel',serif", color: "#e8c060", transition: "all .2s" }}
@@ -3521,18 +3524,38 @@ function CollectionScreen({ user, onUpdateUser }) {
           <option value="all">All</option>{[...REGIONS, "Bloodpact"].map((r) => (<option key={r} value={r}>{r}</option>))}
         </select>
       </div>
-      <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#c09848", marginBottom: 12, fontWeight: 600 }}>OWNED ({filter(owned).length})</div>
-      <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 28, alignItems:"flex-start" }}>
-        {filter(owned).map((c, i) => <Fragment key={c.id}>{CollectionCard({ card: c, i })}</Fragment>)}
+      {/* OWNED */}
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#c09848", marginBottom:12, fontWeight:600 }}>OWNED ({filter(owned).length})</div>
+      <div style={{ display:"flex", gap:14, flexWrap:"wrap", marginBottom:28, alignItems:"flex-start" }}>
+        {filter(owned).map((c, i) => <Fragment key={c.id}>{CollectionCard({ card:c, i })}</Fragment>)}
+        {filter(owned).length === 0 && <div style={{ fontSize:11, color:"#503828", fontStyle:"italic" }}>No cards yet — open some packs!</div>}
       </div>
-      {filter(locked).length > 0 && (
-        <>
-          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#604028", marginBottom: 12, fontWeight: 600 }}>LOCKED ({filter(locked).length})</div>
-          <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
-            {filter(locked).map((c) => (<div key={c.id} style={{ opacity: 0.2, filter: "grayscale(80%)" }}><Card card={c} size="sm" /></div>))}
-          </div>
-        </>
-      )}
+      {/* NOT YET OBTAINED */}
+      {filter(notYet).length > 0 && (<>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#604028", marginBottom:12, fontWeight:600 }}>NOT YET OBTAINED ({filter(notYet).length})</div>
+        <div style={{ display:"flex", gap:14, flexWrap:"wrap", marginBottom:28 }}>
+          {filter(notYet).map((c) => (
+            <div key={c.id} style={{ opacity:0.35, filter:"grayscale(55%)", cursor:"default", position:"relative" }} title={c.name}>
+              <Card card={c} size="sm" />
+            </div>
+          ))}
+        </div>
+      </>)}
+      {/* COMING SOON — Fables + Food Fight */}
+      {comingSoon.filter(c => regFilter==="all"||c.region===regFilter).filter(c=>!search||c.name.toLowerCase().includes(search.toLowerCase())).length > 0 && (<>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#9070ff88", marginBottom:12, fontWeight:600, letterSpacing:2 }}>COMING SOON ({comingSoon.length})</div>
+        <div style={{ display:"flex", gap:14, flexWrap:"wrap" }}>
+          {comingSoon.filter(c => regFilter==="all"||c.region===regFilter).filter(c=>!search||c.name.toLowerCase().includes(search.toLowerCase())).map((c) => (
+            <div key={c.id} style={{ position:"relative", filter:"grayscale(65%) brightness(0.6)", opacity:0.8 }}>
+              <Card card={c} size="sm" />
+              {/* Corner ribbon banner */}
+              <div style={{ position:"absolute", top:0, left:0, width:"100%", height:"100%", overflow:"hidden", borderRadius:8, pointerEvents:"none" }}>
+                <div style={{ position:"absolute", top:14, left:-20, width:88, background:"linear-gradient(135deg,#7040d0,#a060ff)", color:"#fff", fontFamily:"'Cinzel',serif", fontSize:6, fontWeight:900, letterSpacing:1, padding:"4px 0", textAlign:"center", transform:"rotate(-38deg)", transformOrigin:"center", boxShadow:"0 2px 10px rgba(0,0,0,0.6), 0 0 8px #9070ff88", whiteSpace:"nowrap" }}>COMING SOON</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </>)}
     </div>
   );
 }
