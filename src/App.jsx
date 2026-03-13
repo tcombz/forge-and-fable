@@ -1195,7 +1195,82 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   const handleOpeningResult = (winner) => { setGame((p) => ({ ...p, phase: winner === "player" ? "player" : "enemy", log: [...p.log, winner === "player" ? "You go first!" : "Enemy goes first!"] })); setTimerKey((k) => k + 1); showTurnBanner(winner === "player" ? "YOUR TURN" : "ENEMY TURN"); if (winner === "enemy") setTimeout(() => doEnemyTurn(), 1400); };
 
   const flashAction = (msg) => { setLiveAction(msg); setTimeout(() => setLiveAction(null), 1800); };
-  const doEnemyTurn = () => { showTurnBanner("ENEMY TURN"); setAiThink(true); setTimeout(() => { setGame((prev) => { const next = computeEnemyTurn(prev, vfx); if (next.phase === "gameover") { const won = next.winner === "player"; SFX.play(won ? "victory" : "defeat"); const histEntry = { opponent: "AI", result: won ? "W" : "L", date: new Date().toISOString(), turns: next.turn || 0 }; const newHistory = [histEntry, ...(user?.matchHistory || [])].slice(0, 50); if (onUpdateUser) onUpdateUser({ battlesPlayed: (user?.battlesPlayed || 0) + 1, battlesWon: won ? (user?.battlesWon || 0) + 1 : (user?.battlesWon || 0), matchHistory: newHistory }); } const newLines = next.log.filter(l => !prev.log.includes(l)); if (newLines.length > 0) { const pick = newLines.find(l => /attacks|cast|play|destroy|deals/i.test(l)) || newLines[newLines.length-1]; setTimeout(() => flashAction(pick), 100); } return next; }); setAiThink(false); setTimerKey((k) => k + 1); setTimeout(() => showTurnBanner("YOUR TURN"), 200); }, 800); };
+  const doEnemyTurn = async () => {
+    showTurnBanner("ENEMY TURN");
+    setAiThink(true);
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    // Snapshot state
+    let s = await new Promise(r => { setGame(p => { r({ ...p, playerBoard: p.playerBoard.map(c=>({...c})), enemyBoard: p.enemyBoard.map(c=>({...c})), playerHand:[...p.playerHand], enemyHand:[...p.enemyHand], enemyDeck:[...p.enemyDeck], playerDeck:[...p.playerDeck], log:[...p.log] }); return p; }); });
+    const push = () => setGame(() => ({ ...s }));
+    await wait(300);
+    // Environment tick
+    if (s.environment) { const rem=(s.environment.turnsRemaining||4)-1; if(rem<=0){s.environment=null;s.log=[...s.log.slice(-20),"Environment fades."];}else{s.environment={...s.environment,turnsRemaining:rem};if(s.environment.owner==="enemy")s=resolveEffects("onTurnStart",s.environment,s,"enemy",vfx);} }
+    // Draw
+    if (s.enemyDeck.length>0&&s.enemyHand.length<6) { s.enemyHand=[...s.enemyHand,makeInst(s.enemyDeck[0],"e")];s.enemyDeck=s.enemyDeck.slice(1);s.log=[...s.log.slice(-20),"Enemy draws."];push();flashAction("Enemy draws...");await wait(500); }
+    // Play cards
+    let en=s.maxEnergy;
+    for (const card of [...s.enemyHand].sort((a,b)=>b.cost-a.cost)) {
+      if (card.type==="environment") { if(!card.bloodpact&&card.cost<=en){en-=card.cost;s.environment={...card,owner:"enemy"};s.enemyHand=s.enemyHand.filter(c=>c.uid!==card.uid);s.log=[...s.log.slice(-20),`Enemy: ${card.name}!`];s=resolveEffects("onPlay",card,s,"enemy",vfx);s=resolveEffects("onTurnStart",card,s,"enemy",vfx);push();flashAction(`Enemy plays ${card.name}!`);SFX.play("ability");await wait(750);} continue; }
+      if (card.type==="spell") { const canCast=card.bloodpact?card.cost<s.enemyHP:card.cost<=en; if(canCast){if(card.bloodpact)s.enemyHP-=card.cost;else en-=card.cost;s.enemyHand=s.enemyHand.filter(c=>c.uid!==card.uid);s.log=[...s.log.slice(-20),`Enemy casts ${card.name}!`];s=resolveEffects("onPlay",card,s,"enemy",vfx);push();flashAction(`Enemy casts ${card.name}!`);SFX.play("ability");await wait(700);} continue; }
+      if(s.enemyBoard.length>=CFG.maxBoard)continue;
+      const ec=card.bloodpact?0:card.cost; if(ec>en)continue;
+      const inst={...makeInst(card,"eb"),canAttack:(card.keywords||[]).includes("Swift")};
+      if(card.bloodpact){s.enemyHP-=card.cost;s.log=[...s.log.slice(-20),`Enemy blood-plays ${card.name}!`];}else{en-=ec;s.log=[...s.log.slice(-20),`Enemy plays ${card.name}!`];}
+      s.enemyBoard=[...s.enemyBoard,inst];s.enemyHand=s.enemyHand.filter(c=>c.uid!==card.uid);
+      if((card.keywords||[]).includes("Fracture")&&s.enemyBoard.length<CFG.maxBoard)s.enemyBoard=[...s.enemyBoard,{...inst,uid:uid("ef"),currentHp:Math.ceil(card.hp/2),maxHp:Math.ceil(card.hp/2),currentAtk:Math.ceil(card.atk/2),name:card.name+" Frag",keywords:[],effects:[]}];
+      s=resolveEffects("onPlay",card,s,"enemy",vfx);
+      setAnimUids(p=>({...p,[inst.uid]:"summon"}));
+      setTimeout(()=>setAnimUids(p=>{const n={...p};delete n[inst.uid];return n;}),550);
+      push();flashAction(`Enemy plays ${card.name}!`);SFX.play("summon");await wait(850);
+    }
+    // Attacks
+    const attUids=s.enemyBoard.filter(c=>c.canAttack&&!c.hasAttacked).map(c=>c.uid);
+    for (const attUid of attUids) {
+      if(s.playerHP<=0)break;
+      const att=s.enemyBoard.find(c=>c.uid===attUid);
+      if(!att||att.hasAttacked)continue;
+      const av=att.currentAtk+((att.keywords||[]).includes("Resonate")?s.playerHand.length:0);
+      setAnimUids(p=>({...p,[att.uid]:"attacking"}));SFX.play("attack");await wait(340);
+      if(s.playerBoard.length>0){
+        const tgt=[...s.playerBoard].sort((a,b)=>a.currentHp-b.currentHp)[0];
+        setAnimUids(p=>({...p,[tgt.uid]:"hit"}));vfx.add("attackImpact",{duration:500});await wait(200);
+        const nTHP=tgt.shielded?tgt.currentHp:tgt.currentHp-av;const nAHP=att.currentHp-tgt.currentAtk;
+        if(nAHP<att.currentHp&&nAHP>0){setAnimUids(p=>({...p,[att.uid]:"hit"}));await wait(280);}
+        const dyingUids={};if(nTHP<=0){dyingUids[tgt.uid]="dying";SFX.play("kill");}if(nAHP<=0)dyingUids[att.uid]="dying";
+        if(Object.keys(dyingUids).length>0){setAnimUids(p=>({...p,...dyingUids}));vfx.add("creatureDie",{color:"#e06040",duration:700});await wait(680);}
+        s.enemyBoard=s.enemyBoard.map(c=>c.uid===att.uid?{...c,hasAttacked:true,currentHp:nAHP}:c).filter(c=>c.currentHp>0);
+        s.playerBoard=s.playerBoard.map(c=>c.uid===tgt.uid?{...c,currentHp:nTHP,shielded:false,bleed:(c.bleed||0)+((att.keywords||[]).includes("Bleed")?1:0)}:c).filter(c=>c.currentHp>0);
+        s.log=[...s.log.slice(-20),`${att.name}(${av}) attacks ${tgt.name}`];
+        if(nTHP<=0){s.log=[...s.log,`💀 ${tgt.name} slain!`];s=resolveEffects("onDeath",tgt,s,"player",vfx);}
+        if(nAHP<=0){s.log=[...s.log,`💀 ${att.name} slain!`];s=resolveEffects("onDeath",att,s,"enemy",vfx);}
+        flashAction(`${att.name} attacks ${tgt.name}!`);
+      } else {
+        s.playerHP-=av;s.enemyBoard=s.enemyBoard.map(c=>c.uid===att.uid?{...c,hasAttacked:true}:c);
+        s.log=[...s.log.slice(-20),`${att.name} hits you for ${av}!`];flashAction(`${att.name} hits you for ${av}!`);vfx.add("damage",{amount:av,duration:500});
+      }
+      push();await wait(400);setAnimUids({});if(s.playerHP<=0)break;
+    }
+    // Player death check
+    if(s.playerHP<=0){SFX.play("defeat");const histEntry={opponent:"AI",result:"L",date:new Date().toISOString(),turns:s.turn||0};if(onUpdateUser)onUpdateUser({battlesPlayed:(user?.battlesPlayed||0)+1,battlesWon:user?.battlesWon||0,matchHistory:[histEntry,...(user?.matchHistory||[])].slice(0,50)});setGame(()=>({...s,phase:"gameover",winner:"enemy",log:[...s.log,"Defeated..."]}));setAiThink(false);return;}
+    // End-of-turn cleanup: bleed, echo, draw, energy
+    const pbd=s.playerBoard.reduce((n,c)=>n+(c.bleed||0),0),ebd=s.enemyBoard.reduce((n,c)=>n+(c.bleed||0),0);
+    s.playerBoard=s.playerBoard.map(c=>c.bleed>0?{...c,currentHp:c.currentHp-c.bleed}:c).filter(c=>c.currentHp>0);
+    s.enemyBoard=s.enemyBoard.map(c=>c.bleed>0?{...c,currentHp:c.currentHp-c.bleed}:c).filter(c=>c.currentHp>0);
+    if(pbd>0){s.playerHP-=pbd;s.log=[...s.log,`Bleed seeps: Player takes ${pbd}!`];}
+    if(ebd>0){s.enemyHP-=ebd;s.log=[...s.log,`Bleed seeps: Enemy takes ${ebd}!`];}
+    s.playerBoard.forEach(c=>{if(c.effects&&c.effects.length)s=resolveEffects("onTurnStart",c,s,"player",vfx);});
+    if(s.environment?.owner==="player")s=resolveEffects("onTurnStart",s.environment,s,"player",vfx);
+    s.playerBoard=s.playerBoard.map(c=>({...c,canAttack:true,hasAttacked:false}));
+    s.enemyBoard=s.enemyBoard.map(c=>({...c,canAttack:true,hasAttacked:false}));
+    s.playerBoard.filter(c=>(c.keywords||[]).includes("Echo")&&!c.echoQueued).forEach(src=>{if(s.playerBoard.length<CFG.maxBoard){s.playerBoard=[...s.playerBoard,{...makeInst({...src,id:src.id+"_e",hp:1,atk:1,keywords:[],effects:[]},"pe"),uid:uid("echo"),currentHp:1,maxHp:1,currentAtk:1,name:src.name+" Echo",canAttack:true}];s.log=[...s.log,`Echo of ${src.name}!`];}});
+    s.playerBoard=s.playerBoard.map(c=>(c.keywords||[]).includes("Echo")?{...c,echoQueued:true}:c);
+    if(s.playerDeck.length>0&&s.playerHand.length<CFG.maxHand){s.playerHand=[...s.playerHand,makeInst(s.playerDeck[0],"p")];s.playerDeck=s.playerDeck.slice(1);}
+    if(s.enemyHP<=0){SFX.play("victory");const histEntry={opponent:"AI",result:"W",date:new Date().toISOString(),turns:s.turn||0};if(onUpdateUser)onUpdateUser({battlesPlayed:(user?.battlesPlayed||0)+1,battlesWon:(user?.battlesWon||0)+1,matchHistory:[histEntry,...(user?.matchHistory||[])].slice(0,50)});setGame(()=>({...s,phase:"gameover",winner:"player",log:[...s.log,"Victory!"]}));setAiThink(false);return;}
+    const newTurn=s.turn+1,newMax=Math.min(CFG.maxEnergy,newTurn+1);
+    s.log=[...s.log,`Turn ${newTurn}`];
+    setGame(()=>({...s,turn:newTurn,phase:"player",playerEnergy:newMax,maxEnergy:newMax}));
+    setAiThink(false);setTimerKey(k=>k+1);setTimeout(()=>showTurnBanner("YOUR TURN"),200);
+  };
 
   const endTurn = useCallback(() => { if (g.phase !== "player" || aiThink) return; setAttacker(null); SFX.play("timer_end"); setGame((p) => ({ ...p, phase: "enemy", log: [...p.log.slice(-20), "Your turn ends."] })); setTimeout(() => doEnemyTurn(), 300); }, [g.phase, aiThink]);
 
@@ -3210,11 +3285,13 @@ function HomeScreen({ setTab, user }) {
   return (<>
     {/* Live ticker strip */}
     <div style={{ overflow:"hidden", height:36, background:"rgba(3,2,8,0.92)", borderBottom:"1px solid rgba(232,192,96,0.08)", display:"flex", alignItems:"center", position:"sticky", top:0, zIndex:50 }}>
-      <div style={{ flexShrink:0, padding:"0 18px", fontFamily:"'Cinzel',serif", fontSize:9, fontWeight:700, color:"#cc2030", letterSpacing:3, borderRight:"1px solid rgba(232,192,96,0.12)", height:"100%", display:"flex", alignItems:"center", background:"rgba(4,3,10,0.6)", whiteSpace:"nowrap" }}>LIVE</div>
-      <div style={{ display:"flex", alignItems:"center", animation:"tickerScroll 80s linear infinite", whiteSpace:"nowrap", willChange:"transform" }}>
-        {tickerDoubled.map((item, i) => (
-          <span key={i} style={{ fontSize:11, color:"rgba(160,148,120,0.85)", padding:"0 36px", borderRight:"1px solid rgba(232,192,96,0.08)" }} dangerouslySetInnerHTML={{ __html: item.replace(/([A-Z]{2,}(?:\s[A-Z0-9]+)*\s(?:LIVE|DEPLOYED|SOON|REPORT|GIVEAWAY))/g, '<span style="color:#e8c060;font-weight:600">$1</span>') }} />
-        ))}
+      <div style={{ flexShrink:0, padding:"0 18px", fontFamily:"'Cinzel',serif", fontSize:9, fontWeight:700, color:"#cc2030", letterSpacing:3, borderRight:"1px solid rgba(232,192,96,0.12)", height:"100%", display:"flex", alignItems:"center", background:"rgba(4,3,10,0.6)", whiteSpace:"nowrap", position:"relative", zIndex:2 }}>● LIVE</div>
+      <div style={{ flex:1, overflow:"hidden", height:"100%", display:"flex", alignItems:"center" }}>
+        <div style={{ display:"flex", alignItems:"center", animation:"tickerScroll 80s linear infinite", whiteSpace:"nowrap", willChange:"transform" }}>
+          {tickerDoubled.map((item, i) => (
+            <span key={i} style={{ fontSize:11, color:"rgba(160,148,120,0.85)", padding:"0 36px", borderRight:"1px solid rgba(232,192,96,0.08)" }} dangerouslySetInnerHTML={{ __html: item.replace(/([A-Z]{2,}(?:\s[A-Z0-9]+)*\s(?:LIVE|DEPLOYED|SOON|REPORT|GIVEAWAY))/g, '<span style="color:#e8c060;font-weight:600">$1</span>') }} />
+          ))}
+        </div>
       </div>
     </div>
 
@@ -4301,7 +4378,7 @@ export default function App() {
       </div>
     </div>)}
     <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "radial-gradient(ellipse at 15% 15%,rgba(200,140,20,0.11) 0%,transparent 50%),radial-gradient(ellipse at 85% 85%,rgba(30,120,200,0.08) 0%,transparent 50%)" }} />
-    <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "linear-gradient(180deg,#201c10 0%,#181408 100%)", backdropFilter: "blur(20px)", borderBottom: `2px solid ${inBattle && !navHovered ? "transparent" : "#4a3c18"}`, padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: inBattle && !navHovered ? 4 : 72, boxShadow: "0 4px 24px rgba(0,0,0,0.5)", overflow: "hidden", transition: "height 0.3s ease, border-color 0.3s ease, opacity 0.3s ease", opacity: inBattle && !navHovered ? 0.08 : 1, cursor: inBattle && !navHovered ? "pointer" : "default" }} onClick={(e) => { e.stopPropagation(); if (inBattle && !navHovered) setNavHovered(true); }} onMouseEnter={() => inBattle && setNavHovered(true)} onMouseLeave={() => inBattle && setNavHovered(false)}>
+    <nav style={{ position: inBattle ? "fixed" : "sticky", width: "100%", top: 0, zIndex: 100, background: "linear-gradient(180deg,#201c10 0%,#181408 100%)", backdropFilter: "blur(20px)", borderBottom: `2px solid ${inBattle && !navHovered ? "transparent" : "#4a3c18"}`, padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: inBattle && !navHovered ? 4 : 72, boxShadow: "0 4px 24px rgba(0,0,0,0.5)", overflow: "hidden", transition: "height 0.3s ease, border-color 0.3s ease, opacity 0.3s ease", opacity: inBattle && !navHovered ? 0.08 : 1, cursor: inBattle && !navHovered ? "pointer" : "default" }} onClick={(e) => { e.stopPropagation(); if (inBattle && !navHovered) setNavHovered(true); }} onMouseEnter={() => inBattle && setNavHovered(true)} onMouseLeave={() => inBattle && setNavHovered(false)}>
       <button onClick={() => { if (inPvpMatch) { setNavLeaveModal({ targetTab:"home" }); return; } setTab("home"); }} style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}>
         <div style={{ width: 36, height: 36, borderRadius: 8, background: "linear-gradient(135deg,#e8c060,#a07820)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontSize: 16, fontWeight: 900, color: "#1a1000", boxShadow: "0 2px 12px #e8c06044" }}>F</div>
         <div>
@@ -4435,7 +4512,7 @@ export default function App() {
         })()}
       </div>)}
     </nav>
-    <div style={{ position: "relative" }} onClick={() => setShowProfile(false)}>
+    <div style={{ position: "relative", paddingTop: inBattle ? 4 : 0 }} onClick={() => setShowProfile(false)}>
       {tab === "home" && <HomeScreen setTab={setTab} user={user} />}
       {tab === "play" && <GameTab user={user} onUpdateUser={update} setInPvpMatch={setInPvpMatch} />}
       {tab === "store" && <StoreScreen user={user} onUpdateUser={update} />}
