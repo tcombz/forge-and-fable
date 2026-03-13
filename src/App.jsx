@@ -522,7 +522,7 @@ function CardArt({ card }) {
   if (card.imageUrl && !imgFailed) return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
       <ArtCanvas card={card} style={{ position: "absolute", inset: 0 }} />
-      <img src={card.imageUrl} alt="" loading="lazy" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", zIndex: 1, imageRendering: "high-quality", transform: "translateZ(0)", willChange: "transform" }} referrerPolicy="no-referrer" onError={() => setImgFailed(true)} />
+      <img src={card.imageUrl} alt="" loading="lazy" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: card.altObjectPosition || "top", zIndex: 1, imageRendering: "high-quality", transform: "translateZ(0)", willChange: "transform" }} referrerPolicy="no-referrer" onError={() => setImgFailed(true)} />
     </div>
   );
   return (<div style={{ position: "relative", width: "100%", height: "100%" }}><ArtCanvas card={card} style={{ position: "absolute", inset: 0 }} /></div>);
@@ -731,7 +731,7 @@ const ALT_ARTS = {
   wisp:       [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Uncommon",  imageUrl:"/alt-art/wisp-anime-island.png",      rarity:"Uncommon" }],
   shard:      [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Common",    imageUrl:"/alt-art/shard-anime-island.jpg",     rarity:"Common" }],
   weaver:     [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Rare",      imageUrl:"/alt-art/weaver-anime-island.png",    rarity:"Rare" }],
-  velrun:     [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Legendary", imageUrl:"/alt-art/velrun-anime-island.jpg",    rarity:"Legendary", freeForOwners: true }],
+  velrun:     [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Legendary", imageUrl:"/alt-art/velrun-anime-island.jpg",    rarity:"Legendary", freeForOwners: true, altObjectPosition: "50% 15%" }],
   env_rift:   [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Rare",      imageUrl:"/alt-art/env_rift-anime-island.png",  rarity:"Rare" }],
   tide:       [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Rare",      imageUrl:"/alt-art/tide-anime-island.png",      rarity:"Rare" }],
   shellguard: [{ setId:"anime_island", setName:"Anime Island", label:"Anime Island · Common",    imageUrl:"/alt-art/shellguard-anime-island.jpg",rarity:"Common" }],
@@ -766,7 +766,7 @@ function resolveCardArt(card, selectedArts) {
   if (!altSetId) return card;
   const alts = ALT_ARTS[card.id] || [];
   const alt = alts.find((a) => a.setId === altSetId);
-  return alt ? { ...card, imageUrl: alt.imageUrl } : card;
+  return alt ? { ...card, imageUrl: alt.imageUrl, ...(alt.altObjectPosition ? { altObjectPosition: alt.altObjectPosition } : {}) } : card;
 }
 
 // ═══ TOKEN + HAND CARD ═══════════════════════════════════════════════════════
