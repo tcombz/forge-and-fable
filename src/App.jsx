@@ -4413,114 +4413,101 @@ export default function App() {
           );
         })}
       </div>
-      {user && (<div style={{ position: "relative", flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
-        <button onClick={() => setShowProfile((p) => !p)} style={{ background:"none", border:"2px solid #e8c06044", borderRadius:"50%", padding:0, cursor:"pointer", width:36, height:36, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:"#e8c060" }}>{user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user.name||"?").slice(0,2).toUpperCase()}</button>
-        {showProfile && (() => {
-          const totalBattles = user.battlesPlayed || 0;
-          const wins = user.battlesWon || 0;
-          const losses = Math.max(0, totalBattles - wins);
-          const winRate = totalBattles > 0 ? Math.round((wins / totalBattles) * 100) : 0;
-          const cardCount = Object.values(user.collection||{}).filter(v=>v>0).length;
-          const deckCount = (user.decks||[]).length;
-          const rank = getRank(user.rankedRating);
-          return (
-          <div style={{ position:"fixed", top:76, right:20, background:"#0e0c08", border:"1px solid #2a2010", borderRadius:18, width:360, zIndex:500, boxShadow:"0 32px 80px rgba(0,0,0,0.98), 0 0 0 1px #1a1408", animation:"fadeIn 0.2s ease-out", overflow:"hidden" }}>
-            {/* Hero header — full-width avatar banner */}
-            <div style={{ position:"relative", height:110, background:"linear-gradient(160deg,#1a1208,#0e0a04,#181208)", overflow:"hidden" }}>
-              {/* Ambient glow behind avatar */}
-              <div style={{ position:"absolute", top:"50%", left:30, transform:"translateY(-50%)", width:100, height:100, borderRadius:"50%", background:`radial-gradient(circle, ${rank.color}22 0%, transparent 70%)`, pointerEvents:"none" }} />
-              {/* Avatar */}
-              <label style={{ position:"absolute", top:"50%", left:20, transform:"translateY(-50%)", cursor:"pointer", flexShrink:0 }}>
-                <div style={{ width:72, height:72, borderRadius:"50%", overflow:"hidden", border:`3px solid ${rank.color}88`, display:"flex", alignItems:"center", justifyContent:"center", background:"#1a1408", fontFamily:"'Cinzel',serif", fontSize:20, color:"#e8c060", boxShadow:`0 0 20px ${rank.color}44` }}>
-                  {user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user.name||"?").slice(0,2).toUpperCase()}
-                </div>
-                <div style={{ position:"absolute", bottom:2, right:2, width:20, height:20, background:"#1a1408", border:`1px solid ${rank.color}55`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10 }}>📷</div>
-                <input type="file" accept="image/*" style={{ display:"none" }} onChange={async (e) => {
-                  const file = e.target.files[0]; if (!file) return;
-                  setAvatarErr("");
-                  if (file.size > 2*1024*1024) { setAvatarErr("Image must be under 2MB"); return; }
-                  const ext = file.name.split(".").pop().toLowerCase();
-                  const path = `avatars/${user.id}.${ext}`;
-                  const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert:true, contentType:file.type });
-                  if (upErr) { setAvatarErr("Upload failed: " + upErr.message); return; }
-                  const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
-                  if (urlData?.publicUrl) await update({ avatarUrl: urlData.publicUrl + "?t=" + Date.now() });
-                }} />
-              </label>
-              {/* Name + info right of avatar */}
-              <div style={{ position:"absolute", top:"50%", left:106, transform:"translateY(-50%)", right:16 }}>
-                {avatarErr && <div style={{ fontSize:8, color:"#e05050", marginBottom:3, fontFamily:"'Cinzel',serif" }}>{avatarErr}</div>}
-                <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, color:"#f0d878", fontWeight:900, letterSpacing:1, lineHeight:1, marginBottom:4 }}>{user.name}</div>
-                <div style={{ fontSize:8, color:"#907050", marginBottom:6, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user.email}</div>
-                <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
-                  <div style={{ padding:"3px 8px", background:`${rank.color}20`, border:`1px solid ${rank.color}55`, borderRadius:8, fontSize:9, color:rank.color, fontFamily:"'Cinzel',serif", fontWeight:700 }}>{rank.icon} {rank.name} · {user.rankedRating||1000}</div>
-                </div>
-              </div>
-            </div>
-            {/* Stats row */}
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", borderBottom:"1px solid #1a1408" }}>
-              {[
-                ["W%", winRate+"%", winRate>=50?"#78cc45":"#e8a020"],
-                ["WIN", wins, "#78cc45"],
-                ["LOSS", losses, "#e05050"],
-                ["CARDS", cardCount, "#e8c060"],
-                ["DECKS", deckCount, "#c0a870"],
-                ["SHARDS", user.shards||0, "#60c8ff"],
-              ].map(([l,v,c],i) => (
-                <div key={i} style={{ padding:"14px 4px", textAlign:"center", borderRight: i<5?"1px solid #1a1408":"none", background: i%2===0?"rgba(0,0,0,0.2)":"transparent" }}>
-                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#907050", letterSpacing:1, marginBottom:4 }}>{l}</div>
-                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:900, color:c, lineHeight:1 }}>{v}</div>
-                </div>
-              ))}
-            </div>
-            {/* Match history */}
-            <div style={{ padding:"12px 14px 10px" }}>
-              <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#604030", letterSpacing:3, marginBottom:8, fontWeight:700 }}>⚔ RECENT BATTLES</div>
-              {(user.matchHistory||[]).length === 0
-                ? <div style={{ fontSize:11, color:"#3a2810", fontStyle:"italic", textAlign:"center", padding:"12px 0" }}>No battles yet — fight someone!</div>
-                : <div style={{ maxHeight:200, overflowY:"auto", display:"flex", flexDirection:"column", gap:3 }}>
-                    {(user.matchHistory||[]).map((m,i) => {
-                      const won = m.result==="W"; const ff = m.result==="FF" || m.forfeit;
-                      const rc = won?"#78cc45":ff?"#e8a020":"#e05050";
-                      const resultLabel = won ? "WIN" : ff ? "FF" : "LOSS";
-                      return (
-                        <div key={i} style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 8px", background: i%2===0?"rgba(255,255,255,0.02)":"transparent", borderRadius:7, borderLeft:`3px solid ${rc}55` }}>
-                          {/* My avatar */}
-                          <div style={{ width:26, height:26, borderRadius:"50%", overflow:"hidden", border:`1.5px solid ${rc}44`, flexShrink:0, background:"#1a1408", display:"flex", alignItems:"center", justifyContent:"center", fontSize:6, color:"#e8c060", fontFamily:"'Cinzel',serif", fontWeight:700 }}>
-                            {user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (user.name||"?").slice(0,2).toUpperCase()}
-                          </div>
-                          <span style={{ fontSize:7, color:"#3a2a10", fontFamily:"'Cinzel',serif" }}>VS</span>
-                          {/* Opp avatar */}
-                          <div style={{ width:26, height:26, borderRadius:"50%", border:"1.5px solid #2a1a0855", flexShrink:0, background:"#0a0806", display:"flex", alignItems:"center", justifyContent:"center", fontSize:6, color:"#503020", fontFamily:"'Cinzel',serif", fontWeight:700, overflow:"hidden" }}>
-                            {m.opponentAvatar ? <img src={m.opponentAvatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (m.opponent||"??").slice(0,2).toUpperCase()}
-                          </div>
-                          {/* Name + date */}
-                          <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ fontSize:10, color:"#d0b080", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:600 }}>{m.opponent||"Unknown"}</div>
-                            <div style={{ fontSize:8, color:"#906848", fontFamily:"'Cinzel',serif" }}>{m.turns||0}T · {m.date ? new Date(m.date).toLocaleDateString() : ""}</div>
-                          </div>
-                          {/* Badge + MMR */}
-                          <div style={{ flexShrink:0, textAlign:"right" }}>
-                            <div style={{ fontSize:9, fontWeight:900, fontFamily:"'Cinzel',serif", color:rc, padding:"2px 8px", background:`${rc}14`, borderRadius:5, border:`1px solid ${rc}33`, letterSpacing:1, display:"inline-block" }}>{resultLabel}</div>
-                            {m.ranked && m.ratingDelta != null && <div style={{ fontSize:7, color:m.ratingDelta>=0?"#78cc45":"#e05050", fontFamily:"'Cinzel',serif", marginTop:2 }}>{m.ratingDelta>=0?"+":""}{m.ratingDelta} MMR</div>}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-              }
-            </div>
-            {/* Footer actions */}
-            <div style={{ padding:"8px 14px 14px", borderTop:"1px solid #1a1408", display:"flex", flexDirection:"column", gap:5 }}>
-              {user.name?.toLowerCase() === "tcombz" && <AlphaKeyAdminPanel />}
-              <button onClick={()=>{ localStorage.removeItem(`patchSeen_${user.id}`); update({ lastPatchSeen: null }); setShowPatchNotes(true); setShowProfile(false); }} style={{ width:"100%", padding:"7px", background:"transparent", border:"1px solid #2a2010", borderRadius:7, color:"#504028", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer", letterSpacing:1 }}>📋 PATCH NOTES</button>
-              <button onClick={() => { logout(); setShowProfile(false); }} style={{ width:"100%", padding:"8px", background:"rgba(160,20,20,0.1)", border:"1px solid #4a1010", borderRadius:7, color:"#a05040", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer", letterSpacing:1 }}>SIGN OUT</button>
-            </div>
-          </div>
-          );
-        })()}
+      {user && (<div style={{ position: "relative", flexShrink: 0 }}>
+        <button onClick={(e) => { e.stopPropagation(); setShowProfile((p) => !p); }} style={{ background:"none", border:"2px solid #e8c06044", borderRadius:"50%", padding:0, cursor:"pointer", width:36, height:36, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:"#e8c060" }}>{user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user.name||"?").slice(0,2).toUpperCase()}</button>
       </div>)}
     </nav>
+    {/* Profile popup — rendered OUTSIDE nav to avoid backdropFilter/overflow:hidden clipping */}
+    {showProfile && user && (() => {
+      const totalBattles = user.battlesPlayed || 0;
+      const wins = user.battlesWon || 0;
+      const losses = Math.max(0, totalBattles - wins);
+      const winRate = totalBattles > 0 ? Math.round((wins / totalBattles) * 100) : 0;
+      const cardCount = Object.values(user.collection||{}).filter(v=>v>0).length;
+      const deckCount = (user.decks||[]).length;
+      const rank = getRank(user.rankedRating);
+      return (<>
+        <div style={{ position:"fixed", inset:0, zIndex:490 }} onClick={() => setShowProfile(false)} />
+        <div style={{ position:"fixed", top:76, right:20, background:"#0e0c08", border:"1px solid #2a2010", borderRadius:18, width:360, zIndex:500, boxShadow:"0 32px 80px rgba(0,0,0,0.98), 0 0 0 1px #1a1408", animation:"fadeIn 0.2s ease-out", overflow:"hidden" }} onClick={(e) => e.stopPropagation()}>
+          {/* Hero header */}
+          <div style={{ position:"relative", height:110, background:"linear-gradient(160deg,#1a1208,#0e0a04,#181208)", overflow:"hidden" }}>
+            <div style={{ position:"absolute", top:"50%", left:30, transform:"translateY(-50%)", width:100, height:100, borderRadius:"50%", background:`radial-gradient(circle, ${rank.color}22 0%, transparent 70%)`, pointerEvents:"none" }} />
+            <label style={{ position:"absolute", top:"50%", left:20, transform:"translateY(-50%)", cursor:"pointer", flexShrink:0 }}>
+              <div style={{ width:72, height:72, borderRadius:"50%", overflow:"hidden", border:`3px solid ${rank.color}88`, display:"flex", alignItems:"center", justifyContent:"center", background:"#1a1408", fontFamily:"'Cinzel',serif", fontSize:20, color:"#e8c060", boxShadow:`0 0 20px ${rank.color}44` }}>
+                {user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user.name||"?").slice(0,2).toUpperCase()}
+              </div>
+              <div style={{ position:"absolute", bottom:2, right:2, width:20, height:20, background:"#1a1408", border:`1px solid ${rank.color}55`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10 }}>📷</div>
+              <input type="file" accept="image/*" style={{ display:"none" }} onChange={async (e) => {
+                const file = e.target.files[0]; if (!file) return;
+                setAvatarErr("");
+                if (file.size > 2*1024*1024) { setAvatarErr("Image must be under 2MB"); return; }
+                const ext = file.name.split(".").pop().toLowerCase();
+                const path = `avatars/${user.id}.${ext}`;
+                const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert:true, contentType:file.type });
+                if (upErr) { setAvatarErr("Upload failed: " + upErr.message); return; }
+                const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+                if (urlData?.publicUrl) await update({ avatarUrl: urlData.publicUrl + "?t=" + Date.now() });
+              }} />
+            </label>
+            <div style={{ position:"absolute", top:"50%", left:106, transform:"translateY(-50%)", right:16 }}>
+              {avatarErr && <div style={{ fontSize:8, color:"#e05050", marginBottom:3, fontFamily:"'Cinzel',serif" }}>{avatarErr}</div>}
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, color:"#f0d878", fontWeight:900, letterSpacing:1, lineHeight:1, marginBottom:4 }}>{user.name}</div>
+              <div style={{ fontSize:8, color:"#907050", marginBottom:6, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user.email}</div>
+              <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
+                <div style={{ padding:"3px 8px", background:`${rank.color}20`, border:`1px solid ${rank.color}55`, borderRadius:8, fontSize:9, color:rank.color, fontFamily:"'Cinzel',serif", fontWeight:700 }}>{rank.icon} {rank.name} · {user.rankedRating||1000}</div>
+              </div>
+            </div>
+          </div>
+          {/* Stats row */}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", borderBottom:"1px solid #1a1408" }}>
+            {[["W%",winRate+"%",winRate>=50?"#78cc45":"#e8a020"],["WIN",wins,"#78cc45"],["LOSS",losses,"#e05050"],["CARDS",cardCount,"#e8c060"],["DECKS",deckCount,"#c0a870"],["SHARDS",user.shards||0,"#60c8ff"]].map(([l,v,c],i) => (
+              <div key={i} style={{ padding:"14px 4px", textAlign:"center", borderRight:i<5?"1px solid #1a1408":"none", background:i%2===0?"rgba(0,0,0,0.2)":"transparent" }}>
+                <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#907050", letterSpacing:1, marginBottom:4 }}>{l}</div>
+                <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:900, color:c, lineHeight:1 }}>{v}</div>
+              </div>
+            ))}
+          </div>
+          {/* Match history */}
+          <div style={{ padding:"12px 14px 10px" }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#604030", letterSpacing:3, marginBottom:8, fontWeight:700 }}>⚔ RECENT BATTLES</div>
+            {(user.matchHistory||[]).length === 0
+              ? <div style={{ fontSize:11, color:"#3a2810", fontStyle:"italic", textAlign:"center", padding:"12px 0" }}>No battles yet — fight someone!</div>
+              : <div style={{ maxHeight:180, overflowY:"auto", display:"flex", flexDirection:"column", gap:3 }}>
+                  {(user.matchHistory||[]).map((m,i) => {
+                    const won = m.result==="W"; const ff = m.result==="FF"||m.forfeit;
+                    const rc = won?"#78cc45":ff?"#e8a020":"#e05050";
+                    return (
+                      <div key={i} style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 8px", background:i%2===0?"rgba(255,255,255,0.02)":"transparent", borderRadius:7, borderLeft:`3px solid ${rc}55` }}>
+                        <div style={{ width:26, height:26, borderRadius:"50%", overflow:"hidden", border:`1.5px solid ${rc}44`, flexShrink:0, background:"#1a1408", display:"flex", alignItems:"center", justifyContent:"center", fontSize:6, color:"#e8c060", fontFamily:"'Cinzel',serif", fontWeight:700 }}>
+                          {user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (user.name||"?").slice(0,2).toUpperCase()}
+                        </div>
+                        <span style={{ fontSize:7, color:"#3a2a10", fontFamily:"'Cinzel',serif" }}>VS</span>
+                        <div style={{ width:26, height:26, borderRadius:"50%", border:"1.5px solid #2a1a0855", flexShrink:0, background:"#0a0806", display:"flex", alignItems:"center", justifyContent:"center", fontSize:6, color:"#503020", fontFamily:"'Cinzel',serif", fontWeight:700, overflow:"hidden" }}>
+                          {m.opponentAvatar ? <img src={m.opponentAvatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (m.opponent||"??").slice(0,2).toUpperCase()}
+                        </div>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:10, color:"#d0b080", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:600 }}>{m.opponent||"Unknown"}</div>
+                          <div style={{ fontSize:8, color:"#906848", fontFamily:"'Cinzel',serif" }}>{m.turns||0}T · {m.date ? new Date(m.date).toLocaleDateString() : ""}</div>
+                        </div>
+                        <div style={{ flexShrink:0, textAlign:"right" }}>
+                          <div style={{ fontSize:9, fontWeight:900, fontFamily:"'Cinzel',serif", color:rc, padding:"2px 8px", background:`${rc}14`, borderRadius:5, border:`1px solid ${rc}33`, letterSpacing:1, display:"inline-block" }}>{won?"WIN":ff?"FF":"LOSS"}</div>
+                          {m.ranked && m.ratingDelta != null && <div style={{ fontSize:7, color:m.ratingDelta>=0?"#78cc45":"#e05050", fontFamily:"'Cinzel',serif", marginTop:2 }}>{m.ratingDelta>=0?"+":""}{m.ratingDelta} MMR</div>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+            }
+          </div>
+          {/* Footer */}
+          <div style={{ padding:"8px 14px 14px", borderTop:"1px solid #1a1408", display:"flex", flexDirection:"column", gap:5 }}>
+            {user.name?.toLowerCase() === "tcombz" && <AlphaKeyAdminPanel />}
+            <button onClick={()=>{ localStorage.removeItem(`patchSeen_${user.id}`); update({ lastPatchSeen: null }); setShowPatchNotes(true); setShowProfile(false); }} style={{ width:"100%", padding:"7px", background:"transparent", border:"1px solid #2a2010", borderRadius:7, color:"#504028", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer", letterSpacing:1 }}>📋 PATCH NOTES</button>
+            <button onClick={() => { logout(); setShowProfile(false); }} style={{ width:"100%", padding:"8px", background:"rgba(160,20,20,0.1)", border:"1px solid #4a1010", borderRadius:7, color:"#a05040", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer", letterSpacing:1 }}>SIGN OUT</button>
+          </div>
+        </div>
+      </>);
+    })()}
     <div style={{ position: "relative", paddingTop: inBattle ? 4 : 0 }} onClick={() => setShowProfile(false)}>
       {tab === "home" && <HomeScreen setTab={setTab} user={user} />}
       {tab === "play" && <GameTab user={user} onUpdateUser={update} setInPvpMatch={setInPvpMatch} />}
