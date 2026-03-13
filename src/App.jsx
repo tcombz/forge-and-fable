@@ -216,8 +216,8 @@ const RARITY_GLOW = { Rare: "#3070d0", Epic: "#9040c0", Legendary: "#e8c060", Ch
 const KW = [
   { name: "Swift", icon: "\u26A1", color: "#5a9a28", desc: "Attacks the turn it's played" },
   { name: "Fracture", icon: "\u2727", color: "#a060d0", desc: "A Fragment copy enters alongside" },
-  { name: "Echo", icon: "\u2941", color: "#28a0cc", desc: "A free 1/1 ghost replays next turn" },
-  { name: "Bleed", icon: "\u2620", color: "#d04040", desc: "Stacking damage each turn" },
+  { name: "Echo", icon: "\u2941", color: "#28a0cc", desc: "On play: adds a 1/1 ghost copy to your hand" },
+  { name: "Bleed", icon: "\u2620", color: "#d04040", desc: "Inflicts bleed; fires at end of your turn then clears" },
   { name: "Resonate", icon: "\u25C8", color: "#c88020", desc: "+1 ATK per enemy on the field" },
   { name: "Anchor", icon: "\u2693", color: "#80b0e0", desc: "Cannot be removed or rewound" },
   { name: "Shield", icon: "\u2666", color: "#60a0d0", desc: "Blocks the first hit taken" },
@@ -968,7 +968,8 @@ function computeEnemyPlayPhase(g, vfx) {
     if (card.type === "spell") { if (card.bloodpact ? card.cost < s.enemyHP : card.cost <= en) { if (card.bloodpact) s.enemyHP -= card.cost; else en -= card.cost; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid); L(`Enemy casts ${card.name}!`); s = resolveEffects("onPlay", card, s, "enemy", vfx); } return; }
     if (s.enemyBoard.length >= CFG.maxBoard) return;
     const ec = card.bloodpact ? 0 : card.cost; if (ec > en) return;
-    const inst = { ...makeInst(card, "eb"), canAttack: (card.keywords || []).includes("Swift") };
+    const resBonus = (card.keywords||[]).includes("Resonate") ? s.playerBoard.length : 0;
+    const inst = { ...makeInst(card, "eb"), canAttack: (card.keywords || []).includes("Swift"), currentAtk: card.atk + resBonus };
     if (card.bloodpact) { s.enemyHP -= card.cost; L(`Enemy blood-plays ${card.name}!`); } else { en -= ec; L(`Enemy plays ${card.name}!`); }
     s.enemyBoard = [...s.enemyBoard, inst]; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid);
     if ((card.keywords || []).includes("Fracture") && s.enemyBoard.length < CFG.maxBoard) s.enemyBoard = [...s.enemyBoard, { ...inst, uid: uid("ef"), currentHp: Math.ceil(card.hp / 2), maxHp: Math.ceil(card.hp / 2), currentAtk: Math.ceil(card.atk / 2), name: card.name + " Frag", keywords: [], effects: [] }];
@@ -982,20 +983,19 @@ function computeEnemyAttackPhase(g, vfx) {
   const L = (m) => { s.log = [...s.log.slice(-20), m]; };
   s.enemyBoard.filter((c) => c.canAttack && !c.hasAttacked).forEach((att) => {
     if (s.playerHP <= 0) return;
-    const av = att.currentAtk + ((att.keywords || []).includes("Resonate") ? s.playerBoard.length : 0);
+    const av = att.currentAtk;
     if (s.playerBoard.length > 0) { const tgt = [...s.playerBoard].sort((a, b) => a.currentHp - b.currentHp)[0]; let nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av; let nAHP = att.currentHp - tgt.currentAtk; if (tgt.shielded) L(`${tgt.name} shield absorbs!`); s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP } : c).filter((c) => c.currentHp > 0); s.playerBoard = s.playerBoard.map((c) => c.uid === tgt.uid ? { ...c, currentHp: nTHP, shielded: false, bleed: (c.bleed || 0) + ((att.keywords || []).includes("Bleed") ? 1 : 0) } : c).filter((c) => c.currentHp > 0); if (nTHP <= 0) { L(`${tgt.name} falls!`); s = resolveEffects("onDeath", tgt, s, "player", vfx); } if (nAHP <= 0) s = resolveEffects("onDeath", att, s, "enemy", vfx);
     } else { s.playerHP -= av; s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c); L(`${att.name} hits you for ${av}!`); }
   });
   if (s.playerHP <= 0) return { ...s, phase: "gameover", winner: "enemy", log: [...s.log, "Defeated..."] };
   const newTurn = g.turn + 1, newMax = Math.min(CFG.maxEnergy, newTurn + 1);
-  { const pbd = s.playerBoard.reduce((n,c)=>n+(c.bleed||0),0), ebd = s.enemyBoard.reduce((n,c)=>n+(c.bleed||0),0); s.playerBoard = s.playerBoard.map((c) => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter((c) => c.currentHp > 0); s.enemyBoard = s.enemyBoard.map((c) => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter((c) => c.currentHp > 0); if (pbd > 0) { s.playerHP -= pbd; L(`Bleed seeps: Player takes ${pbd}!`); } if (ebd > 0) { s.enemyHP -= ebd; L(`Bleed seeps: Enemy takes ${ebd}!`); } }
+  // End of enemy turn: fire + clear bleed on player board only
+  { const pbd = s.playerBoard.reduce((n,c)=>n+(c.bleed||0),0); s.playerBoard = s.playerBoard.map(c => c.bleed>0?{...c,currentHp:c.currentHp-c.bleed,bleed:0}:c).filter(c=>c.currentHp>0); if(pbd>0){s.playerHP-=pbd;L(`Bleed seeps: Player takes ${pbd}!`);} }
   s.playerBoard.forEach((c) => { if (c.effects && c.effects.length) s = resolveEffects("onTurnStart", c, s, "player", vfx); });
   // Fire player-owned env at start of player's turn
   if (s.environment?.owner === "player") s = resolveEffects("onTurnStart", s.environment, s, "player", vfx);
   s.playerBoard = s.playerBoard.map((c) => ({ ...c, canAttack: true, hasAttacked: false }));
   s.enemyBoard = s.enemyBoard.map((c) => ({ ...c, canAttack: true, hasAttacked: false }));
-  s.playerBoard.filter((c) => (c.keywords || []).includes("Echo") && !c.echoQueued).forEach((src) => { if (s.playerBoard.length < CFG.maxBoard) { s.playerBoard = [...s.playerBoard, { ...makeInst({ ...src, id: src.id + "_e", hp: 1, atk: 1, keywords: [], effects: [] }, "pe"), uid: uid("echo"), currentHp: 1, maxHp: 1, currentAtk: 1, name: src.name + " Echo", canAttack: true }]; L(`Echo of ${src.name}!`); } });
-  s.playerBoard = s.playerBoard.map((c) => (c.keywords || []).includes("Echo") ? { ...c, echoQueued: true } : c);
   if (s.playerDeck.length > 0 && s.playerHand.length < CFG.maxHand) { s.playerHand = [...s.playerHand, makeInst(s.playerDeck[0], "p")]; s.playerDeck = s.playerDeck.slice(1); }
   if (s.enemyHP <= 0) return { ...s, phase: "gameover", winner: "player", log: [...s.log, "Victory!"] };
   L(`Turn ${newTurn}`);
@@ -1012,7 +1012,8 @@ function computeEnemyTurn(g, vfx) {
     if (card.type === "spell") { if (card.bloodpact ? card.cost < s.enemyHP : card.cost <= en) { if (card.bloodpact) s.enemyHP -= card.cost; else en -= card.cost; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid); L(`Enemy casts ${card.name}!`); s = resolveEffects("onPlay", card, s, "enemy", vfx); } return; }
     if (s.enemyBoard.length >= CFG.maxBoard) return;
     const ec = card.bloodpact ? 0 : card.cost; if (ec > en) return;
-    const inst = { ...makeInst(card, "eb"), canAttack: (card.keywords || []).includes("Swift") };
+    const resBonus = (card.keywords||[]).includes("Resonate") ? s.playerBoard.length : 0;
+    const inst = { ...makeInst(card, "eb"), canAttack: (card.keywords || []).includes("Swift"), currentAtk: card.atk + resBonus };
     if (card.bloodpact) { s.enemyHP -= card.cost; L(`Enemy blood-plays ${card.name}!`); } else { en -= ec; L(`Enemy plays ${card.name}!`); }
     s.enemyBoard = [...s.enemyBoard, inst]; s.enemyHand = s.enemyHand.filter((c) => c.uid !== card.uid);
     if ((card.keywords || []).includes("Fracture") && s.enemyBoard.length < CFG.maxBoard) s.enemyBoard = [...s.enemyBoard, { ...inst, uid: uid("ef"), currentHp: Math.ceil(card.hp / 2), maxHp: Math.ceil(card.hp / 2), currentAtk: Math.ceil(card.atk / 2), name: card.name + " Frag", keywords: [], effects: [] }];
@@ -1020,20 +1021,19 @@ function computeEnemyTurn(g, vfx) {
   });
   s.enemyBoard.filter((c) => c.canAttack && !c.hasAttacked).forEach((att) => {
     if (s.playerHP <= 0) return;
-    const av = att.currentAtk + ((att.keywords || []).includes("Resonate") ? s.playerBoard.length : 0);
+    const av = att.currentAtk;
     if (s.playerBoard.length > 0) { const tgt = [...s.playerBoard].sort((a, b) => a.currentHp - b.currentHp)[0]; let nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av; let nAHP = att.currentHp - tgt.currentAtk; s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP } : c).filter((c) => c.currentHp > 0); s.playerBoard = s.playerBoard.map((c) => c.uid === tgt.uid ? { ...c, currentHp: nTHP, shielded: false, bleed: (c.bleed || 0) + ((att.keywords || []).includes("Bleed") ? 1 : 0) } : c).filter((c) => c.currentHp > 0); if (nTHP <= 0) { L(`${tgt.name} falls!`); s = resolveEffects("onDeath", tgt, s, "player", vfx); } if (nAHP <= 0) s = resolveEffects("onDeath", att, s, "enemy", vfx);
     } else { s.playerHP -= av; s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c); L(`${att.name} hits you for ${av}!`); }
   });
   if (s.playerHP <= 0) return { ...s, phase: "gameover", winner: "enemy", log: [...s.log, "Defeated..."] };
   const newTurn = g.turn + 1, newMax = Math.min(CFG.maxEnergy, newTurn + 1);
-  { const pbd = s.playerBoard.reduce((n,c)=>n+(c.bleed||0),0), ebd = s.enemyBoard.reduce((n,c)=>n+(c.bleed||0),0); s.playerBoard = s.playerBoard.map((c) => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter((c) => c.currentHp > 0); s.enemyBoard = s.enemyBoard.map((c) => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter((c) => c.currentHp > 0); if (pbd > 0) { s.playerHP -= pbd; L(`Bleed seeps: Player takes ${pbd}!`); } if (ebd > 0) { s.enemyHP -= ebd; L(`Bleed seeps: Enemy takes ${ebd}!`); } }
+  // End of enemy turn: fire + clear bleed on player board only
+  { const pbd = s.playerBoard.reduce((n,c)=>n+(c.bleed||0),0); s.playerBoard = s.playerBoard.map(c => c.bleed>0?{...c,currentHp:c.currentHp-c.bleed,bleed:0}:c).filter(c=>c.currentHp>0); if(pbd>0){s.playerHP-=pbd;L(`Bleed seeps: Player takes ${pbd}!`);} }
   s.playerBoard.forEach((c) => { if (c.effects && c.effects.length) s = resolveEffects("onTurnStart", c, s, "player", vfx); });
   // Fire player-owned env at start of player's turn (transition from enemy turn back to player)
   if (s.environment?.owner === "player") s = resolveEffects("onTurnStart", s.environment, s, "player", vfx);
   s.playerBoard = s.playerBoard.map((c) => ({ ...c, canAttack: true, hasAttacked: false }));
   s.enemyBoard = s.enemyBoard.map((c) => ({ ...c, canAttack: true, hasAttacked: false }));
-  s.playerBoard.filter((c) => (c.keywords || []).includes("Echo") && !c.echoQueued).forEach((src) => { if (s.playerBoard.length < CFG.maxBoard) { s.playerBoard = [...s.playerBoard, { ...makeInst({ ...src, id: src.id + "_e", hp: 1, atk: 1, keywords: [], effects: [] }, "pe"), uid: uid("echo"), currentHp: 1, maxHp: 1, currentAtk: 1, name: src.name + " Echo", canAttack: true }]; L(`Echo of ${src.name}!`); } });
-  s.playerBoard = s.playerBoard.map((c) => (c.keywords || []).includes("Echo") ? { ...c, echoQueued: true } : c);
   if (s.playerDeck.length > 0 && s.playerHand.length < CFG.maxHand) { s.playerHand = [...s.playerHand, makeInst(s.playerDeck[0], "p")]; s.playerDeck = s.playerDeck.slice(1); }
   if (s.enemyHP <= 0) return { ...s, phase: "gameover", winner: "player", log: [...s.log, "Victory!"] };
   L(`Turn ${newTurn}`);
@@ -1249,7 +1249,8 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
       if (card.type==="spell") { const canCast=card.bloodpact?card.cost<s.enemyHP:card.cost<=en; if(canCast){if(card.bloodpact)s.enemyHP-=card.cost;else en-=card.cost;s.enemyHand=s.enemyHand.filter(c=>c.uid!==card.uid);s.log=[...s.log.slice(-20),`Enemy casts ${card.name}!`];s=resolveEffects("onPlay",card,s,"enemy",vfx);push();flashAction(`Enemy casts ${card.name}!`);SFX.play("ability");await wait(700);} continue; }
       if(s.enemyBoard.length>=CFG.maxBoard)continue;
       const ec=card.bloodpact?0:card.cost; if(ec>en)continue;
-      const inst={...makeInst(card,"eb"),canAttack:(card.keywords||[]).includes("Swift")};
+      const resBonus=(card.keywords||[]).includes("Resonate")?s.playerBoard.length:0;
+      const inst={...makeInst(card,"eb"),canAttack:(card.keywords||[]).includes("Swift"),currentAtk:card.atk+resBonus};
       if(card.bloodpact){s.enemyHP-=card.cost;s.log=[...s.log.slice(-20),`Enemy blood-plays ${card.name}!`];}else{en-=ec;s.log=[...s.log.slice(-20),`Enemy plays ${card.name}!`];}
       s.enemyBoard=[...s.enemyBoard,inst];s.enemyHand=s.enemyHand.filter(c=>c.uid!==card.uid);
       if((card.keywords||[]).includes("Fracture")&&s.enemyBoard.length<CFG.maxBoard)s.enemyBoard=[...s.enemyBoard,{...inst,uid:uid("ef"),currentHp:Math.ceil(card.hp/2),maxHp:Math.ceil(card.hp/2),currentAtk:Math.ceil(card.atk/2),name:card.name+" Frag",keywords:[],effects:[]}];
@@ -1264,7 +1265,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
       if(s.playerHP<=0)break;
       const att=s.enemyBoard.find(c=>c.uid===attUid);
       if(!att||att.hasAttacked)continue;
-      const av=att.currentAtk+((att.keywords||[]).includes("Resonate")?s.playerBoard.length:0);
+      const av=att.currentAtk;
       setAnimUids(p=>({...p,[att.uid]:"attacking"}));SFX.play("attack");await wait(340);
       if(s.playerBoard.length>0){
         const tgt=[...s.playerBoard].sort((a,b)=>a.currentHp-b.currentHp)[0];
@@ -1287,17 +1288,13 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     }
     // Player death check
     if(s.playerHP<=0){SFX.play("defeat");const histEntry={opponent:"AI",result:"L",date:new Date().toISOString(),turns:s.turn||0};if(onUpdateUser)onUpdateUser({battlesPlayed:(user?.battlesPlayed||0)+1,battlesWon:user?.battlesWon||0,matchHistory:[histEntry,...(user?.matchHistory||[])].slice(0,50)});setGame(()=>({...s,phase:"gameover",winner:"enemy",log:[...s.log,"Defeated..."]}));return;}
-    // End-of-turn cleanup: bleed, echo, draw, energy
-    const pbd=s.playerBoard.reduce((n,c)=>n+(c.bleed||0),0),ebd=s.enemyBoard.reduce((n,c)=>n+(c.bleed||0),0);
-    s.playerBoard=s.playerBoard.map(c=>c.bleed>0?{...c,currentHp:c.currentHp-c.bleed}:c).filter(c=>c.currentHp>0);
-    s.enemyBoard=s.enemyBoard.map(c=>c.bleed>0?{...c,currentHp:c.currentHp-c.bleed}:c).filter(c=>c.currentHp>0);
+    // End of enemy turn: fire + clear bleed on player board only
+    const pbd=s.playerBoard.reduce((n,c)=>n+(c.bleed||0),0);
+    s.playerBoard=s.playerBoard.map(c=>c.bleed>0?{...c,currentHp:c.currentHp-c.bleed,bleed:0}:c).filter(c=>c.currentHp>0);
     if(pbd>0){s.playerHP-=pbd;s.log=[...s.log,`Bleed seeps: Player takes ${pbd}!`];}
-    if(ebd>0){s.enemyHP-=ebd;s.log=[...s.log,`Bleed seeps: Enemy takes ${ebd}!`];}
     s.playerBoard.forEach(c=>{if(c.effects&&c.effects.length)s=resolveEffects("onTurnStart",c,s,"player",vfx);});
     s.playerBoard=s.playerBoard.map(c=>({...c,canAttack:true,hasAttacked:false}));
     s.enemyBoard=s.enemyBoard.map(c=>({...c,canAttack:true,hasAttacked:false}));
-    s.playerBoard.filter(c=>(c.keywords||[]).includes("Echo")&&!c.echoQueued).forEach(src=>{if(s.playerBoard.length<CFG.maxBoard){s.playerBoard=[...s.playerBoard,{...makeInst({...src,id:src.id+"_e",hp:1,atk:1,keywords:[],effects:[]},"pe"),uid:uid("echo"),currentHp:1,maxHp:1,currentAtk:1,name:src.name+" Echo",canAttack:true}];s.log=[...s.log,`Echo of ${src.name}!`];}});
-    s.playerBoard=s.playerBoard.map(c=>(c.keywords||[]).includes("Echo")?{...c,echoQueued:true}:c);
     if(s.playerDeck.length>0&&s.playerHand.length<CFG.maxHand){s.playerHand=[...s.playerHand,makeInst(s.playerDeck[0],"p")];s.playerDeck=s.playerDeck.slice(1);}
     if(s.enemyHP<=0){SFX.play("victory");const histEntry={opponent:"AI",result:"W",date:new Date().toISOString(),turns:s.turn||0};if(onUpdateUser)onUpdateUser({battlesPlayed:(user?.battlesPlayed||0)+1,battlesWon:(user?.battlesWon||0)+1,matchHistory:[histEntry,...(user?.matchHistory||[])].slice(0,50)});setGame(()=>({...s,phase:"gameover",winner:"player",log:[...s.log,"Victory!"]}));return;}
     const newTurn=s.turn+1,newMax=Math.min(CFG.maxEnergy,newTurn+1);
@@ -1314,6 +1311,10 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     setAttacker(null); SFX.play("timer_end");
     setGame((p) => {
       let s = { ...p, phase: "enemy", log: [...p.log.slice(-20), "Your turn ends."] };
+      // End of player turn: fire + clear bleed on enemy board
+      const ebd = s.enemyBoard.reduce((n,c)=>n+(c.bleed||0),0);
+      s.enemyBoard = s.enemyBoard.map(c=>c.bleed>0?{...c,currentHp:c.currentHp-c.bleed,bleed:0}:c).filter(c=>c.currentHp>0);
+      if(ebd>0){s.enemyHP-=ebd;s.log=[...s.log.slice(-20),`Bleed seeps: Enemy takes ${ebd}!`];}
       // Fire env effect at end of player's turn, then decrement
       if (s.environment?.owner === "player") {
         s = resolveEffects("onTurnStart", s.environment, s, "player", vfx);
@@ -1338,7 +1339,15 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     SFX.play("card"); setAttacker(null);
     const inst = { ...makeInst(card, "pb"), canAttack: (card.keywords || []).includes("Swift"), hasAttacked: false };
     const summonUid = inst.uid;
-    setGame((prev) => { const eff = getEffectiveCost(card, prev.environment); let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= eff; s.log = [...s.log, `You play ${card.name}!`]; } s.playerBoard = [...prev.playerBoard, inst]; if ((card.keywords || []).includes("Fracture") && s.playerBoard.length < CFG.maxBoard) { s.playerBoard = [...s.playerBoard, { ...inst, uid: uid("pf"), currentHp: Math.ceil(card.hp / 2), maxHp: Math.ceil(card.hp / 2), currentAtk: Math.ceil(card.atk / 2), name: card.name + " Frag", keywords: [], levelUp: [], effects: [] }]; s.log = [...s.log, "Fragment enters!"]; } s = resolveEffects("onPlay", card, s, "player", vfx); return s; });
+    setGame((prev) => { const eff = getEffectiveCost(card, prev.environment); let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= eff; s.log = [...s.log, `You play ${card.name}!`]; }
+      // Resonate: set ATK based on enemy board count at time of play
+      const resonateBonus = (card.keywords||[]).includes("Resonate") ? prev.enemyBoard.length : 0;
+      const finalInst = resonateBonus > 0 ? { ...inst, currentAtk: inst.currentAtk + resonateBonus } : inst;
+      s.playerBoard = [...prev.playerBoard, finalInst];
+      if ((card.keywords || []).includes("Fracture") && s.playerBoard.length < CFG.maxBoard) { s.playerBoard = [...s.playerBoard, { ...finalInst, uid: uid("pf"), currentHp: Math.ceil(card.hp / 2), maxHp: Math.ceil(card.hp / 2), currentAtk: Math.ceil(card.atk / 2), name: card.name + " Frag", keywords: [], levelUp: [], effects: [] }]; s.log = [...s.log, "Fragment enters!"]; }
+      // Echo: add 1/1 ghost to hand immediately
+      if ((card.keywords||[]).includes("Echo") && s.playerHand.length < CFG.maxHand) { const ghost = { ...makeInst({ ...card, id: card.id+"_e", hp:1, atk:1, keywords:[], effects:[] }, "p"), uid: uid("echo"), currentHp:1, maxHp:1, currentAtk:1, name: card.name+" Echo" }; s.playerHand = [...s.playerHand, ghost]; s.log = [...s.log, `Echo: ${card.name} ghost enters hand!`]; }
+      s = resolveEffects("onPlay", card, s, "player", vfx); return s; });
     setAnimUids(p => ({ ...p, [summonUid]: "summoning" }));
     setTimeout(() => setAnimUids(p => { const n = {...p}; delete n[summonUid]; return n; }), 550);
   };
@@ -1354,7 +1363,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     setAnimUids(p => ({ ...p, [tgt.uid]: "hit" }));
     vfx.add("attackImpact", { duration: 500 });
     await new Promise(r => setTimeout(r, 200));
-    const av = att.currentAtk + ((att.keywords || []).includes("Resonate") ? g.enemyBoard.length : 0);
+    const av = att.currentAtk;
     const nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av;
     const nAHP = att.currentHp - tgt.currentAtk;
     // Counter-hit: attacker takes damage back and survives — show recoil
@@ -1381,10 +1390,10 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     await new Promise(r => setTimeout(r, 200));
     setAnimUids({});
   };
-  const atkFace = async () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking" }); await new Promise(r => setTimeout(r, 380)); const dmg = att.currentAtk + ((att.keywords || []).includes("Resonate") ? g.enemyBoard.length : 0); vfx.add("damage", { amount: dmg, duration: 500 }); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if (nHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 200)); setAnimUids({}); };
+  const atkFace = async () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking" }); await new Promise(r => setTimeout(r, 380)); const dmg = att.currentAtk; vfx.add("damage", { amount: dmg, duration: 500 }); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if (nHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 200)); setAnimUids({}); };
   const attCard = attacker ? g.playerBoard.find((c) => c.uid === attacker) : null;
 
-  return (<div style={{ maxWidth: "100%", margin: "0 auto", padding: "0 12px 40px", background: "linear-gradient(180deg,#1e1208 0%,#160e06 40%,#1c1208 100%)", minHeight: "100vh" }} onClick={() => { SFX.init(); }}>
+  return (<div style={{ maxWidth: "100%", margin: "0 auto", padding: "0 12px 0", background: "linear-gradient(180deg,#1e1208 0%,#160e06 40%,#1c1208 100%)", height: "100vh", overflow: "hidden", display: "flex", flexDirection: "column" }} onClick={() => { SFX.init(); }}>
     {previewCard && <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />}
     {/* Live Action Ticker */}
     {liveAction && (
@@ -1418,11 +1427,6 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         </div>
       </div>
     )}
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-      <button onClick={onExit} style={{ padding: "7px 16px", background: "transparent", border: "1px solid #3a2c10", borderRadius: 7, color: "#806040", fontFamily: "'Cinzel',serif", fontSize: 9, cursor: "pointer" }}>EXIT</button>
-      <h2 style={{ fontFamily: "'Cinzel',serif", fontSize: 18, fontWeight: 700, color: "#e8c060", margin: 0 }}>Battle</h2>
-      <div style={{ width: 110 }} />
-    </div>
     {g.phase === "gameover" && (<div style={{ textAlign: "center", background: g.winner === "player" ? "linear-gradient(135deg,#060e04,#0e0c08)" : "linear-gradient(135deg,#120404,#0e0c08)", border: `1px solid ${g.winner === "player" ? "#4a9020" : "#b83030"}`, borderRadius: 14, padding: 36, marginBottom: 20, animation: "fadeIn 0.5s ease-out" }}>
       <div style={{ fontSize: 56, marginBottom: 10, animation: "pulse 1s ease-in-out" }}>{g.winner === "player" ? "\u2728" : "\u2620"}</div>
       <h3 style={{ fontFamily: "'Cinzel',serif", fontSize: 28, color: g.winner === "player" ? "#78cc45" : "#e05050", margin: "0 0 18px", textShadow: `0 0 30px ${g.winner === "player" ? "#78cc4566" : "#e0505066"}` }}>{g.winner === "player" ? "VICTORY" : "DEFEATED"}</h3>
@@ -1431,10 +1435,11 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         <button onClick={onExit} style={{ padding: "11px 22px", background: "transparent", border: "1px solid #3a2c10", borderRadius: 8, fontFamily: "'Cinzel',serif", fontSize: 11, color: "#a09058", cursor: "pointer" }}>EXIT</button>
       </div>
     </div>)}
-    <div style={{ display: "grid", gridTemplateColumns: "250px 1fr 270px", gap: 14 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "250px 1fr 270px", gap: 14, flex: 1, minHeight: 0, overflow: "hidden" }}>
       {/* Chat panel — LEFT */}
-      <div style={{ display:"flex", flexDirection:"column", minHeight:500 }}>
+      <div style={{ display:"flex", flexDirection:"column", minHeight: 0, overflow: "hidden", gap: 6 }}>
         <BattleChat user={user} aiMode={true} />
+        <button onClick={onExit} style={{ flexShrink:0, padding:"8px", background:"rgba(180,40,20,0.12)", border:"1px solid #5a1810", borderRadius:8, color:"#a06040", fontFamily:"'Cinzel',serif", fontSize:10, cursor:"pointer", letterSpacing:1 }}>⬅ EXIT BATTLE</button>
       </div>
       <div style={{ background: envTheme ? envTheme.bg : "linear-gradient(180deg,#2a1c0c 0%,#1e1408 50%,#281a08 100%)", border: `1px solid ${envTheme ? envTheme.glow + "44" : "#5a3c1a55"}`, borderRadius: 14, overflow: "hidden", position: "relative", transition: "background 1.5s ease, border-color 1s ease", boxShadow: envTheme ? undefined : "inset 0 0 60px rgba(0,0,0,0.4), 0 0 0 1px #3a2010" }}>
         {g.phase === "opening" && <OpeningDraw onResult={handleOpeningResult} />}
@@ -1868,11 +1873,17 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       } else if (card.type === "spell") {
         ai.log = [...ai.log, `${(gs[role+"Name"]||"You")} casts ${card.name}!`];
       } else {
-        const inst = { ...makeInst(card, "pb"), canAttack: (card.keywords||[]).includes("Swift"), hasAttacked: false };
+        const resBonus = (card.keywords||[]).includes("Resonate") ? ai.enemyBoard.length : 0;
+        const inst = { ...makeInst(card, "pb"), canAttack: (card.keywords||[]).includes("Swift"), hasAttacked: false, currentAtk: card.atk + resBonus };
         ai.playerBoard = [...ai.playerBoard, inst]; ai.log = [...ai.log, `${(gs[role+"Name"]||"You")} plays ${card.name}!`];
         if ((card.keywords||[]).includes("Fracture") && ai.playerBoard.length < CFG.maxBoard) {
           ai.playerBoard = [...ai.playerBoard, { ...inst, uid: uid("pf"), currentHp: Math.ceil(card.hp/2), maxHp: Math.ceil(card.hp/2), currentAtk: Math.ceil(card.atk/2), name: card.name+" Frag", keywords:[], effects:[] }];
           ai.log = [...ai.log, "Fragment enters!"];
+        }
+        // Echo: add 1/1 ghost to hand immediately
+        if ((card.keywords||[]).includes("Echo") && ai.playerHand.length < CFG.maxHand) {
+          const ghost = { ...makeInst({ ...card, id: card.id+"_e", hp:1, atk:1, keywords:[], effects:[] }, "p"), uid: uid("echo"), currentHp:1, maxHp:1, currentAtk:1, name: card.name+" Echo" };
+          ai.playerHand = [...ai.playerHand, ghost]; ai.log = [...ai.log, `Echo: ${card.name} ghost enters hand!`];
         }
       }
       ai = resolveEffects("onPlay", card, ai, "player", vfxInst);
@@ -1882,7 +1893,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       const att = ai.playerBoard.find(c => c.uid === action.attackerUid);
       const tgt = ai.enemyBoard.find(c => c.uid === action.targetUid);
       if (!att || !tgt) return gs;
-      const av = att.currentAtk + ((att.keywords||[]).includes("Resonate") ? ai.enemyBoard.length : 0);
+      const av = att.currentAtk;
       let nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av;
       let nAHP = att.currentHp - tgt.currentAtk;
       ai.log = [...ai.log.slice(-20), `${att.name}(${av}) attacks ${tgt.name}`];
@@ -1897,7 +1908,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       let ai = toAI(gs, role);
       const att = ai.playerBoard.find(c => c.uid === action.attackerUid);
       if (!att) return gs;
-      const dmg = att.currentAtk + ((att.keywords||[]).includes("Resonate") ? ai.enemyBoard.length : 0);
+      const dmg = att.currentAtk;
       ai.enemyHP -= dmg;
       ai.playerBoard = ai.playerBoard.map(c => c.uid === att.uid ? { ...c, hasAttacked: true } : c);
       ai.log = [...ai.log.slice(-20), `${att.name} deals ${dmg} direct!`];
@@ -1920,7 +1931,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           s[role+"Env"] = { ...s[role+"Env"], turnsRemaining: remaining };
         }
       }
-      { const rbd=(s[role+"Board"]||[]).reduce((n,c)=>n+(c.bleed||0),0), obd=(s[op+"Board"]||[]).reduce((n,c)=>n+(c.bleed||0),0); s[role+"Board"] = (s[role+"Board"]||[]).map(c => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter(c => c.currentHp > 0); s[op+"Board"] = (s[op+"Board"]||[]).map(c => c.bleed > 0 ? { ...c, currentHp: c.currentHp - c.bleed } : c).filter(c => c.currentHp > 0); if (rbd>0){s[role+"HP"]=(s[role+"HP"]||20)-rbd;s.log=[...(s.log||[]).slice(-20),`Bleed seeps: ${role} takes ${rbd}!`];} if (obd>0){s[op+"HP"]=(s[op+"HP"]||20)-obd;s.log=[...(s.log||[]).slice(-20),`Bleed seeps: ${op} takes ${obd}!`];} }
+      // End of player's turn: fire + clear bleed on OPPONENT's board only
+      { const obd=(s[op+"Board"]||[]).reduce((n,c)=>n+(c.bleed||0),0); s[op+"Board"]=(s[op+"Board"]||[]).map(c=>c.bleed>0?{...c,currentHp:c.currentHp-c.bleed,bleed:0}:c).filter(c=>c.currentHp>0); if(obd>0){s[op+"HP"]=(s[op+"HP"]||20)-obd;s.log=[...(s.log||[]).slice(-20),`Bleed seeps: ${op} takes ${obd}!`];} }
       // Check if bleed killed the hero
       if (!s.winner) { if ((s[role+"HP"]||20) <= 0) { s.winner = op; s.log = [...(s.log||[]).slice(-20), `${role} hero bled out!`]; } else if ((s[op+"HP"]||20) <= 0) { s.winner = role; s.log = [...(s.log||[]).slice(-20), `${op} hero bled out!`]; } }
       if (s.winner) return s;
@@ -2294,7 +2306,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     }
     return <span key={key}>{parts}</span>;
   };
-  return (<div style={{ maxWidth:1440, margin:"0 auto", padding:"0 16px 60px" }} onClick={() => { SFX.init(); }}>
+  return (<div style={{ maxWidth:"100%", margin:"0 auto", padding:"0 12px 0", background:"linear-gradient(180deg,#0a0806 0%,#06080a 100%)", height:"100vh", overflow:"hidden", display:"flex", flexDirection:"column" }} onClick={() => { SFX.init(); }}>
     {previewCard && <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />}
     {/* Forfeit confirm */}
     {/* In-battle profile popup */}
@@ -2356,11 +2368,9 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         </div>
       </div>
     </div>)}
-    {/* Top bar: controls + centered turn status + timer */}
-    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+    {/* Top bar: centered turn status + fullscreen */}
+    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6, flexShrink:0 }}>
       <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-        <button onClick={onExit} style={{ padding:"7px 16px", background:"rgba(20,14,4,0.8)", border:"1px solid #806040aa", borderRadius:7, color:"#d0a060", fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, cursor:"pointer", letterSpacing:1 }}>EXIT</button>
-        {!gs?.winner && <button onClick={()=>setForfeitConfirm(true)} style={{ padding:"7px 16px", background:"rgba(30,4,4,0.8)", border:"1px solid #c04040aa", borderRadius:7, color:"#e06060", fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, cursor:"pointer", letterSpacing:1 }}>FF</button>}
         <button onClick={()=>{ const el=document.documentElement; if(!document.fullscreenElement){el.requestFullscreen?.();}else{document.exitFullscreen?.();} }} style={{ padding:"7px 12px", background:"rgba(14,12,8,0.8)", border:"1px solid #604028aa", borderRadius:7, color:"#a08050", fontFamily:"'Cinzel',serif", fontSize:13, cursor:"pointer" }} title="Fullscreen">⛶</button>
       </div>
       {!gs.winner && (<div style={{ display:"flex", alignItems:"center", gap:8, position:"absolute", left:"50%", transform:"translateX(-50%)" }}>
@@ -2368,7 +2378,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         <span style={{ fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, letterSpacing:2, color:isMyTurn?"#78cc45":"#e8c060" }}>{isMyTurn ? "YOUR TURN" : `${(opponentName||"OPP").toUpperCase()}'S TURN`}</span>
         {syncing && <span style={{ fontSize:8, color:"#806040", fontFamily:"'Cinzel',serif" }}>SYNC…</span>}
       </div>)}
-      <div style={{ width:110 }} />
+      <div style={{ width:44 }} />
     </div>
     {gs.winner && (<div style={{ textAlign:"center", background: myWon?"linear-gradient(135deg,#060e04,#0e0c08)":"linear-gradient(135deg,#120404,#0e0c08)", border:`1px solid ${myWon?"#4a9020":"#b83030"}`, borderRadius:14, padding:36, marginBottom:20, animation:"fadeIn 0.5s" }}>
       <div style={{ fontSize:56, marginBottom:10 }}>{myWon?"✨":"💀"}</div>
@@ -2376,10 +2386,12 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       <p style={{ fontSize:13, color:"#a09070" }}>{myWon?`You defeated ${opponentName}!`:`${opponentName} wins this round.`}</p>
       <button onClick={onExit} style={{ marginTop:16, padding:"11px 28px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontWeight:700, fontSize:12, letterSpacing:2, color:"#1a1000", cursor:"pointer" }}>EXIT</button>
     </div>)}
-    <div style={{ display:"grid", gridTemplateColumns:"240px 1fr 310px", gap:12 }}>
+    <div style={{ display:"grid", gridTemplateColumns:"240px 1fr 310px", gap:12, flex:1, minHeight:0, overflow:"hidden" }}>
       {/* Chat panel — LEFT */}
-      <div style={{ display:"flex", flexDirection:"column", minHeight:600 }}>
+      <div style={{ display:"flex", flexDirection:"column", minHeight:0, overflow:"hidden", gap:6 }}>
         <BattleChat user={user} aiMode={false} matchId={matchId} />
+        <button onClick={onExit} style={{ flexShrink:0, padding:"8px", background:"rgba(180,40,20,0.12)", border:"1px solid #5a1810", borderRadius:8, color:"#a06040", fontFamily:"'Cinzel',serif", fontSize:10, cursor:"pointer", letterSpacing:1 }}>⬅ EXIT BATTLE</button>
+        {!gs?.winner && <button onClick={()=>setForfeitConfirm(true)} style={{ flexShrink:0, padding:"8px", background:"rgba(120,10,10,0.15)", border:"1px solid #8a2020", borderRadius:8, color:"#e05050", fontFamily:"'Cinzel',serif", fontSize:10, cursor:"pointer", letterSpacing:1 }}>🏳 FORFEIT</button>}
       </div>
       <div style={{ background:"#1e1c14", border:`1px solid ${envTheme?envTheme.glow+"44":"#2e2c18"}`, borderRadius:14, overflow:"hidden", position:"relative", transition:"border-color 1s ease" }}>
         <VFXOverlay effects={vfx.effects} />
@@ -2753,15 +2765,15 @@ function MatchmakingScreen({ user, onMatch, onCancel }) {
   );
 }
 // ═══ MATCH SETUP ═════════════════════════════════════════════
-function GameTab({ user, onUpdateUser, setInPvpMatch }) {
+function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive }) {
   const [matchConfig, setMatchConfig] = useState(null);
   const [selectedDeck, setSelectedDeck] = useState(null);
   const [matchmaking, setMatchmaking] = useState(false);
   const [ranked, setRanked] = useState(false);
   const decks = user?.decks || [];
   const userRank = getRank(user?.rankedRating);
-  if (matchmaking) return (<MatchmakingScreen user={user} ranked={ranked} onMatch={(cfg) => { setMatchmaking(false); setMatchConfig({ mode:"pvp", ranked, playerDeck: selectedDeck?.cards || null, ...cfg }); }} onCancel={() => setMatchmaking(false)} />);
-  if (!matchConfig) return (<div style={{ maxWidth:720, margin:"0 auto", padding:"40px 24px 60px" }}>
+  if (matchmaking) return (<MatchmakingScreen user={user} ranked={ranked} onMatch={(cfg) => { setMatchmaking(false); const cfg2 = { mode:"pvp", ranked, playerDeck: selectedDeck?.cards || null, ...cfg }; setMatchConfig(cfg2); setMatchActive?.(true); }} onCancel={() => setMatchmaking(false)} />);
+  if (!matchConfig) return (<div style={{ maxWidth:720, margin:"0 auto", padding:"60px 24px 60px", display:"flex", flexDirection:"column", alignItems:"center" }}><div style={{ width:"100%" }}>
     <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:28, fontWeight:700, color:"#e8c060", margin:"0 0 4px", textAlign:"center" }}>Battle Setup</h2>
     <p style={{ fontSize:13, color:"#a09070", margin:"0 0 28px", textAlign:"center" }}>Choose your battle mode!</p>
     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:24 }}>
@@ -2774,7 +2786,7 @@ function GameTab({ user, onUpdateUser, setInPvpMatch }) {
           <option value="starter">Starter Deck</option>
           {decks.map((d, i) => (<option key={i} value={i}>{d.name} ({d.cards?.length || 0} cards)</option>))}
         </select>
-        <button onClick={() => { SFX.play("card"); setMatchConfig({ mode:"ai", playerDeck: selectedDeck?.cards || null }); }} style={{ width:"100%", padding:"12px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, letterSpacing:2, color:"#1a1000", cursor:"pointer" }}>START BATTLE</button>
+        <button onClick={() => { SFX.play("card"); setMatchConfig({ mode:"ai", playerDeck: selectedDeck?.cards || null }); setMatchActive?.(true); }} style={{ width:"100%", padding:"12px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, letterSpacing:2, color:"#1a1000", cursor:"pointer" }}>START BATTLE</button>
       </div>
       <div style={{ background:"linear-gradient(160deg,#101420,#080c14)", border:`1px solid ${ranked?"#6040c0":"#102038"}`, borderRadius:14, padding:24, textAlign:"center", transition:"border-color .25s" }}>
         <div style={{ fontSize:32, marginBottom:12 }}>{ranked ? "🏆" : "⚔"}</div>
@@ -2792,9 +2804,9 @@ function GameTab({ user, onUpdateUser, setInPvpMatch }) {
       </div>
     </div>
     <p style={{ fontSize:10, color:"#504030", textAlign:"center", margin:0 }}>Build and manage decks in the <strong style={{ color:"#806040" }}>Cards</strong> tab.</p>
-  </div>);
-  if (matchConfig?.mode === "pvp") return (<PvpBattleScreen user={user} matchConfig={matchConfig} onExit={() => { setMatchConfig(null); setInPvpMatch?.(false); setSelectedDeck(null); }} onUpdateUser={onUpdateUser} setInPvpMatch={setInPvpMatch} />);
-  return (<BattleScreen user={user} onUpdateUser={onUpdateUser} matchConfig={matchConfig} onExit={() => { setMatchConfig(null); setSelectedDeck(null); }} />);
+  </div></div>);
+  if (matchConfig?.mode === "pvp") return (<PvpBattleScreen user={user} matchConfig={matchConfig} onExit={() => { setMatchConfig(null); setInPvpMatch?.(false); setMatchActive?.(false); setSelectedDeck(null); }} onUpdateUser={onUpdateUser} setInPvpMatch={setInPvpMatch} />);
+  return (<BattleScreen user={user} onUpdateUser={onUpdateUser} matchConfig={matchConfig} onExit={() => { setMatchConfig(null); setMatchActive?.(false); setSelectedDeck(null); }} />);
 }
 // ═══ PACK OPENING ════════════════════════════════════════════════════════════
 function PackOpening({ user, onUpdateUser }) {
@@ -4392,8 +4404,8 @@ function AlphaKeyAdminPanel() {
 }
 
 export default function App() {
-  const [tab, setTab] = useState("home"); const { user, loading, login, logout, update, completeProfile } = useAuth(); const [showProfile, setShowProfile] = useState(false); const [showPatchNotes, setShowPatchNotes] = useState(false); const [inPvpMatch, setInPvpMatch] = useState(false); const [navLeaveModal, setNavLeaveModal] = useState(null); const [avatarErr, setAvatarErr] = useState(""); const [navHovered, setNavHovered] = useState(false); // { targetTab }
-  const inBattle = tab === "play";
+  const [tab, setTab] = useState("home"); const { user, loading, login, logout, update, completeProfile } = useAuth(); const [showProfile, setShowProfile] = useState(false); const [showPatchNotes, setShowPatchNotes] = useState(false); const [inPvpMatch, setInPvpMatch] = useState(false); const [navLeaveModal, setNavLeaveModal] = useState(null); const [avatarErr, setAvatarErr] = useState(""); const [navHovered, setNavHovered] = useState(false); const [matchActive, setMatchActive] = useState(false); // { targetTab }
+  const inBattle = matchActive;
   // Show patch notes once per account+device — triggers only when user logs in
   useEffect(() => {
     if (!user) return;
@@ -4614,7 +4626,7 @@ export default function App() {
     })()}
     <div style={{ position: "relative", paddingTop: inBattle ? 4 : 0 }} onClick={() => setShowProfile(false)}>
       {tab === "home" && <HomeScreen setTab={setTab} user={user} />}
-      {tab === "play" && <GameTab user={user} onUpdateUser={update} setInPvpMatch={setInPvpMatch} />}
+      {tab === "play" && <GameTab user={user} onUpdateUser={update} setInPvpMatch={setInPvpMatch} setMatchActive={setMatchActive} />}
       {tab === "store" && <StoreScreen user={user} onUpdateUser={update} />}
       {tab === "collection" && <CollectionScreen user={user} onUpdateUser={update} />}
       {tab === "community" && <CommunityScreen user={user} />}
