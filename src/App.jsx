@@ -23,7 +23,7 @@ const ALPHA_KEYS_LIST = [
   "FLAME-WARDEN-2","DUSK-HERALD-05","BONE-TIDE-RISE","STAR-FORGED-01","KRAKEN-WAKES-1",
 ];
 const ALPHA_KEYS = new Set(ALPHA_KEYS_LIST);
-const CURRENT_PATCH = "v21";
+const CURRENT_PATCH = "v22";
 
 // ═══ AUDIO ═══════════════════════════════════════════════════════════════════
 const SFX = (() => {
@@ -400,10 +400,10 @@ function VFXOverlay({ effects }) {
           <div style={{ position:"absolute", top:"50%", left:"50%", width:220, height:220, borderRadius:"50%", animation:"vfxRingBurst 0.6s ease-out forwards", border:`2px solid ${fx.color||"#e8c06055"}` }} />
           <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", animation:"vfxPulse 0.5s ease-out forwards", background:`radial-gradient(circle,${fx.color||"#e8c060"}22,transparent 65%)`, width:280, height:280, borderRadius:"50%" }} />
         </Fragment>);
-        if (fx.type === "floatText") return (<div key={fx.id} style={{ position:"absolute", top:"30%", left:"50%", transform:"translate(-50%,-50%)", animation:"vfxFloat 1.4s ease-out forwards", textAlign:"center", pointerEvents:"none", zIndex:60 }}>
+        if (fx.type === "floatText") { const topPct = fx.zone==="player" ? "72%" : fx.zone==="enemy" ? "28%" : "30%"; return (<div key={fx.id} style={{ position:"absolute", top:topPct, left:"50%", transform:"translate(-50%,-50%)", animation:"vfxFloat 1.4s ease-out forwards", textAlign:"center", pointerEvents:"none", zIndex:60 }}>
           <div style={{ fontFamily:"'Cinzel',serif", fontSize:fx.big?22:14, fontWeight:900, color:fx.color||"#e8c060", textShadow:`0 0 20px ${fx.color||"#e8c060"}88, 0 2px 4px rgba(0,0,0,0.9)`, letterSpacing:2, whiteSpace:"nowrap" }}>{fx.text}</div>
           {fx.sub && <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:fx.color||"#e8c060", opacity:0.7, marginTop:2 }}>{fx.sub}</div>}
-        </div>);
+        </div>); }
         if (fx.type === "faceAttack") return (<Fragment key={fx.id}>
           <div style={{ position:"absolute", inset:0, animation:"vfxHitFlash 0.5s ease-out forwards", background:"rgba(255,40,10,0.2)" }} />
           <div style={{ position:"absolute", top:"50%", left:"50%", width:300, height:300, borderRadius:"50%", animation:"vfxRingBurst 0.7s ease-out forwards", border:"4px solid #ff301088" }} />
@@ -450,18 +450,17 @@ function PatchNotesModal({ onDismiss }) {
     <span style={{ marginLeft:6, padding:"1px 6px", background:"rgba(120,204,69,0.18)", border:"1px solid #78cc4555", borderRadius:8, fontSize:8, color:"#78cc45", fontFamily:"'Cinzel',serif", fontWeight:700, letterSpacing:1, verticalAlign:"middle" }}>NEW</span>
   );
   const rows = [
-    { icon:"🌌", label:<>Animated starfield home — 3-layer parallax, nebula clouds, mouse drift<NEW /></> },
-    { icon:"🃏", label:<>Featured card 3D tilt with cursor spotlight on home screen<NEW /></> },
-    { icon:"📊", label:<>Stat counters animate count-up from zero on scroll<NEW /></> },
-    { icon:"📰", label:<>Live ticker strip — ranked news, meta reports, patch alerts<NEW /></> },
-    { icon:"⚔", label:<>Battle button battleGlow pulse — can't miss it<NEW /></> },
-    { icon:"🌍", label:<>Env effects now fire only for the owning side — no more board takeovers<NEW /></> },
-    { icon:"💬", label:<>Buff / debuff text visible on Token cards after effects land<NEW /></> },
-    { icon:"✨", label:<>Card summon animation when played to the field<NEW /></> },
-    { icon:"🍓", label:<>Food Fight {"&"} Fables packs show in full color in the Store (Coming Soon)<NEW /></> },
-    { icon:"🔒", label:"rollPack locked to gameplay cards only — no locked-faction cards slip through" },
+    { icon:"⭐", label:<>Rarity pip badges (1–5 colored dots) on all cards — yellow = Legendary<NEW /></> },
+    { icon:"🆕", label:<>NEW! badge pops on first-time card collection in pack opening<NEW /></> },
+    { icon:"🌍", label:<>Env buff/damage float text routes to the correct side of the board<NEW /></> },
+    { icon:"⚔", label:<>Counter-hit recoil: attacker takes damage back with a hit flash<NEW /></> },
+    { icon:"🏰", label:<>Battle screen full-width + warm tavern-wood background<NEW /></> },
+    { icon:"👁", label:<>Nav auto-hides during battle — hover the strip to reveal it<NEW /></> },
+    { icon:"📖", label:<>Guide + ranked text brighter and easier to read<NEW /></> },
+    { icon:"🔧", label:<>Sign-up starter deck now correctly granted in all registration paths<NEW /></> },
+    { icon:"🌌", label:"Starfield home · 3D card tilt · live ticker · battleGlow (v21)" },
     { icon:"🏆", label:"Ranked Mode · ELO · Iron → Bronze → Silver → Gold → Grandmaster" },
-    { icon:"🌐", label:"PvP matchmaking · pair_players RPC · Realtime + polling fallback · 5-min timeout" },
+    { icon:"🌐", label:"PvP matchmaking · pair_players RPC · Realtime + polling fallback" },
     { icon:"⚗", label:"Coming next: Leaderboard · Thornwood Expansion · Draft Mode", dim:true },
   ];
   return (
@@ -688,6 +687,14 @@ function Card({ card, size = "md", onClick, animDelay = 0, isThird = false, hide
               {isEnv && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.75)", color: "#28c0cc", border: "1px solid #28a0cc66", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>ENV</div>}
               {card.type === "spell" && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.75)", color: "#d090d0", border: "1px solid #d090d066", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>SPELL</div>}
               {card.type === "champion" && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.75)", color: "#e8c060", border: "1px solid #e8c06066", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>CHAMPION</div>}
+              {/* Rarity pips — 1 Common → 5 Legendary */}
+              {!isPrismatic && card.rarity && (
+                <div style={{ display:"flex", gap:2, justifyContent:"flex-end", marginTop:1 }}>
+                  {Array.from({length:{Common:1,Uncommon:2,Rare:3,Epic:4,Legendary:5}[card.rarity]||1}).map((_,i)=>(
+                    <div key={i} style={{ width: size==="sm"?4:5, height: size==="sm"?4:5, borderRadius:"50%", background: RC[card.rarity]||"#888", boxShadow:`0 0 5px ${RC[card.rarity]||"#888"}bb`, flexShrink:0 }} />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           {/* Bottom text overlay */}
@@ -906,13 +913,13 @@ function resolveEffects(trigger, card, state, side, vfx) {
   const myHP = side === "player" ? "playerHP" : "enemyHP", thHP = side === "player" ? "enemyHP" : "playerHP";
   for (const fx of effects) {
     switch (fx.effect) {
-      case "heal_hero": s[myHP] = Math.min(CFG.startHP, s[myHP] + fx.amount); L(`${card.name} heals ${fx.amount}!`); if (vfx) { vfx.add("heal", { amount: fx.amount, side }); if (card.type === "environment") vfx.add("floatText", { text: `+${fx.amount} HP`, sub: card.name, color: "#40ff70", duration: 1600 }); } break;
-      case "damage_enemy_hero": s[thHP] -= fx.amount; L(`${card.name} deals ${fx.amount} to hero!`); if (vfx) { vfx.add("damage", { amount: fx.amount }); if (card.type === "environment") vfx.add("floatText", { text: `-${fx.amount} HP`, sub: card.name, color: "#ff5040", duration: 1600 }); } break;
+      case "heal_hero": s[myHP] = Math.min(CFG.startHP, s[myHP] + fx.amount); L(`${card.name} heals ${fx.amount}!`); if (vfx) { vfx.add("heal", { amount: fx.amount, side }); if (card.type === "environment") vfx.add("floatText", { text: `+${fx.amount} HP`, sub: card.name, color: "#40ff70", duration: 1600, zone: side }); } break;
+      case "damage_enemy_hero": s[thHP] -= fx.amount; L(`${card.name} deals ${fx.amount} to hero!`); if (vfx) { vfx.add("damage", { amount: fx.amount }); if (card.type === "environment") vfx.add("floatText", { text: `-${fx.amount} HP`, sub: card.name, color: "#ff5040", duration: 1600, zone: side==="player"?"enemy":"player" }); } break;
       case "damage_own_hero": s[myHP] -= fx.amount; L(`${card.name} costs ${fx.amount} HP!`); break;
       case "damage_all_enemies": s[thB] = s[thB].map((c) => ({ ...c, currentHp: c.currentHp - fx.amount })).filter((c) => c.currentHp > 0); L(`${card.name}: ${fx.amount} to all enemies!`); if (vfx) vfx.add("ability", { color: "#ff4040" }); break;
       case "damage_all": s[myB] = s[myB].map((c) => c.uid === card.uid ? c : { ...c, currentHp: c.currentHp - fx.amount }).filter((c) => c.currentHp > 0); s[thB] = s[thB].map((c) => ({ ...c, currentHp: c.currentHp - fx.amount })).filter((c) => c.currentHp > 0); L(`${card.name}: ${fx.amount} to ALL!`); if (vfx) vfx.add("ability", { color: "#ff8040" }); break;
       case "damage_random_enemy": if (s[thB].length > 0) { const idx = Math.floor(Math.random() * s[thB].length); const tgt = s[thB][idx]; s[thB] = s[thB].map((c, i) => i === idx ? { ...c, currentHp: c.currentHp - fx.amount } : c).filter((c) => c.currentHp > 0); L(`${card.name} hits ${tgt.name} for ${fx.amount}!`); } break;
-      case "buff_allies": { const isDebuff = (fx.atk||0) < 0 || (fx.hp||0) < 0; const noteStr = `${isDebuff?"":"+"}${fx.atk||0}atk/${fx.hp||0}hp (${card.name})`; s[myB] = s[myB].map((c) => ({ ...c, currentAtk: c.currentAtk + (fx.atk || 0), currentHp: c.currentHp + (fx.hp || 0), maxHp: c.maxHp + (fx.hp || 0), [isDebuff?"debuffNote":"buffNote"]: noteStr, statusLog: [...(c.statusLog||[]), { type:isDebuff?"debuff":"buff", note:noteStr }] })); L(`${card.name} ${isDebuff?"debuffs":"buffs"} ${fx.atk||0}/${fx.hp||0}!`); if (vfx) vfx.add("ability", { color: isDebuff?"#ff6040":"#40ff60" }); break; }
+      case "buff_allies": { const isDebuff = (fx.atk||0) < 0 || (fx.hp||0) < 0; const noteStr = `${isDebuff?"":"+"}${fx.atk||0}atk/${fx.hp||0}hp (${card.name})`; s[myB] = s[myB].map((c) => ({ ...c, currentAtk: c.currentAtk + (fx.atk || 0), currentHp: c.currentHp + (fx.hp || 0), maxHp: c.maxHp + (fx.hp || 0), [isDebuff?"debuffNote":"buffNote"]: noteStr, statusLog: [...(c.statusLog||[]), { type:isDebuff?"debuff":"buff", note:noteStr }] })); L(`${card.name} ${isDebuff?"debuffs":"buffs"} ${fx.atk||0}/${fx.hp||0}!`); if (vfx) { if (card.type==="environment") vfx.add("floatText", { text:`${isDebuff?"":"+"}${fx.atk||0} ATK`, sub: card.name, color: isDebuff?"#ff6040":"#60e880", zone: side, duration:1600 }); else vfx.add("ability", { color: isDebuff?"#ff6040":"#40ff60" }); } break; }
       case "buff_random_ally": { const allies = s[myB].filter((c) => c.id !== card.id); if (allies.length > 0) { const t = allies[Math.floor(Math.random() * allies.length)]; const bNote = `+${fx.atk||0}atk (${card.name})`; s[myB] = s[myB].map((c) => c.uid === t.uid ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), buffNote: bNote, statusLog: [...(c.statusLog||[]), { type:"buff", note:bNote }] } : c); L(`${card.name} buffs ${t.name}!`); } break; }
       case "buff_keyword_allies": { const kbNote = `+${fx.atk||0}atk keyword (${card.name})`; s[myB] = s[myB].map((c) => (c.keywords || []).length > 0 ? { ...c, currentAtk: c.currentAtk + (fx.atk || 0), buffNote: kbNote, statusLog: [...(c.statusLog||[]), { type:"buff", note:kbNote }] } : c); break; }
       case "heal_all_allies": s[myB] = s[myB].map((c) => ({ ...c, currentHp: Math.min(c.maxHp, c.currentHp + fx.amount) })); break;
@@ -1226,17 +1233,22 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     if (!att) return;
     SFX.play("attack");
     setAnimUids({ [att.uid]: "attacking" });
-    await new Promise(r => setTimeout(r, 380));
+    await new Promise(r => setTimeout(r, 340));
     setAnimUids(p => ({ ...p, [tgt.uid]: "hit" }));
     vfx.add("attackImpact", { duration: 500 });
-    await new Promise(r => setTimeout(r, 250));
+    await new Promise(r => setTimeout(r, 200));
     const av = att.currentAtk + ((att.keywords || []).includes("Resonate") ? g.enemyHand.length : 0);
     const nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av;
     const nAHP = att.currentHp - tgt.currentAtk;
+    // Counter-hit: attacker takes damage back and survives — show recoil
+    if (nAHP < att.currentHp && nAHP > 0) {
+      setAnimUids(p => ({ ...p, [att.uid]: "hit" }));
+      await new Promise(r => setTimeout(r, 280));
+    }
     const dyingUids = {};
     if (nTHP <= 0) { dyingUids[tgt.uid] = "dying"; SFX.play("kill"); }
     if (nAHP <= 0) dyingUids[att.uid] = "dying";
-    if (Object.keys(dyingUids).length > 0) { setAnimUids(p => ({ ...p, ...dyingUids })); vfx.add("creatureDie", { color:"#e06040", duration:700 }); await new Promise(r => setTimeout(r, 720)); }
+    if (Object.keys(dyingUids).length > 0) { setAnimUids(p => ({ ...p, ...dyingUids })); vfx.add("creatureDie", { color:"#e06040", duration:700 }); await new Promise(r => setTimeout(r, 680)); }
     setGame((prev) => {
       let s = { ...prev, log: [...prev.log.slice(-20)] };
       if (tgt.shielded) s.log = [...s.log, `${tgt.name} shield absorbs!`];
@@ -1255,7 +1267,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   const atkFace = async () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking" }); await new Promise(r => setTimeout(r, 380)); const dmg = att.currentAtk + ((att.keywords || []).includes("Resonate") ? g.enemyHand.length : 0); vfx.add("damage", { amount: dmg, duration: 500 }); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if (nHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 200)); setAnimUids({}); };
   const attCard = attacker ? g.playerBoard.find((c) => c.uid === attacker) : null;
 
-  return (<div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 16px 60px" }} onClick={() => { SFX.init(); }}>
+  return (<div style={{ maxWidth: "100%", margin: "0 auto", padding: "0 12px 40px", background: "linear-gradient(180deg,#1e1208 0%,#160e06 40%,#1c1208 100%)", minHeight: "100vh" }} onClick={() => { SFX.init(); }}>
     {previewCard && <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />}
     {/* Live Action Ticker */}
     {liveAction && (
@@ -1307,7 +1319,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
       <div style={{ display:"flex", flexDirection:"column", minHeight:500 }}>
         <BattleChat user={user} aiMode={true} />
       </div>
-      <div style={{ background: envTheme ? envTheme.bg : "#1e1c14", border: `1px solid ${envTheme ? envTheme.glow + "44" : "#2e2c18"}`, borderRadius: 14, overflow: "hidden", position: "relative", transition: "background 1.5s ease, border-color 1s ease" }}>
+      <div style={{ background: envTheme ? envTheme.bg : "linear-gradient(180deg,#2a1c0c 0%,#1e1408 50%,#281a08 100%)", border: `1px solid ${envTheme ? envTheme.glow + "44" : "#5a3c1a55"}`, borderRadius: 14, overflow: "hidden", position: "relative", transition: "background 1.5s ease, border-color 1s ease", boxShadow: envTheme ? undefined : "inset 0 0 60px rgba(0,0,0,0.4), 0 0 0 1px #3a2010" }}>
         {g.phase === "opening" && <OpeningDraw onResult={handleOpeningResult} />}
         <VFXOverlay effects={vfx.effects} />
         {/* Environment particles */}
@@ -1319,7 +1331,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
           <span style={{ fontSize: 9, color: "#a09068", flex: 1 }}>{g.environment.ability}</span>
         </div>)}
         {/* Enemy zone */}
-        <div style={{ background: "rgba(180,40,40,0.09)", borderBottom: "1px solid #3a1818", padding: "10px 14px", position: "relative", zIndex: 2 }}>
+        <div style={{ background: "rgba(200,60,40,0.13)", borderBottom: "1px solid #5a2a18", padding: "10px 14px", position: "relative", zIndex: 2 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ width: 28, height: 28, borderRadius: "50%", background: "linear-gradient(135deg,#3a0c0c,#200808)", border: "2px solid #a0202044", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#cc6666", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>AI</div>
@@ -1344,7 +1356,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
           <div style={{ flex: 1, height: 1, background: "linear-gradient(to left,transparent,#382e18)" }} />
         </div>
         {/* Player zone */}
-        <div style={{ background: "rgba(40,100,20,0.09)", padding: "10px 14px", position: "relative", zIndex: 2 }}>
+        <div style={{ background: "rgba(40,110,20,0.13)", padding: "10px 14px", position: "relative", zIndex: 2 }}>
           <div style={{ fontSize: 8, color: "#1e3010", fontFamily: "'Cinzel',serif", letterSpacing: 3, marginBottom: 4, textAlign: "center", fontWeight: 700 }}>YOUR FIELD</div>
           <div style={{ minHeight: 105, display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", alignItems: "center", marginBottom: 10 }}>
             {g.playerBoard.length === 0 ? <span style={{ fontSize: 10, color: "#181408", letterSpacing: 3 }}>PLAY A CARD</span> : g.playerBoard.map((c) => (<Token key={c.uid} c={resolveCardArt(c, user?.selectedArts || {})} animType={animUids[c.uid]} selected={attacker === c.uid} isTarget={false} canSelect={g.phase === "player" && c.canAttack && !c.hasAttacked && !aiThink} onClick={() => selectAtt(c)} onRightClick={() => { SFX.play("ability"); setPreviewCard(c); }} />))}
@@ -2621,16 +2633,23 @@ function PackOpening({ user, onUpdateUser }) {
   const [revealed, setRevealed] = useState([]);
   const [revIdx, setRevIdx] = useState(-1);
   const [shakeCard, setShakeCard] = useState(-1);
+  const [newCardIdxs, setNewCardIdxs] = useState(new Set());
 
-  const openPack = (pack) => { setOpening({ pack, cards: pack.altPack ? rollAltArtPack(pack) : rollPack(pack) }); setRevealed([]); setRevIdx(-1); SFX.play("pack_open"); };
-  const applyCard = (card, isAlt) => {
+  const openPack = (pack) => { setOpening({ pack, cards: pack.altPack ? rollAltArtPack(pack) : rollPack(pack) }); setRevealed([]); setRevIdx(-1); setNewCardIdxs(new Set()); SFX.play("pack_open"); };
+  const applyCard = (card, isAlt, revealIdx) => {
     if (!onUpdateUser || !user) return;
     if (isAlt) {
       const ao = { ...(user.altOwned || {}) };
+      const isNewAlt = !(ao[card.id] || []).includes(card.altSetId);
       ao[card.id] = [...new Set([...(ao[card.id] || []), card.altSetId])];
       onUpdateUser({ altOwned: ao });
+      if (isNewAlt && revealIdx != null) setNewCardIdxs(p => new Set([...p, revealIdx]));
     } else {
-      const col = { ...(user.collection || {}) }; col[card.id] = (col[card.id] || 0) + 1; onUpdateUser({ collection: col });
+      const col = { ...(user.collection || {}) };
+      const isNew = (col[card.id] || 0) === 0;
+      col[card.id] = (col[card.id] || 0) + 1;
+      onUpdateUser({ collection: col });
+      if (isNew && revealIdx != null) setNewCardIdxs(p => new Set([...p, revealIdx]));
     }
   };
   const revealNext = () => {
@@ -2641,11 +2660,11 @@ function PackOpening({ user, onUpdateUser }) {
       setRevIdx(next); setRevealed((p) => [...p, next]);
       const card = opening.cards[next];
       if (["Rare","Epic","Legendary","Prismatic"].includes(card.rarity)) SFX.play("rare_reveal"); else SFX.play("flip");
-      applyCard(card, !!opening.pack.altPack);
+      applyCard(card, !!opening.pack.altPack, next);
       setShakeCard(-1);
     }, 400);
   };
-  const revealAll = () => { if (!opening) return; setRevealed(opening.cards.map((_, i) => i)); setRevIdx(opening.cards.length - 1); SFX.play("rare_reveal"); opening.cards.forEach((c) => applyCard(c, !!opening.pack.altPack)); };
+  const revealAll = () => { if (!opening) return; setRevealed(opening.cards.map((_, i) => i)); setRevIdx(opening.cards.length - 1); SFX.play("rare_reveal"); opening.cards.forEach((c, i) => applyCard(c, !!opening.pack.altPack, i)); };
 
   return (<div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 24px 60px" }}>
     <div style={{ textAlign: "center", marginBottom: 28 }}><h2 style={{ fontFamily: "'Cinzel',serif", fontSize: 28, fontWeight: 700, color: "#e8c060", margin: "0 0 8px" }}>Card Packs</h2><p style={{ fontSize: 13, color: "#a09070", margin: 0 }}>Discover new cards for your collection</p></div>
@@ -2677,6 +2696,9 @@ function PackOpening({ user, onUpdateUser }) {
                     <div style={{ animation: "cardReveal 0.5s ease-out", position: "relative" }}>
                       {rarGlow && <div style={{ position: "absolute", inset: -8, borderRadius: 20, background: `radial-gradient(circle,${rarGlow}33,transparent 70%)`, animation: "vfxPulse 1s ease-out", pointerEvents: "none", zIndex: -1 }} />}
                       <Card card={card} size="sm" />
+                      {newCardIdxs.has(i) && (
+                        <div style={{ position:"absolute", top:-10, left:"50%", transform:"translateX(-50%)", background:"linear-gradient(135deg,#78cc45,#4a9020)", borderRadius:10, padding:"3px 10px", fontFamily:"'Cinzel',serif", fontSize:8, fontWeight:900, color:"#fff", letterSpacing:2, boxShadow:"0 2px 12px #78cc4588", animation:"splatLabel 0.4s cubic-bezier(0.34,1.56,0.64,1) both", whiteSpace:"nowrap", zIndex:10 }}>NEW!</div>
+                      )}
                     </div>
                   ) : (
                     <div style={{ width: 142, height: 248, background: `linear-gradient(135deg,#1a1408,${opening.pack.color}15)`, border: `2px solid ${opening.pack.color}44`, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 8, backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}>
@@ -2852,7 +2874,7 @@ function LoginModal({ needsProfile = false, userId, userEmail, onSignOut, onProf
     const profileRow = {
       id: uid, name: name.trim(), alpha_key: k, shards: 1000,
       last_shard_reset: new Date().toISOString(), battles_played: 0, battles_won: 0,
-      cards_forged: 0, collection: starter, decks: [], joined: new Date().toLocaleDateString(),
+      cards_forged: 0, collection: starter, decks: [starterDeckEntry], joined: new Date().toLocaleDateString(),
       alt_owned: founderAltOwned,
     };
     if (onProfileCreated) onProfileCreated(profileRow, userEmail);
@@ -3103,7 +3125,7 @@ const TICKER_ITEMS = [
   '🏆 RANKED SEASON 1 LIVE — ELO matchmaking active · Iron → Bronze → Silver → Gold → Grandmaster',
   '⚔️ META REPORT — Bloodpact aggro leads ranked with 58% win rate this week',
   '🌿 Thornwood combo: Ancient Grove + Echo synergy dominating Iron lobbies',
-  `📜 ${CURRENT_PATCH} DEPLOYED — Starfield home · 3D card tilt · env side-specific · summon animations · battleGlow`,
+  `📜 ${CURRENT_PATCH} DEPLOYED — Rarity icons · NEW badge packs · counter-hit recoil · tavern arena · nav auto-hide`,
   '🎴 COMING SOON — Food Fight faction · 12 culinary warriors · 1 Rare guaranteed per pack',
   '📖 COMING SOON — The Fables expansion · Dragon Knights & Crystal Golems · Enchanted Glade',
   '🩸 Bloodpact spike: Venomlord at 4-cost clearing boards consistently in casual queue',
@@ -3450,17 +3472,17 @@ function GuideScreen() {
   return (<div style={{ maxWidth: 860, margin: "0 auto", padding: "44px 24px 60px" }}>
     <h2 style={{ fontFamily: "'Cinzel',serif", fontSize: 26, fontWeight: 700, color: "#e8c060", textAlign: "center", margin: "0 0 30px" }}>How to Play</h2>
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 26 }}>
-      {[{ n: "1", t: "Opening Draw", d: "Both sides draw. Higher cost goes first.", c: "#e8c060" }, { n: "2", t: "Environments", d: "Play environment cards to reshape the battlefield with visual effects and ongoing abilities.", c: "#28a0cc" }, { n: "3", t: "Abilities", d: "Real card effects: damage, healing, buffs, draw. Spells resolve instantly.", c: "#9050d8" }, { n: "4", t: "Turn Timer", d: "45 seconds per turn. Warning at 10s. Plan fast or lose your turn!", c: "#c04810" }].map((s, i) => (<div key={s.t} style={{ background: "#121008", border: `1px solid ${s.c}28`, borderRadius: 13, padding: 22, animation: `cardReveal 0.4s ease-out ${i * 0.1}s both` }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 24, fontWeight: 900, color: s.c, marginBottom: 8 }}>{s.n}</div><div style={{ fontFamily: "'Cinzel',serif", fontSize: 14, fontWeight: 700, color: s.c, marginBottom: 8 }}>{s.t}</div><p style={{ fontSize: 12, color: "#c8b878", lineHeight: 1.75, margin: 0 }}>{s.d}</p></div>))}
+      {[{ n: "1", t: "Opening Draw", d: "Both sides draw. Higher cost goes first.", c: "#e8c060" }, { n: "2", t: "Environments", d: "Play environment cards to reshape the battlefield with visual effects and ongoing abilities.", c: "#28a0cc" }, { n: "3", t: "Abilities", d: "Real card effects: damage, healing, buffs, draw. Spells resolve instantly.", c: "#9050d8" }, { n: "4", t: "Turn Timer", d: "45 seconds per turn. Warning at 10s. Plan fast or lose your turn!", c: "#c04810" }].map((s, i) => (<div key={s.t} style={{ background: "#1a1610", border: `1px solid ${s.c}44`, borderRadius: 13, padding: 22, animation: `cardReveal 0.4s ease-out ${i * 0.1}s both` }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 24, fontWeight: 900, color: s.c, marginBottom: 8 }}>{s.n}</div><div style={{ fontFamily: "'Cinzel',serif", fontSize: 14, fontWeight: 700, color: s.c, marginBottom: 8 }}>{s.t}</div><p style={{ fontSize: 12, color: "#d8c898", lineHeight: 1.75, margin: 0 }}>{s.d}</p></div>))}
     </div>
     <div style={{ background: "#121008", border: "1px solid #242010", borderRadius: 14, padding: 24, marginBottom: 16 }}>
       <h3 style={{ fontFamily: "'Cinzel',serif", fontSize: 15, color: "#e8c060", margin: "0 0 18px", fontWeight: 700 }}>Keywords</h3>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 10 }}>{KW.map((k) => (<div key={k.name} style={{ padding: 12, background: `${k.color}0e`, border: `1px solid ${k.color}28`, borderRadius: 9 }}><div style={{ fontSize: 16, marginBottom: 4 }}>{k.icon}</div><div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, color: k.color, marginBottom: 3, fontWeight: 700 }}>{k.name}</div><p style={{ fontSize: 10, color: "#c0a870", margin: 0, lineHeight: 1.6 }}>{k.desc}</p></div>))}</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 10 }}>{KW.map((k) => (<div key={k.name} style={{ padding: 12, background: `${k.color}14`, border: `1px solid ${k.color}44`, borderRadius: 9 }}><div style={{ fontSize: 16, marginBottom: 4 }}>{k.icon}</div><div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, color: k.color, marginBottom: 3, fontWeight: 700 }}>{k.name}</div><p style={{ fontSize: 10, color: "#d0b880", margin: 0, lineHeight: 1.6 }}>{k.desc}</p></div>))}</div>
     </div>
 
     {/* Factions & Regions */}
     <div style={{ background: "#0e0a06", border: "1px solid #2a2010", borderRadius: 14, padding: 24, marginBottom: 16 }}>
       <h3 style={{ fontFamily: "'Cinzel',serif", fontSize: 15, color: "#e8c060", margin: "0 0 6px", fontWeight: 700 }}>🌍 Factions {"&"} Regions</h3>
-      <p style={{ fontSize: 11, color: "#706048", margin: "0 0 18px", lineHeight: 1.7 }}>Each card belongs to a region — the place it hails from. Regions define a card's identity, art style, and the kinds of strategies they enable. Build around a region for synergy, or mix factions for flexibility.</p>
+      <p style={{ fontSize: 11, color: "#a09068", margin: "0 0 18px", lineHeight: 1.7 }}>Each card belongs to a region — the place it hails from. Regions define a card's identity, art style, and the kinds of strategies they enable. Build around a region for synergy, or mix factions for flexibility.</p>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 10 }}>
         {[
           { name:"Thornwood",        icon:"🌿", color:"#40a040", desc:"Ancient forests, druids, and wild beasts. Healing and growth." },
@@ -3477,7 +3499,7 @@ function GuideScreen() {
             {r.isNew && <div style={{ position:"absolute", top:-8, right:-8, background:"linear-gradient(135deg,#e8c060,#c89010)", borderRadius:10, padding:"2px 8px", fontFamily:"'Cinzel',serif", fontSize:7, fontWeight:900, color:"#1a1000", letterSpacing:1 }}>NEW</div>}
             <div style={{ fontSize:20, marginBottom:6 }}>{r.icon}</div>
             <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:r.color, fontWeight:700, marginBottom:4 }}>{r.name}</div>
-            <p style={{ fontSize:10, color:"#907860", margin:0, lineHeight:1.6 }}>{r.desc}</p>
+            <p style={{ fontSize:10, color:"#b09878", margin:0, lineHeight:1.6 }}>{r.desc}</p>
           </div>
         ))}
       </div>
@@ -3486,7 +3508,7 @@ function GuideScreen() {
     {/* Ranked Mode section */}
     <div style={{ background: "#0e0c14", border: "1px solid #3a2a6033", borderRadius: 14, padding: 24 }}>
       <h3 style={{ fontFamily: "'Cinzel',serif", fontSize: 15, color: "#c080ff", margin: "0 0 6px", fontWeight: 700 }}>🏆 Ranked Mode</h3>
-      <p style={{ fontSize: 12, color: "#8060a0", margin: "0 0 20px", lineHeight: 1.7 }}>Toggle <strong style={{ color:"#c080ff" }}>RANKED</strong> in Battle Setup before queuing. Wins and losses adjust your MMR using an ELO formula. Reach higher tiers to earn your badge.</p>
+      <p style={{ fontSize: 12, color: "#a080c0", margin: "0 0 20px", lineHeight: 1.7 }}>Toggle <strong style={{ color:"#c080ff" }}>RANKED</strong> in Battle Setup before queuing. Wins and losses adjust your MMR using an ELO formula. Reach higher tiers to earn your badge.</p>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))", gap: 10, marginBottom: 20 }}>
         {[
           { min:2000, name:"Grandmaster", color:"#ff6020", icon:"👑", desc:"Top tier. You are the myth." },
@@ -3501,7 +3523,7 @@ function GuideScreen() {
             <span style={{ fontSize:20, flexShrink:0 }}>{t.icon}</span>
             <div>
               <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:t.color, fontWeight:700, marginBottom:2 }}>{t.name} <span style={{ fontWeight:400, opacity:0.6, fontSize:9 }}>({t.min}+ MMR)</span></div>
-              <div style={{ fontSize:10, color:"#907060", lineHeight:1.5 }}>{t.desc}</div>
+              <div style={{ fontSize:10, color:"#b09080", lineHeight:1.5 }}>{t.desc}</div>
             </div>
           </div>
         ))}
@@ -3515,7 +3537,7 @@ function GuideScreen() {
         ].map(r => (
           <div key={r.title} style={{ padding:"12px 14px", background:"rgba(255,255,255,0.02)", border:"1px solid #2a2040", borderRadius:9 }}>
             <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#c0a0e0", fontWeight:700, marginBottom:4 }}>{r.icon} {r.title}</div>
-            <p style={{ fontSize:10, color:"#806888", margin:0, lineHeight:1.6 }}>{r.body}</p>
+            <p style={{ fontSize:10, color:"#a088a8", margin:0, lineHeight:1.6 }}>{r.body}</p>
           </div>
         ))}
       </div>
@@ -4197,7 +4219,8 @@ function AlphaKeyAdminPanel() {
 }
 
 export default function App() {
-  const [tab, setTab] = useState("home"); const { user, loading, login, logout, update, completeProfile } = useAuth(); const [showProfile, setShowProfile] = useState(false); const [showPatchNotes, setShowPatchNotes] = useState(false); const [inPvpMatch, setInPvpMatch] = useState(false); const [navLeaveModal, setNavLeaveModal] = useState(null); const [avatarErr, setAvatarErr] = useState(""); // { targetTab }
+  const [tab, setTab] = useState("home"); const { user, loading, login, logout, update, completeProfile } = useAuth(); const [showProfile, setShowProfile] = useState(false); const [showPatchNotes, setShowPatchNotes] = useState(false); const [inPvpMatch, setInPvpMatch] = useState(false); const [navLeaveModal, setNavLeaveModal] = useState(null); const [avatarErr, setAvatarErr] = useState(""); const [navHovered, setNavHovered] = useState(false); // { targetTab }
+  const inBattle = tab === "play";
   // Show patch notes once per account+device — triggers only when user logs in
   useEffect(() => {
     if (!user) return;
@@ -4288,7 +4311,7 @@ export default function App() {
       </div>
     </div>)}
     <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "radial-gradient(ellipse at 15% 15%,rgba(200,140,20,0.11) 0%,transparent 50%),radial-gradient(ellipse at 85% 85%,rgba(30,120,200,0.08) 0%,transparent 50%)" }} />
-    <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "linear-gradient(180deg,#201c10 0%,#181408 100%)", backdropFilter: "blur(20px)", borderBottom: "2px solid #4a3c18", padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 72, boxShadow: "0 4px 24px rgba(0,0,0,0.5)" }} onClick={(e) => e.stopPropagation()}>
+    <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "linear-gradient(180deg,#201c10 0%,#181408 100%)", backdropFilter: "blur(20px)", borderBottom: `2px solid ${inBattle && !navHovered ? "transparent" : "#4a3c18"}`, padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: inBattle && !navHovered ? 28 : 72, boxShadow: "0 4px 24px rgba(0,0,0,0.5)", overflow: "hidden", transition: "height 0.3s ease, border-color 0.3s ease", opacity: inBattle && !navHovered ? 0.35 : 1, cursor: inBattle && !navHovered ? "pointer" : "default" }} onClick={(e) => { e.stopPropagation(); if (inBattle && !navHovered) setNavHovered(true); }} onMouseEnter={() => inBattle && setNavHovered(true)} onMouseLeave={() => inBattle && setNavHovered(false)}>
       <button onClick={() => { if (inPvpMatch) { setNavLeaveModal({ targetTab:"home" }); return; } setTab("home"); }} style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}>
         <div style={{ width: 36, height: 36, borderRadius: 8, background: "linear-gradient(135deg,#e8c060,#a07820)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontSize: 16, fontWeight: 900, color: "#1a1000", boxShadow: "0 2px 12px #e8c06044" }}>F</div>
         <div>
@@ -4429,7 +4452,7 @@ export default function App() {
       {tab === "collection" && <CollectionScreen user={user} onUpdateUser={update} />}
       {tab === "community" && <CommunityScreen user={user} />}
       {tab === "howto" && <GuideScreen />}
-      <footer style={{ borderTop: "1px solid #1e1a0e", padding: 22, textAlign: "center" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, color: "#40301a" }}>Forge {"&"} Fable</div><p style={{ fontSize: 9, color: "#30280e", margin: "4px 0 0", letterSpacing: 1 }}>{CURRENT_PATCH}: VISUAL OVERHAUL · ENV SIDE-SPECIFIC · SUMMON ANIMS · MATCHMAKING LIVE · ALPHA READY</p></footer>
+      <footer style={{ borderTop: "1px solid #1e1a0e", padding: 22, textAlign: "center" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, color: "#40301a" }}>Forge {"&"} Fable</div><p style={{ fontSize: 9, color: "#30280e", margin: "4px 0 0", letterSpacing: 1 }}>{CURRENT_PATCH}: RARITY ICONS · NEW BADGE · COUNTER-HIT · TAVERN ARENA · NAV HIDE · ALPHA READY</p></footer>
     </div>
     <MusicPlayer />
   </div>);
