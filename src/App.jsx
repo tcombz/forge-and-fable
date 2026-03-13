@@ -230,7 +230,7 @@ const KW = [
   { name: "Anchor", icon: "\u2693", color: "#80b0e0", desc: "Cannot be removed, banished, or targeted by enemy spells" },
   { name: "Shield", icon: "\u2666", color: "#60a0d0", desc: "Blocks the first hit taken" },
 ];
-const REGIONS = ["Thornwood", "Shattered Expanse", "Azure Deep", "Ashfen", "Ironmarch", "Sunveil", "Fables"];
+const REGIONS = ["Thornwood", "Shattered Expanse", "Azure Deep", "Ashfen", "Ironmarch", "Sunveil", "Food Fight", "Fables"];
 const GLOW = { Thornwood: "#70ff30", "Shattered Expanse": "#c090ff", "Azure Deep": "#30d0ff", Ashfen: "#ff6820", Ironmarch: "#9090ff", Sunveil: "#ffd030", Bloodpact: "#ff2848", "Food Fight": "#ff5030", Fables: "#9070ff" };
 const ENV_THEMES = {
   Thornwood:         { bg: "linear-gradient(180deg,#040e02 0%,#0a1a06 40%,#081808 100%)", particle: "#60dd28", glow: "#40a020", pShape: "leaf",   pDir: "down", pCount: 28, pSpeed: 0.5 },
@@ -471,7 +471,7 @@ function PatchNotesModal({ onDismiss }) {
     { icon:"⚓", label:"Anchor keyword: grants full removal immunity — cannot be targeted by enemy effects" },
     { icon:"📊", label:"Win/Loss and Win Rate now track Ranked games only" },
     { icon:"🏆", label:"Ranked and Casual matchmaking queues are now fully separated" },
-    { icon:"⚗", label:"Coming next: Leaderboard · Draft Mode", dim:true },
+    { icon:"⚗", label:"Coming next: Leaderboard · Food Fight · Draft Mode", dim:true },
   ];
   return (
     <div style={{ position:"fixed", inset:0, zIndex:300, background:"rgba(2,1,0,0.96)", backdropFilter:"blur(16px)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
@@ -616,8 +616,9 @@ const HOME_CARDS = [POOL.find((c) => c.id === "velrun"), POOL.find((c) => c.id =
 
 // ═══ PACKS ═══════════════════════════════════════════════════════════════════
 const PACKS = [
-  { id: "anime_island",  name: "Anime Island",   desc: "5 anime alt art unlocks. 0.1% Prismatic ☀",              cost: 300, count: 5, color: "#ff80c0", pool: "all",    guarantees: [], altPack: true },
-  { id: "fables_pack",   name: "Fables Pack",     desc: "5 cards from the Fables faction. New keywords: Gilded.",   cost: 200, count: 5, color: "#9070ff", pool: "Fables", guarantees: [{ rarity: "Rare", count: 1 }] },
+  { id: "anime_island",  name: "Anime Island",    desc: "5 anime alt art unlocks. 0.1% Prismatic ☀",                    cost: 300, count: 5, color: "#ff80c0", pool: "all",        guarantees: [], altPack: true },
+  { id: "food_fight",    name: "Food Fight Pack", desc: "5 cards from the Food Fight faction. New keywords: Sauced.",   cost: 200, count: 5, color: "#ff5030", pool: "Food Fight", guarantees: [{ rarity: "Rare", count: 1 }] },
+  { id: "fables_pack",   name: "Fables Pack",     desc: "5 cards from the Fables faction. New keywords: Gilded.",       cost: 200, count: 5, color: "#9070ff", pool: "Fables",     guarantees: [{ rarity: "Rare", count: 1 }] },
 ];
 function rollPack(pack) {
   const pool = pack.pool === "all" ? GAMEPLAY_POOL : GAMEPLAY_POOL.filter((c) => c.region === pack.pool);
@@ -3512,7 +3513,7 @@ function CollectionScreen({ user, onUpdateUser }) {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
         <div>
           <h2 style={{ fontFamily: "'Cinzel',serif", fontSize: 24, fontWeight: 700, color: "#e8c060", margin: 0 }}>Collection</h2>
-          <div style={{ fontSize: 11, color: "#806040", marginTop: 3 }}>{owned.length} / {GAMEPLAY_POOL.length} cards obtained</div>
+          <div style={{ fontSize: 11, color: "#806040", marginTop: 3 }}>{owned.length} / {ownablePool.length} cards obtained</div>
         </div>
         <button onClick={() => setDeckBuilderState("select")}
           style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 22px", background: "linear-gradient(135deg,#1a1608,#2a2010)", border: "2px solid #e8c06055", borderRadius: 12, cursor: "pointer", fontFamily: "'Cinzel',serif", color: "#e8c060", transition: "all .2s" }}
@@ -3591,7 +3592,7 @@ function CardOfTheWeek() {
       onMouseLeave={() => { setOpen(false); setTilt({ rx:0, ry:0 }); }}>
       <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#c090ff", letterSpacing:5, fontWeight:700, textShadow:"0 0 14px #9070ff88", marginBottom:12 }}>✦ CARD OF THE WEEK ✦</div>
       {/* Fixed-height card slot — card lives here, never escapes into nav */}
-      <div style={{ height:230, width:180, display:"flex", alignItems:"flex-end", justifyContent:"center", position:"relative", overflow:"visible" }}>
+      <div style={{ height:170, width:160, display:"flex", alignItems:"flex-end", justifyContent:"center", position:"relative", overflow:"visible" }}>
         {/* Light beam cone from chest opening */}
         <div style={{ position:"absolute", bottom:0, left:"50%", transform:"translateX(-50%)", width:open?150:0, height:open?220:0, background:"linear-gradient(to top,rgba(255,200,40,0.28),rgba(255,220,80,0.08),transparent)", clipPath:"polygon(35% 100%,65% 100%,100% 0%,0% 0%)", transition:"all 0.5s ease", pointerEvents:"none", opacity:open?1:0 }} />
         {/* Light rays */}
@@ -3602,7 +3603,7 @@ function CardOfTheWeek() {
         <div style={{ transform:`translateY(${open?0:20}px)`, opacity:open?1:0, transition:"all 0.42s cubic-bezier(0.34,1.2,0.64,1)", perspective:800, position:"relative", zIndex:2 }}>
           <div style={{ transform:`rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`, transition:"transform 0.08s linear", transformStyle:"preserve-3d" }}
             onMouseMove={e => { const r=e.currentTarget.getBoundingClientRect(),xp=(e.clientX-r.left)/r.width,yp=(e.clientY-r.top)/r.height; setTilt({ rx:(yp-0.5)*-20, ry:(xp-0.5)*20 }); }}>
-            <Card card={card} size="lg" hideCost />
+            <Card card={card} size="md" hideCost />
           </div>
         </div>
       </div>
@@ -3635,7 +3636,7 @@ function CardOfTheWeek() {
 function HomeScreen({ setTab, user }) {
   const [active, setActive] = useState(0);
   const [entered, setEntered] = useState(false);
-  const [statCounts, setStatCounts] = useState({ cards: 32, factions: 7, keywords: 7 });
+  const [statCounts, setStatCounts] = useState({ cards: 44, factions: 8, keywords: 9 });
   const [cardTilt, setCardTilt] = useState({ rx: 0, ry: 0, mx: 50, my: 50 });
   const starCanvasRef = useRef(null);
   const mouseRef = useRef({ x: 0, y: 0 });
@@ -3689,7 +3690,7 @@ function HomeScreen({ setTab, user }) {
       obs = new IntersectionObserver(entries => {
         if (entries.some(e=>e.isIntersecting) && !statsCountedRef.current) {
           statsCountedRef.current = true;
-          const targets = { cards:32, factions:7, keywords:7 };
+          const targets = { cards:44, factions:8, keywords:9 };
           const dur = 1600; const start = performance.now();
           const tick = now => {
             const t = Math.min((now-start)/dur,1), ease=1-Math.pow(1-t,3);
@@ -3712,7 +3713,7 @@ function HomeScreen({ setTab, user }) {
     };
   }, []);
 
-  const REGION_ICONS = { Thornwood: "🌿", "Shattered Expanse": "💎", "Azure Deep": "🌊", Ashfen: "🔥", Ironmarch: "⚙", Sunveil: "☀", Bloodpact: "🩸", Fables: "📖" };
+  const REGION_ICONS = { Thornwood: "🌿", "Shattered Expanse": "💎", "Azure Deep": "🌊", Ashfen: "🔥", Ironmarch: "⚙", Sunveil: "☀", Bloodpact: "🩸", "Food Fight": "🍓", Fables: "📖" };
   const REGION_ICON_SIZE = { fontSize: 16 };
   // Ticker items doubled for seamless loop
   const tickerDoubled = [...TICKER_ITEMS, ...TICKER_ITEMS];
@@ -3757,7 +3758,7 @@ function HomeScreen({ setTab, user }) {
           <h1 style={{ fontFamily: "'Cinzel',serif", fontSize: "clamp(48px,6.5vw,80px)", fontWeight: 900, lineHeight: 0.95, color: "#f0d878", margin: "0 0 22px", textShadow: "0 0 80px #c89020bb, 0 0 140px #c8902055, 0 4px 8px rgba(0,0,0,0.9)" }}>
             {"&"} Fable
           </h1>
-          <p style={{ fontSize: 15, lineHeight: 1.9, color: "#b8aad0", margin: "0 0 24px", maxWidth: 420, textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>32 cards across 7 regions. Real abilities. Environment cards that reshape the battlefield. Your creatures level up, bleed, and echo.</p>
+          <p style={{ fontSize: 15, lineHeight: 1.9, color: "#b8aad0", margin: "0 0 24px", maxWidth: 420, textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>44 cards across 8 factions. Real abilities, the Lightning Meter, and environments that reshape the battlefield. Creatures that level up, bleed, echo, and strike.</p>
           {/* Stat boxes */}
           <div ref={statsRef} style={{ display: "flex", gap: 10, marginBottom: 28 }}>
             {[{ val: statCounts.cards, sub: "CARDS" }, { val: statCounts.factions, sub: "FACTIONS" }, { val: statCounts.keywords, sub: "KEYWORDS" }].map((s) => (<div key={s.sub} style={{ background: "rgba(232,192,96,0.08)", border: "1px solid rgba(232,192,96,0.2)", borderRadius: 10, padding: "12px 20px", textAlign: "center", backdropFilter:"blur(4px)" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 22, fontWeight: 900, color: "#e8c060", textShadow:"0 0 20px #e8c06066" }}>{s.val}</div><div style={{ fontSize: 8, color: "#806040", letterSpacing: 2, fontFamily: "'Cinzel',serif", marginTop: 2 }}>{s.sub}</div></div>))}
@@ -3781,6 +3782,7 @@ function HomeScreen({ setTab, user }) {
     {/* Coming Soon — 3 faction teasers */}
     <section style={{ background:"linear-gradient(180deg,#080610 0%,#0c0814 100%)", borderTop:"1px solid #1a1228", borderBottom:"1px solid #1a1228", padding:"36px 28px 28px" }}>
       <style>{`
+        @keyframes berryBounceFF{0%,100%{transform:scaleY(1) scaleX(1) translateY(0)}38%{transform:scaleY(1.09) scaleX(0.93) translateY(-16px)}58%{transform:scaleY(0.87) scaleX(1.1) translateY(4px)}74%{transform:scaleY(1.04) scaleX(0.97) translateY(-5px)}}
         @keyframes boltFloat{0%,100%{transform:translateY(0) scale(1) rotate(-4deg);filter:drop-shadow(0 0 10px #ffe04099)}40%{transform:translateY(-14px) scale(1.08) rotate(4deg);filter:drop-shadow(0 0 22px #ffe040dd) drop-shadow(0 0 40px #f0a00066)}70%{transform:translateY(-6px) scale(1.03) rotate(-2deg);filter:drop-shadow(0 0 14px #ffe040bb)}}
         @keyframes blossomSpin{0%{transform:rotate(0deg) scale(1);filter:drop-shadow(0 0 8px #ff80c066)}40%{transform:rotate(25deg) scale(1.15);filter:drop-shadow(0 0 20px #ff80c0cc) drop-shadow(0 0 36px #ff40a055)}70%{transform:rotate(10deg) scale(1.06);filter:drop-shadow(0 0 12px #ff80c099)}100%{transform:rotate(0deg) scale(1);filter:drop-shadow(0 0 8px #ff80c066)}}
       `}</style>
@@ -3788,7 +3790,7 @@ function HomeScreen({ setTab, user }) {
         <div style={{ textAlign:"center", marginBottom:28 }}>
           <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#504038", letterSpacing:5, fontWeight:700 }}>COMING SOON</div>
         </div>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:0 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:0 }}>
 
           {/* COL 1 — The Fables */}
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"0 32px 0 0", borderRight:"1px solid #1e1430", gap:10 }}>
@@ -3804,7 +3806,7 @@ function HomeScreen({ setTab, user }) {
           </div>
 
           {/* COL 2 — Anime Island Alt Art */}
-          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"0 0 0 32px", gap:10 }}>
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"0 32px", borderRight:"1px solid #1e1430", gap:10 }}>
             <div style={{ fontSize:38, animation:"blossomSpin 2.6s ease-in-out infinite", display:"inline-block" }}>🌸</div>
             <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#ff80c0", letterSpacing:5, fontWeight:700 }}>OUT NOW!</div>
             <div style={{ fontFamily:"'Palatino Linotype',Palatino,'Book Antiqua',Georgia,serif", fontSize:26, fontStyle:"italic", color:"#f0a0d0", lineHeight:1.2, textAlign:"center" }}>Anime Island</div>
@@ -3812,6 +3814,27 @@ function HomeScreen({ setTab, user }) {
             <div style={{ display:"flex", gap:6, flexWrap:"wrap", justifyContent:"center" }}>
               {["Alt Art Skins","0.1% Prismatic","All Regions"].map(t => (
                 <span key={t} style={{ fontSize:9, padding:"4px 12px", background:"rgba(255,80,160,0.18)", border:"1px solid #ff60b088", borderRadius:20, color:"#ffb0d8", fontFamily:"'Cinzel',serif", letterSpacing:1, fontWeight:600 }}>{t}</span>
+              ))}
+            </div>
+          </div>
+
+          {/* COL 3 — Food Fight */}
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"0 0 0 32px", gap:10 }}>
+            <svg viewBox="0 0 80 90" xmlns="http://www.w3.org/2000/svg" style={{ width:38, height:42, filter:"drop-shadow(0 0 10px rgba(220,50,50,0.7))", animation:"berryBounceFF 1.8s ease-in-out infinite" }}>
+              <path d="M40 14 Q44 4 48 0" stroke="#2e7d32" strokeWidth="3" strokeLinecap="round" fill="none"/>
+              <ellipse cx="50" cy="7" rx="9" ry="5" fill="#388e3c" transform="rotate(-25 50 7)"/>
+              <ellipse cx="32" cy="8" rx="7" ry="4" fill="#2e7d32" transform="rotate(20 32 8)"/>
+              <path d="M40 18 C20 16,4 34,4 52 C4 72,20 88,40 88 C60 88,76 72,76 52 C76 34,60 16,40 18 Z" fill="url(#ffGH2)"/>
+              {[{x:28,y:34},{x:44,y:30},{x:58,y:38},{x:22,y:50},{x:38,y:52},{x:54,y:52},{x:30,y:66},{x:48,y:64}].map((s,i)=>(<ellipse key={i} cx={s.x} cy={s.y} rx="2.2" ry="3" fill="rgba(255,240,180,0.7)" transform={`rotate(${-15+i*5} ${s.x} ${s.y})`}/>))}
+              <ellipse cx="30" cy="36" rx="8" ry="5" fill="rgba(255,255,255,0.25)" transform="rotate(-20 30 36)"/>
+              <defs><radialGradient id="ffGH2" cx="35%" cy="30%" r="65%"><stop offset="0%" stopColor="#ff7070"/><stop offset="45%" stopColor="#dd1111"/><stop offset="100%" stopColor="#6b0000"/></radialGradient></defs>
+            </svg>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#ff6060", letterSpacing:5, fontWeight:700 }}>COMING SOON</div>
+            <div style={{ fontFamily:"'Palatino Linotype',Palatino,'Book Antiqua',Georgia,serif", fontSize:26, fontStyle:"italic", color:"#ff8080", lineHeight:1.2, textAlign:"center" }}>Food Fight</div>
+            <p style={{ fontSize:11, color:"#e09090", lineHeight:1.75, margin:0, textAlign:"center" }}>12 culinary warriors. Berry {"&"} Tooty and Master Jax lead the charge.</p>
+            <div style={{ display:"flex", gap:6, flexWrap:"wrap", justifyContent:"center" }}>
+              {["12 Cards","Berry & Tooty","Master Jax"].map(t => (
+                <span key={t} style={{ fontSize:9, padding:"4px 12px", background:"rgba(220,40,40,0.18)", border:"1px solid #dd303088", borderRadius:20, color:"#ffaaaa", fontFamily:"'Cinzel',serif", letterSpacing:1, fontWeight:600 }}>{t}</span>
               ))}
             </div>
           </div>
@@ -3878,7 +3901,7 @@ function HomeScreen({ setTab, user }) {
     {/* Bottom info bar */}
     <div style={{ background:"rgba(0,0,0,0.5)", borderTop:"1px solid rgba(255,255,255,0.05)", padding:"10px 28px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
       <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#504038", letterSpacing:2 }}>FORGE {"&"} FABLE</div>
-      <div style={{ fontSize:9, color:"#3a3028", letterSpacing:2, fontFamily:"'Cinzel',serif" }}>{CURRENT_PATCH} · {GAMEPLAY_POOL.length} CARDS · 7 REGIONS · {user ? "ALPHA" : "GUEST"}</div>
+      <div style={{ fontSize:9, color:"#3a3028", letterSpacing:2, fontFamily:"'Cinzel',serif" }}>{CURRENT_PATCH} · 44 CARDS · 8 REGIONS · {user ? "ALPHA" : "GUEST"}</div>
       <div style={{ fontSize:9, color:"#3a3028", letterSpacing:1 }}>MULTIPLAYER ALPHA</div>
     </div>
   </>);
@@ -3909,6 +3932,7 @@ function GuideScreen() {
           { name:"Ironmarch",        icon:"⚙",  color:"#a0a0a0", desc:"War machine empire. Shields and Anchor-locked titans." },
           { name:"Sunveil",          icon:"☀",  color:"#d0a020", desc:"Desert kingdom. Resonate and Swift glass-cannon warriors." },
           { name:"Bloodpact",        icon:"🩸", color:"#c03030", desc:"Forbidden arts. Pay life to unleash devastating power." },
+          { name:"Food Fight",       icon:"🍓", color:"#ff5030", desc:"Culinary chaos. Tokens, splat effects, and saucy mayhem.", isNew: true },
           { name:"Fables",           icon:"📖", color:"#9070ff", desc:"Fairy tale warriors. Enchanted environments and story spells.", isNew: true },
         ].map(r => (
           <div key={r.name} style={{ padding:"12px 14px", background:`${r.color}0a`, border:`1px solid ${r.color}28`, borderRadius:9, position:"relative" }}>
