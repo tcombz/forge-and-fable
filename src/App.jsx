@@ -4141,6 +4141,7 @@ function FeedbackWall({ user }) {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [tableError, setTableError] = useState(null);
+  const [submitError, setSubmitError] = useState(null);
 
   const SQL_SETUP = `CREATE TABLE community_feedback (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4166,7 +4167,7 @@ CREATE POLICY "upvote" ON community_feedback FOR UPDATE USING (true);`;
 
   const submit = async () => {
     if (!msg.trim() || !user || submitting) return;
-    setSubmitting(true);
+    setSubmitting(true); setSubmitError(null);
     try {
       const { error } = await supabase.from("community_feedback").insert([{ user_id: user.id, user_name: user.name || "Anonymous", category: cat, message: msg.trim(), upvotes: 0 }]);
       if (error) throw error;
@@ -4175,7 +4176,8 @@ CREATE POLICY "upvote" ON community_feedback FOR UPDATE USING (true);`;
       await load();
     } catch(e) {
       const m = e?.message || String(e);
-      if (m.includes("does not exist") || m.includes("relation")) setTableError(SQL_SETUP);
+      if (m.includes("does not exist") || m.includes("relation") || e?.code === "42P01") setTableError(SQL_SETUP);
+      else setSubmitError(m || "Submit failed — check console");
     }
     setSubmitting(false);
   };
@@ -4197,6 +4199,12 @@ CREATE POLICY "upvote" ON community_feedback FOR UPDATE USING (true);`;
           {submitting ? "SENDING..." : submitted ? "✓ SENT!" : "SUBMIT"}
         </button>
         {!user && <div style={{ marginTop:8, fontSize:10, color:"#504030", fontFamily:"'Cinzel',serif", letterSpacing:2 }}>SIGN IN TO SUBMIT</div>}
+        {submitError && <div style={{ marginTop:8, fontSize:10, color:"#e84040", fontFamily:"'Cinzel',serif" }}>⚠ {submitError}</div>}
+        {tableError && <div style={{ marginTop:12, background:"rgba(0,0,0,0.5)", border:"1px solid #5a1818", borderRadius:9, padding:"12px 14px" }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#e84040", marginBottom:6 }}>⚠ TABLE NOT FOUND — run this SQL in Supabase then refresh:</div>
+          <pre style={{ background:"#0a0806", borderRadius:6, padding:10, fontSize:8, color:"#c0a060", overflowX:"auto", whiteSpace:"pre-wrap", wordBreak:"break-all", margin:"0 0 8px" }}>{tableError}</pre>
+          <button onClick={()=>navigator.clipboard?.writeText(tableError)} style={{ padding:"4px 12px", background:"rgba(232,192,96,0.1)", border:"1px solid #e8c06044", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:8, color:"#e8c060", cursor:"pointer" }}>COPY SQL</button>
+        </div>}
       </div>
       {/* Posts */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
