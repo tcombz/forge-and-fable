@@ -249,7 +249,7 @@ const BATTLE_MAPS = {
   expanse: { label: "Shattered Expanse", enemyBg: "rgba(120,40,200,0.10)", playerBg: "rgba(80,20,160,0.08)", dividerBg: "#0c0020", accent: "#280840" },
   ashfen: { label: "Ashfen Wastes", enemyBg: "rgba(200,60,10,0.10)", playerBg: "rgba(160,40,5,0.08)", dividerBg: "#180400", accent: "#401008" },
 };
-const hpCol = (h) => (h > 12 ? "#50c060" : h > 6 ? "#d8b040" : "#d84040");
+const hpCol = (h) => (h > 20 ? "#48c058" : h > 10 ? "#f09020" : "#e03030");
 
 // ═══ RANKED ══════════════════════════════════════════════════════════════════
 // Supabase: run once to add ranked columns to profiles —
@@ -572,8 +572,8 @@ const POOL = [
   { id: "bean_barrage",     name: "Bean Barrage",                       type: "spell",    region: "Food Fight", rarity: "Common",    cost: 2, atk: null, hp: null, keywords: [],    border: "#ff4040", seed: 211, bloodpact: false, imageUrl: "", ability: "Summon 2 Bean Minions. If Master Jax is in play, summon 3 instead.", effects: [{ trigger: "onPlay", effect: "buff_allies", atk: 0, hp: 2 }] },
   { id: "berry_bomb",       name: "Berry Bomb",                         type: "spell",    region: "Food Fight", rarity: "Common",    cost: 2, atk: null, hp: null, keywords: [],    border: "#ff4040", seed: 212, bloodpact: false, imageUrl: "", ability: "Destroy a Food Token. Deal 3 damage to any target.", effects: [{ trigger: "onPlay", effect: "damage_random_enemy", amount: 3 }] },
   // ── Fables Expansion ─────────────────────────────────────────────────────────
-  { id: "zeus_storm_father",  name: "Zeus, Storm Father", type: "champion", region: "Fables",     rarity: "Legendary", cost: 5, atk: 4, hp: 6,       keywords: ["Swift"],             border: "#9070ff", seed: 400, bloodpact: false, imageUrl: "/cards/zeus_storm_father.jpg", ability: "On Play: Instantly fires Lightning for 2 dmg to enemy hero. Passive (in deck): build the Lightning Meter — every 4 Spells or Swift attacks deals 2 dmg.", effects: [{ trigger: "onPlay", effect: "charge_lightning_meter" }] },
-  { id: "hades_soul_reaper",  name: "Hades, Soul Reaper", type: "champion", region: "Fables",     rarity: "Legendary", cost: 5, atk: 3, hp: 6,       keywords: ["Shield"],            border: "#7030c0", seed: 401, bloodpact: false, imageUrl: "/cards/hades_soul_reaper.png", ability: "Soul Harvest: +1 Max HP whenever a friendly unit dies (cap 10). End of Turn: 1 dmg to all enemies.", effects: [{ trigger: "onFriendlyDeath", effect: "soul_harvest" }, { trigger: "onTurnEnd", effect: "soul_reap" }] },
+  { id: "zeus_storm_father",  name: "Zeus, Storm Father", type: "champion", region: "Fables",     rarity: "Legendary", cost: 5, atk: 4, hp: 6,       keywords: [],                    border: "#9070ff", seed: 400, bloodpact: false, imageUrl: "/cards/zeus_storm_father.jpg", ability: "On Play: Deal 2 dmg to a random unit on the field, or the enemy hero if the board is empty. Passive: Lightning Meter fires at 2 stacks — charges from any Spell cast or any Swift unit attacking.", effects: [{ trigger: "onPlay", effect: "zeus_onplay_damage" }] },
+  { id: "hades_soul_reaper",  name: "Hades, Soul Reaper", type: "champion", region: "Fables",     rarity: "Legendary", cost: 5, atk: 3, hp: 6,       keywords: [],                    border: "#7030c0", seed: 401, bloodpact: false, imageUrl: "/cards/hades_soul_reaper.png", ability: "Soul Harvest: +1 Max HP whenever a friendly unit dies (cap 10). End of Turn: 1 dmg to all enemies.", effects: [{ trigger: "onFriendlyDeath", effect: "soul_harvest" }, { trigger: "onTurnEnd", effect: "soul_reap" }] },
   { id: "spartan_recruit",    name: "Spartan Recruit",    type: "creature", region: "Fables",     rarity: "Common",   cost: 1, atk: 1, hp: 2,        keywords: ["Resonate"],          border: "#9070ff", seed: 402, bloodpact: false, imageUrl: "/cards/spartan_recruit.jpg", ability: "\"I'm doing my part!\"", effects: [] },
   { id: "lost_soul",          name: "Lost Soul",          type: "creature", region: "Fables",     rarity: "Common",   cost: 1, atk: 1, hp: 1,        keywords: ["Echo"],              border: "#9070ff", seed: 403, bloodpact: false, imageUrl: "/cards/lost_soul.jpg", ability: "\"Just passing through.\"", effects: [] },
   { id: "olympus_guard",      name: "Fables Guard",       type: "creature", region: "Fables",     rarity: "Uncommon", cost: 3, atk: 2, hp: 5,        keywords: ["Anchor", "Shield"],  border: "#9070ff", seed: 404, bloodpact: false, imageUrl: "/cards/olympus_guard.jpg", ability: "\"Not on my watch.\"", effects: [] },
@@ -971,11 +971,21 @@ function resolveEffects(trigger, card, state, side, vfx) {
       case "draw": { const dk = side === "player" ? "playerDeck" : "enemyDeck", hd = side === "player" ? "playerHand" : "enemyHand"; for (let i = 0; i < fx.amount; i++) { if (s[dk].length > 0 && s[hd].length < CFG.maxHand) { s[hd] = [...s[hd], makeInst(s[dk][0], side === "player" ? "p" : "e")]; s[dk] = s[dk].slice(1); } } L(`${card.name}: Draw ${fx.amount}!`); break; }
       case "bleed_all_enemies": s[thB] = s[thB].map((c) => ({ ...c, bleed: (c.bleed || 0) + fx.amount })); L(`${card.name}: ${fx.amount} Bleed to all!`); break;
       // ── Fables mechanics ──────────────────────────────────────────────────
-      case "charge_lightning_meter": {
-        // Zeus: set meter to 4, immediately fire
-        const meterKey = side === "player" ? "playerLightningMeter" : "enemyLightningMeter";
-        s[meterKey] = 4;
-        s = fireLightningMeter(s, side, vfx, L);
+      case "zeus_onplay_damage": {
+        // Zeus on play: 2 dmg to a random unit on field, or enemy hero if board empty
+        const thBZ = side === "player" ? "enemyBoard" : "playerBoard";
+        const thHPZ = side === "player" ? "enemyHP" : "playerHP";
+        if (s[thBZ].length > 0) {
+          const idx = Math.floor(Math.random() * s[thBZ].length);
+          const tgt = s[thBZ][idx];
+          s[thBZ] = s[thBZ].map((c, i) => i === idx ? { ...c, currentHp: c.currentHp - 2 } : c).filter(c => c.currentHp > 0);
+          L(`⚡ Zeus strikes ${tgt.name} for 2!`);
+        } else {
+          s[thHPZ] -= 2;
+          L(`⚡ Zeus strikes enemy hero for 2!`);
+        }
+        SFX.play("lightning_strike");
+        if (vfx) { vfx.add("floatText", { text: "⚡ ZEUS!", color: "#ffe040", duration: 1400, zone: side === "player" ? "enemy" : "player" }); }
         break;
       }
       case "bolt_damage": {
@@ -988,9 +998,9 @@ function resolveEffects(trigger, card, state, side, vfx) {
           s[thB] = s[thB].map((c, i) => i === idx ? { ...c, currentHp: nHp } : c).filter(c => c.currentHp > 0);
           L(`${card.name} deals ${fx.amount} to ${btgt.name}!`);
           if (nHp <= 0) {
-            s[mKey] = Math.min(4, (s[mKey] || 0) + 1);
+            s[mKey] = Math.min(2, (s[mKey] || 0) + 1);
             L(`⚡ Lightning Meter +1 (kill bonus)!`);
-            if (s[mKey] >= 4) s = fireLightningMeter(s, side, vfx, L);
+            if (s[mKey] >= 2) s = fireLightningMeter(s, side, vfx, L);
           }
         } else {
           s[thHP] -= fx.amount;
@@ -1067,7 +1077,7 @@ function fireLightningMeter(s, side, vfx, L) {
   const thB = side === "player" ? "enemyBoard" : "playerBoard";
   const thHP = side === "player" ? "enemyHP" : "playerHP";
   const meterKey = side === "player" ? "playerLightningMeter" : "enemyLightningMeter";
-  if ((s[meterKey] || 0) < 4) return s;
+  if ((s[meterKey] || 0) < 2) return s;
   if (s[thB].length > 0) {
     const idx = Math.floor(Math.random() * s[thB].length);
     const ltgt = s[thB][idx];
@@ -1391,7 +1401,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     let en=s.maxEnergy;
     for (const card of [...s.enemyHand].sort((a,b)=>b.cost-a.cost)) {
       if (card.type==="environment") { if(!card.bloodpact&&card.cost<=en){en-=card.cost;s.environment={...card,owner:"enemy",turnsRemaining:2};s.enemyHand=s.enemyHand.filter(c=>c.uid!==card.uid);s.log=[...s.log.slice(-20),`Enemy: ${card.name}! (2 rounds)`];s=resolveEffects("onPlay",card,s,"enemy",vfx);push();flashAction(`Enemy plays ${card.name}!`);SFX.play("env_play");await wait(750);} continue; }
-      if (card.type==="spell") { const canCast=card.bloodpact?card.cost<s.enemyHP:card.cost<=en; if(canCast){if(card.bloodpact)s.enemyHP-=card.cost;else en-=card.cost;s.enemyHand=s.enemyHand.filter(c=>c.uid!==card.uid);s.log=[...s.log.slice(-20),`Enemy casts ${card.name}!`];s=resolveEffects("onPlay",card,s,"enemy",vfx);if(s.playerZeusInPlay||s.enemyZeusInPlay){s.enemyLightningMeter=(s.enemyLightningMeter||0)+1;if(s.enemyLightningMeter>=4){s=fireLightningMeter(s,"enemy",vfx,(m)=>{s.log=[...s.log.slice(-20),m];});}}push();flashAction(`Enemy casts ${card.name}!`);SFX.play("ability");await wait(700);} continue; }
+      if (card.type==="spell") { const canCast=card.bloodpact?card.cost<s.enemyHP:card.cost<=en; if(canCast){if(card.bloodpact)s.enemyHP-=card.cost;else en-=card.cost;s.enemyHand=s.enemyHand.filter(c=>c.uid!==card.uid);s.log=[...s.log.slice(-20),`Enemy casts ${card.name}!`];s=resolveEffects("onPlay",card,s,"enemy",vfx);if(s.playerZeusInPlay||s.enemyZeusInPlay){s.enemyLightningMeter=(s.enemyLightningMeter||0)+1;if(s.enemyLightningMeter>=2){s=fireLightningMeter(s,"enemy",vfx,(m)=>{s.log=[...s.log.slice(-20),m];});}}push();flashAction(`Enemy casts ${card.name}!`);SFX.play("ability");await wait(700);} continue; }
       if(s.enemyBoard.length>=CFG.maxBoard)continue;
       const ec=card.bloodpact?0:card.cost; if(ec>en)continue;
       const resBonus=(card.keywords||[]).includes("Resonate")?s.playerBoard.length:0;
@@ -1427,7 +1437,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         // Hades Soul Harvest: enemy Hades gains HP when enemy unit dies
         if(nAHP<=0&&(s.enemyBoard.find(c=>c.id==="hades_soul_reaper")||s.enemyHand.find(c=>c.id==="hades_soul_reaper"))){s=resolveEffects("onFriendlyDeath",{id:"hades_soul_reaper",effects:[{trigger:"onFriendlyDeath",effect:"soul_harvest"}]},s,"enemy",vfx);}
         // Lightning Meter: enemy Swift attack
-        if((s.playerZeusInPlay||s.enemyZeusInPlay)&&(att.keywords||[]).includes("Swift")){s.enemyLightningMeter=(s.enemyLightningMeter||0)+1;if(s.enemyLightningMeter>=4){s=fireLightningMeter(s,"enemy",vfx,(m)=>{s.log=[...s.log.slice(-20),m];});}}
+        if((s.playerZeusInPlay||s.enemyZeusInPlay)&&(att.keywords||[]).includes("Swift")){s.enemyLightningMeter=(s.enemyLightningMeter||0)+1;if(s.enemyLightningMeter>=2){s=fireLightningMeter(s,"enemy",vfx,(m)=>{s.log=[...s.log.slice(-20),m];});}}
         flashAction(`${att.name} attacks ${tgt.name}!`);
       } else {
         s.playerHP-=av;s.enemyBoard=s.enemyBoard.map(c=>c.uid===att.uid?{...c,hasAttacked:true}:c);
@@ -1442,7 +1452,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     // Hades End of Turn: 1 dmg to all players if enemy has Hades
     if(s.enemyBoard.some(c=>c.id==="hades_soul_reaper")){s=resolveEffects("onTurnEnd",{id:"hades_soul_reaper",effects:[{trigger:"onTurnEnd",effect:"soul_reap"}]},s,"enemy",vfx);if(s.playerHP<=0){setGame(()=>({...s,phase:"gameover",winner:"enemy",log:[...s.log,"Defeated..."]}));return;}}
     // Lightning Meter: enemy Swift attacks tracked above; fire if at 4
-    if((s.playerZeusInPlay||s.enemyZeusInPlay)&&(s.enemyLightningMeter||0)>=4){s=fireLightningMeter(s,"enemy",vfx,(m)=>{s.log=[...s.log.slice(-20),m];});}
+    if((s.playerZeusInPlay||s.enemyZeusInPlay)&&(s.enemyLightningMeter||0)>=2){s=fireLightningMeter(s,"enemy",vfx,(m)=>{s.log=[...s.log.slice(-20),m];});}
     // Clear temp frozen/anchored from enemy units
     s.enemyBoard=s.enemyBoard.map(c=>(c.anchored||c.frozen)?{...c,anchored:false,frozen:false,canAttack:true}:c);
     s.playerBoard.forEach(c=>{if(c.effects&&c.effects.length)s=resolveEffects("onTurnStart",c,s,"player",vfx);});
@@ -1501,7 +1511,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         s = resolveEffects("onPlay", card, s, "player", vfx);
         if (s.playerZeusInPlay || s.enemyZeusInPlay) {
           s.playerLightningMeter = (s.playerLightningMeter || 0) + 1;
-          if (s.playerLightningMeter >= 4) { const logRef2 = []; s = fireLightningMeter(s, "player", vfx, (m) => { logRef2.push(m); }); s.log = [...s.log.slice(-20), ...logRef2]; }
+          if (s.playerLightningMeter >= 2) { const logRef2 = []; s = fireLightningMeter(s, "player", vfx, (m) => { logRef2.push(m); }); s.log = [...s.log.slice(-20), ...logRef2]; }
         }
         return s;
       });
@@ -1518,7 +1528,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
       const resonateBonus = (card.keywords||[]).includes("Resonate") ? prev.enemyBoard.length : 0;
       const finalInst = resonateBonus > 0 ? { ...inst, currentAtk: inst.currentAtk + resonateBonus } : inst;
       s.playerBoard = [...prev.playerBoard, finalInst];
-      if ((card.keywords || []).includes("Fracture") && s.playerBoard.length < CFG.maxBoard) { s.playerBoard = [...s.playerBoard, { ...finalInst, uid: uid("pf"), shielded: false, currentHp: Math.ceil(card.hp / 2), maxHp: Math.ceil(card.hp / 2), currentAtk: Math.ceil(card.atk / 2), name: card.name + " Frag", keywords: [], levelUp: [], effects: [] }]; s.log = [...s.log, "Fragment enters!"]; }
+      if ((card.keywords || []).includes("Fracture") && s.playerBoard.length < CFG.maxBoard) { s.playerBoard = [...s.playerBoard, { ...finalInst, uid: uid("pf"), shielded: false, currentHp: Math.ceil(card.hp / 2), maxHp: Math.ceil(card.hp / 2), currentAtk: Math.ceil(card.atk / 2), name: card.name + " Frag", keywords: (card.keywords || []).filter(k => k !== "Fracture"), levelUp: [], effects: [] }]; s.log = [...s.log, "Fragment enters!"]; }
       // Echo: add 1/1 ghost to hand immediately
       if ((card.keywords||[]).includes("Echo") && s.playerHand.length < CFG.maxHand) { const ghost = { ...makeInst({ ...card, id: card.id+"_e", cost:1, hp:1, atk:1, keywords:[], effects:[] }, "p"), uid: uid("echo"), currentHp:1, maxHp:1, currentAtk:1, name: card.name+" Echo" }; s.playerHand = [...s.playerHand, ghost]; s.log = [...s.log, `Echo: ${card.name} ghost enters hand!`]; }
       s = resolveEffects("onPlay", card, s, "player", vfx); return s; });
@@ -1565,7 +1575,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
       // Lightning Meter: +1 if attacker is Swift
       if ((s.playerZeusInPlay || s.enemyZeusInPlay) && (att.keywords || []).includes("Swift")) {
         s.playerLightningMeter = (s.playerLightningMeter || 0) + 1;
-        if (s.playerLightningMeter >= 4) { s = fireLightningMeter(s, "player", vfx, (m) => { s.log = [...s.log.slice(-20), m]; }); }
+        if (s.playerLightningMeter >= 2) { s = fireLightningMeter(s, "player", vfx, (m) => { s.log = [...s.log.slice(-20), m]; }); }
       }
       if (s.enemyHP <= 0) { s.phase = "gameover"; s.winner = "player"; }
       return s;
@@ -1643,8 +1653,10 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
               <span style={{ fontSize: 8, color: "#604040", fontFamily: "'Cinzel',serif" }}>Deck: {g.enemyDeck.length}</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <div style={{ width: 60, height: 6, background: "#180808", borderRadius: 3, overflow: "hidden" }}><div style={{ height: "100%", width: `${(g.enemyHP / CFG.startHP) * 100}%`, background: hpCol(g.enemyHP), transition: "width .4s" }} /></div>
-              <span style={{ fontFamily: "'Cinzel',serif", fontSize: 18, fontWeight: 700, color: hpCol(g.enemyHP) }}>{g.enemyHP}</span>
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:3 }}>
+                <div style={{ width: 90, height: 10, background: "#180808", borderRadius: 5, overflow: "hidden", border:"1px solid #2a1010" }}><div style={{ height: "100%", width: `${Math.max(0,(g.enemyHP / CFG.startHP) * 100)}%`, background: `linear-gradient(90deg, ${hpCol(g.enemyHP)}99, ${hpCol(g.enemyHP)})`, borderRadius:5, transition: "width .4s, background .5s", boxShadow:`0 0 8px ${hpCol(g.enemyHP)}66` }} /></div>
+                <span style={{ fontFamily: "'Cinzel',serif", fontSize: 18, fontWeight: 700, color: hpCol(g.enemyHP), textShadow:`0 0 10px ${hpCol(g.enemyHP)}88` }}>{g.enemyHP} <span style={{ fontSize:9, color:"#604040", fontWeight:400 }}>HP</span></span>
+              </div>
             </div>
           </div>
           {g.environment?.owner === "enemy" && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 12px", background:`${g.environment.border}18`, border:`1px solid ${g.environment.border}33`, borderRadius:6, marginBottom:5, animation:"slideDown 0.3s" }}>
@@ -1653,22 +1665,16 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
             <span style={{ fontSize:10, color:"#a09068", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.environment.ability}</span>
             <span style={{ fontSize:10, color:"#806040", fontFamily:"'Cinzel',serif", flexShrink:0 }}>{Math.ceil((g.environment.turnsRemaining||4)/2)}R</span>
           </div>}
-          {/* Enemy Lightning Meter — only shown when enemy has Zeus in deck */}
+          {/* Enemy Lightning Meter */}
           {g.enemyZeusInPlay && (() => {
-            const em = g.enemyLightningMeter||0; const full = em >= 4;
+            const em = g.enemyLightningMeter||0; const full = em >= 2;
             return (
-            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6, padding:"6px 12px", background:full?"rgba(240,200,0,0.12)":"rgba(240,200,0,0.04)", border:`1px solid rgba(240,200,0,${full?0.6:0.2})`, borderRadius:10, boxShadow:full?"0 0 18px rgba(240,200,0,0.28), inset 0 0 8px rgba(240,200,0,0.06)":"0 0 6px rgba(240,200,0,0.04)", transition:"all .3s", animation:full?"lightningReady 0.8s ease-in-out infinite":undefined }}>
-              <span style={{ fontSize:full?26:20, lineHeight:1, filter:`drop-shadow(0 0 ${em*4}px #ffe040) drop-shadow(0 0 ${em*7}px #f0a000)`, transition:"all .3s", animation:full?"boltFloat 1.2s ease-in-out infinite":undefined }}>⚡</span>
-              <div style={{ display:"flex", gap:4, alignItems:"center" }}>
-                {[0,1,2,3].map(i => {
-                  const filled = i < em;
-                  return (<div key={i} style={{ width:18, height:26, background: filled ? "linear-gradient(180deg,#fff9b0,#ffe030 40%,#f08000)" : "rgba(50,40,0,0.5)", border:`1px solid ${filled?"#f0d020":"#251800"}`, boxShadow: filled ? `0 0 ${10+i*4}px #ffe040cc, 0 0 ${20+i*6}px #f0a00066, inset 0 1px 0 rgba(255,255,220,0.5)` : "none", transform: filled ? `scaleY(${1+i*0.04})` : "scaleY(1)", transition:"all .25s", clipPath:"polygon(22% 0%,78% 0%,100% 42%,62% 42%,100% 100%,38% 100%,0% 58%,38% 58%)" }} />);
-                })}
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6, padding:"5px 10px", background:full?"rgba(255,220,0,0.13)":"rgba(255,220,0,0.04)", border:`1px solid rgba(255,220,0,${full?0.65:0.2})`, borderRadius:8, boxShadow:full?"0 0 14px rgba(255,210,0,0.4)":"none", transition:"all .3s" }}>
+              <span style={{ fontSize:18, lineHeight:1, filter:full?"drop-shadow(0 0 6px #ffe040) drop-shadow(0 0 12px #f0a000)":"none", transition:"filter .3s" }}>⚡</span>
+              <div style={{ display:"flex", gap:5 }}>
+                {[0,1].map(i => { const lit = i < em; return (<div key={i} style={{ width:28, height:14, borderRadius:4, background: lit ? "linear-gradient(90deg,#fffaaa,#ffe030,#f09000)" : "rgba(60,50,0,0.45)", border:`1px solid ${lit?"#f0d020":"#2a1c00"}`, boxShadow: lit ? "0 0 10px #ffe040bb, inset 0 1px 0 rgba(255,255,200,0.4)" : "none", transition:"all .25s" }} />); })}
               </div>
-              <div style={{ display:"flex", flexDirection:"column", gap:1 }}>
-                <span style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:"#f0d020aa", letterSpacing:2 }}>ENEMY</span>
-                <span style={{ fontFamily:"'Cinzel',serif", fontSize:full?12:10, color:full?"#ffe040":"#c0a020", fontWeight:700, transition:"all .2s" }}>{full?"READY!":em+" / 4"}</span>
-              </div>
+              <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:full?"#ffe040":"#a08820", fontWeight:700 }}>{full?"READY!":"ENEMY ⚡"}</span>
             </div>);
           })()}
           <div style={{ fontSize: 10, color: "#3a1414", fontFamily: "'Cinzel',serif", letterSpacing: 3, marginBottom: 4, textAlign: "center", fontWeight: 700 }}>ENEMY FIELD</div>
@@ -1721,8 +1727,10 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#4a9020,#6aab3a)", border: "2px solid #e8c06055", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontSize: 12, fontWeight: 700, color: "#fff" }}>{user?.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user?.name || "??").slice(0, 2).toUpperCase()}</div>
               <span style={{ fontSize: 10, color: "#e8c060", fontFamily: "'Cinzel',serif" }}>Deck: {g.playerDeck.length}</span>
-              <span style={{ fontFamily: "'Cinzel',serif", fontSize: 18, fontWeight: 700, color: hpCol(g.playerHP) }}>{g.playerHP}</span>
-              <span style={{ fontSize: 9, color: "#806040" }}>HP</span>
+              <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
+                <div style={{ width: 90, height: 10, background: "#080808", borderRadius: 5, overflow: "hidden", border:"1px solid #1a1a0a" }}><div style={{ height: "100%", width: `${Math.max(0,(g.playerHP / CFG.startHP) * 100)}%`, background: `linear-gradient(90deg, ${hpCol(g.playerHP)}99, ${hpCol(g.playerHP)})`, borderRadius:5, transition: "width .4s, background .5s", boxShadow:`0 0 8px ${hpCol(g.playerHP)}66` }} /></div>
+                <span style={{ fontFamily: "'Cinzel',serif", fontSize: 18, fontWeight: 700, color: hpCol(g.playerHP), textShadow:`0 0 10px ${hpCol(g.playerHP)}88` }}>{g.playerHP} <span style={{ fontSize:9, color:"#806040", fontWeight:400 }}>HP</span></span>
+              </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
@@ -1735,19 +1743,16 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
           </div>
           {/* Lightning Meter — only shown when player has Zeus in deck */}
           {g.playerZeusInPlay && (() => {
-            const pm = g.playerLightningMeter||0; const full = pm >= 4;
+            const pm = g.playerLightningMeter||0; const full = pm >= 2;
             return (
-            <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:6, padding:"8px 12px", background:full?"rgba(240,200,0,0.14)":"rgba(240,200,0,0.04)", border:`1px solid rgba(240,200,0,${full?0.7:0.25})`, borderRadius:10, boxShadow:full?"0 0 22px rgba(240,200,0,0.35), inset 0 0 10px rgba(240,200,0,0.07)":"0 0 8px rgba(240,200,0,0.06)", transition:"all .3s", animation:full?"lightningReady 0.8s ease-in-out infinite":undefined }}>
-              <span style={{ fontSize:full?30:24, lineHeight:1, filter:`drop-shadow(0 0 ${pm*5}px #ffe040) drop-shadow(0 0 ${pm*8}px #f0a000)`, transition:"all .3s", animation:full?"boltFloat 1.1s ease-in-out infinite":undefined }}>⚡</span>
-              <div style={{ display:"flex", gap:5, alignItems:"center" }}>
-                {[0,1,2,3].map(i => {
-                  const filled = i < pm;
-                  return (<div key={i} style={{ width:20, height:30, background: filled ? "linear-gradient(180deg,#fff9b0,#ffe030 40%,#f08000)" : "rgba(50,40,0,0.5)", border:`1px solid ${filled?"#f0d020":"#251800"}`, boxShadow: filled ? `0 0 ${12+i*5}px #ffe040cc, 0 0 ${24+i*8}px #f0a00066, inset 0 1px 0 rgba(255,255,220,0.5)` : "none", transform: filled ? `scaleY(${1+i*0.04})` : "scaleY(1)", transition:"all .25s", clipPath:"polygon(22% 0%,78% 0%,100% 42%,62% 42%,100% 100%,38% 100%,0% 58%,38% 58%)" }} />);
-                })}
+            <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:6, padding:"7px 14px", background:full?"rgba(255,220,0,0.13)":"rgba(255,220,0,0.04)", border:`1px solid rgba(255,220,0,${full?0.65:0.22})`, borderRadius:9, boxShadow:full?"0 0 18px rgba(255,210,0,0.45)":"none", transition:"all .3s", animation:full?"lightningReady 0.8s ease-in-out infinite":undefined }}>
+              <span style={{ fontSize:22, lineHeight:1, filter:full?"drop-shadow(0 0 8px #ffe040) drop-shadow(0 0 16px #f0a000)":"drop-shadow(0 0 2px #a07800)", transition:"filter .3s" }}>⚡</span>
+              <div style={{ display:"flex", gap:6 }}>
+                {[0,1].map(i => { const lit = i < pm; return (<div key={i} style={{ width:36, height:16, borderRadius:5, background: lit ? "linear-gradient(90deg,#fffaaa,#ffe030,#f09000)" : "rgba(60,50,0,0.45)", border:`1px solid ${lit?"#f0d020":"#2a1c00"}`, boxShadow: lit ? "0 0 12px #ffe040cc, inset 0 1px 0 rgba(255,255,200,0.4)" : "none", transition:"all .3s" }} />); })}
               </div>
               <div style={{ display:"flex", flexDirection:"column", gap:1 }}>
-                <span style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#f0d020aa", letterSpacing:2 }}>LIGHTNING</span>
-                <span style={{ fontFamily:"'Cinzel',serif", fontSize:full?13:11, color:full?"#ffe040":"#c0a020", fontWeight:700, transition:"all .2s" }}>{full?"READY!":pm+" / 4"}</span>
+                <span style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#f0d020bb", letterSpacing:2, fontWeight:700 }}>LIGHTNING</span>
+                <span style={{ fontFamily:"'Cinzel',serif", fontSize:full?12:10, color:full?"#ffe040":"#a08820", fontWeight:700, transition:"all .2s" }}>{full?"READY!":pm+" / 2"}</span>
               </div>
             </div>);
           })()}
