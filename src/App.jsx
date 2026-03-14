@@ -996,13 +996,18 @@ function resolveEffects(trigger, card, state, side, vfx, opts = {}) {
           const rawIdx = opts.targetUid ? s[thB].findIndex(c => c.uid === opts.targetUid) : -1;
           const idx = rawIdx >= 0 ? rawIdx : Math.floor(Math.random() * s[thB].length);
           const btgt = s[thB][idx];
-          const nHp = btgt.currentHp - fx.amount;
-          s[thB] = s[thB].map((c, i) => i === idx ? { ...c, currentHp: nHp } : c).filter(c => c.currentHp > 0);
-          L(`${card.name} deals ${fx.amount} to ${btgt.name}!`);
-          if (nHp <= 0) {
-            s[mKey] = Math.min(2, (s[mKey] || 0) + 1);
-            L(`⚡ Lightning Meter +1 (kill bonus)!`);
-            if (s[mKey] >= 2) s = fireLightningMeter(s, side, vfx, L);
+          if (btgt.shielded) {
+            s[thB] = s[thB].map((c, i) => i === idx ? { ...c, shielded: false } : c);
+            L(`${card.name} blocked by ${btgt.name}'s shield! Shield broken.`);
+          } else {
+            const nHp = btgt.currentHp - fx.amount;
+            s[thB] = s[thB].map((c, i) => i === idx ? { ...c, currentHp: nHp } : c).filter(c => c.currentHp > 0);
+            L(`${card.name} deals ${fx.amount} to ${btgt.name}!`);
+            if (nHp <= 0) {
+              s[mKey] = Math.min(2, (s[mKey] || 0) + 1);
+              L(`⚡ Lightning Meter +1 (kill bonus)!`);
+              if (s[mKey] >= 2) s = fireLightningMeter(s, side, vfx, L);
+            }
           }
         } else {
           s[thHP] -= fx.amount;
@@ -1030,10 +1035,10 @@ function resolveEffects(trigger, card, state, side, vfx, opts = {}) {
         break;
       }
       case "soul_reap": {
-        // Hades end of turn: 1 dmg to all enemies (units + hero)
+        // Hades end of turn: 1 dmg to all enemies (units + hero); shield absorbs and breaks
         const hadesActive = s[myB].some(c => c.id === "hades_soul_reaper");
         if (hadesActive) {
-          s[thB] = s[thB].map(c => ({ ...c, currentHp: c.currentHp - 1 })).filter(c => c.currentHp > 0);
+          s[thB] = s[thB].map(c => c.shielded ? { ...c, shielded: false } : { ...c, currentHp: c.currentHp - 1 }).filter(c => c.currentHp > 0);
           s[thHP] -= 1;
           L(`💀 Hades: 1 dmg to all enemies!`);
           if (vfx) vfx.add("ability", { color: "#7030c0" });
@@ -1084,8 +1089,13 @@ function fireLightningMeter(s, side, vfx, L) {
   const heroName = side === "player" ? (s.enemyName || "Enemy") : (s.playerName || "You");
   if (aliveTargets.length > 0) {
     const ltgt = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
-    s[thB] = s[thB].map(c => c.uid === ltgt.uid ? { ...c, currentHp: c.currentHp - 2 } : c).filter(c => c.currentHp > 0);
-    if (L) L(`⚡ LIGHTNING STRIKES ${ltgt.name} for 2!`);
+    if (ltgt.shielded) {
+      s[thB] = s[thB].map(c => c.uid === ltgt.uid ? { ...c, shielded: false } : c);
+      if (L) L(`⚡ LIGHTNING blocked by ${ltgt.name}'s shield! Shield broken.`);
+    } else {
+      s[thB] = s[thB].map(c => c.uid === ltgt.uid ? { ...c, currentHp: c.currentHp - 2 } : c).filter(c => c.currentHp > 0);
+      if (L) L(`⚡ LIGHTNING STRIKES ${ltgt.name} for 2!`);
+    }
   } else {
     s[thHP] -= 2;
     if (L) L(`⚡ LIGHTNING strikes ${heroName} for 2!`);
