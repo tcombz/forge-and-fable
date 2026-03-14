@@ -1130,7 +1130,7 @@ function computeEnemyAttackPhase(g, vfx) {
   s.enemyBoard.filter((c) => c.canAttack && !c.hasAttacked).forEach((att) => {
     if (s.playerHP <= 0) return;
     const av = att.currentAtk;
-    if (s.playerBoard.length > 0) { const tgt = [...s.playerBoard].sort((a, b) => a.currentHp - b.currentHp)[0]; let nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av; let nAHP = att.currentHp - tgt.currentAtk; if (tgt.shielded) L(`${tgt.name} shield absorbs!`); s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP } : c).filter((c) => c.currentHp > 0); s.playerBoard = s.playerBoard.map((c) => c.uid === tgt.uid ? { ...c, currentHp: nTHP, shielded: false, bleed: (c.bleed || 0) + ((att.keywords || []).includes("Bleed") ? (att.bleedAmount || 1) : 0) } : c).filter((c) => c.currentHp > 0); if (nTHP <= 0) { L(`${tgt.name} falls!`); s = resolveEffects("onDeath", tgt, s, "player", vfx); if (s.playerBoard.find(c => c.id === "hades_soul_reaper") || s.playerHand.find(c => c.id === "hades_soul_reaper")) { s = resolveEffects("onFriendlyDeath", {id:"hades_soul_reaper",effects:[{trigger:"onFriendlyDeath",effect:"soul_harvest"}]}, s, "player", vfx); } } if (nAHP <= 0) s = resolveEffects("onDeath", att, s, "enemy", vfx);
+    if (s.playerBoard.length > 0) { const tgt = [...s.playerBoard].sort((a, b) => a.currentHp - b.currentHp)[0]; let nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av; let nAHP = att.shielded ? att.currentHp : att.currentHp - tgt.currentAtk; if (tgt.shielded) L(`${tgt.name} shield absorbs!`); if (att.shielded) L(`${att.name} shield absorbs counter!`); s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP, shielded: false } : c).filter((c) => c.currentHp > 0); s.playerBoard = s.playerBoard.map((c) => c.uid === tgt.uid ? { ...c, currentHp: nTHP, shielded: false, bleed: (c.bleed || 0) + ((att.keywords || []).includes("Bleed") ? (att.bleedAmount || 1) : 0) } : c).filter((c) => c.currentHp > 0); if (nTHP <= 0) { L(`${tgt.name} falls!`); s = resolveEffects("onDeath", tgt, s, "player", vfx); if (s.playerBoard.find(c => c.id === "hades_soul_reaper") || s.playerHand.find(c => c.id === "hades_soul_reaper")) { s = resolveEffects("onFriendlyDeath", {id:"hades_soul_reaper",effects:[{trigger:"onFriendlyDeath",effect:"soul_harvest"}]}, s, "player", vfx); } } if (nAHP <= 0) s = resolveEffects("onDeath", att, s, "enemy", vfx);
     } else { s.playerHP -= av; s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c); L(`${att.name} hits you for ${av}!`); if ((s.playerZeusInPlay || s.enemyZeusInPlay) && (att.keywords || []).includes("Swift")) { s.enemyLightningMeter = (s.enemyLightningMeter || 0) + 1; if (s.enemyLightningMeter >= 2) { s = fireLightningMeter(s, "enemy", vfx, L); } } }
   });
   if (s.playerHP <= 0) return { ...s, phase: "gameover", winner: "enemy", log: [...s.log, "Defeated..."] };
@@ -1168,7 +1168,7 @@ function computeEnemyTurn(g, vfx) {
   s.enemyBoard.filter((c) => c.canAttack && !c.hasAttacked).forEach((att) => {
     if (s.playerHP <= 0) return;
     const av = att.currentAtk;
-    if (s.playerBoard.length > 0) { const tgt = [...s.playerBoard].sort((a, b) => a.currentHp - b.currentHp)[0]; let nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av; let nAHP = att.currentHp - tgt.currentAtk; s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP } : c).filter((c) => c.currentHp > 0); s.playerBoard = s.playerBoard.map((c) => c.uid === tgt.uid ? { ...c, currentHp: nTHP, shielded: false, bleed: (c.bleed || 0) + ((att.keywords || []).includes("Bleed") ? (att.bleedAmount || 1) : 0) } : c).filter((c) => c.currentHp > 0); if (nTHP <= 0) { L(`${tgt.name} falls!`); s = resolveEffects("onDeath", tgt, s, "player", vfx); } if (nAHP <= 0) s = resolveEffects("onDeath", att, s, "enemy", vfx);
+    if (s.playerBoard.length > 0) { const tgt = [...s.playerBoard].sort((a, b) => a.currentHp - b.currentHp)[0]; let nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av; let nAHP = att.shielded ? att.currentHp : att.currentHp - tgt.currentAtk; if (att.shielded) L(`${att.name} shield absorbs counter!`); s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP, shielded: false } : c).filter((c) => c.currentHp > 0); s.playerBoard = s.playerBoard.map((c) => c.uid === tgt.uid ? { ...c, currentHp: nTHP, shielded: false, bleed: (c.bleed || 0) + ((att.keywords || []).includes("Bleed") ? (att.bleedAmount || 1) : 0) } : c).filter((c) => c.currentHp > 0); if (nTHP <= 0) { L(`${tgt.name} falls!`); s = resolveEffects("onDeath", tgt, s, "player", vfx); } if (nAHP <= 0) s = resolveEffects("onDeath", att, s, "enemy", vfx);
     } else { s.playerHP -= av; s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c); L(`${att.name} hits you for ${av}!`); if ((s.playerZeusInPlay || s.enemyZeusInPlay) && (att.keywords || []).includes("Swift")) { s.enemyLightningMeter = (s.enemyLightningMeter || 0) + 1; if (s.enemyLightningMeter >= 2) { s = fireLightningMeter(s, "enemy", vfx, L); } } }
   });
   if (s.playerHP <= 0) return { ...s, phase: "gameover", winner: "enemy", log: [...s.log, "Defeated..."] };
@@ -1428,11 +1428,11 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
       if(s.playerBoard.length>0){
         const tgt=[...s.playerBoard].sort((a,b)=>a.currentHp-b.currentHp)[0];
         setAnimUids(p=>({...p,[tgt.uid]:"hit"}));vfx.add("attackImpact",{duration:500});await wait(200);
-        const nTHP=tgt.shielded?tgt.currentHp:tgt.currentHp-av;const nAHP=att.currentHp-tgt.currentAtk;
+        const nTHP=tgt.shielded?tgt.currentHp:tgt.currentHp-av;const nAHP=att.shielded?att.currentHp:att.currentHp-tgt.currentAtk;
         if(nAHP<att.currentHp&&nAHP>0){setAnimUids(p=>({...p,[att.uid]:"hit"}));await wait(280);}
         const dyingUids={};if(nTHP<=0){dyingUids[tgt.uid]="dying";SFX.play("kill");}if(nAHP<=0)dyingUids[att.uid]="dying";
         if(Object.keys(dyingUids).length>0){setAnimUids(p=>({...p,...dyingUids}));vfx.add("creatureDie",{color:"#e06040",duration:700});await wait(680);}
-        s.enemyBoard=s.enemyBoard.map(c=>c.uid===att.uid?{...c,hasAttacked:true,currentHp:nAHP}:c).filter(c=>c.currentHp>0);
+        s.enemyBoard=s.enemyBoard.map(c=>c.uid===att.uid?{...c,hasAttacked:true,currentHp:nAHP,shielded:false}:c).filter(c=>c.currentHp>0);
         s.playerBoard=s.playerBoard.map(c=>c.uid===tgt.uid?{...c,currentHp:nTHP,shielded:false,bleed:(c.bleed||0)+((att.keywords||[]).includes("Bleed")?1:0)}:c).filter(c=>c.currentHp>0);
         s.log=[...s.log.slice(-20),`${att.name}(${av}) attacks ${tgt.name}`];
         if(nTHP<=0){s.log=[...s.log,`💀 ${tgt.name} slain!`];s=resolveEffects("onDeath",tgt,s,"player",vfx);}
@@ -1558,7 +1558,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     await new Promise(r => setTimeout(r, 200));
     const av = att.currentAtk;
     const nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av;
-    const nAHP = att.currentHp - tgt.currentAtk;
+    const nAHP = att.shielded ? att.currentHp : att.currentHp - tgt.currentAtk;
     // Counter-hit: attacker takes damage back and survives — show recoil
     if (nAHP < att.currentHp && nAHP > 0) {
       setAnimUids(p => ({ ...p, [att.uid]: "hit" }));
@@ -1571,9 +1571,10 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     setGame((prev) => {
       let s = { ...prev, log: [...prev.log.slice(-20)] };
       if (tgt.shielded) s.log = [...s.log, `${tgt.name} shield absorbs!`];
+      if (att.shielded) s.log = [...s.log, `${att.name} shield absorbs counter!`];
       // Anchor immunity: anchored units cannot be removed by effects — but can die from combat damage
       s.enemyBoard = prev.enemyBoard.map((c) => c.uid === tgt.uid ? { ...c, currentHp: nTHP, shielded: false, bleed: (c.bleed || 0) + ((att.keywords || []).includes("Bleed") ? (att.bleedAmount || 1) : 0) } : c).filter((c) => c.currentHp > 0);
-      s.playerBoard = prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP } : c).filter((c) => c.currentHp > 0);
+      s.playerBoard = prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP, shielded: false } : c).filter((c) => c.currentHp > 0);
       s.log = [...s.log, `${att.name}(${av}) attacks ${tgt.name}`];
       if (nTHP <= 0) { s.log = [...s.log, `💀 ${tgt.name} slain by ${att.name}!`]; s = resolveEffects("onDeath", tgt, s, "enemy", vfx); }
       if (nAHP <= 0) { s.log = [...s.log, `💀 ${att.name} slain by ${tgt.name}!`]; s = resolveEffects("onDeath", att, s, "player", vfx); }
@@ -2141,11 +2142,12 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       if (!att || !tgt) return gs;
       const av = att.currentAtk;
       let nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av;
-      let nAHP = att.currentHp - tgt.currentAtk;
+      let nAHP = att.shielded ? att.currentHp : att.currentHp - tgt.currentAtk;
       ai.log = [...ai.log.slice(-20), `${att.name}(${av}) attacks ${tgt.name}`];
       if (tgt.shielded) ai.log = [...ai.log, `${tgt.name} shield absorbs!`];
+      if (att.shielded) ai.log = [...ai.log, `${att.name} shield absorbs counter!`];
       ai.enemyBoard = ai.enemyBoard.map(c => c.uid === tgt.uid ? { ...c, currentHp: nTHP, shielded: false, bleed: (c.bleed||0)+((att.keywords||[]).includes("Bleed")?1:0) } : c).filter(c => c.currentHp > 0);
-      ai.playerBoard = ai.playerBoard.map(c => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP } : c).filter(c => c.currentHp > 0);
+      ai.playerBoard = ai.playerBoard.map(c => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP, shielded: false } : c).filter(c => c.currentHp > 0);
       if (nTHP <= 0) { ai.log = [...ai.log, `💀 ${tgt.name} slain by ${att.name}!`]; ai = resolveEffects("onDeath", tgt, ai, "enemy", vfxInst); }
       if (nAHP <= 0) { ai.log = [...ai.log, `💀 ${att.name} slain by ${tgt.name}!`]; ai = resolveEffects("onDeath", att, ai, "player", vfxInst); }
       // Lightning meter: Swift attacker
