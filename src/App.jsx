@@ -2011,7 +2011,9 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   const [profilePopup, setProfilePopup] = useState(null); // { name, avatar, rating, wins, losses }
   const [dyingCards, setDyingCards] = useState([]); // cards mid-death animation
   const [connectError, setConnectError] = useState(false);
-  const showTurnBanner = (type) => { setTurnBanner(type); setTimeout(() => setTurnBanner(null), 1400); };
+  const [liveAction, setLiveAction] = useState(null);
+  const flashAction = (msg) => { setLiveAction(msg); setTimeout(() => setLiveAction(null), 1800); };
+  const showTurnBanner = (type) => { setTurnBanner(type); setTimeout(() => setTurnBanner(null), 1100); };
   const [animUids, setAnimUids] = useState({});
   const vfx = useVFX();
   const logRef = useRef(null);
@@ -2469,6 +2471,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     SFX.play(card.type === "environment" ? "env_play" : card.type === "spell" ? "ability" : "card");
     if (card.type === "environment") { vfx.add("envchange", { color: card.border || "#40a020" }); vfx.add("environment", { color: card.border, duration: 2000 }); }
     if (card.type === "spell") vfx.add("spell", { color: card.border || "#c090d0" });
+    flashAction(`${card.type === "spell" ? "Cast" : card.type === "environment" ? "Field:" : "Play"} ${card.name}!`);
     invokeAction({ type: "play_card", cardUid: card.uid });
   };
 
@@ -2478,6 +2481,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     if (!attacker || !isMyTurn || syncingRef.current) return;
     SFX.play("attack");
     const attUid = attacker;
+    const attCard2 = toAI(gs, myRole).playerBoard.find(c => c.uid === attUid);
+    if (attCard2) flashAction(`${attCard2.name} attacks ${tgt.name}!`);
     setAnimUids({ [attUid]: "attacking" });
     await new Promise(r => setTimeout(r, 220));
     setAnimUids(p => ({ ...p, [tgt.uid]: "hit" }));
@@ -2504,6 +2509,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     if (!attacker || !isMyTurn || syncingRef.current) return;
     SFX.play("attack");
     const attUid = attacker;
+    const attCard2 = toAI(gs, myRole).playerBoard.find(c => c.uid === attUid);
+    if (attCard2) flashAction(`${attCard2.name} hits ${opponentName || "opponent"} directly!`);
     setAnimUids({ [attUid]: "attacking" });
     await new Promise(r => setTimeout(r, 280));
     invokeAction({ type: "attack_face", attackerUid: attUid });
@@ -2625,13 +2632,27 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     </div>)}
     {/* Fullscreen turn announcement */}
     {turnBanner && (<div style={{ position:"fixed", inset:0, display:"flex", alignItems:"center", justifyContent:"center", zIndex:300, pointerEvents:"none" }}>
-      <div style={{ animation:"turnStamp 1.3s ease-out forwards", display:"flex", flexDirection:"column", alignItems:"center" }}>
-        <div style={{ background:turnBanner==="YOUR TURN"?"linear-gradient(135deg,#071a02,#0d2804)":"linear-gradient(135deg,#1a0202,#280404)", border:`2px solid ${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"}`, borderRadius:8, padding:"14px 56px", textAlign:"center", boxShadow:`0 0 60px ${turnBanner==="YOUR TURN"?"#78cc4540":"#e0505040"}` }}>
-          <div style={{ fontFamily:"'Cinzel',serif", fontSize:26, fontWeight:900, color:turnBanner==="YOUR TURN"?"#78cc45":"#e05050", letterSpacing:7, textShadow:`0 0 30px ${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"}`, lineHeight:1 }}>{turnBanner}</div>
-          <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, letterSpacing:4, color:turnBanner==="YOUR TURN"?"#78cc4577":"#e0505077", marginTop:6 }}>
-            {turnBanner==="YOUR TURN"?"COMMAND YOUR FORCES":`${(opponentName||"OPPONENT").toUpperCase()} IS MOVING`}
-          </div>
+      <div style={{ animation:"turnStamp 1.3s ease-out forwards", display:"flex", flexDirection:"column", alignItems:"center", gap:0 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:4 }}>
+          <div style={{ height:1, width:80, background:`linear-gradient(90deg,transparent,${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"})` }} />
+          <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, letterSpacing:5, color:turnBanner==="YOUR TURN"?"#78cc4588":"#e0505088" }}>FORGE &amp; FABLE</span>
+          <div style={{ height:1, width:80, background:`linear-gradient(270deg,transparent,${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"})` }} />
         </div>
+        <div style={{ background:turnBanner==="YOUR TURN"?"linear-gradient(135deg,#071a02 0%,#0d2804 50%,#071a02 100%)":"linear-gradient(135deg,#1a0202 0%,#280404 50%,#1a0202 100%)", border:`2px solid ${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"}`, borderRadius:6, padding:"12px 48px", textAlign:"center", position:"relative", overflow:"hidden", boxShadow:`0 0 50px ${turnBanner==="YOUR TURN"?"#78cc4533":"#e0505033"}` }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:24, fontWeight:900, color:turnBanner==="YOUR TURN"?"#78cc45":"#e05050", letterSpacing:6, textShadow:`0 0 24px ${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"}, 0 2px 4px rgba(0,0,0,0.9)`, lineHeight:1 }}>{turnBanner}</div>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, letterSpacing:3, color:turnBanner==="YOUR TURN"?"#78cc4588":"#e0505088", marginTop:5 }}>{turnBanner==="YOUR TURN"?"COMMAND YOUR FORCES":`${(opponentName||"OPPONENT").toUpperCase()} IS MOVING`}</div>
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:12, marginTop:4 }}>
+          <div style={{ height:1, width:80, background:`linear-gradient(90deg,transparent,${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"})` }} />
+          <div style={{ width:6, height:6, borderRadius:"50%", background:turnBanner==="YOUR TURN"?"#78cc45":"#e05050", boxShadow:`0 0 12px ${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"}`, animation:"pulse 0.8s infinite" }} />
+          <div style={{ height:1, width:80, background:`linear-gradient(270deg,transparent,${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"})` }} />
+        </div>
+      </div>
+    </div>)}
+    {/* Live action flash */}
+    {liveAction && (<div style={{ position:"fixed", top:"38%", left:"50%", transform:"translateX(-50%)", zIndex:290, pointerEvents:"none", animation:"fadeIn 0.15s" }}>
+      <div style={{ background:"rgba(10,8,4,0.92)", border:`2px solid ${logColor(liveAction)}`, borderRadius:12, padding:"12px 28px", fontFamily:"'Cinzel',serif", fontSize:16, fontWeight:700, color:logColor(liveAction), letterSpacing:1, whiteSpace:"nowrap", boxShadow:`0 4px 28px ${logColor(liveAction)}55` }}>
+        {logIcon(liveAction)}{liveAction}
       </div>
     </div>)}
     {/* Top bar: centered turn status */}
@@ -2658,7 +2679,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           <button onClick={()=>{ const el=document.documentElement; if(!document.fullscreenElement){el.requestFullscreen?.();}else{document.exitFullscreen?.();} }} style={{ flex:1, padding:"8px 4px", background:"rgba(14,12,8,0.8)", border:"1px solid #604028aa", borderRadius:8, color:"#a08050", fontFamily:"'Cinzel',serif", fontSize:13, cursor:"pointer" }} title="Fullscreen">⛶</button>
         </div>
       </div>
-      <div style={{ background:"#1e1c14", border:`1px solid ${envTheme?envTheme.glow+"44":"#2e2c18"}`, borderRadius:14, overflow:"hidden", position:"relative", transition:"border-color 1s ease" }}>
+      <div style={{ background: envTheme ? envTheme.bg : "linear-gradient(180deg,#2a1c0c 0%,#1e1408 50%,#281a08 100%)", border:`1px solid ${envTheme?envTheme.glow+"44":"#5a3c1a55"}`, borderRadius:14, overflow:"hidden", position:"relative", transition:"background 1.5s ease, border-color 1s ease", boxShadow: envTheme ? undefined : "inset 0 0 60px rgba(0,0,0,0.4), 0 0 0 1px #3a2010" }}>
+        {envTheme && <div style={{ position:"absolute", inset:0, pointerEvents:"none", zIndex:1 }}><FloatingParticles count={20} color={envTheme.particle} speed={0.6} /></div>}
         <VFXOverlay effects={vfx.effects} />
         {/* Dying cards overlay — renders cards mid-death animation so they don't pop out */}
         {dyingCards.length > 0 && (
