@@ -2860,7 +2860,7 @@ function MatchmakingScreen({ user, ranked, onMatch, onCancel, onRetry }) {
       const { data, error } = await supabase.from('matchmaking')
         .insert({ user_id: user.id, display_name: user.name, status: 'waiting', ranked: !!ranked }).select().single();
       if (!activeRef.current) return;
-      if (error || !data) { setPhase('error'); return; }
+      if (error || !data) { console.error('[MM] matchmaking insert failed:', error); setPhase('error'); return; }
       const rowId = data.id;
       rowIdRef.current = rowId;
       // Realtime on our own row — fires when the OTHER client's pair_players() updates us
@@ -2874,12 +2874,13 @@ function MatchmakingScreen({ user, ranked, onMatch, onCancel, onRetry }) {
       const doPoll = async () => {
         if (!activeRef.current || phaseRef.current !== 'waiting') return;
         try {
-          const { data: res } = await supabase.rpc('pair_players', { p_user_id: user.id, p_display_name: user.name, p_row_id: rowId, p_ranked: !!ranked });
+          const { data: res, error: rpcErr } = await supabase.rpc('pair_players', { p_user_id: user.id, p_display_name: user.name, p_row_id: rowId, p_ranked: !!ranked });
+          if (rpcErr) console.error('[MM] pair_players error:', rpcErr);
           if (res?.paired && activeRef.current) {
             transitionMatched({ match_id: res.match_id, opponent_id: res.opponent_id, opponent_name: res.opponent_name });
             return;
           }
-        } catch (_) {}
+        } catch (e) { console.error('[MM] pair_players threw:', e); }
         // Fallback: check if our row was already matched (Realtime may have missed the UPDATE)
         if (activeRef.current && phaseRef.current === 'waiting') {
           try {
