@@ -600,6 +600,18 @@ function isFablesTester(user) {
 const GAMEPLAY_POOL = POOL.filter(c => !LOCKED_REGIONS.has(c.region));
 // Only base cards are given to new accounts — no locked faction cards
 function getStarterCollection() { const c = {}; GAMEPLAY_POOL.forEach((x) => { c[x.id] = 3; }); return c; }
+// Build a proper random 40-card deck from what the player owns (up to 3 copies each).
+// If they don't own enough, fill with random pool cards to always hit exactly CFG.deck.size.
+function buildRandomDeck(pool, col) {
+  const SIZE = CFG.deck.size; // 40
+  const owned = [];
+  pool.forEach(c => { const q = Math.min(col?.[c.id] || 0, 3); for (let i = 0; i < q; i++) owned.push(c); });
+  const shuffled = shuf(owned);
+  if (shuffled.length >= SIZE) return shuffled.slice(0, SIZE);
+  // Not enough owned — pad with random copies from pool to reach 40
+  const pad = shuf([...pool, ...pool, ...pool]).slice(0, SIZE - shuffled.length);
+  return shuf([...shuffled, ...pad]);
+}
 const HOME_CARDS = [POOL.find((c) => c.id === "velrun"), POOL.find((c) => c.id === "kraken"), POOL.find((c) => c.id === "colossus"), POOL.find((c) => c.id === "bloodmage"), POOL.find((c) => c.id === "weaver")].filter(Boolean);
 
 // ═══ PACKS ═══════════════════════════════════════════════════════════════════
@@ -1331,11 +1343,10 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   // Dev player deck includes Fables; AI always uses non-Food-Fight pool
   const ACTIVE_POOL = isDevAccount ? POOL.filter(c => c.region !== "Food Fight") : GAMEPLAY_POOL;
   const initGame = () => {
-    const fallback = [...ACTIVE_POOL, ...ACTIVE_POOL, ...ACTIVE_POOL.slice(0, 5)];
     const resolveFromPool = (c) => { const fresh = ACTIVE_POOL.find(p => p.id === c.id); return fresh ? { ...c, atk: fresh.atk, hp: fresh.hp, keywords: fresh.keywords, effects: fresh.effects, ability: fresh.ability } : c; };
-    const pd = shuf((matchConfig?.playerDeck?.length > 0 ? [...matchConfig.playerDeck] : [...fallback]).map(resolveFromPool));
-    const aiFallback = [...GAMEPLAY_POOL, ...GAMEPLAY_POOL, ...GAMEPLAY_POOL.slice(0, 5)];
-    const ed = shuf([...aiFallback]);
+    const playerCards = matchConfig?.playerDeck?.length > 0 ? [...matchConfig.playerDeck] : buildRandomDeck(ACTIVE_POOL, user?.collection);
+    const pd = shuf(playerCards.slice(0, CFG.deck.size).map(resolveFromPool));
+    const ed = shuf(buildRandomDeck(GAMEPLAY_POOL, getStarterCollection()));
     const playerZeusInPlay = pd.some(c => c.id === "zeus_storm_father");
     const enemyZeusInPlay = ed.some(c => c.id === "zeus_storm_father");
     return { matchId: uid("m"), turn: 1, phase: "opening", winner: null, playerHP: CFG.startHP, playerEnergy: CFG.startEnergy, maxEnergy: CFG.startEnergy, playerHand: pd.slice(0, CFG.startHand).map((c) => makeInst(c, "p")), playerDeck: pd.slice(CFG.startHand), playerBoard: [], enemyHP: CFG.startHP, enemyHand: ed.slice(0, CFG.startHand).map((c) => makeInst(c, "e")), enemyDeck: ed.slice(CFG.startHand), enemyBoard: [], environment: null, envLastTurn: null, mapTheme: "default", log: ["Draw for priority!"], playerLightningMeter: 0, enemyLightningMeter: 0, playerZeusInPlay, enemyZeusInPlay };
@@ -2213,8 +2224,10 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         // Fetch opponent profile to store their rating for accurate ELO
         const oppId = match.player2_id;
         const { data: oppProfile } = oppId ? await supabase.from("profiles").select("ranked_rating").eq("id", oppId).single() : { data: null };
-        const fb = [...GAMEPLAY_POOL, ...GAMEPLAY_POOL, ...GAMEPLAY_POOL.slice(0, 5)];
-        const rfp = (c) => { const fresh = GAMEPLAY_POOL.find(p => p.id === c.id); return fresh ? { ...c, atk: fresh.atk, hp: fresh.hp, keywords: fresh.keywords, effects: fresh.effects, ability: fresh.ability } : c; }; const d1 = shuf((matchConfig?.playerDeck?.length > 0 ? [...matchConfig.playerDeck] : [...fb]).map(rfp)), d2 = shuf([...fb]);
+        const rfp = (c) => { const fresh = GAMEPLAY_POOL.find(p => p.id === c.id); return fresh ? { ...c, atk: fresh.atk, hp: fresh.hp, keywords: fresh.keywords, effects: fresh.effects, ability: fresh.ability } : c; };
+        const p1Cards = matchConfig?.playerDeck?.length > 0 ? [...matchConfig.playerDeck] : buildRandomDeck(GAMEPLAY_POOL, user?.collection);
+        const d1 = shuf(p1Cards.slice(0, CFG.deck.size).map(rfp));
+        const d2 = shuf(buildRandomDeck(GAMEPLAY_POOL, getStarterCollection()));
         const dc = GAMEPLAY_POOL[Math.floor(Math.random() * GAMEPLAY_POOL.length)];
         const ec = GAMEPLAY_POOL[Math.floor(Math.random() * GAMEPLAY_POOL.length)];
         const firstPlayer = (dc.cost || 0) >= (ec.cost || 0) ? "p1" : "p2";
@@ -2244,8 +2257,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           const { data: fresh } = await supabase.from("matches").select("game_state").eq("id", matchId).single();
           if (fresh?.game_state) {
             clearInterval(pollRef.current); pollRef.current = null;
-            const p2fb = [...GAMEPLAY_POOL, ...GAMEPLAY_POOL, ...GAMEPLAY_POOL.slice(0, 5)];
-            const p2d = shuf((matchConfig?.playerDeck?.length > 0 ? [...matchConfig.playerDeck] : [...p2fb]).map(c => { const fresh = GAMEPLAY_POOL.find(p => p.id === c.id); return fresh ? { ...c, atk: fresh.atk, hp: fresh.hp, keywords: fresh.keywords, effects: fresh.effects, ability: fresh.ability } : c; }));
+            const p2Cards = matchConfig?.playerDeck?.length > 0 ? [...matchConfig.playerDeck] : buildRandomDeck(GAMEPLAY_POOL, user?.collection);
+            const p2d = shuf(p2Cards.slice(0, CFG.deck.size).map(c => { const fresh = GAMEPLAY_POOL.find(p => p.id === c.id); return fresh ? { ...c, atk: fresh.atk, hp: fresh.hp, keywords: fresh.keywords, effects: fresh.effects, ability: fresh.ability } : c; }));
             const withArts = { ...fresh.game_state, p2Arts: user?.selectedArts || {}, p2Avatar: user?.avatarUrl || "", p2Name: user?.name || "Player", p2Rating: user?.rankedRating||1000, p2Wins: user?.rankedWins||0, p2Losses: user?.rankedLosses||0,
               p2Hand: p2d.slice(0, CFG.startHand).map((c) => makeInst(c, "p2")),
               p2Deck: p2d.slice(CFG.startHand) };
