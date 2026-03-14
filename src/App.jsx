@@ -1131,7 +1131,7 @@ function computeEnemyAttackPhase(g, vfx) {
     if (s.playerHP <= 0) return;
     const av = att.currentAtk;
     if (s.playerBoard.length > 0) { const tgt = [...s.playerBoard].sort((a, b) => a.currentHp - b.currentHp)[0]; let nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av; let nAHP = att.currentHp - tgt.currentAtk; if (tgt.shielded) L(`${tgt.name} shield absorbs!`); s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP } : c).filter((c) => c.currentHp > 0); s.playerBoard = s.playerBoard.map((c) => c.uid === tgt.uid ? { ...c, currentHp: nTHP, shielded: false, bleed: (c.bleed || 0) + ((att.keywords || []).includes("Bleed") ? (att.bleedAmount || 1) : 0) } : c).filter((c) => c.currentHp > 0); if (nTHP <= 0) { L(`${tgt.name} falls!`); s = resolveEffects("onDeath", tgt, s, "player", vfx); if (s.playerBoard.find(c => c.id === "hades_soul_reaper") || s.playerHand.find(c => c.id === "hades_soul_reaper")) { s = resolveEffects("onFriendlyDeath", {id:"hades_soul_reaper",effects:[{trigger:"onFriendlyDeath",effect:"soul_harvest"}]}, s, "player", vfx); } } if (nAHP <= 0) s = resolveEffects("onDeath", att, s, "enemy", vfx);
-    } else { s.playerHP -= av; s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c); L(`${att.name} hits you for ${av}!`); }
+    } else { s.playerHP -= av; s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c); L(`${att.name} hits you for ${av}!`); if ((s.playerZeusInPlay || s.enemyZeusInPlay) && (att.keywords || []).includes("Swift")) { s.enemyLightningMeter = (s.enemyLightningMeter || 0) + 1; if (s.enemyLightningMeter >= 2) { s = fireLightningMeter(s, "enemy", vfx, L); } } }
   });
   if (s.playerHP <= 0) return { ...s, phase: "gameover", winner: "enemy", log: [...s.log, "Defeated..."] };
   const newTurn = g.turn + 1, newMax = Math.min(CFG.maxEnergy, newTurn);
@@ -1169,7 +1169,7 @@ function computeEnemyTurn(g, vfx) {
     if (s.playerHP <= 0) return;
     const av = att.currentAtk;
     if (s.playerBoard.length > 0) { const tgt = [...s.playerBoard].sort((a, b) => a.currentHp - b.currentHp)[0]; let nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av; let nAHP = att.currentHp - tgt.currentAtk; s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP } : c).filter((c) => c.currentHp > 0); s.playerBoard = s.playerBoard.map((c) => c.uid === tgt.uid ? { ...c, currentHp: nTHP, shielded: false, bleed: (c.bleed || 0) + ((att.keywords || []).includes("Bleed") ? (att.bleedAmount || 1) : 0) } : c).filter((c) => c.currentHp > 0); if (nTHP <= 0) { L(`${tgt.name} falls!`); s = resolveEffects("onDeath", tgt, s, "player", vfx); } if (nAHP <= 0) s = resolveEffects("onDeath", att, s, "enemy", vfx);
-    } else { s.playerHP -= av; s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c); L(`${att.name} hits you for ${av}!`); }
+    } else { s.playerHP -= av; s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c); L(`${att.name} hits you for ${av}!`); if ((s.playerZeusInPlay || s.enemyZeusInPlay) && (att.keywords || []).includes("Swift")) { s.enemyLightningMeter = (s.enemyLightningMeter || 0) + 1; if (s.enemyLightningMeter >= 2) { s = fireLightningMeter(s, "enemy", vfx, L); } } }
   });
   if (s.playerHP <= 0) return { ...s, phase: "gameover", winner: "enemy", log: [...s.log, "Defeated..."] };
   const newTurn = g.turn + 1, newMax = Math.min(CFG.maxEnergy, newTurn);
@@ -1447,6 +1447,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
       } else {
         s.playerHP-=av;s.enemyBoard=s.enemyBoard.map(c=>c.uid===att.uid?{...c,hasAttacked:true}:c);
         s.log=[...s.log.slice(-20),`${att.name} hits you for ${av}!`];flashAction(`${att.name} hits you for ${av}!`);vfx.add("damage",{amount:av,duration:500});
+        if((s.playerZeusInPlay||s.enemyZeusInPlay)&&(att.keywords||[]).includes("Swift")){s.enemyLightningMeter=(s.enemyLightningMeter||0)+1;if(s.enemyLightningMeter>=2){s=fireLightningMeter(s,"enemy",vfx,(m)=>{s.log=[...s.log.slice(-20),m];});}}
       }
       push();await wait(400);setAnimUids({});if(s.playerHP<=0)break;
     }
@@ -1592,7 +1593,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     await new Promise(r => setTimeout(r, 200));
     setAnimUids({});
   };
-  const atkFace = async () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking" }); await new Promise(r => setTimeout(r, 380)); const dmg = att.currentAtk; vfx.add("damage", { amount: dmg, duration: 500 }); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if (nHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 200)); setAnimUids({}); };
+  const atkFace = async () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking" }); await new Promise(r => setTimeout(r, 380)); const dmg = att.currentAtk; vfx.add("damage", { amount: dmg, duration: 500 }); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if ((s.playerZeusInPlay || s.enemyZeusInPlay) && (att.keywords || []).includes("Swift")) { s.playerLightningMeter = (s.playerLightningMeter || 0) + 1; if (s.playerLightningMeter >= 2) { s = fireLightningMeter(s, "player", vfx, (m) => { s.log = [...s.log.slice(-20), m]; }); } } if (nHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 200)); setAnimUids({}); };
   const attCard = attacker ? g.playerBoard.find((c) => c.uid === attacker) : null;
 
   return (<div style={{ maxWidth: 1400, margin: "0 auto", padding: "16px 12px 12px", background: "linear-gradient(180deg,#1e1208 0%,#160e06 40%,#1c1208 100%)" }} onClick={() => { SFX.init(); }}>
