@@ -2011,14 +2011,14 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     return () => window.removeEventListener("beforeunload", handler);
   }, [gs?.winner]);
 
-  // Save match history and stats when PvP ends
+  // Save match history and stats when PvP ends (covers win, loss, and forfeit)
   useEffect(() => {
     if (!gs?.winner || !myRole || wonSavedRef.current) return;
     wonSavedRef.current = true;
     const won = gs.winner === myRole;
+    const didForfeit = !won && (gs.log || []).some(l => typeof l === "string" && l.includes("forfeited"));
     SFX.play(won ? "victory" : "defeat");
     const isRanked = (matchConfig?.ranked === true) || (gs?.ranked === true);
-    // Use stored ratings from game state for accurate ELO; fall back to 1000
     const myStoredRating = myRole === "p1" ? (gs?.p1Rating || user?.rankedRating || 1000) : (gs?.p2Rating || user?.rankedRating || 1000);
     const oppRating = myRole === "p1" ? (gs?.p2Rating || 1000) : (gs?.p1Rating || 1000);
     const ratingDelta = isRanked ? calcRatingDelta(myStoredRating, oppRating, won) : 0;
@@ -2026,15 +2026,15 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     const opRole = myRole === "p1" ? "p2" : "p1";
     const histEntry = {
       opponent: opponentName, result: won ? "W" : "L",
+      forfeit: didForfeit || undefined,
       opponentAvatar: gs[opRole+"Avatar"] || "",
       date: new Date().toISOString(), turns: gs.turn || 0,
       ranked: isRanked, ratingDelta: isRanked ? ratingDelta : undefined,
     };
     const newHistory = [histEntry, ...(user?.matchHistory || [])].slice(0, 50);
-    const update = { matchHistory: newHistory };
+    const update = { matchHistory: newHistory, battlesPlayed: (user?.battlesPlayed || 0) + 1 };
+    if (won) update.battlesWon = (user?.battlesWon || 0) + 1;
     if (isRanked) {
-      update.battlesPlayed = (user?.battlesPlayed || 0) + 1;
-      update.battlesWon = won ? (user?.battlesWon || 0) + 1 : (user?.battlesWon || 0);
       update.rankedRating = newRating;
       update.rankedWins = won ? (user?.rankedWins||0)+1 : (user?.rankedWins||0);
       update.rankedLosses = !won ? (user?.rankedLosses||0)+1 : (user?.rankedLosses||0);
@@ -2486,16 +2486,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       // Allow a moment for the opponent to read the forfeit state, then clean up
       setTimeout(() => { if (matchId) supabase.from("matches").delete().eq("id", matchId).catch(() => {}); }, 5000);
     } catch (err) { console.error("Forfeit failed:", err); }
-    // Save FF to match history (counts as loss for ranked)
-    if (onUpdateUser && user) {
-      const isRanked = matchConfig?.ranked === true;
-      const ffDelta = isRanked ? calcRatingDelta(user?.rankedRating||1000, 1000, false) : undefined;
-      const newRating = isRanked ? Math.max(0, (user?.rankedRating||1000) + ffDelta) : undefined;
-      const histEntry = { opponent: opponentName, result: "FF", forfeit: true, opponentAvatar: gs?.[op+"Avatar"] || "", date: new Date().toISOString(), turns: gs?.turn || 0, ranked: isRanked, ratingDelta: isRanked ? ffDelta : undefined };
-      const upd = { matchHistory: [histEntry, ...(user?.matchHistory||[])].slice(0,50) };
-      if (isRanked) { upd.battlesPlayed = (user?.battlesPlayed||0)+1; upd.rankedRating = newRating; upd.rankedLosses = (user?.rankedLosses||0)+1; }
-      onUpdateUser(upd);
-    }
+    // History/stats are saved by the gs?.winner useEffect which fires when gs updates
   };
 
   if (!gs || !myRole) return (
