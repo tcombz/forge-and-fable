@@ -1697,8 +1697,8 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
           {g.phase === "player" && !aiThink ? (
             <TurnTimer key={timerKey} active={true} onExpire={endTurn} turnNum={g.turn}>
               {attCard ? (
-                <button onClick={g.enemyBoard.length === 0 ? atkFace : undefined} style={{ padding: "3px 12px", background: g.enemyBoard.length === 0 ? "linear-gradient(135deg,#6a0808,#a01010)" : "rgba(255,255,255,0.04)", border: `1px solid ${g.enemyBoard.length === 0 ? "#e04040" : "#2a1a10"}`, borderRadius: 20, color: g.enemyBoard.length === 0 ? "#ffaaaa" : "#604030", fontFamily: "'Cinzel',serif", fontSize: 9, cursor: g.enemyBoard.length === 0 ? "pointer" : "default" }}>
-                  {g.enemyBoard.length === 0 ? "STRIKE HERO" : "SELECT TARGET"}
+                <button onClick={g.enemyBoard.length === 0 || (attCard?.keywords||[]).includes("Swift") ? atkFace : undefined} style={{ padding: "3px 12px", background: g.enemyBoard.length === 0 || (attCard?.keywords||[]).includes("Swift") ? "linear-gradient(135deg,#6a0808,#a01010)" : "rgba(255,255,255,0.04)", border: `1px solid ${g.enemyBoard.length === 0 || (attCard?.keywords||[]).includes("Swift") ? "#e04040" : "#2a1a10"}`, borderRadius: 20, color: g.enemyBoard.length === 0 || (attCard?.keywords||[]).includes("Swift") ? "#ffaaaa" : "#604030", fontFamily: "'Cinzel',serif", fontSize: 9, cursor: g.enemyBoard.length === 0 || (attCard?.keywords||[]).includes("Swift") ? "pointer" : "default" }}>
+                  {g.enemyBoard.length === 0 || (attCard?.keywords||[]).includes("Swift") ? "STRIKE HERO" : "SELECT TARGET"}
                 </button>
               ) : null}
             </TurnTimer>
@@ -1706,8 +1706,8 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
             <>
               <div style={{ flex: 1, height: 1, background: "linear-gradient(to right,transparent,#382e18)" }} />
               {attCard ? (
-                <button onClick={g.enemyBoard.length === 0 ? atkFace : undefined} style={{ padding: "5px 16px", background: g.enemyBoard.length === 0 ? "linear-gradient(135deg,#6a0808,#a01010)" : "rgba(255,255,255,0.04)", border: `1px solid ${g.enemyBoard.length === 0 ? "#e04040" : "#2a1a10"}`, borderRadius: 20, color: g.enemyBoard.length === 0 ? "#ffaaaa" : "#604030", fontFamily: "'Cinzel',serif", fontSize: 9, cursor: g.enemyBoard.length === 0 ? "pointer" : "default" }}>
-                  {g.enemyBoard.length === 0 ? "STRIKE HERO" : "SELECT TARGET"}
+                <button onClick={g.enemyBoard.length === 0 || (attCard?.keywords||[]).includes("Swift") ? atkFace : undefined} style={{ padding: "5px 16px", background: g.enemyBoard.length === 0 || (attCard?.keywords||[]).includes("Swift") ? "linear-gradient(135deg,#6a0808,#a01010)" : "rgba(255,255,255,0.04)", border: `1px solid ${g.enemyBoard.length === 0 || (attCard?.keywords||[]).includes("Swift") ? "#e04040" : "#2a1a10"}`, borderRadius: 20, color: g.enemyBoard.length === 0 || (attCard?.keywords||[]).includes("Swift") ? "#ffaaaa" : "#604030", fontFamily: "'Cinzel',serif", fontSize: 9, cursor: g.enemyBoard.length === 0 || (attCard?.keywords||[]).includes("Swift") ? "pointer" : "default" }}>
+                  {g.enemyBoard.length === 0 || (attCard?.keywords||[]).includes("Swift") ? "STRIKE HERO" : "SELECT TARGET"}
                 </button>
               ) : (
                 <span style={{ fontSize: 9, color: envTheme ? envTheme.glow + "88" : "#241a08", letterSpacing: 3, fontFamily: "'Cinzel',serif" }}>TURN {g.turn}</span>
@@ -2705,8 +2705,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           {!gs.winner ? (
             <TurnTimer key={timerKey} active={true} onExpire={isMyTurn ? endTurn : ()=>{}} turnNum={gs.turn}>
               {isMyTurn && attCard ? (
-                <button onClick={ai.enemyBoard.length===0?atkFace:undefined} style={{ padding:"3px 12px", background:ai.enemyBoard.length===0?"linear-gradient(135deg,#6a0808,#a01010)":"rgba(255,255,255,0.04)", border:`1px solid ${ai.enemyBoard.length===0?"#e04040":"#2a1a10"}`, borderRadius:20, color:ai.enemyBoard.length===0?"#ffaaaa":"#604030", fontFamily:"'Cinzel',serif", fontSize:9, cursor:ai.enemyBoard.length===0?"pointer":"default" }}>
-                  {ai.enemyBoard.length===0?"STRIKE HERO":"SELECT TARGET"}
+                <button onClick={ai.enemyBoard.length===0||(attCard?.keywords||[]).includes("Swift")?atkFace:undefined} style={{ padding:"3px 12px", background:ai.enemyBoard.length===0||(attCard?.keywords||[]).includes("Swift")?"linear-gradient(135deg,#6a0808,#a01010)":"rgba(255,255,255,0.04)", border:`1px solid ${ai.enemyBoard.length===0||(attCard?.keywords||[]).includes("Swift")?"#e04040":"#2a1a10"}`, borderRadius:20, color:ai.enemyBoard.length===0||(attCard?.keywords||[]).includes("Swift")?"#ffaaaa":"#604030", fontFamily:"'Cinzel',serif", fontSize:9, cursor:ai.enemyBoard.length===0||(attCard?.keywords||[]).includes("Swift")?"pointer":"default" }}>
+                  {ai.enemyBoard.length===0||(attCard?.keywords||[]).includes("Swift")?"STRIKE HERO":"SELECT TARGET"}
                 </button>
               ) : null}
             </TurnTimer>
