@@ -2874,7 +2874,7 @@ function MatchmakingScreen({ user, ranked, onMatch, onCancel, onRetry }) {
       const doPoll = async () => {
         if (!activeRef.current || phaseRef.current !== 'waiting') return;
         try {
-          const { data: res, error: rpcErr } = await supabase.rpc('pair_players', { p_user_id: user.id, p_display_name: user.name, p_row_id: rowId, p_ranked: !!ranked });
+          const { data: res, error: rpcErr } = await supabase.rpc('pair_players', { p_user_id: user.id, p_display_name: user.name, p_row_id: rowId });
           if (rpcErr) console.error('[MM] pair_players error:', rpcErr);
           if (res?.paired && activeRef.current) {
             transitionMatched({ match_id: res.match_id, opponent_id: res.opponent_id, opponent_name: res.opponent_name });
