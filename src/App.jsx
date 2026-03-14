@@ -2728,7 +2728,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
 // Phase lifecycle: waiting → found → accepted → entering
 //                 waiting → timeout | error
 //                 found / accepted → declined
-function MatchmakingScreen({ user, onMatch, onCancel, onRetry }) {
+function MatchmakingScreen({ user, ranked, onMatch, onCancel, onRetry }) {
   const [phase, setPhase] = useState('waiting');
   const [dots, setDots] = useState(0);
   const [oppName, setOppName] = useState('');
@@ -3154,13 +3154,12 @@ function useAuth() {
           p = { ...p, shards: 1000, last_shard_reset: new Date().toISOString() };
           await supabase.from("profiles").update({ shards: 1000, last_shard_reset: p.last_shard_reset }).eq("id", p.id);
         }
-        // On every login: ensure all users have 3x every base GAMEPLAY_POOL card
-        {
+        // On every login: ensure all users have 3x every base card (never blocks login on failure)
+        try {
           const updates = {};
           const col = { ...(p.collection || {}) };
           let needsColUpdate = false;
           GAMEPLAY_POOL.forEach(c => { if (!col[c.id] || col[c.id] < 3) { col[c.id] = 3; needsColUpdate = true; } });
-          // Fables testers also get 3x all Fables cards
           const isTester = p.is_fables_tester ||
             DEV_ACCOUNTS.has((session.user.email||"").toLowerCase()) ||
             FABLES_NAMES.has((p.name||"").toLowerCase());
@@ -3168,14 +3167,13 @@ function useAuth() {
             POOL.filter(c => c.region === "Fables").forEach(c => { if (!col[c.id] || col[c.id] < 3) { col[c.id] = 3; needsColUpdate = true; } });
           }
           if (needsColUpdate) { p = { ...p, collection: col }; updates.collection = col; }
-          // Founder alt art grant (sncombz only)
           if (session.user.email?.toLowerCase() === "sncombz@gmail.com" && (!p.alt_owned || Object.keys(p.alt_owned).length === 0)) {
             const founderAlts = Object.fromEntries(Object.entries(ALT_ARTS).map(([id, alts]) => [id, alts.map(a => a.setId)]));
             p = { ...p, alt_owned: founderAlts };
             updates.alt_owned = founderAlts;
           }
           if (Object.keys(updates).length > 0) await supabase.from("profiles").update(updates).eq("id", p.id);
-        }
+        } catch (_) { /* non-critical — login continues regardless */ }
         setUser(toAppUser(p, session.user.email));
       } else {
         // Authenticated but no profile row — upsert during signup may have failed.
