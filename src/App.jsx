@@ -931,8 +931,9 @@ if (typeof document !== "undefined" && !document.getElementById("timerBlinkStyle
 
 // ═══ GAME ENGINE ═════════════════════════════════════════════════════════════
 // Returns effective cost of a card accounting for active environment cost reductions
-function getEffectiveCost(card, env) {
+function getEffectiveCost(card, env, side = null) {
   if (!env || card.type === "environment") return card.cost;
+  if (side && env.owner && env.owner !== side) return card.cost;
   const envEffects = (env.effects && env.effects.length > 0) ? env.effects : ((GAMEPLAY_POOL.find(c => c.id === env.id) || env).effects || []);
   const reduction = envEffects.filter(e => e.effect === "cost_reduction").reduce((n,e) => n+(e.amount||0), 0);
   return Math.max(1, card.cost - reduction);
@@ -1516,10 +1517,10 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   const playCard = (card, targetUid = null) => {
     if (g.phase !== "player" || aiThink) return;
     if (card.type === "environment") {
-      const ec = getEffectiveCost(card, g.environment);
+      const ec = getEffectiveCost(card, g.environment, "player");
       if (card.bloodpact ? card.cost >= g.playerHP : ec > g.playerEnergy) return; SFX.play("env_play"); vfx.add("envchange", { color: card.border || "#40a020" }); setAttacker(null); setGame((prev) => { let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= ec; s.log = [...s.log, `${card.name} reshapes the field! (2 rounds)`]; } s.environment = { ...card, owner: "player", turnsRemaining: 2 }; s = resolveEffects("onPlay", card, s, "player", vfx); vfx.add("environment", { color: card.border, duration: 2000 }); return s; }); return; }
     if (card.type === "spell") {
-      const ec = getEffectiveCost(card, g.environment);
+      const ec = getEffectiveCost(card, g.environment, "player");
       if (card.bloodpact ? card.cost >= g.playerHP : ec > g.playerEnergy) return;
       // Enter targeting mode if spell needs a target and enemy has units
       const needsTarget = (card.effects || []).some(e => TARGETED_SPELL_EFFECTS.includes(e.effect));
@@ -1528,7 +1529,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
       setGame((prev) => {
         let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] };
         if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; }
-        else { s.playerEnergy -= getEffectiveCost(card, prev.environment); s.log = [...s.log, `Cast ${card.name}!`]; }
+        else { s.playerEnergy -= getEffectiveCost(card, prev.environment, "player"); s.log = [...s.log, `Cast ${card.name}!`]; }
         s = resolveEffects("onPlay", card, s, "player", vfx, targetUid ? { targetUid } : {});
         if (s.playerZeusInPlay || s.enemyZeusInPlay) {
           s.playerLightningMeter = (s.playerLightningMeter || 0) + 1;
@@ -1541,12 +1542,12 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
       return;
     }
     if (g.playerBoard.length >= CFG.maxBoard) return;
-    const ecCreature = getEffectiveCost(card, g.environment);
+    const ecCreature = getEffectiveCost(card, g.environment, "player");
     if (card.bloodpact ? card.cost >= g.playerHP : ecCreature > g.playerEnergy) return;
     SFX.play("card"); setAttacker(null);
     const inst = { ...makeInst(card, "pb"), currentHp: card.currentHp, maxHp: card.maxHp, canAttack: (card.keywords || []).includes("Swift"), hasAttacked: false };
     const summonUid = inst.uid;
-    setGame((prev) => { const eff = getEffectiveCost(card, prev.environment); let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= eff; s.log = [...s.log, `You play ${card.name}!`]; }
+    setGame((prev) => { const eff = getEffectiveCost(card, prev.environment, "player"); let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= eff; s.log = [...s.log, `You play ${card.name}!`]; }
       // Resonate: set ATK based on enemy board count at time of play
       const resonateBonus = (card.keywords||[]).includes("Resonate") ? prev.enemyBoard.length : 0;
       const finalInst = resonateBonus > 0 ? { ...inst, currentAtk: inst.currentAtk + resonateBonus } : inst;
@@ -1744,7 +1745,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
           </div>
           <div style={{ borderTop: "1px solid #2a2010", paddingTop: 10, marginBottom: 10 }}>
             <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap" }}>
-              {g.playerHand.map((card) => { const isEnv = card.type === "environment"; const isSpl = card.type === "spell"; const eff = getEffectiveCost(card, g.environment); const cp = g.phase === "player" && !aiThink && (isEnv || isSpl || g.playerBoard.length < CFG.maxBoard) && (card.bloodpact ? card.cost < g.playerHP : eff <= g.playerEnergy); return (<HandCard key={card.uid} card={resolveCardArt({ ...card, cost: eff }, user?.selectedArts || {})} playable={cp} onClick={() => playCard(card)} onRightClick={() => { SFX.play("card_inspect"); setPreviewCard(card); }} />); })}
+              {g.playerHand.map((card) => { const isEnv = card.type === "environment"; const isSpl = card.type === "spell"; const eff = getEffectiveCost(card, g.environment, "player"); const cp = g.phase === "player" && !aiThink && (isEnv || isSpl || g.playerBoard.length < CFG.maxBoard) && (card.bloodpact ? card.cost < g.playerHP : eff <= g.playerEnergy); return (<HandCard key={card.uid} card={resolveCardArt({ ...card, cost: eff }, user?.selectedArts || {})} playable={cp} onClick={() => playCard(card)} onRightClick={() => { SFX.play("card_inspect"); setPreviewCard(card); }} />); })}
             </div>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
