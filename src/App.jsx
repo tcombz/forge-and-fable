@@ -1459,6 +1459,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     if(s.enemyBoard.some(c=>c.id==="hades_soul_reaper")){s=resolveEffects("onTurnEnd",{id:"hades_soul_reaper",effects:[{trigger:"onTurnEnd",effect:"soul_reap"}]},s,"enemy",vfx);if(s.playerHP<=0){setGame(()=>({...s,phase:"gameover",winner:"enemy",log:[...s.log,"Defeated..."]}));return;}}
     // Lightning Meter: enemy Swift attacks tracked above; fire if at 4
     if((s.playerZeusInPlay||s.enemyZeusInPlay)&&(s.enemyLightningMeter||0)>=2){s=fireLightningMeter(s,"enemy",vfx,(m)=>{s.log=[...s.log.slice(-20),m];});}
+    if(s.playerHP<=0){SFX.play("defeat");setGame(()=>({...s,phase:"gameover",winner:"enemy",log:[...s.log,"Defeated..."]}));return;}
     // Clear temp frozen/anchored from enemy units
     s.enemyBoard=s.enemyBoard.map(c=>(c.anchored||c.frozen)?{...c,anchored:false,frozen:false,canAttack:true}:c);
     s.playerBoard.forEach(c=>{if(c.effects&&c.effects.length)s=resolveEffects("onTurnStart",c,s,"player",vfx);});
@@ -1522,6 +1523,8 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
           s.playerLightningMeter = (s.playerLightningMeter || 0) + 1;
           if (s.playerLightningMeter >= 2) { const logRef2 = []; s = fireLightningMeter(s, "player", vfx, (m) => { logRef2.push(m); }); s.log = [...s.log.slice(-20), ...logRef2]; }
         }
+        if (s.enemyHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; }
+        else if (s.playerHP <= 0) { s.phase = "gameover"; s.winner = "enemy"; s.log = [...s.log, "Defeated..."]; }
         return s;
       });
       return;
@@ -1594,7 +1597,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     await new Promise(r => setTimeout(r, 200));
     setAnimUids({});
   };
-  const atkFace = async () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking" }); await new Promise(r => setTimeout(r, 380)); const dmg = att.currentAtk; vfx.add("damage", { amount: dmg, duration: 500 }); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if ((s.playerZeusInPlay || s.enemyZeusInPlay) && (att.keywords || []).includes("Swift")) { s.playerLightningMeter = (s.playerLightningMeter || 0) + 1; if (s.playerLightningMeter >= 2) { s = fireLightningMeter(s, "player", vfx, (m) => { s.log = [...s.log.slice(-20), m]; }); } } if (nHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 200)); setAnimUids({}); };
+  const atkFace = async () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking" }); await new Promise(r => setTimeout(r, 380)); const dmg = att.currentAtk; vfx.add("damage", { amount: dmg, duration: 500 }); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if ((s.playerZeusInPlay || s.enemyZeusInPlay) && (att.keywords || []).includes("Swift")) { s.playerLightningMeter = (s.playerLightningMeter || 0) + 1; if (s.playerLightningMeter >= 2) { s = fireLightningMeter(s, "player", vfx, (m) => { s.log = [...s.log.slice(-20), m]; }); } } if (s.enemyHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 200)); setAnimUids({}); };
   const attCard = attacker ? g.playerBoard.find((c) => c.uid === attacker) : null;
 
   return (<div style={{ maxWidth: 1400, margin: "0 auto", padding: "16px 12px 12px", background: "linear-gradient(180deg,#1e1208 0%,#160e06 40%,#1c1208 100%)" }} onClick={() => { SFX.init(); }}>
@@ -3040,7 +3043,7 @@ function MatchmakingScreen({ user, ranked, onMatch, onCancel, onRetry }) {
 function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive }) {
   const [matchConfig, setMatchConfig] = useState(null);
   const [matchmaking, setMatchmaking] = useState(false);
-  const [ranked, setRanked] = useState(false);
+  const [ranked, setRanked] = useState(() => localStorage.getItem("fnf_ranked") === "true");
   const decks = user?.decks || [];
   // Persist deck selection across tab switches / re-renders
   const [aiDeckVal,  setAiDeckVal]  = useState(() => localStorage.getItem("fnf_ai_deck")  || "");
@@ -3070,8 +3073,8 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive }) {
         <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:15, color:ranked?"#c080ff":"#60a0e0", margin:"0 0 8px" }}>VS PLAYER</h3>
         {/* Ranked toggle */}
         <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginBottom:12 }}>
-          <button onClick={()=>setRanked(false)} style={{ padding:"4px 12px", background:!ranked?"rgba(60,150,240,0.2)":"transparent", border:`1px solid ${!ranked?"#3090e0":"#1a2030"}`, borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:9, color:!ranked?"#60a0e0":"#304050", cursor:"pointer" }}>CASUAL</button>
-          <button onClick={()=>setRanked(true)} style={{ padding:"4px 12px", background:ranked?"rgba(160,80,240,0.2)":"transparent", border:`1px solid ${ranked?"#a050f0":"#1a1030"}`, borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:9, color:ranked?"#c080ff":"#403060", cursor:"pointer" }}>RANKED</button>
+          <button onClick={()=>{ setRanked(false); localStorage.setItem("fnf_ranked","false"); }} style={{ padding:"4px 12px", background:!ranked?"rgba(60,150,240,0.2)":"transparent", border:`1px solid ${!ranked?"#3090e0":"#1a2030"}`, borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:9, color:!ranked?"#60a0e0":"#304050", cursor:"pointer" }}>CASUAL</button>
+          <button onClick={()=>{ setRanked(true); localStorage.setItem("fnf_ranked","true"); }} style={{ padding:"4px 12px", background:ranked?"rgba(160,80,240,0.2)":"transparent", border:`1px solid ${ranked?"#a050f0":"#1a1030"}`, borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:9, color:ranked?"#c080ff":"#403060", cursor:"pointer" }}>RANKED</button>
         </div>
         {ranked && <div style={{ fontSize:9, color:userRank.color, fontFamily:"'Cinzel',serif", marginBottom:8, padding:"3px 10px", background:`${userRank.color}15`, border:`1px solid ${userRank.color}33`, borderRadius:8, display:"inline-block" }}>{userRank.icon} {userRank.name} · {user?.rankedRating||1000} MMR</div>}
         {!ranked && <p style={{ fontSize:11, color:"#6080a0", marginBottom:10, lineHeight:1.5 }}>Casual — no rating change</p>}
