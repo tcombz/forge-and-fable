@@ -215,7 +215,7 @@ function MusicPlayer() {
 }
 
 // ═══ CONFIG ══════════════════════════════════════════════════════════════════
-const CFG = { startHP: 30, startHand: 3, maxHand: 7, maxBoard: 5, startEnergy: 2, maxEnergy: 7, turnTimer: 45, deck: { size: 40, maxChamp: 4, maxAuraEnv: 4, copies: 3 } };
+const CFG = { startHP: 30, startHand: 3, maxHand: 7, maxBoard: 5, startEnergy: 1, maxEnergy: 7, turnTimer: 45, deck: { size: 40, maxChamp: 4, maxAuraEnv: 4, copies: 3 } };
 
 // ═══ CONSTANTS ═══════════════════════════════════════════════════════════════
 const RC = { Common: "#8a8a7a", Uncommon: "#c0922a", Rare: "#5090ff", Epic: "#a860d8", Legendary: "#f0b818" };
@@ -937,9 +937,10 @@ function getEffectiveCost(card, env) {
   const reduction = envEffects.filter(e => e.effect === "cost_reduction").reduce((n,e) => n+(e.amount||0), 0);
   return Math.max(1, card.cost - reduction);
 }
-function makeInst(c, p = "p") { return { ...c, uid: uid(p + c.id), currentHp: c.hp, maxHp: c.hp, currentAtk: c.atk, canAttack: false, hasAttacked: false, bleed: 0, echoQueued: false, shielded: (c.keywords || []).includes("Shield") }; }
+function makeInst(c, p = "p") { const pool = POOL.find(x => x.id === c.id) || c; const kw = pool.keywords || c.keywords || []; return { ...c, uid: uid(p + c.id), currentHp: c.hp, maxHp: c.hp, currentAtk: c.atk, canAttack: false, hasAttacked: false, bleed: 0, echoQueued: false, keywords: kw, shielded: kw.includes("Shield") }; }
+const TARGETED_SPELL_EFFECTS = ["bolt_damage", "anchor_target", "freeze_target"];
 
-function resolveEffects(trigger, card, state, side, vfx) {
+function resolveEffects(trigger, card, state, side, vfx, opts = {}) {
   const effects = (card.effects || []).filter((e) => e.trigger === trigger); let s = { ...state };
   const L = (m) => { s.log = [...(s.log || []).slice(-20), m]; };
   const myB = side === "player" ? "playerBoard" : "enemyBoard", thB = side === "player" ? "enemyBoard" : "playerBoard";
@@ -992,7 +993,8 @@ function resolveEffects(trigger, card, state, side, vfx) {
         // Deal 3 damage; if it kills a unit, +1 to lightning meter
         const mKey = side === "player" ? "playerLightningMeter" : "enemyLightningMeter";
         if (s[thB].length > 0) {
-          const idx = Math.floor(Math.random() * s[thB].length);
+          const rawIdx = opts.targetUid ? s[thB].findIndex(c => c.uid === opts.targetUid) : -1;
+          const idx = rawIdx >= 0 ? rawIdx : Math.floor(Math.random() * s[thB].length);
           const btgt = s[thB][idx];
           const nHp = btgt.currentHp - fx.amount;
           s[thB] = s[thB].map((c, i) => i === idx ? { ...c, currentHp: nHp } : c).filter(c => c.currentHp > 0);
@@ -1057,9 +1059,9 @@ function resolveEffects(trigger, card, state, side, vfx) {
       }
       case "anchor_target":
       case "freeze_target": {
-        // Medusa's Gaze: freeze a random enemy unit — cannot attack for 1 turn
         if (s[thB].length > 0) {
-          const idx = Math.floor(Math.random() * s[thB].length);
+          const rawIdx = opts.targetUid ? s[thB].findIndex(c => c.uid === opts.targetUid) : -1;
+          const idx = rawIdx >= 0 ? rawIdx : Math.floor(Math.random() * s[thB].length);
           const frozen = s[thB][idx];
           s[thB] = s[thB].map((c, i) => i === idx ? { ...c, frozen: true, canAttack: false, hasAttacked: true } : c);
           L(`${card.name}: ${frozen.name} is frozen — cannot attack this turn!`);
@@ -1128,11 +1130,11 @@ function computeEnemyAttackPhase(g, vfx) {
   s.enemyBoard.filter((c) => c.canAttack && !c.hasAttacked).forEach((att) => {
     if (s.playerHP <= 0) return;
     const av = att.currentAtk;
-    if (s.playerBoard.length > 0) { const tgt = [...s.playerBoard].sort((a, b) => a.currentHp - b.currentHp)[0]; let nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av; let nAHP = att.currentHp - tgt.currentAtk; if (tgt.shielded) L(`${tgt.name} shield absorbs!`); s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP } : c).filter((c) => c.currentHp > 0); s.playerBoard = s.playerBoard.map((c) => c.uid === tgt.uid ? { ...c, currentHp: nTHP, shielded: false, bleed: (c.bleed || 0) + ((att.keywords || []).includes("Bleed") ? (att.bleedAmount || 1) : 0) } : c).filter((c) => c.currentHp > 0); if (nTHP <= 0) { L(`${tgt.name} falls!`); s = resolveEffects("onDeath", tgt, s, "player", vfx); } if (nAHP <= 0) s = resolveEffects("onDeath", att, s, "enemy", vfx);
+    if (s.playerBoard.length > 0) { const tgt = [...s.playerBoard].sort((a, b) => a.currentHp - b.currentHp)[0]; let nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av; let nAHP = att.currentHp - tgt.currentAtk; if (tgt.shielded) L(`${tgt.name} shield absorbs!`); s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP } : c).filter((c) => c.currentHp > 0); s.playerBoard = s.playerBoard.map((c) => c.uid === tgt.uid ? { ...c, currentHp: nTHP, shielded: false, bleed: (c.bleed || 0) + ((att.keywords || []).includes("Bleed") ? (att.bleedAmount || 1) : 0) } : c).filter((c) => c.currentHp > 0); if (nTHP <= 0) { L(`${tgt.name} falls!`); s = resolveEffects("onDeath", tgt, s, "player", vfx); if (s.playerBoard.find(c => c.id === "hades_soul_reaper") || s.playerHand.find(c => c.id === "hades_soul_reaper")) { s = resolveEffects("onFriendlyDeath", {id:"hades_soul_reaper",effects:[{trigger:"onFriendlyDeath",effect:"soul_harvest"}]}, s, "player", vfx); } } if (nAHP <= 0) s = resolveEffects("onDeath", att, s, "enemy", vfx);
     } else { s.playerHP -= av; s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c); L(`${att.name} hits you for ${av}!`); }
   });
   if (s.playerHP <= 0) return { ...s, phase: "gameover", winner: "enemy", log: [...s.log, "Defeated..."] };
-  const newTurn = g.turn + 1, newMax = Math.min(CFG.maxEnergy, newTurn + 1);
+  const newTurn = g.turn + 1, newMax = Math.min(CFG.maxEnergy, newTurn);
   // End of enemy turn: fire + clear bleed on player board only
   { s.playerBoard = s.playerBoard.map(c => c.bleed>0?{...c,currentHp:c.currentHp-c.bleed,bleed:0}:c).filter(c=>c.currentHp>0); }
   s.playerBoard.forEach((c) => { if (c.effects && c.effects.length) s = resolveEffects("onTurnStart", c, s, "player", vfx); });
@@ -1170,7 +1172,7 @@ function computeEnemyTurn(g, vfx) {
     } else { s.playerHP -= av; s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c); L(`${att.name} hits you for ${av}!`); }
   });
   if (s.playerHP <= 0) return { ...s, phase: "gameover", winner: "enemy", log: [...s.log, "Defeated..."] };
-  const newTurn = g.turn + 1, newMax = Math.min(CFG.maxEnergy, newTurn + 1);
+  const newTurn = g.turn + 1, newMax = Math.min(CFG.maxEnergy, newTurn);
   // End of enemy turn: fire + clear bleed on player board only
   { s.playerBoard = s.playerBoard.map(c => c.bleed>0?{...c,currentHp:c.currentHp-c.bleed,bleed:0}:c).filter(c=>c.currentHp>0); }
   s.playerBoard.forEach((c) => { if (c.effects && c.effects.length) s = resolveEffects("onTurnStart", c, s, "player", vfx); });
@@ -1364,6 +1366,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   const [game, setGame] = useState(initGame);
   const [animUids, setAnimUids] = useState({});
   const [attacker, setAttacker] = useState(null);
+  const [targetingSpell, setTargetingSpell] = useState(null);
   const [aiThink, setAiThink] = useState(false);
   const [previewCard, setPreviewCard] = useState(null);
   const [timerKey, setTimerKey] = useState(0);
@@ -1434,6 +1437,8 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         s.log=[...s.log.slice(-20),`${att.name}(${av}) attacks ${tgt.name}`];
         if(nTHP<=0){s.log=[...s.log,`💀 ${tgt.name} slain!`];s=resolveEffects("onDeath",tgt,s,"player",vfx);}
         if(nAHP<=0){s.log=[...s.log,`💀 ${att.name} slain!`];s=resolveEffects("onDeath",att,s,"enemy",vfx);}
+        // Hades Soul Harvest: player Hades gains HP when a player unit is killed by enemy
+        if(nTHP<=0&&(s.playerBoard.find(c=>c.id==="hades_soul_reaper")||s.playerHand.find(c=>c.id==="hades_soul_reaper"))){s=resolveEffects("onFriendlyDeath",{id:"hades_soul_reaper",effects:[{trigger:"onFriendlyDeath",effect:"soul_harvest"}]},s,"player",vfx);}
         // Hades Soul Harvest: enemy Hades gains HP when enemy unit dies
         if(nAHP<=0&&(s.enemyBoard.find(c=>c.id==="hades_soul_reaper")||s.enemyHand.find(c=>c.id==="hades_soul_reaper"))){s=resolveEffects("onFriendlyDeath",{id:"hades_soul_reaper",effects:[{trigger:"onFriendlyDeath",effect:"soul_harvest"}]},s,"enemy",vfx);}
         // Lightning Meter: enemy Swift attack
@@ -1460,7 +1465,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     s.enemyBoard=s.enemyBoard.map(c=>({...c,canAttack:true,hasAttacked:false}));
     if(s.playerDeck.length>0&&s.playerHand.length<CFG.maxHand){s.playerHand=[...s.playerHand,makeInst(s.playerDeck[0],"p")];s.playerDeck=s.playerDeck.slice(1);}
     if(s.enemyHP<=0){SFX.play("victory");setGame(()=>({...s,phase:"gameover",winner:"player",log:[...s.log,"Victory!"]}));return;}
-    const newTurn=s.turn+1,newMax=Math.min(CFG.maxEnergy,newTurn+1);
+    const newTurn=s.turn+1,newMax=Math.min(CFG.maxEnergy,newTurn);
     s.log=[...s.log,`Turn ${newTurn}`];
     setGame(()=>({...s,turn:newTurn,phase:"player",playerEnergy:newMax,maxEnergy:newMax}));
     setTimerKey(k=>k+1);setTimeout(()=>showTurnBanner("YOUR TURN"),200);
@@ -1471,7 +1476,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
 
   const endTurn = useCallback(() => {
     if (g.phase !== "player" || aiThink) return;
-    setAttacker(null); SFX.play("timer_end");
+    setAttacker(null); setTargetingSpell(null); SFX.play("timer_end");
     setGame((p) => {
       let s = { ...p, phase: "enemy", log: [...p.log.slice(-20), "Your turn ends."] };
       // End of player turn: fire + clear bleed on enemy board
@@ -1495,7 +1500,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     setTimeout(() => doEnemyTurn(), 300);
   }, [g.phase, aiThink]);
 
-  const playCard = (card) => {
+  const playCard = (card, targetUid = null) => {
     if (g.phase !== "player" || aiThink) return;
     if (card.type === "environment") {
       const ec = getEffectiveCost(card, g.environment);
@@ -1503,12 +1508,15 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     if (card.type === "spell") {
       const ec = getEffectiveCost(card, g.environment);
       if (card.bloodpact ? card.cost >= g.playerHP : ec > g.playerEnergy) return;
-      SFX.play("ability"); vfx.add("spell", { color: card.border || "#c090d0" }); setAttacker(null);
+      // Enter targeting mode if spell needs a target and enemy has units
+      const needsTarget = (card.effects || []).some(e => TARGETED_SPELL_EFFECTS.includes(e.effect));
+      if (needsTarget && !targetUid && g.enemyBoard.length > 0) { setTargetingSpell(card); return; }
+      SFX.play("ability"); vfx.add("spell", { color: card.border || "#c090d0" }); setAttacker(null); setTargetingSpell(null);
       setGame((prev) => {
         let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] };
         if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; }
         else { s.playerEnergy -= getEffectiveCost(card, prev.environment); s.log = [...s.log, `Cast ${card.name}!`]; }
-        s = resolveEffects("onPlay", card, s, "player", vfx);
+        s = resolveEffects("onPlay", card, s, "player", vfx, targetUid ? { targetUid } : {});
         if (s.playerZeusInPlay || s.enemyZeusInPlay) {
           s.playerLightningMeter = (s.playerLightningMeter || 0) + 1;
           if (s.playerLightningMeter >= 2) { const logRef2 = []; s = fireLightningMeter(s, "player", vfx, (m) => { logRef2.push(m); }); s.log = [...s.log.slice(-20), ...logRef2]; }
@@ -1677,9 +1685,9 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
               <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:full?"#ffe040":"#a08820", fontWeight:700 }}>{full?"READY!":"ENEMY ⚡"}</span>
             </div>);
           })()}
-          <div style={{ fontSize: 10, color: "#3a1414", fontFamily: "'Cinzel',serif", letterSpacing: 3, marginBottom: 4, textAlign: "center", fontWeight: 700 }}>ENEMY FIELD</div>
+          <div style={{ fontSize: 10, color: targetingSpell ? "#ffe040" : "#3a1414", fontFamily: "'Cinzel',serif", letterSpacing: 3, marginBottom: 4, textAlign: "center", fontWeight: 700 }}>{targetingSpell ? `⚡ CHOOSE TARGET — ${targetingSpell.name}` : "ENEMY FIELD"}</div>
           <div style={{ minHeight: 105, display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", alignItems: "center" }}>
-            {g.enemyBoard.length === 0 ? <span style={{ fontSize: 10, color: "#241010", letterSpacing: 3 }}>---</span> : g.enemyBoard.map((c) => (<Token key={c.uid} c={resolveCardArt(c, {})} animType={animUids[c.uid]} isTarget={!!attacker} canSelect={false} onClick={() => { if (attacker) atkCreature(c); else { SFX.play("ability"); setPreviewCard(c); } }} />))}
+            {g.enemyBoard.length === 0 ? <span style={{ fontSize: 10, color: "#241010", letterSpacing: 3 }}>---</span> : g.enemyBoard.map((c) => (<Token key={c.uid} c={resolveCardArt(c, {})} animType={animUids[c.uid]} isTarget={!!attacker || !!targetingSpell} canSelect={false} onClick={() => { if (targetingSpell) { playCard(targetingSpell, c.uid); } else if (attacker) { atkCreature(c); } else { SFX.play("ability"); setPreviewCard(c); } }} />))}
           </div>
         </div>
         {/* Centre divider with timer */}
@@ -2163,7 +2171,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       return fromAI(ai, role, gs);
     } else if (action.type === "end_turn") {
       const newTurn = gs.turn + 1;
-      const newMax = Math.min(CFG.maxEnergy, newTurn + 1);
+      const newMax = Math.min(CFG.maxEnergy, newTurn);
       let s = { ...gs };
       // Fire env effect at end of current player's turn, then decrement
       if (s[role+"Env"]) {
@@ -2447,7 +2455,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   const playCard = (card) => {
     if (!isMyTurn || syncingRef.current) return;
     const ai = toAI(gs, myRole);
-    const canAfford = card.bloodpact ? card.cost < ai.playerHP : card.cost <= ai.playerEnergy;
+    const canAfford = card.bloodpact ? card.cost < ai.playerHP : getEffectiveCost(card, ai.environment) <= ai.playerEnergy;
     if (!canAfford) return;
     if (card.type !== "spell" && card.type !== "environment" && ai.playerBoard.length >= CFG.maxBoard) return;
     SFX.play(card.type === "environment" ? "env_play" : card.type === "spell" ? "ability" : "card");
@@ -3619,14 +3627,14 @@ function CollectionScreen({ user, onUpdateUser, onDeckBuilding }) {
 // ═══ HOME ════════════════════════════════════════════════════════════════════
 const TICKER_ITEMS = [
   '🏆 RANKED SEASON 1 LIVE — ELO matchmaking active · Iron → Bronze → Silver → Gold → Grandmaster',
-  `⚡ NEW PATCH: ${CURRENT_PATCH} — 12 Fables cards · Zeus Lightning Meter · Hades Soul Harvest · Medusa's Gaze`,
-  '📖 THE FABLES — Zeus, Hades, Titan-Slayer, Cerberus Whelp and more now in dev testing',
-  '⚔️ META REPORT — Bloodpact aggro leads ranked · Thornwood Guard nerfed to 3-cost this patch',
-  '🌿 Thornwood combo: Ancient Grove + Echo synergy dominating Iron lobbies',
+  `⚡ PATCH ${CURRENT_PATCH} — Mana now starts at 1 and scales to 7 · Spell targeting live · Matchmaking fixed`,
+  '💀 Hades reworked — Soul Harvest now triggers from hand · No more Shield keyword on Hades',
+  '⚡ Zeus reworked — Lightning Meter fires at 2 stacks · charges from Spells + Swift attacks',
+  '🎯 Spell targeting: click a targeted spell, then click your mark — aimed shots only',
   '🎴 COMING SOON — Food Fight faction · 12 culinary warriors · Berry & Tooty lead the charge',
   '🌸 ANIME ISLAND — Alternative art collection · 32 alt arts · 0.1% Prismatic Sun Strike',
   '🩸 Bloodpact spike: Venomlord at 4-cost clearing boards consistently in casual queue',
-  '✨ ALPHA KEY GIVEAWAY — Limited wave open · Secure your spot before launch',
+  '✨ ALPHA EARLY ACCESS LIVE — Welcome to Forge & Fable Alpha · Report bugs in Discord',
 ];
 function CardOfTheWeek() {
   const [open, setOpen] = useState(false);
@@ -3914,14 +3922,14 @@ function HomeScreen({ setTab, user }) {
     {/* Patch Notes Hub Section */}
     {(() => {
       const patchRows = [
-        { icon:"📖", label:"THE FABLES α — 12 new Fables cards in dev testing · Zeus, Hades, Titan-Slayer and more" },
-        { icon:"⚡", label:"Lightning Meter: spells + Swift attacks charge Zeus's passive · fires 2 dmg at 4 charges · per-side tracking" },
-        { icon:"💀", label:"Hades Soul Harvest: +1 Max HP per friendly death (cap 10) · works in hand or on board" },
-        { icon:"❄", label:"Medusa's Gaze freezes target 1 turn · Anchor keyword = full removal immunity" },
-        { icon:"⚖", label:"Balance: Thornwood Guard 2→3 cost · Hades base HP 6 · Cerberus Whelp gains Swift" },
-        { icon:"🩸", label:"Siphon Wraith double bleed · Fractured Rift nerf · Timeline Weaver 2/4" },
-        { icon:"🏝", label:"Anime Island: 32 alt arts · 0.1% Prismatic Sun Strike · available in Store" },
-        { icon:"💬", label:"Feedback Wall — submit bugs, balance ideas & questions from the Hub" },
+        { icon:"🔧", label:"Matchmaking fixed — PvP queue now connects reliably in all regions" },
+        { icon:"🔢", label:"Mana rework — game now starts at 1 mana, gains +1 per turn up to 7 max (was starting at 2)" },
+        { icon:"🎯", label:"Spell targeting — click a targeted spell, then click the enemy unit to aim it" },
+        { icon:"⚡", label:"Zeus rework — Lightning Meter fires 2 dmg at just 2 charges · charges from any Spell or Swift attack · Swift keyword removed from Zeus" },
+        { icon:"💀", label:"Hades rework — Soul Harvest works from hand AND board · Shield keyword removed · HP gain capped at 10" },
+        { icon:"🃏", label:"Fracture fix — Fragment copy now inherits all keywords from original (except Fracture)" },
+        { icon:"🌅", label:"Shifting Dunes fix — mana discount now correctly applies in PvP as well as AI mode" },
+        { icon:"💊", label:"HP bars now color-coded: green (healthy) → orange (mid) → red (critical at 10 or below)" },
         { icon:"⚗", label:"Coming next: Leaderboard · Food Fight launch · Draft Mode", dim:true },
       ];
       return (
