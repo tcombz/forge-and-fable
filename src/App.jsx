@@ -3154,20 +3154,26 @@ function useAuth() {
           p = { ...p, shards: 1000, last_shard_reset: new Date().toISOString() };
           await supabase.from("profiles").update({ shards: 1000, last_shard_reset: p.last_shard_reset }).eq("id", p.id);
         }
-        // Founder auto-grant: ensure sncombz@gmail.com always has full alt art + dev Fables cards
-        if (session.user.email?.toLowerCase() === "sncombz@gmail.com") {
+        // On every login: ensure all users have 3x every base GAMEPLAY_POOL card
+        {
           const updates = {};
-          if (!p.alt_owned || Object.keys(p.alt_owned).length === 0) {
+          const col = { ...(p.collection || {}) };
+          let needsColUpdate = false;
+          GAMEPLAY_POOL.forEach(c => { if (!col[c.id] || col[c.id] < 3) { col[c.id] = 3; needsColUpdate = true; } });
+          // Fables testers also get 3x all Fables cards
+          const isTester = p.is_fables_tester ||
+            DEV_ACCOUNTS.has((session.user.email||"").toLowerCase()) ||
+            FABLES_NAMES.has((p.name||"").toLowerCase());
+          if (isTester) {
+            POOL.filter(c => c.region === "Fables").forEach(c => { if (!col[c.id] || col[c.id] < 3) { col[c.id] = 3; needsColUpdate = true; } });
+          }
+          if (needsColUpdate) { p = { ...p, collection: col }; updates.collection = col; }
+          // Founder alt art grant (sncombz only)
+          if (session.user.email?.toLowerCase() === "sncombz@gmail.com" && (!p.alt_owned || Object.keys(p.alt_owned).length === 0)) {
             const founderAlts = Object.fromEntries(Object.entries(ALT_ARTS).map(([id, alts]) => [id, alts.map(a => a.setId)]));
             p = { ...p, alt_owned: founderAlts };
             updates.alt_owned = founderAlts;
           }
-          // Ensure all Fables dev cards are in collection (3 copies each)
-          const fablesIds = POOL.filter(c => c.region === "Fables").map(c => c.id);
-          const col = { ...(p.collection || {}) };
-          let needsColUpdate = false;
-          fablesIds.forEach(id => { if (!col[id] || col[id] < 3) { col[id] = 3; needsColUpdate = true; } });
-          if (needsColUpdate) { p = { ...p, collection: col }; updates.collection = col; }
           if (Object.keys(updates).length > 0) await supabase.from("profiles").update(updates).eq("id", p.id);
         }
         setUser(toAppUser(p, session.user.email));
