@@ -1081,13 +1081,14 @@ function fireLightningMeter(s, side, vfx, L) {
   const meterKey = side === "player" ? "playerLightningMeter" : "enemyLightningMeter";
   if ((s[meterKey] || 0) < 2) return s;
   const aliveTargets = s[thB].filter(c => c.currentHp > 0);
+  const heroName = side === "player" ? (s.enemyName || "Enemy") : (s.playerName || "You");
   if (aliveTargets.length > 0) {
     const ltgt = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
     s[thB] = s[thB].map(c => c.uid === ltgt.uid ? { ...c, currentHp: c.currentHp - 2 } : c).filter(c => c.currentHp > 0);
     if (L) L(`⚡ LIGHTNING STRIKES ${ltgt.name} for 2!`);
   } else {
     s[thHP] -= 2;
-    if (L) L(`⚡ LIGHTNING strikes hero for 2!`);
+    if (L) L(`⚡ LIGHTNING strikes ${heroName} for 2!`);
   }
   s[meterKey] = 0;
   SFX.play("lightning_strike");
@@ -1361,7 +1362,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     const ed = shuf(buildRandomDeck(GAMEPLAY_POOL, getStarterCollection()));
     const playerZeusInPlay = pd.some(c => c.id === "zeus_storm_father");
     const enemyZeusInPlay = ed.some(c => c.id === "zeus_storm_father");
-    return { matchId: uid("m"), turn: 1, phase: "opening", winner: null, playerHP: CFG.startHP, playerEnergy: CFG.startEnergy, maxEnergy: CFG.startEnergy, playerHand: pd.slice(0, CFG.startHand).map((c) => makeInst(c, "p")), playerDeck: pd.slice(CFG.startHand), playerBoard: [], enemyHP: CFG.startHP, enemyHand: ed.slice(0, CFG.startHand).map((c) => makeInst(c, "e")), enemyDeck: ed.slice(CFG.startHand), enemyBoard: [], environment: null, envLastTurn: null, mapTheme: "default", log: ["Draw for priority!"], playerLightningMeter: 0, enemyLightningMeter: 0, playerZeusInPlay, enemyZeusInPlay };
+    return { matchId: uid("m"), turn: 1, phase: "opening", winner: null, playerHP: CFG.startHP, playerEnergy: CFG.startEnergy, maxEnergy: CFG.startEnergy, playerHand: pd.slice(0, CFG.startHand).map((c) => makeInst(c, "p")), playerDeck: pd.slice(CFG.startHand), playerBoard: [], enemyHP: CFG.startHP, enemyHand: ed.slice(0, CFG.startHand).map((c) => makeInst(c, "e")), enemyDeck: ed.slice(CFG.startHand), enemyBoard: [], environment: null, envLastTurn: null, mapTheme: "default", log: ["Draw for priority!"], playerLightningMeter: 0, enemyLightningMeter: 0, playerZeusInPlay, enemyZeusInPlay, playerName: user?.name || "You", enemyName: "Enemy" };
   };
   const [game, setGame] = useState(initGame);
   const [animUids, setAnimUids] = useState({});
@@ -2075,6 +2076,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       enemyHP: g[op+"HP"], enemyHand: g[op+"Hand"]||[], enemyDeck: g[op+"Deck"]||[], enemyBoard: g[op+"Board"]||[],
       playerLightningMeter: g[me+"LightningMeter"]||0, enemyLightningMeter: g[op+"LightningMeter"]||0,
       playerZeusInPlay: g[me+"ZeusInPlay"]||false, enemyZeusInPlay: g[op+"ZeusInPlay"]||false,
+      playerName: g[me+"Name"]||"You", enemyName: g[op+"Name"]||"Opponent",
       environment: myEnv, log: g.log||[]
     };
   };
