@@ -1080,13 +1080,11 @@ function fireLightningMeter(s, side, vfx, L) {
   const thHP = side === "player" ? "enemyHP" : "playerHP";
   const meterKey = side === "player" ? "playerLightningMeter" : "enemyLightningMeter";
   if ((s[meterKey] || 0) < 2) return s;
-  if (s[thB].length > 0) {
-    const idx = Math.floor(Math.random() * s[thB].length);
-    const ltgt = s[thB][idx];
-    const afterHp = ltgt.currentHp - 2;
-    s[thB] = s[thB].map((c, i) => i === idx ? { ...c, currentHp: afterHp } : c).filter(c => c.currentHp > 0);
+  const aliveTargets = s[thB].filter(c => c.currentHp > 0);
+  if (aliveTargets.length > 0) {
+    const ltgt = aliveTargets[Math.floor(Math.random() * aliveTargets.length)];
+    s[thB] = s[thB].map(c => c.uid === ltgt.uid ? { ...c, currentHp: c.currentHp - 2 } : c).filter(c => c.currentHp > 0);
     if (L) L(`⚡ LIGHTNING STRIKES ${ltgt.name} for 2!`);
-    if (afterHp <= 0) { s[thHP] -= 2; if (L) L(`⚡ Lightning chains to hero for 2!`); }
   } else {
     s[thHP] -= 2;
     if (L) L(`⚡ LIGHTNING strikes hero for 2!`);
