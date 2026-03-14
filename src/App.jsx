@@ -29,7 +29,7 @@ const CURRENT_PATCH = "THE FABLES α";
 const SFX = (() => {
   let ctx = null;
   const init = () => { if (!ctx) try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} return ctx; };
-  const masterVolume = 0.10;
+  const masterVolume = 0.32;
   const tone = (f, type, vol, t0, dur) => {
     const c = init(); if (!c) return; if (c.state === "suspended") c.resume();
     try { const o = c.createOscillator(), g = c.createGain(); o.connect(g); g.connect(c.destination); o.type = type; o.frequency.value = Math.min(f, 880); g.gain.setValueAtTime(vol * masterVolume, c.currentTime + t0); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + t0 + dur); o.start(c.currentTime + t0); o.stop(c.currentTime + t0 + dur + 0.05); } catch (e) {}
@@ -2040,6 +2040,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       update.rankedLosses = !won ? (user?.rankedLosses||0)+1 : (user?.rankedLosses||0);
     }
     if (onUpdateUser) onUpdateUser(update);
+    // Clean up match row so stale data doesn't accumulate
+    if (matchId) supabase.from("matches").delete().eq("id", matchId).then(() => {}).catch(() => {});
   }, [gs?.winner]);
 
   // Convert DB state (p1/p2) to AI state format (player/enemy) from my perspective
@@ -2481,6 +2483,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     try {
       await supabase.from("matches").update({ game_state: newGs }).eq("id", matchId);
       if (pvpBcRef.current) pvpBcRef.current.send({ type:"broadcast", event:"updated", payload:{ gs: newGs } });
+      // Allow a moment for the opponent to read the forfeit state, then clean up
+      setTimeout(() => { if (matchId) supabase.from("matches").delete().eq("id", matchId).catch(() => {}); }, 5000);
     } catch (err) { console.error("Forfeit failed:", err); }
     // Save FF to match history (counts as loss for ranked)
     if (onUpdateUser && user) {
@@ -3929,7 +3933,7 @@ function GuideScreen() {
   return (<div style={{ maxWidth: 860, margin: "0 auto", padding: "44px 24px 60px" }}>
     <h2 style={{ fontFamily: "'Cinzel',serif", fontSize: 26, fontWeight: 700, color: "#e8c060", textAlign: "center", margin: "0 0 30px" }}>How to Play</h2>
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 26 }}>
-      {[{ n: "1", t: "Opening Draw", d: "Each player draws 3 cards. One card is revealed from each hand — whoever drew the higher-cost card goes first. Ties are redrawn automatically.", c: "#e8c060" }, { n: "2", t: "Your Turn", d: "Gain 1 Mana each turn (starts at 2, max 7). Play creatures onto the board, cast spells for instant effects, or drop an Environment card to reshape the field.", c: "#28a0cc" }, { n: "3", t: "Combat", d: "Tap a creature to select it, then click an enemy creature or the enemy hero directly. Creatures with Swift can attack the same turn they're played.", c: "#9050d8" }, { n: "4", t: "Win Condition", d: "Both heroes start at 20 HP. Reduce the enemy hero to 0 to win. You have 45 seconds per turn — a warning fires at 10s. End your turn or it ends automatically!", c: "#c04810" }].map((s, i) => (<div key={s.t} style={{ background: "#1a1610", border: `1px solid ${s.c}44`, borderRadius: 13, padding: 22, animation: `cardReveal 0.4s ease-out ${i * 0.1}s both` }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 24, fontWeight: 900, color: s.c, marginBottom: 8 }}>{s.n}</div><div style={{ fontFamily: "'Cinzel',serif", fontSize: 14, fontWeight: 700, color: s.c, marginBottom: 8 }}>{s.t}</div><p style={{ fontSize: 12, color: "#d8c898", lineHeight: 1.75, margin: 0 }}>{s.d}</p></div>))}
+      {[{ n: "1", t: "Opening Draw", d: "Each player draws 3 cards. One card is revealed from each hand — whoever drew the higher-cost card goes first. Ties are redrawn automatically.", c: "#e8c060" }, { n: "2", t: "Your Turn", d: "Gain 1 Mana each turn (starts at 2, max 7). Play creatures onto the board, cast spells for instant effects, or drop an Environment card to reshape the field.", c: "#28a0cc" }, { n: "3", t: "Combat", d: "Tap a creature to select it, then click an enemy creature or the enemy hero directly. Creatures with Swift can attack the same turn they're played.", c: "#9050d8" }, { n: "4", t: "Win Condition", d: "Both heroes start at 30 HP. Reduce the enemy hero to 0 to win. You have 45 seconds per turn — a warning fires at 10s. End your turn or it ends automatically!", c: "#c04810" }].map((s, i) => (<div key={s.t} style={{ background: "#1a1610", border: `1px solid ${s.c}44`, borderRadius: 13, padding: 22, animation: `cardReveal 0.4s ease-out ${i * 0.1}s both` }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 24, fontWeight: 900, color: s.c, marginBottom: 8 }}>{s.n}</div><div style={{ fontFamily: "'Cinzel',serif", fontSize: 14, fontWeight: 700, color: s.c, marginBottom: 8 }}>{s.t}</div><p style={{ fontSize: 12, color: "#d8c898", lineHeight: 1.75, margin: 0 }}>{s.d}</p></div>))}
     </div>
     <div style={{ background: "#121008", border: "1px solid #242010", borderRadius: 14, padding: 24, marginBottom: 16 }}>
       <h3 style={{ fontFamily: "'Cinzel',serif", fontSize: 15, color: "#e8c060", margin: "0 0 18px", fontWeight: 700 }}>Keywords</h3>
