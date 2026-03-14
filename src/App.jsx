@@ -2984,11 +2984,15 @@ function MatchmakingScreen({ user, ranked, onMatch, onCancel, onRetry }) {
 // ═══ MATCH SETUP ═════════════════════════════════════════════
 function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive }) {
   const [matchConfig, setMatchConfig] = useState(null);
-  const [selectedDeck, setSelectedDeck] = useState(null); // VS AI
-  const [pvpDeck, setPvpDeck] = useState(null);           // VS Player
   const [matchmaking, setMatchmaking] = useState(false);
   const [ranked, setRanked] = useState(false);
   const decks = user?.decks || [];
+  // Persist deck selection across tab switches / re-renders
+  const [aiDeckVal,  setAiDeckVal]  = useState(() => localStorage.getItem("fnf_ai_deck")  || "");
+  const [pvpDeckVal, setPvpDeckVal] = useState(() => localStorage.getItem("fnf_pvp_deck") || "");
+  const resolveDeck = (val) => val === "starter" ? { name:"Starter Deck", cards: STARTER_DECK } : val ? decks[parseInt(val)] || null : null;
+  const selectedDeck = resolveDeck(aiDeckVal);
+  const pvpDeck      = resolveDeck(pvpDeckVal);
   const userRank = getRank(user?.rankedRating);
   if (matchmaking) return (<MatchmakingScreen key={matchmaking} user={user} ranked={ranked} onMatch={(cfg) => { setMatchmaking(false); const cfg2 = { mode:"pvp", ranked, playerDeck: pvpDeck?.cards || null, ...cfg }; setMatchConfig(cfg2); setMatchActive?.(true); }} onCancel={() => setMatchmaking(false)} onRetry={() => { setMatchmaking(false); setTimeout(() => setMatchmaking(true), 80); }} />);
   if (!matchConfig) return (<div style={{ maxWidth:720, margin:"0 auto", padding:"60px 24px 60px", display:"flex", flexDirection:"column", alignItems:"center" }}><div style={{ width:"100%" }}>
@@ -2999,7 +3003,7 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive }) {
         <div style={{ fontSize:32, marginBottom:12 }}>🤖</div>
         <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:15, color:"#e8c060", margin:"0 0 8px" }}>VS AI</h3>
         <p style={{ fontSize:11, color:"#806040", marginBottom:16, lineHeight:1.6 }}>Test your deck against the AI opponent. Great for practice!</p>
-        <select onChange={(e) => setSelectedDeck(e.target.value==="starter" ? { cards: STARTER_DECK } : e.target.value ? decks[parseInt(e.target.value)] : null)} style={{ width:"100%", padding:"7px", background:"#0c0a06", border:"1px solid #3a2010", borderRadius:7, color:"#f0e8d8", fontFamily:"'Cinzel',serif", fontSize:10, outline:"none", marginBottom:10 }}>
+        <select value={aiDeckVal} onChange={(e) => { setAiDeckVal(e.target.value); localStorage.setItem("fnf_ai_deck", e.target.value); }} style={{ width:"100%", padding:"7px", background:"#0c0a06", border:"1px solid #3a2010", borderRadius:7, color:"#f0e8d8", fontFamily:"'Cinzel',serif", fontSize:10, outline:"none", marginBottom:10 }}>
           <option value="">-- Random deck --</option>
           <option value="starter">Starter Deck</option>
           {decks.map((d, i) => (<option key={i} value={i}>{d.name} ({d.cards?.length || 0} cards)</option>))}
@@ -3017,7 +3021,7 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive }) {
         {ranked && <div style={{ fontSize:9, color:userRank.color, fontFamily:"'Cinzel',serif", marginBottom:8, padding:"3px 10px", background:`${userRank.color}15`, border:`1px solid ${userRank.color}33`, borderRadius:8, display:"inline-block" }}>{userRank.icon} {userRank.name} · {user?.rankedRating||1000} MMR</div>}
         {!ranked && <p style={{ fontSize:11, color:"#6080a0", marginBottom:10, lineHeight:1.5 }}>Casual — no rating change</p>}
         {ranked && <p style={{ fontSize:11, color:"#8060a0", marginBottom:10, lineHeight:1.5 }}>Rating changes on win/loss. ELO-based.</p>}
-        <select onChange={(e) => setPvpDeck(e.target.value==="starter" ? { name:"Starter Deck", cards: STARTER_DECK } : e.target.value ? decks[parseInt(e.target.value)] : null)} style={{ width:"100%", padding:"7px", background:"#0c0a06", border:"1px solid #1a2038", borderRadius:7, color:"#f0e8d8", fontFamily:"'Cinzel',serif", fontSize:10, outline:"none", marginBottom:10 }}><option value="">-- Random deck --</option><option value="starter">Starter Deck</option>{decks.map((d, i) => (<option key={i} value={i}>{d.name} ({d.cards?.length || 0} cards)</option>))}</select>
+        <select value={pvpDeckVal} onChange={(e) => { setPvpDeckVal(e.target.value); localStorage.setItem("fnf_pvp_deck", e.target.value); }} style={{ width:"100%", padding:"7px", background:"#0c0a06", border:"1px solid #1a2038", borderRadius:7, color:"#f0e8d8", fontFamily:"'Cinzel',serif", fontSize:10, outline:"none", marginBottom:10 }}><option value="">-- Random deck --</option><option value="starter">Starter Deck</option>{decks.map((d, i) => (<option key={i} value={i}>{d.name} ({d.cards?.length || 0} cards)</option>))}</select>
         <div style={{ fontSize:9, color:"#405060", fontFamily:"'Cinzel',serif", marginBottom:10, letterSpacing:1 }}>Using: {pvpDeck?.name || "Random deck"}</div>
         <button onClick={() => { SFX.play("card"); setMatchmaking(true); }} style={{ width:"100%", padding:"12px", background:ranked?"linear-gradient(135deg,#5020a0,#8040d0)":"linear-gradient(135deg,#1060a0,#2080d0)", border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, letterSpacing:2, color:"#fff", cursor:"pointer" }}>{ranked?"RANKED MATCH":"FIND MATCH"}</button>
       </div>
