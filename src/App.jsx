@@ -2060,6 +2060,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       playerHP: g[me+"HP"], playerEnergy: g[me+"Energy"], maxEnergy: g[me+"Max"],
       playerHand: g[me+"Hand"]||[], playerDeck: g[me+"Deck"]||[], playerBoard: g[me+"Board"]||[],
       enemyHP: g[op+"HP"], enemyHand: g[op+"Hand"]||[], enemyDeck: g[op+"Deck"]||[], enemyBoard: g[op+"Board"]||[],
+      playerLightningMeter: g[me+"LightningMeter"]||0, enemyLightningMeter: g[op+"LightningMeter"]||0,
+      playerZeusInPlay: g[me+"ZeusInPlay"]||false, enemyZeusInPlay: g[op+"ZeusInPlay"]||false,
       environment: myEnv, log: g.log||[]
     };
   };
@@ -2080,6 +2082,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       [me+"HP"]: ai.playerHP, [me+"Energy"]: ai.playerEnergy, [me+"Max"]: ai.maxEnergy,
       [me+"Hand"]: ai.playerHand, [me+"Deck"]: ai.playerDeck, [me+"Board"]: ai.playerBoard,
       [op+"HP"]: ai.enemyHP, [op+"Hand"]: ai.enemyHand, [op+"Deck"]: ai.enemyDeck, [op+"Board"]: ai.enemyBoard,
+      [me+"LightningMeter"]: ai.playerLightningMeter||0, [op+"LightningMeter"]: ai.enemyLightningMeter||0,
       log: ai.log,
     };
   };
@@ -2101,12 +2104,17 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         return fromAI(ai, role, gs);
       } else if (card.type === "spell") {
         ai.log = [...ai.log, `${(gs[role+"Name"]||"You")} casts ${card.name}!`];
+        // Lightning meter: any spell charges it
+        if (ai.playerZeusInPlay || ai.enemyZeusInPlay) {
+          ai.playerLightningMeter = (ai.playerLightningMeter||0) + 1;
+          if (ai.playerLightningMeter >= 2) { const pvpLog = []; ai = fireLightningMeter(ai, "player", null, m => pvpLog.push(m)); ai.log = [...ai.log.slice(-20), ...pvpLog]; }
+        }
       } else {
         const resBonus = (card.keywords||[]).includes("Resonate") ? ai.enemyBoard.length : 0;
         const inst = { ...makeInst(card, "pb"), canAttack: (card.keywords||[]).includes("Swift"), hasAttacked: false, currentAtk: card.atk + resBonus };
         ai.playerBoard = [...ai.playerBoard, inst]; ai.log = [...ai.log, `${(gs[role+"Name"]||"You")} plays ${card.name}!`];
         if ((card.keywords||[]).includes("Fracture") && ai.playerBoard.length < CFG.maxBoard) {
-          ai.playerBoard = [...ai.playerBoard, { ...inst, uid: uid("pf"), shielded: false, currentHp: Math.ceil(card.hp/2), maxHp: Math.ceil(card.hp/2), currentAtk: Math.ceil(card.atk/2), name: card.name+" Frag", keywords:[], effects:[] }];
+          ai.playerBoard = [...ai.playerBoard, { ...inst, uid: uid("pf"), shielded: false, currentHp: Math.ceil(card.hp/2), maxHp: Math.ceil(card.hp/2), currentAtk: Math.ceil(card.atk/2), name: card.name+" Frag", keywords: (card.keywords||[]).filter(k=>k!=="Fracture"), effects:[] }];
           ai.log = [...ai.log, "Fragment enters!"];
         }
         // Echo: add 1/1 ghost to hand immediately
@@ -2131,6 +2139,11 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       ai.playerBoard = ai.playerBoard.map(c => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP } : c).filter(c => c.currentHp > 0);
       if (nTHP <= 0) { ai.log = [...ai.log, `💀 ${tgt.name} slain by ${att.name}!`]; ai = resolveEffects("onDeath", tgt, ai, "enemy", vfxInst); }
       if (nAHP <= 0) { ai.log = [...ai.log, `💀 ${att.name} slain by ${tgt.name}!`]; ai = resolveEffects("onDeath", att, ai, "player", vfxInst); }
+      // Lightning meter: Swift attacker
+      if ((ai.playerZeusInPlay || ai.enemyZeusInPlay) && (att.keywords||[]).includes("Swift")) {
+        ai.playerLightningMeter = (ai.playerLightningMeter||0) + 1;
+        if (ai.playerLightningMeter >= 2) { const pvpLog = []; ai = fireLightningMeter(ai, "player", null, m => pvpLog.push(m)); ai.log = [...ai.log.slice(-20), ...pvpLog]; }
+      }
       if (ai.enemyHP <= 0) { ai.winner = "player"; ai.log = [...ai.log, "Victory!"]; }
       return fromAI(ai, role, gs);
     } else if (action.type === "attack_face") {
@@ -2141,6 +2154,11 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       ai.enemyHP -= dmg;
       ai.playerBoard = ai.playerBoard.map(c => c.uid === att.uid ? { ...c, hasAttacked: true } : c);
       ai.log = [...ai.log.slice(-20), `${att.name} deals ${dmg} direct!`];
+      // Lightning meter: Swift attacker face
+      if ((ai.playerZeusInPlay || ai.enemyZeusInPlay) && (att.keywords||[]).includes("Swift")) {
+        ai.playerLightningMeter = (ai.playerLightningMeter||0) + 1;
+        if (ai.playerLightningMeter >= 2) { const pvpLog = []; ai = fireLightningMeter(ai, "player", null, m => pvpLog.push(m)); ai.log = [...ai.log.slice(-20), ...pvpLog]; }
+      }
       if (ai.enemyHP <= 0) { ai.winner = "player"; ai.log = [...ai.log, "Victory!"]; }
       return fromAI(ai, role, gs);
     } else if (action.type === "end_turn") {
@@ -2251,7 +2269,10 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           p2HP: CFG.startHP, p2Energy: CFG.startEnergy, p2Max: CFG.startEnergy,
           p2Hand: d2.slice(0, CFG.startHand).map((c) => makeInst(c, "p2")),
           p2Deck: d2.slice(CFG.startHand), p2Board: [],
-          p1Env: null, p2Env: null, env: null, log: [firstPlayer === "p1" ? `Match started! ${user?.name||"P1"} goes first.` : `Match started! ${oppProfile?.name||"P2"} goes first.`]
+          p1Env: null, p2Env: null, env: null,
+          p1LightningMeter: 0, p2LightningMeter: 0,
+          p1ZeusInPlay: d1.some(c => c.id === "zeus_storm_father"), p2ZeusInPlay: false,
+          log: [firstPlayer === "p1" ? `Match started! ${user?.name||"P1"} goes first.` : `Match started! ${oppProfile?.name||"P2"} goes first.`]
         };
         await supabase.from("matches").update({ game_state: init }).eq("id", matchId);
         setGs(init);
@@ -2268,7 +2289,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
             const p2d = shuf(p2Cards.slice(0, CFG.deck.size).map(c => { const fresh = GAMEPLAY_POOL.find(p => p.id === c.id); return fresh ? { ...c, atk: fresh.atk, hp: fresh.hp, keywords: fresh.keywords, effects: fresh.effects, ability: fresh.ability } : c; }));
             const withArts = { ...fresh.game_state, p2Arts: user?.selectedArts || {}, p2Avatar: user?.avatarUrl || "", p2Name: user?.name || "Player", p2Rating: user?.rankedRating||1000, p2Wins: user?.rankedWins||0, p2Losses: user?.rankedLosses||0,
               p2Hand: p2d.slice(0, CFG.startHand).map((c) => makeInst(c, "p2")),
-              p2Deck: p2d.slice(CFG.startHand) };
+              p2Deck: p2d.slice(CFG.startHand),
+              p2ZeusInPlay: p2d.some(c => c.id === "zeus_storm_father") };
             await supabase.from("matches").update({ game_state: withArts }).eq("id", matchId);
             setGs(withArts);
           }
@@ -2648,8 +2670,10 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
               <div style={{ display:"flex", gap:3, alignItems:"flex-end" }}>{Array.from({length:gs[myRole==="p1"?"p2Max":"p1Max"]||0}).map((_,i)=>(<div key={i} style={{ width:14, height:17, background:i<(gs[myRole==="p1"?"p2Energy":"p1Energy"]||0)?"linear-gradient(160deg,#90e0ff 0%,#2090d0 45%,#1060a0 100%)":"rgba(20,50,80,0.35)", borderRadius:"50% 50% 45% 45% / 40% 40% 60% 60%", border:`1px solid ${i<(gs[myRole==="p1"?"p2Energy":"p1Energy"]||0)?"#60c8ff66":"#1a3a5a33"}`, boxShadow:i<(gs[myRole==="p1"?"p2Energy":"p1Energy"]||0)?"0 2px 6px #2090ff44":"none", transition:"all .25s" }}/>))}</div>
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-              <div style={{ width:60, height:6, background:"#180808", borderRadius:3, overflow:"hidden" }}><div style={{ height:"100%", width:`${Math.max(0,(ai.enemyHP/CFG.startHP)*100)}%`, background:hpCol(ai.enemyHP), transition:"width .4s" }}/></div>
-              <span style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:700, color:hpCol(ai.enemyHP) }}>{ai.enemyHP}</span>
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:3 }}>
+                <div style={{ width:90, height:10, background:"#180808", borderRadius:5, overflow:"hidden", border:"1px solid #2a1010" }}><div style={{ height:"100%", width:`${Math.max(0,(ai.enemyHP/CFG.startHP)*100)}%`, background:`linear-gradient(90deg,${hpCol(ai.enemyHP)}99,${hpCol(ai.enemyHP)})`, borderRadius:5, transition:"width .4s,background .5s", boxShadow:`0 0 8px ${hpCol(ai.enemyHP)}66` }}/></div>
+                <span style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:700, color:hpCol(ai.enemyHP), textShadow:`0 0 10px ${hpCol(ai.enemyHP)}88` }}>{ai.enemyHP} <span style={{ fontSize:9, color:"#604040", fontWeight:400 }}>HP</span></span>
+              </div>
             </div>
           </div>
           {opEnvCard && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 12px", background:`${opEnvCard.border}18`, border:`1px solid ${opEnvCard.border}33`, borderRadius:6, marginBottom:5, position:"relative", zIndex:2, animation:"slideDown 0.3s" }}>
@@ -2658,6 +2682,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
             <span style={{ fontSize:10, color:"#a09068", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{opEnvCard.ability}</span>
             <span style={{ fontSize:10, color:"#e05050", fontFamily:"'Cinzel',serif", flexShrink:0, background:"rgba(200,50,50,0.15)", padding:"1px 5px", borderRadius:4 }}>OPP · {Math.ceil((opEnvCard.turnsRemaining||4)/2)}R</span>
           </div>}
+          {/* Opponent lightning meter */}
+          {ai.enemyZeusInPlay && (() => { const em=ai.enemyLightningMeter||0; const full=em>=2; return (<div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6, padding:"5px 10px", background:full?"rgba(255,220,0,0.13)":"rgba(255,220,0,0.04)", border:`1px solid rgba(255,220,0,${full?0.65:0.2})`, borderRadius:8, boxShadow:full?"0 0 14px rgba(255,210,0,0.4)":"none", transition:"all .3s" }}><span style={{ fontSize:18, lineHeight:1, filter:full?"drop-shadow(0 0 6px #ffe040) drop-shadow(0 0 12px #f0a000)":"none", transition:"filter .3s" }}>⚡</span><div style={{ display:"flex", gap:5 }}>{[0,1].map(i=>{ const lit=i<em; return (<div key={i} style={{ width:28, height:14, borderRadius:4, background:lit?"linear-gradient(90deg,#fffaaa,#ffe030,#f09000)":"rgba(60,50,0,0.45)", border:`1px solid ${lit?"#f0d020":"#2a1c00"}`, boxShadow:lit?"0 0 10px #ffe040bb, inset 0 1px 0 rgba(255,255,200,0.4)":"none", transition:"all .25s" }}/>); })}</div><span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:full?"#ffe040":"#a08820", fontWeight:700 }}>{full?"READY!":"OPP ⚡"}</span></div>); })()}
           <div style={{ fontSize:10, color:"#3a1414", fontFamily:"'Cinzel',serif", letterSpacing:3, marginBottom:4, textAlign:"center", fontWeight:700 }}>ENEMY FIELD</div>
           <div style={{ minHeight:105, display:"flex", gap:8, flexWrap:"wrap", justifyContent:"center", alignItems:"center" }}>
             {ai.enemyBoard.length===0?<span style={{ fontSize:10, color:"#241010", letterSpacing:3 }}>---</span>:ai.enemyBoard.map((c)=>(<Token key={c.uid} c={resolveCardArt(c,myRole==="p1"?gs?.p2Arts||{}:gs?.p1Arts||{})} animType={animUids[c.uid]} isTarget={!!attacker} canSelect={false} onClick={()=>{ if(attacker)atkCreature(c); else setPreviewCard(c); }}/>))}
@@ -2711,8 +2737,10 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
                 {user?.avatarUrl?<img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>:(user?.name||"?").slice(0,2).toUpperCase()}
               </div>
               <span style={{ fontSize:10, color:"#e8c060", fontFamily:"'Cinzel',serif" }}>Deck:{ai.playerDeck.length}</span>
-              <span style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:700, color:hpCol(ai.playerHP) }}>{ai.playerHP}</span>
-              <span style={{ fontSize:9, color:"#806040" }}>HP</span>
+              <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
+                <div style={{ width:90, height:10, background:"#080808", borderRadius:5, overflow:"hidden", border:"1px solid #1a1a0a" }}><div style={{ height:"100%", width:`${Math.max(0,(ai.playerHP/CFG.startHP)*100)}%`, background:`linear-gradient(90deg,${hpCol(ai.playerHP)}99,${hpCol(ai.playerHP)})`, borderRadius:5, transition:"width .4s,background .5s", boxShadow:`0 0 8px ${hpCol(ai.playerHP)}66` }}/></div>
+                <span style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:700, color:hpCol(ai.playerHP), textShadow:`0 0 10px ${hpCol(ai.playerHP)}88` }}>{ai.playerHP} <span style={{ fontSize:9, color:"#806040", fontWeight:400 }}>HP</span></span>
+              </div>
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               <div style={{ display:"flex", alignItems:"center", gap:3 }}>
@@ -2723,6 +2751,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
               <button onClick={()=>{SFX.play("end_turn_go");endTurn();}} disabled={!isMyTurn||syncing} style={{ padding:"8px 16px", background:isMyTurn&&!syncing?"linear-gradient(135deg,#c89010,#f0c040)":"rgba(255,255,255,0.04)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, letterSpacing:2, color:isMyTurn&&!syncing?"#1a1000":"#404030", cursor:isMyTurn&&!syncing?"pointer":"not-allowed", boxShadow:isMyTurn&&!syncing?"0 0 18px #e8c06044,0 4px 12px rgba(200,144,0,0.3)":"none", transition:"all .18s" }}>{syncing?"SYNCING...":"END TURN"}</button>
             </div>
           </div>
+          {/* My lightning meter */}
+          {ai.playerZeusInPlay && (() => { const pm=ai.playerLightningMeter||0; const full=pm>=2; return (<div style={{ display:"flex", alignItems:"center", gap:10, marginTop:6, padding:"7px 14px", background:full?"rgba(255,220,0,0.13)":"rgba(255,220,0,0.04)", border:`1px solid rgba(255,220,0,${full?0.65:0.22})`, borderRadius:9, boxShadow:full?"0 0 18px rgba(255,210,0,0.45)":"none", transition:"all .3s", animation:full?"lightningReady 0.8s ease-in-out infinite":undefined }}><span style={{ fontSize:22, lineHeight:1, filter:full?"drop-shadow(0 0 8px #ffe040) drop-shadow(0 0 16px #f0a000)":"drop-shadow(0 0 2px #a07800)", transition:"filter .3s" }}>⚡</span><div style={{ display:"flex", gap:6 }}>{[0,1].map(i=>{ const lit=i<pm; return (<div key={i} style={{ width:36, height:16, borderRadius:5, background:lit?"linear-gradient(90deg,#fffaaa,#ffe030,#f09000)":"rgba(60,50,0,0.45)", border:`1px solid ${lit?"#f0d020":"#2a1c00"}`, boxShadow:lit?"0 0 12px #ffe040cc, inset 0 1px 0 rgba(255,255,200,0.4)":"none", transition:"all .3s" }}/>); })}</div><div style={{ display:"flex", flexDirection:"column", gap:1 }}><span style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#f0d020bb", letterSpacing:2, fontWeight:700 }}>LIGHTNING</span><span style={{ fontFamily:"'Cinzel',serif", fontSize:full?12:10, color:full?"#ffe040":"#a08820", fontWeight:700 }}>{full?"READY!":pm+" / 2"}</span></div></div>); })()}
         </div>
       </div>
       {/* Log */}
