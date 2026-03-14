@@ -849,8 +849,8 @@ function HandCard({ card, playable, onClick, onRightClick }) {
           <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, color: "#fff", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textShadow: "0 0 6px #000, 0 1px 4px #000, -1px 0 2px #000, 1px 0 2px #000", lineHeight: 1.2 }}>{card.name}</div>
           {card.atk != null ? (
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
-              <span style={{ fontSize: 11, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#ff7050", textShadow: "0 0 6px #000, 0 1px 4px #000" }}>{card.atk}</span>
-              <span style={{ fontSize: 11, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#50c060", textShadow: "0 0 6px #000, 0 1px 4px #000" }}>{card.hp}</span>
+              <span style={{ fontSize: 11, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#ff7050", textShadow: "0 0 6px #000, 0 1px 4px #000" }}>{card.currentAtk ?? card.atk}</span>
+              <span style={{ fontSize: 11, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#50c060", textShadow: "0 0 6px #000, 0 1px 4px #000" }}>{card.currentHp ?? card.hp}</span>
             </div>
           ) : (
             <div style={{ fontSize: 7, color: isEnv ? "#40c0e0" : "#d090d0", fontFamily: "'Cinzel',serif", marginTop: 2 }}>{isEnv ? "ENV" : "SPELL"}</div>
@@ -1083,8 +1083,10 @@ function fireLightningMeter(s, side, vfx, L) {
   if (s[thB].length > 0) {
     const idx = Math.floor(Math.random() * s[thB].length);
     const ltgt = s[thB][idx];
-    s[thB] = s[thB].map((c, i) => i === idx ? { ...c, currentHp: c.currentHp - 2 } : c).filter(c => c.currentHp > 0);
+    const afterHp = ltgt.currentHp - 2;
+    s[thB] = s[thB].map((c, i) => i === idx ? { ...c, currentHp: afterHp } : c).filter(c => c.currentHp > 0);
     if (L) L(`⚡ LIGHTNING STRIKES ${ltgt.name} for 2!`);
+    if (afterHp <= 0) { s[thHP] -= 2; if (L) L(`⚡ Lightning chains to hero for 2!`); }
   } else {
     s[thHP] -= 2;
     if (L) L(`⚡ LIGHTNING strikes hero for 2!`);
@@ -1530,7 +1532,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     const ecCreature = getEffectiveCost(card, g.environment);
     if (card.bloodpact ? card.cost >= g.playerHP : ecCreature > g.playerEnergy) return;
     SFX.play("card"); setAttacker(null);
-    const inst = { ...makeInst(card, "pb"), canAttack: (card.keywords || []).includes("Swift"), hasAttacked: false };
+    const inst = { ...makeInst(card, "pb"), currentHp: card.currentHp, maxHp: card.maxHp, canAttack: (card.keywords || []).includes("Swift"), hasAttacked: false };
     const summonUid = inst.uid;
     setGame((prev) => { const eff = getEffectiveCost(card, prev.environment); let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= eff; s.log = [...s.log, `You play ${card.name}!`]; }
       // Resonate: set ATK based on enemy board count at time of play
