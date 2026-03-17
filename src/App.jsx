@@ -2384,6 +2384,12 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           ai.playerHand = [...ai.playerHand, ghost]; ai.log = [...ai.log, `Echo: ${card.name} ghost enters hand!`];
         }
       }
+      // Caffeine Catapult: first card each turn triggers Splat
+      if (!gs.firstCardPlayedThisTurn && ai.playerBoard.some(c => c.id === "caffeine_catapult")) {
+        const catTargets = ai.enemyBoard.filter(c => c.currentHp > 0);
+        if (catTargets.length > 0) { const ct = catTargets[Math.floor(Math.random() * catTargets.length)]; ai.enemyBoard = ai.enemyBoard.map(c => c.uid === ct.uid ? { ...c, currentHp: c.currentHp - 1 } : c).filter(c => c.currentHp > 0); ai.log = [...ai.log, `💥 Catapult! ${ct.name} takes 1!`]; }
+        else { ai.enemyHP -= 1; ai.log = [...ai.log, "💥 Catapult hits enemy face!"]; }
+      }
       ai = resolveEffects("onPlay", card, ai, "player", vfxInst);
       if (ai.playerZeusInPlay) {
         ai.playerLightningMeter = (ai.playerLightningMeter||0) + 1;
@@ -2391,7 +2397,9 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       }
       if (ai.enemyHP <= 0) { ai.winner = "player"; ai.log = [...ai.log, "Victory!"]; }
       else if (ai.playerHP <= 0) { ai.winner = "enemy"; ai.log = [...ai.log, "Defeated..."]; }
-      return fromAI(ai, role, gs);
+      const out1 = fromAI(ai, role, gs);
+      out1.firstCardPlayedThisTurn = true;
+      return out1;
     } else if (action.type === "attack_creature") {
       let ai = toAI(gs, role);
       const att = ai.playerBoard.find(c => c.uid === action.attackerUid);
@@ -2407,6 +2415,9 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       ai.playerBoard = ai.playerBoard.map(c => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP, shielded: false } : c).filter(c => c.currentHp > 0);
       if (nTHP <= 0) { ai.log = [...ai.log, `💀 ${tgt.name} slain by ${att.name}!`]; ai = resolveEffects("onDeath", tgt, ai, "enemy", vfxInst); }
       if (nAHP <= 0) { ai.log = [...ai.log, `💀 ${att.name} slain by ${tgt.name}!`]; ai = resolveEffects("onDeath", att, ai, "player", vfxInst); }
+      // onAttack triggers (spawn tokens, etc.)
+      const attAfterCreature = ai.playerBoard.find(c => c.uid === action.attackerUid);
+      if (attAfterCreature) ai = resolveEffects("onAttack", attAfterCreature, ai, "player", vfxInst);
       // Lightning meter: Swift attacker
       if (ai.playerZeusInPlay && (att.keywords||[]).includes("Swift")) {
         ai.playerLightningMeter = (ai.playerLightningMeter||0) + 1;
@@ -2422,6 +2433,9 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       ai.enemyHP -= dmg;
       ai.playerBoard = ai.playerBoard.map(c => c.uid === att.uid ? { ...c, hasAttacked: true } : c);
       ai.log = [...ai.log.slice(-20), `${att.name} deals ${dmg} direct!`];
+      // onAttack triggers (spawn tokens, etc.)
+      const attAfterFace = ai.playerBoard.find(c => c.uid === action.attackerUid);
+      if (attAfterFace) ai = resolveEffects("onAttack", attAfterFace, ai, "player", vfxInst);
       // Lightning meter: Swift attacker face
       if (ai.playerZeusInPlay && (att.keywords||[]).includes("Swift")) {
         ai.playerLightningMeter = (ai.playerLightningMeter||0) + 1;
@@ -2471,10 +2485,35 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       }
       s.turn = newTurn; s.phase = op;
       s[op+"Max"] = newMax; s[op+"Energy"] = newMax;
+      s.firstCardPlayedThisTurn = false;
       s.log = [...(s.log||[]).slice(-20), `Turn ${newTurn}`];
       // Fire onTurnStart effects for the new active player's board (not env — env fires at their end_turn)
       let opAi = toAI(s, op);
       opAi.playerBoard.forEach(c => { if ((c.effects||[]).some(e => e.trigger === "onTurnStart")) opAi = resolveEffects("onTurnStart", c, opAi, "player", null); });
+      // Food Fight synergy tier effects for the new active player (op)
+      { const jaxRed = opAi.playerBoard.some(c => c.id === "master_jax") ? 1 : 0;
+        const syn = getActiveSynergies(opAi.playerBoard, jaxRed);
+        // Fruit T2: Berry & Tooty +1 HP
+        if (syn.fruit.t2) { opAi.playerBoard = opAi.playerBoard.map(c => c.id === "berry_tooty" ? { ...c, currentHp: Math.min(c.maxHp, c.currentHp + 1) } : c); }
+        // Fruit T4: Berry & Tooty +1 ATK
+        if (syn.fruit.t4) { opAi.playerBoard = opAi.playerBoard.map(c => c.id === "berry_tooty" ? { ...c, currentAtk: c.currentAtk + 1 } : c); }
+        // Fruit T6: All Fruit units gain Swift
+        if (syn.fruit.t6) { opAi.playerBoard = opAi.playerBoard.map(c => (c.group||"").includes("Fruit") && !(c.keywords||[]).includes("Swift") ? { ...c, keywords: [...(c.keywords||[]), "Swift"], canAttack: true } : c); }
+        // Veggie T2: All Veggie units +1/+1
+        if (syn.veggie.t2) { opAi.playerBoard = opAi.playerBoard.map(c => (c.group||"").includes("Veggie") ? { ...c, currentAtk: c.currentAtk + 1, currentHp: c.currentHp + 1, maxHp: c.maxHp + 1 } : c); }
+        // Veggie T4: All friendly units gain Anchor
+        if (syn.veggie.t4) { opAi.playerBoard = opAi.playerBoard.map(c => (c.keywords||[]).includes("Anchor") ? c : { ...c, keywords: [...(c.keywords||[]), "Anchor"] }); }
+        // Veggie T6: All enemy units gain Bleed
+        if (syn.veggie.t6) { opAi.enemyBoard = opAi.enemyBoard.map(c => ({ ...c, bleed: (c.bleed||0) + 1 })); }
+        // Protein T2: All Protein units +1 ATK
+        if (syn.protein.t2) { opAi.playerBoard = opAi.playerBoard.map(c => (c.group||"").includes("Protein") ? { ...c, currentAtk: c.currentAtk + 1 } : c); }
+        // Protein T6: All Protein units gain Bleed
+        if (syn.protein.t6) { opAi.playerBoard = opAi.playerBoard.map(c => (c.group||"").includes("Protein") && !(c.keywords||[]).includes("Bleed") ? { ...c, keywords: [...(c.keywords||[]), "Bleed"] } : c); }
+        // Sugar T4: All Sugar units +2 ATK
+        if (syn.sugar.t4) { opAi.playerBoard = opAi.playerBoard.map(c => (c.group||"").includes("Sugar") ? { ...c, currentAtk: c.currentAtk + 2 } : c); }
+        // Sugar Crash T6: all +3 ATK, -1 HP
+        if (syn.sugar.t6) { opAi.playerBoard = opAi.playerBoard.map(c => ({ ...c, currentAtk: c.currentAtk + 3, currentHp: c.currentHp - 1 })).filter(c => c.currentHp > 0); }
+      }
       s = fromAI(opAi, op, s);
       return s;
     }
@@ -2987,7 +3026,42 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
             </div>
           );
         })()}
-        <div style={{ height:240, overflow:"hidden" }}><BattleChat user={user} aiMode={false} matchId={matchId} /></div>
+        {/* Opponent Food Fight Synergy Tracker */}
+        {(() => {
+          const opBoard = ai.enemyBoard;
+          const opHand = ai.enemyHand;
+          const hasFoodFight = opBoard.some(c => c.region === "Food Fight") || opHand.some(c => c.region === "Food Fight");
+          if (!hasFoodFight) return null;
+          const jaxRed = opBoard.some(c => c.id === "master_jax") ? 1 : 0;
+          const syn = getActiveSynergies(opBoard, jaxRed);
+          const GROUP_COLOR = { Fruit:"#ff8040", Veggie:"#50c040", Protein:"#e08020", Sugar:"#d040b0" };
+          const GROUP_ICON  = { Fruit:"🍎", Veggie:"🥦", Protein:"🍖", Sugar:"🍬" };
+          return (
+            <div style={{ background:"rgba(10,4,4,0.95)", border:"2px solid #601818", borderRadius:10, padding:"10px 12px", fontSize:10, fontFamily:"'Cinzel',serif", boxShadow:"0 0 16px rgba(200,40,20,0.18)" }}>
+              <div style={{ color:"#e06040", letterSpacing:3, marginBottom:8, fontSize:9, fontWeight:700, display:"flex", alignItems:"center", gap:6 }}>
+                <span>🍽</span><span>OPP SYNERGY</span>
+              </div>
+              {Object.entries(syn.counts).map(([grp, cnt]) => {
+                const active = syn[grp.toLowerCase()];
+                const col = GROUP_COLOR[grp];
+                const thresholds = [2,4,6];
+                const hasAny = cnt > 0;
+                return (
+                  <div key={grp} style={{ marginBottom:4 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:3 }}>
+                      <span style={{ color: hasAny ? col : "#503020", fontWeight: hasAny ? 700 : 400, fontSize:11 }}>{GROUP_ICON[grp]} {grp}</span>
+                      <span style={{ color: hasAny ? col : "#503020", fontWeight:700, fontSize:13 }}>{cnt}</span>
+                    </div>
+                    <div style={{ display:"flex", gap:2 }}>
+                      {thresholds.map(t => { const isActive = active?.[`t${t}`]; return <div key={t} style={{ flex:1, height:6, borderRadius:3, background: isActive ? col : "rgba(255,255,255,0.06)", boxShadow: isActive ? `0 0 8px ${col}aa` : "none", transition:"all .3s" }} />; })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
+        <div style={{ height:200, overflow:"hidden" }}><BattleChat user={user} aiMode={false} matchId={matchId} /></div>
         <div style={{ display:"flex", gap:4, paddingTop:4 }}>
           <button onClick={onExit} style={{ flex:1, padding:"8px 4px", background:"rgba(180,40,20,0.15)", border:"1px solid #5a1810", borderRadius:8, color:"#a06040", fontFamily:"'Cinzel',serif", fontSize:10, cursor:"pointer", letterSpacing:1 }}>⬅ EXIT</button>
           {!gs?.winner && <button onClick={()=>setForfeitConfirm(true)} style={{ flex:1, padding:"8px 4px", background:"rgba(120,10,10,0.15)", border:"1px solid #8a2020", borderRadius:8, color:"#e05050", fontFamily:"'Cinzel',serif", fontSize:10, cursor:"pointer", letterSpacing:1 }}>🏳 FF</button>}
