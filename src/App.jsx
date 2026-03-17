@@ -1779,7 +1779,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   const atkFace = async () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking" }); await new Promise(r => setTimeout(r, 380)); const dmg = att.currentAtk; vfx.add("damage", { amount: dmg, duration: 500 }); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if (s.playerZeusInPlay && (att.keywords || []).includes("Swift")) { s.playerLightningMeter = (s.playerLightningMeter || 0) + 1; if (s.playerLightningMeter >= 2) { s = fireLightningMeter(s, "player", vfx, (m) => { s.log = [...s.log.slice(-20), m]; }); } } s = resolveEffects("onAttack", att, s, "player", vfx); if (s.enemyHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 200)); setAnimUids({}); };
   const attCard = attacker ? g.playerBoard.find((c) => c.uid === attacker) : null;
 
-  return (<div style={{ maxWidth: 1400, margin: "0 auto", padding: "16px 12px 12px", background: "linear-gradient(180deg,#1e1208 0%,#160e06 40%,#1c1208 100%)" }} onClick={() => { SFX.init(); }}>
+  return (<div style={{ maxWidth: 1400, margin: "0 auto", padding: "16px 12px 12px", background: "#000" }} onClick={() => { SFX.init(); }}>
     {previewCard && <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />}
     {/* Live Action Ticker */}
     {liveAction && (
@@ -1905,7 +1905,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#3a0c0c,#200808)", border: "2px solid #a0202044", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "#cc6666", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>AI</div>
-              <span style={{ fontFamily: "'Cinzel',serif", fontSize: 12, color: "#cc4848", letterSpacing: 2, fontWeight: 700 }}>ENEMY</span>
+              <span style={{ fontFamily: "'Cinzel',serif", fontSize: 14, color: "#cc4848", letterSpacing: 2, fontWeight: 700, textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>ENEMY</span>
               <div style={{ display: "flex", gap: 2, marginLeft: 4 }}>{Array.from({ length: g.enemyHand.length }).map((_, i) => (<div key={i} style={{ width: 14, height: 20, background: "linear-gradient(135deg,#240c0c,#180808)", border: "1px solid #341818", borderRadius: 2 }} />))}</div>
               <span style={{ fontSize: 8, color: "#604040", fontFamily: "'Cinzel',serif" }}>Deck: {g.enemyDeck.length}</span>
             </div>
@@ -1934,7 +1934,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
               <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:full?"#ffe040":"#a08820", fontWeight:700 }}>{full?"READY!":"ENEMY ⚡"}</span>
             </div>);
           })()}
-          <div style={{ fontSize: 10, color: targetingSpell ? "#ffe040" : "#3a1414", fontFamily: "'Cinzel',serif", letterSpacing: 3, marginBottom: 4, textAlign: "center", fontWeight: 700 }}>{targetingSpell ? `⚡ CHOOSE TARGET — ${targetingSpell.name}` : "ENEMY FIELD"}</div>
+          <div style={{ fontSize: 13, color: targetingSpell ? "#ffe040" : "#5a2424", fontFamily: "'Cinzel',serif", letterSpacing: 3, marginBottom: 4, textAlign: "center", fontWeight: 700, textShadow: "0 1px 4px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.6)" }}>{targetingSpell ? `⚡ CHOOSE TARGET — ${targetingSpell.name}` : "ENEMY FIELD"}</div>
           <div style={{ minHeight: 105, display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", alignItems: "center" }}>
             {g.enemyBoard.length === 0 ? <span style={{ fontSize: 10, color: "#241010", letterSpacing: 3 }}>---</span> : g.enemyBoard.map((c) => (<Token key={c.uid} c={resolveCardArt(c, {})} animType={animUids[c.uid]} isTarget={!!attacker || !!targetingSpell} canSelect={false} onClick={() => { if (targetingSpell) { playCard(targetingSpell, c.uid); } else if (attacker) { atkCreature(c); } else { SFX.play("ability"); setPreviewCard(c); } }} />))}
           </div>
@@ -1971,7 +1971,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
             <span style={{ fontSize:10, color:"#a09068", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.environment.ability}</span>
             <span style={{ fontSize:10, color:"#806040", fontFamily:"'Cinzel',serif", flexShrink:0 }}>{Math.ceil((g.environment.turnsRemaining||4)/2)}R</span>
           </div>}
-          <div style={{ fontSize: 10, color: "#1e3010", fontFamily: "'Cinzel',serif", letterSpacing: 3, marginBottom: 4, textAlign: "center", fontWeight: 700 }}>YOUR FIELD</div>
+          <div style={{ fontSize: 13, color: "#2e4818", fontFamily: "'Cinzel',serif", letterSpacing: 3, marginBottom: 4, textAlign: "center", fontWeight: 700, textShadow: "0 1px 4px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.6)" }}>YOUR FIELD</div>
           <div style={{ minHeight: 105, display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", alignItems: "center", marginBottom: 10 }}>
             {g.playerBoard.length === 0 ? <span style={{ fontSize: 10, color: "#181408", letterSpacing: 3 }}>PLAY A CARD</span> : g.playerBoard.map((c) => (<Token key={c.uid} c={resolveCardArt(c, user?.selectedArts || {})} animType={animUids[c.uid]} selected={attacker === c.uid} isTarget={false} canSelect={g.phase === "player" && c.canAttack && !c.hasAttacked && !aiThink} onClick={() => selectAtt(c)} onRightClick={() => { SFX.play("ability"); setPreviewCard(c); }} />))}
           </div>
@@ -2019,7 +2019,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {attCard && (<div style={{ background: `${attCard.border}15`, border: `1px solid ${attCard.border}55`, borderRadius: 10, padding: 10 }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, color: attCard.border, fontWeight: 600 }}>ATTACKING</div><div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#f0e8d8", fontWeight: 700 }}>{attCard.name}</div><div style={{ fontSize: 12, color: "#ff7050", fontWeight: 700 }}>ATK {attCard.currentAtk}</div><button onClick={() => setAttacker(null)} style={{ marginTop: 6, width: "100%", padding: "3px", background: "transparent", border: "1px solid #241408", borderRadius: 4, color: "#806040", fontFamily: "'Cinzel',serif", fontSize: 8, cursor: "pointer" }}>Cancel</button></div>)}
         <div style={{ background: "#080604", border: "1px solid #161408", borderRadius: 10, overflow: "hidden", display: "flex", flexDirection: "column", maxHeight: 500 }}>
-          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, color: "#c09048", letterSpacing: 3, padding: "8px 12px", borderBottom: "1px solid #281e08", fontWeight: 700 }}>BATTLE LOG</div>
+          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, color: "#c09048", letterSpacing: 3, padding: "8px 12px", borderBottom: "1px solid #281e08", fontWeight: 700, textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>BATTLE LOG</div>
           <div ref={logRef} style={{ overflowY: "auto", padding: "8px 12px", maxHeight: 460 }}>{g.log.map((l, i) => {
             const col = logColor(l);
             const isLast = i === g.log.length - 1;
@@ -2255,6 +2255,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   const [dyingCards, setDyingCards] = useState([]); // cards mid-death animation
   const [connectError, setConnectError] = useState(false);
   const [liveAction, setLiveAction] = useState(null);
+  const [expandedSynGroup, setExpandedSynGroup] = useState(null);
   const flashAction = (msg) => { setLiveAction(msg); setTimeout(() => setLiveAction(null), 1800); };
   const showTurnBanner = (type) => { setTurnBanner(type); setTimeout(() => setTurnBanner(null), 1100); };
   const [animUids, setAnimUids] = useState({});
@@ -2908,7 +2909,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     {!gs.winner && (<div style={{ display:"flex", justifyContent:"center", alignItems:"center", marginBottom:6 }}>
       <div style={{ display:"flex", alignItems:"center", gap:8 }}>
         <div style={{ width:7, height:7, borderRadius:"50%", background:isMyTurn?"#78cc45":"#e8c060", boxShadow:`0 0 8px ${isMyTurn?"#78cc45":"#e8c060"}`, animation:"pulse 1.5s infinite" }} />
-        <span style={{ fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, letterSpacing:2, color:isMyTurn?"#78cc45":"#e8c060" }}>{isMyTurn ? "YOUR TURN" : `${(opponentName||"OPP").toUpperCase()}'S TURN`}</span>
+        <span style={{ fontFamily:"'Cinzel',serif", fontSize:14, fontWeight:700, letterSpacing:2, color:isMyTurn?"#78cc45":"#e8c060", textShadow:"0 1px 6px rgba(0,0,0,0.9)" }}>{isMyTurn ? "YOUR TURN" : `${(opponentName||"OPP").toUpperCase()}'S TURN`}</span>
         {syncing && <span style={{ fontSize:8, color:"#806040", fontFamily:"'Cinzel',serif" }}>SYNC…</span>}
       </div>
     </div>)}
@@ -2918,10 +2919,75 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       <p style={{ fontSize:13, color:"#a09070" }}>{myWon?`You defeated ${opponentName}!`:`${opponentName} wins this round.`}</p>
       <button onClick={onExit} style={{ marginTop:16, padding:"11px 28px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontWeight:700, fontSize:12, letterSpacing:2, color:"#1a1000", cursor:"pointer" }}>EXIT</button>
     </div>)}
-    <div style={{ display:"grid", gridTemplateColumns:"240px 1fr 310px", gap:12 }}>
-      {/* Chat panel — LEFT */}
+    <div style={{ display:"grid", gridTemplateColumns:"250px 1fr 270px", gap:14 }}>
+      {/* Left Panel — Synergy Tracker + Chat */}
       <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-        <div style={{ height:320, overflow:"hidden" }}><BattleChat user={user} aiMode={false} matchId={matchId} /></div>
+        {/* Food Fight Synergy Tracker */}
+        {(() => {
+          const jaxRed = ai.playerBoard.some(c => c.id === "master_jax") ? 1 : 0;
+          const syn = getActiveSynergies(ai.playerBoard, jaxRed);
+          const hasFoodFight = ai.playerBoard.some(c => c.region === "Food Fight") || ai.playerHand.some(c => c.region === "Food Fight");
+          if (!hasFoodFight) return null;
+          const GROUP_COLOR = { Fruit:"#ff8040", Veggie:"#50c040", Protein:"#e08020", Sugar:"#d040b0" };
+          const GROUP_ICON  = { Fruit:"🍎", Veggie:"🥦", Protein:"🍖", Sugar:"🍬" };
+          const GROUP_DESCS = {
+            Fruit:   { t2:"Berry & Tooty heals +1 HP each turn", t4:"Berry & Tooty gains +1 ATK each turn", t6:"All Fruit units gain Swift" },
+            Veggie:  { t2:"All Veggie units gain +1/+1 each turn", t4:"All friendly units gain Anchor", t6:"All enemy units gain Bleed" },
+            Protein: { t2:"All Protein units gain +1 ATK each turn", t4:"Splat deals 2 dmg instead of 1", t6:"All Protein units gain Bleed" },
+            Sugar:   { t2:"First unit played each turn gains Swift", t4:"All Sugar units gain +2 ATK each turn", t6:"+3 ATK & -1 HP to all (Sugar Crash)" },
+          };
+          const jaxNote = jaxRed > 0 ? " (Jax -1)" : "";
+          return (
+            <div style={{ background:"rgba(10,8,4,0.95)", border:"2px solid #604018", borderRadius:10, padding:"10px 12px", fontSize:10, fontFamily:"'Cinzel',serif", boxShadow:"0 0 16px rgba(200,100,20,0.18)" }}>
+              <div style={{ color:"#f0b040", letterSpacing:3, marginBottom:8, fontSize:9, fontWeight:700, display:"flex", alignItems:"center", gap:6 }}>
+                <span>🍽</span><span>GROUP SYNERGY</span>{jaxRed > 0 && <span style={{ fontSize:8, color:"#b08030", fontWeight:400 }}>Jax: thresholds -1</span>}
+              </div>
+              {Object.entries(syn.counts).map(([grp, cnt]) => {
+                const active = syn[grp.toLowerCase()];
+                const col = GROUP_COLOR[grp];
+                const isExpanded = expandedSynGroup === grp;
+                const descs = GROUP_DESCS[grp];
+                const thresholds = [2,4,6];
+                const hasAny = cnt > 0;
+                return (
+                  <div key={grp} style={{ marginBottom: isExpanded ? 8 : 4 }}>
+                    <div onClick={() => setExpandedSynGroup(isExpanded ? null : grp)} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:3, cursor:"pointer", padding:"3px 4px", borderRadius:5, background: isExpanded ? `${col}18` : "transparent", transition:"background .2s" }}>
+                      <span style={{ color: hasAny ? col : "#503020", fontWeight: hasAny ? 700 : 400, fontSize:11 }}>{GROUP_ICON[grp]} {grp}</span>
+                      <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                        <span style={{ color: hasAny ? col : "#503020", fontWeight:700, fontSize:13 }}>{cnt}</span>
+                        <span style={{ color: hasAny ? col : "#503020", fontSize:8 }}>{isExpanded ? "▲" : "▼"}</span>
+                      </div>
+                    </div>
+                    <div style={{ display:"flex", gap:2, marginBottom: isExpanded ? 5 : 0 }}>
+                      {thresholds.map(t => {
+                        const isActive = active?.[`t${t}`];
+                        const thresh = Math.max(1, t - jaxRed);
+                        return <div key={t} style={{ flex:1, height:6, borderRadius:3, background: isActive ? col : "rgba(255,255,255,0.06)", boxShadow: isActive ? `0 0 8px ${col}aa` : "none", transition:"all .3s", cursor:"pointer" }} title={`T${t} (${thresh}): ${descs[`t${t}`]}`} />;
+                      })}
+                    </div>
+                    {isExpanded && (
+                      <div style={{ paddingLeft:4 }}>
+                        {thresholds.map(t => {
+                          const isActive = active?.[`t${t}`];
+                          const thresh = Math.max(1, t - jaxRed);
+                          return (
+                            <div key={t} style={{ display:"flex", alignItems:"flex-start", gap:5, marginBottom:3, opacity: isActive ? 1 : 0.45 }}>
+                              <span style={{ color: isActive ? col : "#604020", fontWeight:700, fontSize:9, minWidth:18, paddingTop:1 }}>T{t}</span>
+                              <span style={{ color: isActive ? "#e0d0a0" : "#604020", fontSize:9, lineHeight:1.4 }}>
+                                {thresh} {grp}: {descs[`t${t}`]}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
+        <div style={{ height:240, overflow:"hidden" }}><BattleChat user={user} aiMode={false} matchId={matchId} /></div>
         <div style={{ display:"flex", gap:4, paddingTop:4 }}>
           <button onClick={onExit} style={{ flex:1, padding:"8px 4px", background:"rgba(180,40,20,0.15)", border:"1px solid #5a1810", borderRadius:8, color:"#a06040", fontFamily:"'Cinzel',serif", fontSize:10, cursor:"pointer", letterSpacing:1 }}>⬅ EXIT</button>
           {!gs?.winner && <button onClick={()=>setForfeitConfirm(true)} style={{ flex:1, padding:"8px 4px", background:"rgba(120,10,10,0.15)", border:"1px solid #8a2020", borderRadius:8, color:"#e05050", fontFamily:"'Cinzel',serif", fontSize:10, cursor:"pointer", letterSpacing:1 }}>🏳 FF</button>}
@@ -2951,7 +3017,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
               <div onClick={()=>setProfilePopup({ name:opponentName, avatar:myRole==="p1"?gs?.p2Avatar:gs?.p1Avatar, role:"opp", rating:myRole==="p1"?gs?.p2Rating:gs?.p1Rating, wins:myRole==="p1"?gs?.p2Wins:gs?.p1Wins, losses:myRole==="p1"?gs?.p2Losses:gs?.p1Losses })} style={{ width:36, height:36, borderRadius:"50%", background:"linear-gradient(135deg,#3a0c0c,#200808)", border:"2px solid #a0202044", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, color:"#cc6666", fontFamily:"'Cinzel',serif", fontWeight:700, cursor:"pointer", transition:"border-color .18s", boxShadow:"none" }} title="View profile">
                 {(myRole==="p1" ? gs?.p2Avatar : gs?.p1Avatar) ? <img src={myRole==="p1" ? gs.p2Avatar : gs.p1Avatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (opponentName||"?").slice(0,2).toUpperCase()}
               </div>
-              <span style={{ fontFamily:"'Cinzel',serif", fontSize:12, color:"#cc4848", letterSpacing:2, fontWeight:700 }}>{(opponentName||"OPPONENT").toUpperCase()}</span>
+              <span style={{ fontFamily:"'Cinzel',serif", fontSize:14, color:"#cc4848", letterSpacing:2, fontWeight:700, textShadow:"0 1px 4px rgba(0,0,0,0.8)" }}>{(opponentName||"OPPONENT").toUpperCase()}</span>
               <div style={{ display:"flex", gap:2 }}>{Array.from({length:ai.enemyHand.length}).map((_,i)=>(<div key={i} style={{ width:14, height:20, background:"linear-gradient(135deg,#240c0c,#180808)", border:"1px solid #341818", borderRadius:2 }}/>))}</div>
               <span style={{ fontSize:10, color:"#604040" }}>Deck:{ai.enemyDeck.length}</span>
               <div style={{ display:"flex", gap:3, alignItems:"flex-end" }}>{Array.from({length:gs[myRole==="p1"?"p2Max":"p1Max"]||0}).map((_,i)=>(<div key={i} style={{ width:14, height:17, background:i<(gs[myRole==="p1"?"p2Energy":"p1Energy"]||0)?"linear-gradient(160deg,#90e0ff 0%,#2090d0 45%,#1060a0 100%)":"rgba(20,50,80,0.35)", borderRadius:"50% 50% 45% 45% / 40% 40% 60% 60%", border:`1px solid ${i<(gs[myRole==="p1"?"p2Energy":"p1Energy"]||0)?"#60c8ff66":"#1a3a5a33"}`, boxShadow:i<(gs[myRole==="p1"?"p2Energy":"p1Energy"]||0)?"0 2px 6px #2090ff44":"none", transition:"all .25s" }}/>))}</div>
@@ -2971,7 +3037,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           </div>}
           {/* Opponent lightning meter */}
           {ai.enemyZeusInPlay && (() => { const em=ai.enemyLightningMeter||0; const full=em>=2; return (<div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6, padding:"5px 10px", background:full?"rgba(255,220,0,0.13)":"rgba(255,220,0,0.04)", border:`1px solid rgba(255,220,0,${full?0.65:0.2})`, borderRadius:8, boxShadow:full?"0 0 14px rgba(255,210,0,0.4)":"none", transition:"all .3s" }}><span style={{ fontSize:18, lineHeight:1, filter:full?"drop-shadow(0 0 6px #ffe040) drop-shadow(0 0 12px #f0a000)":"none", transition:"filter .3s" }}>⚡</span><div style={{ display:"flex", gap:5 }}>{[0,1].map(i=>{ const lit=i<em; return (<div key={i} style={{ width:28, height:14, borderRadius:4, background:lit?"linear-gradient(90deg,#fffaaa,#ffe030,#f09000)":"rgba(60,50,0,0.45)", border:`1px solid ${lit?"#f0d020":"#2a1c00"}`, boxShadow:lit?"0 0 10px #ffe040bb, inset 0 1px 0 rgba(255,255,200,0.4)":"none", transition:"all .25s" }}/>); })}</div><span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:full?"#ffe040":"#a08820", fontWeight:700 }}>{full?"READY!":"OPP ⚡"}</span></div>); })()}
-          <div style={{ fontSize:10, color:"#3a1414", fontFamily:"'Cinzel',serif", letterSpacing:3, marginBottom:4, textAlign:"center", fontWeight:700 }}>ENEMY FIELD</div>
+          <div style={{ fontSize:13, color:"#5a2424", fontFamily:"'Cinzel',serif", letterSpacing:3, marginBottom:4, textAlign:"center", fontWeight:700, textShadow:"0 1px 4px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.6)" }}>ENEMY FIELD</div>
           <div style={{ minHeight:105, display:"flex", gap:8, flexWrap:"wrap", justifyContent:"center", alignItems:"center" }}>
             {ai.enemyBoard.length===0?<span style={{ fontSize:10, color:"#241010", letterSpacing:3 }}>---</span>:ai.enemyBoard.map((c)=>(<Token key={c.uid} c={resolveCardArt(c,myRole==="p1"?gs?.p2Arts||{}:gs?.p1Arts||{})} animType={animUids[c.uid]} isTarget={!!attacker} canSelect={false} onClick={()=>{ if(attacker)atkCreature(c); else setPreviewCard(c); }}/>))}
           </div>
@@ -3003,7 +3069,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
             <span style={{ fontSize:10, color:"#a09068", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{myEnvCard.ability}</span>
             <span style={{ fontSize:10, color:"#78cc45", fontFamily:"'Cinzel',serif", flexShrink:0, background:"rgba(80,180,50,0.15)", padding:"1px 5px", borderRadius:4 }}>YOURS · {Math.ceil((myEnvCard.turnsRemaining||4)/2)}R</span>
           </div>}
-          <div style={{ fontSize:10, color:"#1e3010", fontFamily:"'Cinzel',serif", letterSpacing:3, marginBottom:4, textAlign:"center", fontWeight:700, position:"relative", zIndex:2 }}>YOUR FIELD</div>
+          <div style={{ fontSize:13, color:"#2e4818", fontFamily:"'Cinzel',serif", letterSpacing:3, marginBottom:4, textAlign:"center", fontWeight:700, textShadow:"0 1px 4px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.6)", position:"relative", zIndex:2 }}>YOUR FIELD</div>
           <div style={{ minHeight:105, display:"flex", gap:8, flexWrap:"wrap", justifyContent:"center", alignItems:"center", marginBottom:10 }}>
             {ai.playerBoard.length===0?<span style={{ fontSize:10, color:"#181408", letterSpacing:3 }}>{isMyTurn?"PLAY A CARD":"WAITING..."}</span>:ai.playerBoard.map((c)=>(<Token key={c.uid} c={resolveCardArt(c,myRole==="p1"?gs?.p1Arts||{}:gs?.p2Arts||{})} animType={animUids[c.uid]} selected={attacker===c.uid} isTarget={false} canSelect={isMyTurn&&c.canAttack&&!c.hasAttacked&&!syncing} onClick={()=>selectAtt(c)} onRightClick={()=>setPreviewCard(c)}/>))}
           </div>
@@ -3046,8 +3112,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
         {attCard&&(<div style={{ background:`${attCard.border}15`, border:`1px solid ${attCard.border}55`, borderRadius:10, padding:10 }}><div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:attCard.border, fontWeight:600 }}>ATTACKING</div><div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#f0e8d8", fontWeight:700 }}>{attCard.name}</div><div style={{ fontSize:12, color:"#ff7050", fontWeight:700 }}>ATK {attCard.currentAtk}</div><button onClick={()=>setAttacker(null)} style={{ marginTop:6, width:"100%", padding:"3px", background:"transparent", border:"1px solid #241408", borderRadius:4, color:"#806040", fontFamily:"'Cinzel',serif", fontSize:8, cursor:"pointer" }}>Cancel</button></div>)}
         <div style={{ background:"#080604", border:"1px solid #161408", borderRadius:10, overflow:"hidden", display:"flex", flexDirection:"column", maxHeight:500 }}>
-          <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#c09048", letterSpacing:3, padding:"8px 12px", borderBottom:"1px solid #281e08", fontWeight:700, display:"flex", justifyContent:"space-between", alignItems:"center" }}><span>BATTLE LOG</span><span style={{ fontSize:8, color:"#403828" }}>TURN {gs.turn}</span></div>
-          <div ref={logRef} style={{ overflowY:"auto", padding:"8px 12px", maxHeight:460 }}>{(gs.log||[]).map((l,i)=>{const isLast=i===(gs.log||[]).length-1;return(<div key={i} style={{ fontSize:10, lineHeight:1.7, marginBottom:5, color:logColor(l), borderLeft:isLast?`2px solid ${logColor(l)}`:"2px solid #1a160e", paddingLeft:6, fontFamily:"'Cinzel',serif", fontWeight:isLast?700:400, display:"flex", alignItems:"flex-start", gap:4 }}><span style={{ opacity:0.5, flexShrink:0 }}>{logIcon(l)}</span>{renderLogLine(l, i)}</div>);})}</div>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#c09048", letterSpacing:3, padding:"8px 12px", borderBottom:"1px solid #281e08", fontWeight:700, display:"flex", justifyContent:"space-between", alignItems:"center", textShadow:"0 1px 4px rgba(0,0,0,0.8)" }}><span>BATTLE LOG</span><span style={{ fontSize:9, color:"#403828" }}>TURN {gs.turn}</span></div>
+          <div ref={logRef} style={{ overflowY:"auto", padding:"8px 12px", maxHeight:460 }}>{(gs.log||[]).map((l,i)=>{const isLast=i===(gs.log||[]).length-1;return(<div key={i} style={{ fontSize:11, lineHeight:1.7, marginBottom:5, color:logColor(l), borderLeft:isLast?`2px solid ${logColor(l)}`:"2px solid #1a160e", paddingLeft:6, fontFamily:"'Cinzel',serif", fontWeight:isLast?700:400, display:"flex", alignItems:"flex-start", gap:4 }}><span style={{ opacity:0.5, flexShrink:0 }}>{logIcon(l)}</span>{renderLogLine(l, i)}</div>);})}</div>
         </div>
       </div>
     </div>
