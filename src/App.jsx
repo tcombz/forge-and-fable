@@ -1136,7 +1136,12 @@ function resolveEffects(trigger, card, state, side, vfx, opts = {}) {
         const consumed = s[myB].filter(c => ingredIds.includes(c.id));
         if (consumed.length > 0) {
           s[myB] = s[myB].filter(c => !ingredIds.includes(c.id));
-          s[myB] = s[myB].map(c => c.uid === card.uid ? { ...c, currentAtk: c.currentAtk + consumed.length, currentHp: c.currentHp + consumed.length, maxHp: c.maxHp + consumed.length, synTag: `🍽 +${consumed.length}/+${consumed.length}` } : c);
+          // Board card has a new uid from makeInst — find last matching card.id (just appended)
+          let buffed = false;
+          s[myB] = [...s[myB]].reverse().map(c => {
+            if (!buffed && c.id === card.id) { buffed = true; return { ...c, currentAtk: c.currentAtk + consumed.length, currentHp: c.currentHp + consumed.length, maxHp: c.maxHp + consumed.length, synTag: `🍽 +${consumed.length}/+${consumed.length}` }; }
+            return c;
+          }).reverse();
           L(`🍽 Leftover Titan consumes ${consumed.length} ingredient(s)! +${consumed.length}/+${consumed.length}!`);
           if (vfx) vfx.add("ability", { color: "#ff8040" });
         }
@@ -1408,8 +1413,9 @@ function BattleChat({ user, aiMode, matchId }) {
   const [searching, setSearching] = useState(false);
   const [showGifPanel, setShowGifPanel] = useState(false);
   const msgRef = useRef(null);
+  const chatBottomRef = useRef(null);
   const chatChRef = useRef(null);
-  useEffect(() => { if (msgRef.current) msgRef.current.scrollTop = msgRef.current.scrollHeight; }, [messages]);
+  useEffect(() => { chatBottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
   // PvP broadcast channel for cross-player GIF chat
   useEffect(() => {
     if (aiMode || !matchId) return;
@@ -1484,6 +1490,7 @@ function BattleChat({ user, aiMode, matchId }) {
             {m.gif ? (<img src={m.gif} alt="" style={{ maxWidth:120, borderRadius:6, border:`1px solid ${m.from==="AI"?"#3a1010":"#1a3a10"}` }} />) : (<div style={{ background:m.from==="System"?"rgba(100,80,20,0.15)":m.from==="AI"?"rgba(80,20,20,0.3)":"rgba(20,60,10,0.3)", border:`1px solid ${m.from==="AI"?"#3a1010":m.from==="System"?"#3a3010":"#1a3a10"}`, borderRadius:8, padding:"5px 9px", fontSize:10, color:"#c0a870", maxWidth:180, lineHeight:1.5 }}>{m.text}</div>)}
           </div>
         ))}
+        <div ref={chatBottomRef} />
       </div>
     </div>
   );
