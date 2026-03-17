@@ -215,7 +215,7 @@ function MusicPlayer() {
 }
 
 // ═══ CONFIG ══════════════════════════════════════════════════════════════════
-const CFG = { startHP: 30, startHand: 3, maxHand: 7, maxBoard: 5, startEnergy: 1, maxEnergy: 7, turnTimer: 45, deck: { size: 40, maxChamp: 4, maxAuraEnv: 4, copies: 3 } };
+const CFG = { startHP: 30, startHand: 3, maxHand: 7, maxBoard: 6, startEnergy: 1, maxEnergy: 7, turnTimer: 45, deck: { size: 40, maxChamp: 4, maxAuraEnv: 4, copies: 3 } };
 
 // ═══ CONSTANTS ═══════════════════════════════════════════════════════════════
 const RC = { Common: "#8a8a7a", Uncommon: "#c0922a", Rare: "#5090ff", Epic: "#a860d8", Legendary: "#f0b818" };
@@ -569,8 +569,8 @@ const POOL = [
   { id: "broccoli_brute",        name: "Broccoli Brute",          type: "creature", region: "Food Fight", group: "Veggie",                     rarity: "Uncommon",  cost: 3,  atk: 1,    hp: 4,    keywords: ["Bleed"],                     border: "#ff6040", seed: 204,  bloodpact: false, imageUrl: "/cards/broccoli_brute.png",        ability: "While alive, other Veggie units gain +1 ATK. On Attack: Spawn a Veggie Ingredient.",      effects: [{ trigger: "onAttack", effect: "spawn_token", tokenId: "veggie_ingredient" }] },
   { id: "caffeine_catapult",     name: "Caffeine Catapult",       type: "creature", region: "Food Fight", group: "Sugar",                      rarity: "Uncommon",  cost: 4,  atk: 1,    hp: 5,    keywords: ["Resonate"],                  border: "#ff6040", seed: 205,  bloodpact: false, imageUrl: "/cards/caffeine_catapult.png",     ability: "The first card you play each turn triggers Splat. On Attack: Spawn a Sugar Ingredient.",   effects: [{ trigger: "onAttack", effect: "spawn_token", tokenId: "sugar_ingredient" }] },
   { id: "sir_sizzles",           name: "Sir Sizzles",             type: "creature", region: "Food Fight", group: "Protein",                    rarity: "Rare",      cost: 5,  atk: 2,    hp: 4,    keywords: ["Shield", "Resonate"],        border: "#ff6040", seed: 206,  bloodpact: false, imageUrl: "/cards/sir_sizzles.png",           ability: "On play: Deal 1 damage to all enemy units.",                                              effects: [{ trigger: "onPlay", effect: "damage_all_enemies", amount: 1 }] },
-  { id: "leftover_titan",        name: "Leftover Titan",          type: "creature", region: "Food Fight", group: "Fruit/Veggie/Protein/Sugar",  rarity: "Epic",      cost: 7,  atk: 6,    hp: 6,    keywords: ["Swift", "Bleed", "Anchor"],  border: "#ff6040", seed: 207,  bloodpact: false, imageUrl: "/cards/leftover_titan.png",        ability: "When played, consume all friendly Ingredients and gain their combined ATK/HP.",            effects: [{ trigger: "onPlay", effect: "consume_ingredients" }] },
-  { id: "food_nado",             name: "Food-nado",               type: "spell",    region: "Food Fight", group: "Fruit",                      rarity: "Uncommon",  cost: 3,  atk: null, hp: null, keywords: [],                           border: "#ff6040", seed: 208,  bloodpact: false, imageUrl: "/cards/food-nado.png",             ability: "Deal 3 damage to a random enemy. Spawn a 0/1 Fruit Ingredient.",                          effects: [{ trigger: "onPlay", effect: "food_nado_damage", amount: 3 }] },
+  { id: "leftover_titan",        name: "Leftover Titan",          type: "creature", region: "Food Fight", group: "Fruit/Veggie/Protein/Sugar",  rarity: "Epic",      cost: 7,  atk: 6,    hp: 6,    keywords: ["Swift", "Bleed", "Anchor"],  border: "#ff6040", seed: 207,  bloodpact: false, imageUrl: "/cards/leftover_titan.png",        ability: "When played, consume all friendly Ingredients. Gain +1/+1 per ingredient consumed.",            effects: [{ trigger: "onPlay", effect: "consume_ingredients" }] },
+  { id: "food_nado",             name: "Food-nado",               type: "spell",    region: "Food Fight", group: "Fruit",                      rarity: "Uncommon",  cost: 3,  atk: null, hp: null, keywords: [],                           border: "#ff6040", seed: 208,  bloodpact: false, imageUrl: "/cards/food-nado.png",             ability: "Deal 3 damage to ALL enemy units. Spawn a 0/1 Fruit Ingredient.",                          effects: [{ trigger: "onPlay", effect: "food_nado_damage", amount: 3 }] },
   { id: "bean_barrage",          name: "Bean Barrage",            type: "spell",    region: "Food Fight", group: "Veggie",                     rarity: "Common",    cost: 2,  atk: null, hp: null, keywords: ["Echo"],                     border: "#ff6040", seed: 209,  bloodpact: false, imageUrl: "/cards/bean_barrage.png",          ability: "Give a random friendly unit +1/+1 and Bleed. Spawn a Veggie Ingredient.",                 effects: [{ trigger: "onPlay", effect: "bean_barrage_buff" }, { trigger: "onPlay", effect: "spawn_token", tokenId: "veggie_ingredient" }] },
   // ── Food Fight Tokens ────────────────────────────────────────────────────────────
   { id: "fruit_ingredient",      name: "Fruit Ingredient",        type: "creature", region: "Food Fight", group: "Fruit",                      rarity: "Common",    cost: 0,  atk: 0,    hp: 1,    keywords: ["Splat"],                     border: "#ff6040", seed: 210,  bloodpact: false, imageUrl: "/cards/fruit_ingredient.png",      isToken: true, ability: "Splat: When destroyed, deal 1 damage to a random enemy.",                                 effects: [] },
@@ -1134,32 +1134,28 @@ function resolveEffects(trigger, card, state, side, vfx, opts = {}) {
         const ingredIds = ["fruit_ingredient","protein_ingredient","veggie_ingredient","sugar_ingredient"];
         const consumed = s[myB].filter(c => ingredIds.includes(c.id));
         if (consumed.length > 0) {
-          const gainAtk = consumed.reduce((sum, c) => sum + (c.currentAtk || 0), 0);
-          const gainHp  = consumed.reduce((sum, c) => sum + (c.currentHp  || 0), 0);
           s[myB] = s[myB].filter(c => !ingredIds.includes(c.id));
-          s[myB] = s[myB].map(c => c.uid === card.uid ? { ...c, currentAtk: c.currentAtk + gainAtk, currentHp: c.currentHp + gainHp, maxHp: c.maxHp + gainHp } : c);
-          L(`🍽 Leftover Titan consumes ${consumed.length} ingredient(s)! +${gainAtk}/+${gainHp}!`);
+          s[myB] = s[myB].map(c => c.uid === card.uid ? { ...c, currentAtk: c.currentAtk + consumed.length, currentHp: c.currentHp + consumed.length, maxHp: c.maxHp + consumed.length } : c);
+          L(`🍽 Leftover Titan consumes ${consumed.length} ingredient(s)! +${consumed.length}/+${consumed.length}!`);
           if (vfx) vfx.add("ability", { color: "#ff8040" });
         }
         break;
       }
       case "food_nado_damage": {
         if (s[thB].length > 0) {
-          const rawIdx = opts.targetUid ? s[thB].findIndex(c => c.uid === opts.targetUid) : -1;
-          const idx = rawIdx >= 0 ? rawIdx : Math.floor(Math.random() * s[thB].length);
-          const ftgt = s[thB][idx];
-          if (ftgt.shielded) {
-            s[thB] = s[thB].map((c,i) => i === idx ? { ...c, shielded: false } : c);
-            L(`Food-nado blocked by ${ftgt.name}'s shield! Shield broken.`);
-          } else {
-            const fnHp = ftgt.currentHp - fx.amount;
-            if (fnHp <= 0) s = resolveEffects("onDeath", ftgt, s, side === "player" ? "enemy" : "player", vfx);
-            s[thB] = s[thB].map((c,i) => i === idx ? { ...c, currentHp: fnHp } : c).filter(c => c.currentHp > 0);
-            L(`Food-nado deals ${fx.amount} to ${ftgt.name}!`);
-          }
+          // Deal fx.amount to ALL enemy units
+          const dying = [];
+          s[thB] = s[thB].map(c => {
+            if (c.shielded) { L(`Food-nado blocked by ${c.name}'s shield!`); return { ...c, shielded: false }; }
+            const hp = c.currentHp - fx.amount;
+            if (hp <= 0) dying.push(c);
+            return { ...c, currentHp: hp };
+          }).filter(c => c.currentHp > 0);
+          dying.forEach(c => { s = resolveEffects("onDeath", c, s, side === "player" ? "enemy" : "player", vfx); });
+          L(`🌪 Food-nado deals ${fx.amount} to all enemies! (${dying.length} slain)`);
         } else {
           s[thHP] -= fx.amount;
-          L(`Food-nado deals ${fx.amount} to enemy hero!`);
+          L(`🌪 Food-nado deals ${fx.amount} to enemy hero!`);
         }
         s = spawnToken(s, "fruit_ingredient", side, vfx, L);
         if (vfx) vfx.add("ability", { color: "#ff8040" });
