@@ -23,7 +23,7 @@ const ALPHA_KEYS_LIST = [
   "FLAME-WARDEN-2","DUSK-HERALD-05","BONE-TIDE-RISE","STAR-FORGED-01","KRAKEN-WAKES-1",
 ];
 const ALPHA_KEYS = new Set(ALPHA_KEYS_LIST);
-const CURRENT_PATCH = "THE FABLES α";
+const CURRENT_PATCH = "FABLES & FOOD FIGHT α";
 
 // ═══ AUDIO ═══════════════════════════════════════════════════════════════════
 const SFX = (() => {
@@ -451,15 +451,17 @@ function PatchNotesModal({ onDismiss }) {
     <span style={{ marginLeft:6, padding:"1px 6px", background:"rgba(120,204,69,0.18)", border:"1px solid #78cc4555", borderRadius:8, fontSize:8, color:"#78cc45", fontFamily:"'Cinzel',serif", fontWeight:700, letterSpacing:1, verticalAlign:"middle" }}>NEW</span>
   );
   const rows = [
-    { icon:"📖", label:<>New Expansion: THE FABLES — closed dev testing, coming soon<NEW /></> },
-    { icon:"⚖", label:"Thornwood Guard: cost 2 → 3" },
-    { icon:"🗡", label:"Siphon Wraith: now inflicts Double Bleed on attack" },
-    { icon:"💫", label:"Fractured Rift: +1 ATK nerf applied to Rift environment" },
-    { icon:"🔮", label:"Timeline Weaver: stats updated to 2/4" },
-    { icon:"⚓", label:"Anchor keyword: grants full removal immunity — cannot be targeted by enemy effects" },
-    { icon:"📊", label:"Win/Loss and Win Rate now track Ranked games only" },
-    { icon:"🏆", label:"Ranked and Casual matchmaking queues are now fully separated" },
-    { icon:"⚗", label:"Coming next: Leaderboard · Food Fight · Draft Mode", dim:true },
+    { icon:"📖", label:<>THE FABLES — NOW LIVE · Zeus, Hades, Lightning Meter, Soul Harvest<NEW /></> },
+    { icon:"🍓", label:<>FOOD FIGHT — NOW LIVE · Berry {"&"} Tooty, Master Jax, Group Synergy, Splat<NEW /></> },
+    { icon:"💥", label:<>New keyword: Splat — units deal 1 dmg on death · Protein T4 boosts to 2<NEW /></> },
+    { icon:"🛡", label:<>Shield rework — now blocks first hit, first spell, and first attacker strike<NEW /></> },
+    { icon:"🃏", label:<>All alpha accounts auto-granted Fables + Food Fight full sets<NEW /></> },
+    { icon:"⚡", label:"Zeus reworked — Lightning Meter fires at 2 stacks · charges from Spells + Swift attacks" },
+    { icon:"💀", label:"Hades — Soul Harvest triggers from hand · gains HP on every friendly death" },
+    { icon:"⚖", label:"Mana now starts at 1 and scales to 7 · Shifting Dunes env cost only applies to owner" },
+    { icon:"🎯", label:"Spell targeting live — click targeted spell, then click your mark" },
+    { icon:"🏆", label:"Ranked Season 1 live · ELO matchmaking · Iron → Bronze → Silver → Gold → Grandmaster" },
+    { icon:"⚗", label:"Coming next: Leaderboard · Draft Mode · Faction pack openings in store", dim:true },
   ];
   return (
     <div style={{ position:"fixed", inset:0, zIndex:300, background:"rgba(2,1,0,0.96)", backdropFilter:"blur(16px)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
@@ -3594,16 +3596,12 @@ function CollectionScreen({ user, onUpdateUser, onDeckBuilding }) {
   const col = user?.collection || {};
   const selectedArts = user?.selectedArts || {};
   const fablesTester = isFablesTester(user);
-  // Fables testers see base + Fables; everyone sees base only
-  const ownablePool = fablesTester
-    ? POOL.filter((c) => !HIDDEN_REGIONS.has(c.region))
-    : GAMEPLAY_POOL;
+  // All alpha players now see Fables + Food Fight — GAMEPLAY_POOL includes both
+  const ownablePool = GAMEPLAY_POOL;
   const owned      = ownablePool.filter((c) => (col[c.id] || 0) > 0);
   const notYet     = ownablePool.filter((c) => (col[c.id] || 0) === 0);
-  // Coming Soon = Fables cards for non-testers only (Food Fight hidden entirely)
-  const comingSoon = fablesTester
-    ? []
-    : POOL.filter((c) => LOCKED_REGIONS.has(c.region) && !HIDDEN_REGIONS.has(c.region));
+  // Nothing is coming soon — both expansions are live
+  const comingSoon = [];
   const [search, setSearch] = useState("");
   const [regFilter, setRegFilter] = useState("all");
   const [artPicker, setArtPicker] = useState(null);
@@ -3822,14 +3820,16 @@ function CollectionScreen({ user, onUpdateUser, onDeckBuilding }) {
 // ═══ HOME ════════════════════════════════════════════════════════════════════
 const TICKER_ITEMS = [
   '🏆 RANKED SEASON 1 LIVE — ELO matchmaking active · Iron → Bronze → Silver → Gold → Grandmaster',
-  `⚡ PATCH ${CURRENT_PATCH} — Mana now starts at 1 and scales to 7 · Spell targeting live · Matchmaking fixed`,
-  '💀 Hades reworked — Soul Harvest now triggers from hand · No more Shield keyword on Hades',
-  '⚡ Zeus reworked — Lightning Meter fires at 2 stacks · charges from Spells + Swift attacks',
-  '🎯 Spell targeting: click a targeted spell, then click your mark — aimed shots only',
-  '🎴 COMING SOON — Food Fight faction · 12 culinary warriors · Berry & Tooty lead the charge',
-  '🌸 ANIME ISLAND — Alternative art collection · 32 alt arts · 0.1% Prismatic Sun Strike',
+  `🎉 PATCH ${CURRENT_PATCH} — THE FABLES & FOOD FIGHT are NOW LIVE · All alpha accounts granted full sets`,
+  '📖 THE FABLES NOW LIVE — Zeus, Hades, Lightning Meter, Soul Harvest · 12 Olympus champions',
+  '🍓 FOOD FIGHT NOW LIVE — Berry & Tooty, Master Jax, Group Synergy system · Splat keyword · Ingredient tokens',
+  '💥 NEW: Splat keyword — units deal 1 damage on death · amplified by Protein Synergy Tier 4',
+  '🛡 Shield rework — blocks first hit, first spell, and first attacker strike · breaks after absorb',
+  '⚡ Zeus — Lightning Meter charges from Spells + Swift attacks · fires at 2 stacks',
+  '🎯 Spell targeting — click a targeted spell, then click your mark',
+  '🌸 ANIME ISLAND — Alternative art collection · 0.1% Prismatic Sun Strike',
   '🩸 Bloodpact spike: Venomlord at 4-cost clearing boards consistently in casual queue',
-  '✨ ALPHA EARLY ACCESS LIVE — Welcome to Forge & Fable Alpha · Report bugs in Discord',
+  '✨ ALPHA EARLY ACCESS LIVE — Welcome to Forge & Fable · Report bugs in Discord',
 ];
 function CardOfTheWeek() {
   const [open, setOpen] = useState(false);
@@ -3941,7 +3941,7 @@ function HomeScreen({ setTab, user }) {
       obs = new IntersectionObserver(entries => {
         if (entries.some(e=>e.isIntersecting) && !statsCountedRef.current) {
           statsCountedRef.current = true;
-          const targets = { cards:44, factions:8, keywords:9 };
+          const targets = { cards:65, factions:9, keywords:8 };
           const dur = 1600; const start = performance.now();
           const tick = now => {
             const t = Math.min((now-start)/dur,1), ease=1-Math.pow(1-t,3);
@@ -4046,7 +4046,7 @@ function HomeScreen({ setTab, user }) {
           {/* COL 1 — The Fables */}
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"0 32px 0 0", borderRight:"1px solid #1e1430", gap:10 }}>
             <div style={{ fontSize:38, animation:"boltFloat 2.2s ease-in-out infinite", display:"inline-block" }}>⚡</div>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#9070cc", letterSpacing:5, fontWeight:700 }}>COMING SOON</div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#78cc45", letterSpacing:5, fontWeight:700, textShadow:"0 0 8px #78cc4566" }}>● NOW LIVE</div>
             <div style={{ fontFamily:"'Palatino Linotype',Palatino,'Book Antiqua',Georgia,serif", fontSize:26, fontStyle:"italic", color:"#c8a0e8", lineHeight:1.2, textAlign:"center" }}>The Fables</div>
             <p style={{ fontSize:11, color:"#a890d0", lineHeight:1.75, margin:"0 0 8px", textAlign:"center" }}>Zeus, Hades, and 10 more. Greek myth comes to battle with the Lightning Meter and Soul Harvest.</p>
             <div style={{ display:"flex", gap:6, flexWrap:"wrap", justifyContent:"center" }}>
@@ -4080,12 +4080,12 @@ function HomeScreen({ setTab, user }) {
               <ellipse cx="30" cy="36" rx="8" ry="5" fill="rgba(255,255,255,0.25)" transform="rotate(-20 30 36)"/>
               <defs><radialGradient id="ffGH2" cx="35%" cy="30%" r="65%"><stop offset="0%" stopColor="#ff7070"/><stop offset="45%" stopColor="#dd1111"/><stop offset="100%" stopColor="#6b0000"/></radialGradient></defs>
             </svg>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#ff6060", letterSpacing:5, fontWeight:700 }}>COMING SOON</div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#78cc45", letterSpacing:5, fontWeight:700, textShadow:"0 0 8px #78cc4566" }}>● NOW LIVE</div>
             <div style={{ fontFamily:"'Palatino Linotype',Palatino,'Book Antiqua',Georgia,serif", fontSize:26, fontStyle:"italic", color:"#ff8080", lineHeight:1.2, textAlign:"center" }}>Food Fight</div>
-            <p style={{ fontSize:11, color:"#e09090", lineHeight:1.75, margin:0, textAlign:"center" }}>12 culinary warriors. Berry {"&"} Tooty and Master Jax lead the charge.</p>
+            <p style={{ fontSize:11, color:"#e09090", lineHeight:1.75, margin:0, textAlign:"center" }}>Berry {"&"} Tooty, Master Jax, and Group Synergy. Splat, ingredients, and culinary chaos.</p>
             <div style={{ display:"flex", gap:6, flexWrap:"wrap", justifyContent:"center" }}>
-              {["12 Cards","Berry & Tooty","Master Jax"].map(t => (
-                <span key={t} style={{ fontSize:9, padding:"4px 12px", background:"rgba(220,40,40,0.18)", border:"1px solid #dd303088", borderRadius:20, color:"#ffaaaa", fontFamily:"'Cinzel',serif", letterSpacing:1, fontWeight:600 }}>{t}</span>
+              {["13 Cards","Splat","Group Synergy","Tokens"].map(t => (
+                <span key={t} style={{ fontSize:9, padding:"4px 12px", background:"rgba(220,80,40,0.18)", border:"1px solid #dd603088", borderRadius:20, color:"#ffaaaa", fontFamily:"'Cinzel',serif", letterSpacing:1, fontWeight:600 }}>{t}</span>
               ))}
             </div>
           </div>
@@ -4097,7 +4097,7 @@ function HomeScreen({ setTab, user }) {
     {/* Fables card fan — full-width showcase */}
     <section style={{ background:"linear-gradient(180deg,#060212 0%,#0a0420 50%,#060212 100%)", borderBottom:"1px solid #1a1228", padding:"44px 28px 36px" }}>
       <div style={{ maxWidth:1100, margin:"0 auto", display:"flex", flexDirection:"column", alignItems:"center", gap:16 }}>
-        <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#c0a0ff", letterSpacing:5, fontWeight:700, textShadow:"0 0 12px #9070ff66" }}>THE FABLES · CARD PREVIEW</div>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#c0a0ff", letterSpacing:5, fontWeight:700, textShadow:"0 0 12px #9070ff66" }}>THE FABLES · NOW LIVE — INSPECT THE SET</div>
         <ForgeAndFableTeaser inline={true} />
         <div style={{ fontSize:11, color:"#d0b8ff", fontFamily:"'Cinzel',serif", letterSpacing:4, fontWeight:700, textShadow:"0 1px 4px rgba(0,0,0,0.9), 0 0 12px #9070ff44" }}>↑ CLICK A CARD TO INSPECT</div>
       </div>
@@ -4390,8 +4390,8 @@ function StoreScreen({ user, onUpdateUser }) {
           </div>
         </div>
 
-        {/* ── NEW FACTION PACKS — locked until launch ──────────────────────── */}
-        <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#a09060", letterSpacing:2, marginBottom:12, marginTop:28 }}>NEW FACTION PACKS</div>
+        {/* ── UPCOMING ALT ART & FACTION PACKS — locked until launch ──────── */}
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#a09060", letterSpacing:2, marginBottom:12, marginTop:28 }}>ALT ART — UPCOMING PACKS</div>
         <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
           {/* Food Fight — locked */}
           <div style={{ background:"#0a0808", border:"1px solid rgba(200,40,40,0.15)", borderRadius:14, padding:"20px 22px", position:"relative", overflow:"hidden" }}>
