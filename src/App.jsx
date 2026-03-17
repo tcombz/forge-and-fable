@@ -824,7 +824,7 @@ function Token({ c, selected, isTarget, canSelect, onClick, onRightClick, animTy
   const opac = (c.hasAttacked && !isTarget) ? 0.45 : 1;
   const kws = KW.filter((k) => (c.keywords || []).includes(k.name));
   return (
-    <div onClick={onClick} onContextMenu={(e) => { e.preventDefault(); if (onRightClick) onRightClick(); }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ width: 110, height: 152, cursor: (canSelect || isTarget) ? "pointer" : "default", userSelect: "none", border: `2px solid ${selected ? "#f0d840" : animType==="hit" ? "#ff3030" : (animType==="attacking"||animType==="attacking-down") ? "#ff8030" : isTarget && hov ? "#e84040" : hov && canSelect ? c.border + "aa" : c.border + "55"}`, borderRadius: 10, overflow: "hidden", opacity: animType==="dying" ? 1 : opac, boxShadow: animType==="hit" ? "0 0 28px #ff303088, 0 0 60px #ff202044" : (animType==="attacking"||animType==="attacking-down") ? `0 0 28px ${c.border}aa, 0 0 50px ${c.border}55` : selected ? `0 0 22px #f0d84066` : hov ? `0 6px 18px ${c.border}44` : "none", transform: animType ? "none" : selected ? "translateY(-8px)" : hov ? "translateY(-4px)" : "none", animation: animType === "attacking" ? "cardLunge 0.45s cubic-bezier(0.25,0.46,0.45,0.94)" : animType === "attacking-down" ? "cardLungeDown 0.45s cubic-bezier(0.25,0.46,0.45,0.94)" : animType === "hit" ? "cardHit 0.5s ease-out" : animType === "dying" ? "cardDie 0.6s ease-out forwards" : animType === "summoning" ? (c.rarity==="Prismatic"?"prismaticPop 0.7s ease-out, cardSummon 0.5s ease-out":"cardSummon 0.5s ease-out") : "none", transition: animType ? "none" : "all .18s", position: "relative" }}>
+    <div onClick={onClick} onContextMenu={(e) => { e.preventDefault(); if (onRightClick) onRightClick(); }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ width: 130, height: 180, cursor: (canSelect || isTarget) ? "pointer" : "default", userSelect: "none", border: `2px solid ${selected ? "#f0d840" : animType==="hit" ? "#ff3030" : (animType==="attacking"||animType==="attacking-down") ? "#ff8030" : isTarget && hov ? "#e84040" : hov && canSelect ? c.border + "aa" : c.border + "55"}`, borderRadius: 10, overflow: "hidden", opacity: animType==="dying" ? 1 : opac, boxShadow: animType==="hit" ? "0 0 28px #ff303088, 0 0 60px #ff202044" : (animType==="attacking"||animType==="attacking-down") ? `0 0 28px ${c.border}aa, 0 0 50px ${c.border}55` : selected ? `0 0 22px #f0d84066` : hov ? `0 6px 18px ${c.border}44` : "none", transform: animType ? "none" : selected ? "translateY(-8px)" : hov ? "translateY(-4px)" : "none", animation: animType === "attacking" ? "cardLunge 0.45s cubic-bezier(0.25,0.46,0.45,0.94)" : animType === "attacking-down" ? "cardLungeDown 0.45s cubic-bezier(0.25,0.46,0.45,0.94)" : animType === "hit" ? "cardHit 0.5s ease-out" : animType === "dying" ? "cardDie 0.6s ease-out forwards" : animType === "summoning" ? (c.rarity==="Prismatic"?"prismaticPop 0.7s ease-out, cardSummon 0.5s ease-out":"cardSummon 0.5s ease-out") : "none", transition: animType ? "none" : "all .18s", position: "relative" }}>
       {/* Full art */}
       <div style={{ position: "absolute", inset: 0 }}><CardArt card={c} /></div>
       {/* Bottom gradient */}
@@ -837,10 +837,10 @@ function Token({ c, selected, isTarget, canSelect, onClick, onRightClick, animTy
         {c.debuffNote && <div style={{ fontSize: 7, color: "#ff6060", fontWeight: 700, marginBottom: 1 }}>⬇ {c.debuffNote}</div>}
         {c.synTag && <div style={{ fontSize: 7, color: "#e8c8ff", fontWeight: 700, marginBottom: 2, background: "rgba(80,0,120,0.82)", border: "1px solid #c080ff88", borderRadius: 4, padding: "1px 4px", display: "inline-block", textShadow: "0 1px 3px rgba(0,0,0,0.9)", letterSpacing: 0.3 }}>✦ {c.synTag}</div>}
         {(kws.length > 0 || c.shielded) && <div style={{ display: "flex", gap: 2, flexWrap: "wrap", marginBottom: 2 }}>{kws.filter(k => k.name !== "Shield").map((k) => (<span key={k.name} style={{ fontSize: 6, padding: "1px 3px", borderRadius: 6, background: `${k.color}cc`, color: "#fff", border: `1px solid ${k.color}ee`, fontWeight: 700, textShadow: "0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.8)" }}>{k.icon}{k.name}</span>))}{c.shielded && <span style={{ fontSize: 6, padding: "1px 3px", borderRadius: 6, background: "rgba(40,100,200,0.85)", color: "#fff", border: "1px solid #60a0ffcc", fontWeight: 700 }}>♦ SHIELD</span>}</div>}
-        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, color: "#fff", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textShadow: "0 0 6px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.name}</div>
+        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#fff", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textShadow: "0 0 6px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.name}</div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 2 }}>
-          <span style={{ fontSize: 15, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#ff7050", textShadow: "0 0 8px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.currentAtk}</span>
-          <span style={{ fontSize: 15, fontFamily: "'Cinzel',serif", fontWeight: 700, color: pct < 0.4 ? "#e04040" : "#50c060", textShadow: "0 0 8px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.currentHp}</span>
+          <span style={{ fontSize: 19, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#ff7050", textShadow: "0 0 8px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.currentAtk}</span>
+          <span style={{ fontSize: 19, fontFamily: "'Cinzel',serif", fontWeight: 700, color: pct < 0.4 ? "#e04040" : "#50c060", textShadow: "0 0 8px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.currentHp}</span>
         </div>
       </div>
       {/* HP bar */}
@@ -861,7 +861,7 @@ function HandCard({ card, playable, onClick, onRightClick }) {
   const kws = KW.filter(k => (card.keywords || []).includes(k.name));
   return (
     <div style={{ position: "relative" }} onMouseEnter={() => { setHov(true); if (playable) SFX.play("card_hover"); }} onMouseLeave={() => setHov(false)}>
-      <div onClick={playable ? onClick : undefined} onContextMenu={onRightClick ? (e) => { e.preventDefault(); onRightClick(); } : undefined} style={{ width: 88, height: 124, flexShrink: 0, cursor: playable ? "pointer" : "not-allowed", opacity: playable ? 1 : 0.35, border: `2px solid ${isBP ? "#a81830" : hov && playable ? card.border : "#201c10"}`, borderRadius: 10, overflow: "hidden", transform: hov && playable ? "translateY(-22px) scale(1.05)" : "none", boxShadow: hov && playable ? `0 22px 38px ${card.border}66` : "none", transition: "all .2s", userSelect: "none", position: "relative" }}>
+      <div onClick={playable ? onClick : undefined} onContextMenu={onRightClick ? (e) => { e.preventDefault(); onRightClick(); } : undefined} style={{ width: 100, height: 140, flexShrink: 0, cursor: playable ? "pointer" : "not-allowed", opacity: playable ? 1 : 0.35, border: `2px solid ${isBP ? "#a81830" : hov && playable ? card.border : "#201c10"}`, borderRadius: 10, overflow: "hidden", transform: hov && playable ? "translateY(-22px) scale(1.05)" : "none", boxShadow: hov && playable ? `0 22px 38px ${card.border}66` : "none", transition: "all .2s", userSelect: "none", position: "relative" }}>
         {/* Full art */}
         <div style={{ position: "absolute", inset: 0 }}><CardArt card={card} /></div>
         {/* Bottom gradient */}
@@ -874,11 +874,11 @@ function HandCard({ card, playable, onClick, onRightClick }) {
         )}
         {/* Bottom: name + stats */}
         <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0 5px 4px", zIndex: 3 }}>
-          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 8, color: "#fff", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textShadow: "0 0 6px #000, 0 1px 4px #000, -1px 0 2px #000, 1px 0 2px #000", lineHeight: 1.2 }}>{card.name}</div>
+          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#fff", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textShadow: "0 0 6px #000, 0 1px 4px #000, -1px 0 2px #000, 1px 0 2px #000", lineHeight: 1.2 }}>{card.name}</div>
           {card.atk != null ? (
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
-              <span style={{ fontSize: 11, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#ff7050", textShadow: "0 0 6px #000, 0 1px 4px #000" }}>{card.currentAtk ?? card.atk}</span>
-              <span style={{ fontSize: 11, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#50c060", textShadow: "0 0 6px #000, 0 1px 4px #000" }}>{card.currentHp ?? card.hp}</span>
+              <span style={{ fontSize: 14, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#ff7050", textShadow: "0 0 6px #000, 0 1px 4px #000" }}>{card.currentAtk ?? card.atk}</span>
+              <span style={{ fontSize: 14, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#50c060", textShadow: "0 0 6px #000, 0 1px 4px #000" }}>{card.currentHp ?? card.hp}</span>
             </div>
           ) : (
             <div style={{ fontSize: 7, color: isEnv ? "#40c0e0" : "#d090d0", fontFamily: "'Cinzel',serif", marginTop: 2 }}>{isEnv ? "ENV" : "SPELL"}</div>
@@ -1783,7 +1783,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   const atkFace = async () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking" }); await new Promise(r => setTimeout(r, 380)); const dmg = att.currentAtk; vfx.add("damage", { amount: dmg, duration: 500 }); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if (s.playerZeusInPlay && (att.keywords || []).includes("Swift")) { s.playerLightningMeter = (s.playerLightningMeter || 0) + 1; if (s.playerLightningMeter >= 2) { s = fireLightningMeter(s, "player", vfx, (m) => { s.log = [...s.log.slice(-20), m]; }); } } s = resolveEffects("onAttack", att, s, "player", vfx); if (s.enemyHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 200)); setAnimUids({}); };
   const attCard = attacker ? g.playerBoard.find((c) => c.uid === attacker) : null;
 
-  return (<div style={{ maxWidth: 1400, margin: "0 auto", padding: "16px 12px 12px", background: "#000" }} onClick={() => { SFX.init(); }}>
+  return (<div style={{ width: "100%", padding: "12px 16px 12px", background: "#000", boxSizing: "border-box" }} onClick={() => { SFX.init(); }}>
     {previewCard && <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />}
     {/* Live Action Ticker */}
     {liveAction && (
@@ -1817,15 +1817,18 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         </div>
       </div>
     )}
-    {g.phase === "gameover" && (<div style={{ textAlign: "center", background: g.winner === "player" ? "linear-gradient(135deg,#060e04,#0e0c08)" : "linear-gradient(135deg,#120404,#0e0c08)", border: `1px solid ${g.winner === "player" ? "#4a9020" : "#b83030"}`, borderRadius: 14, padding: 36, marginBottom: 20, animation: "fadeIn 0.5s ease-out" }}>
-      <div style={{ fontSize: 56, marginBottom: 10, animation: "pulse 1s ease-in-out" }}>{g.winner === "player" ? "\u2728" : "\u2620"}</div>
-      <h3 style={{ fontFamily: "'Cinzel',serif", fontSize: 28, color: g.winner === "player" ? "#78cc45" : "#e05050", margin: "0 0 18px", textShadow: `0 0 30px ${g.winner === "player" ? "#78cc4566" : "#e0505066"}` }}>{g.winner === "player" ? "VICTORY" : "DEFEATED"}</h3>
-      <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-        <button onClick={() => { setGame(initGame()); setAttacker(null); setAiThink(false); }} style={{ padding: "11px 28px", background: "linear-gradient(135deg,#c89010,#f0c040)", border: "none", borderRadius: 8, fontFamily: "'Cinzel',serif", fontWeight: 700, fontSize: 12, letterSpacing: 2, color: "#1a1000", cursor: "pointer" }}>REMATCH</button>
-        <button onClick={onExit} style={{ padding: "11px 22px", background: "transparent", border: "1px solid #3a2c10", borderRadius: 8, fontFamily: "'Cinzel',serif", fontSize: 11, color: "#a09058", cursor: "pointer" }}>EXIT</button>
+    {g.phase === "gameover" && (<div style={{ position:"fixed", inset:0, zIndex:400, display:"flex", alignItems:"center", justifyContent:"center", background: g.winner === "player" ? "rgba(2,12,1,0.92)" : "rgba(12,2,2,0.92)", animation:"fadeIn 0.5s ease-out" }}>
+      <div style={{ textAlign:"center", padding:48 }}>
+        <div style={{ fontSize:90, marginBottom:16, animation:"pulse 1.2s ease-in-out infinite" }}>{g.winner === "player" ? "✨" : "💀"}</div>
+        <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:64, fontWeight:900, color: g.winner === "player" ? "#78cc45" : "#e05050", margin:"0 0 12px", textShadow:`0 0 60px ${g.winner === "player" ? "#78cc45" : "#e05050"}, 0 4px 12px rgba(0,0,0,0.9)`, letterSpacing:8 }}>{g.winner === "player" ? "VICTORY" : "DEFEATED"}</h2>
+        <p style={{ fontFamily:"'Cinzel',serif", fontSize:16, color:"#a09070", marginBottom:36, letterSpacing:2 }}>{g.winner === "player" ? "You crushed the enemy!" : "The enemy prevails..."}</p>
+        <div style={{ display:"flex", gap:14, justifyContent:"center" }}>
+          <button onClick={() => { setGame(initGame()); setAttacker(null); setAiThink(false); }} style={{ padding:"14px 36px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:10, fontFamily:"'Cinzel',serif", fontWeight:700, fontSize:14, letterSpacing:2, color:"#1a1000", cursor:"pointer", boxShadow:"0 0 24px #e8c06066" }}>REMATCH</button>
+          <button onClick={onExit} style={{ padding:"14px 28px", background:"transparent", border:"2px solid #3a2c10", borderRadius:10, fontFamily:"'Cinzel',serif", fontSize:13, color:"#a09058", cursor:"pointer" }}>EXIT</button>
+        </div>
       </div>
     </div>)}
-    <div style={{ display: "grid", gridTemplateColumns: "250px 1fr 270px", gap: 14 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "280px 1fr 300px", gap: 16 }}>
       {/* Left Panel — Synergy Tracker + Chat */}
       <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
         {/* Food Fight Synergy Tracker */}
@@ -2864,7 +2867,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     }
     return <span key={key}>{parts}</span>;
   };
-  return (<div style={{ maxWidth:1400, margin:"0 auto", padding:"16px 12px 12px", background:"linear-gradient(180deg,#0a0806 0%,#06080a 100%)" }} onClick={() => { SFX.init(); }}>
+  return (<div style={{ width:"100%", padding:"12px 16px 12px", background:"#000", boxSizing:"border-box" }} onClick={() => { SFX.init(); }}>
     {previewCard && <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />}
     {/* Forfeit confirm */}
     {/* In-battle profile popup */}
@@ -2948,13 +2951,15 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         {syncing && <span style={{ fontSize:8, color:"#806040", fontFamily:"'Cinzel',serif" }}>SYNC…</span>}
       </div>
     </div>)}
-    {gs.winner && (<div style={{ textAlign:"center", background: myWon?"linear-gradient(135deg,#060e04,#0e0c08)":"linear-gradient(135deg,#120404,#0e0c08)", border:`1px solid ${myWon?"#4a9020":"#b83030"}`, borderRadius:14, padding:36, marginBottom:20, animation:"fadeIn 0.5s" }}>
-      <div style={{ fontSize:56, marginBottom:10 }}>{myWon?"✨":"💀"}</div>
-      <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:28, color:myWon?"#78cc45":"#e05050", margin:"0 0 18px" }}>{myWon?"VICTORY":"DEFEATED"}</h3>
-      <p style={{ fontSize:13, color:"#a09070" }}>{myWon?`You defeated ${opponentName}!`:`${opponentName} wins this round.`}</p>
-      <button onClick={onExit} style={{ marginTop:16, padding:"11px 28px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontWeight:700, fontSize:12, letterSpacing:2, color:"#1a1000", cursor:"pointer" }}>EXIT</button>
+    {gs.winner && (<div style={{ position:"fixed", inset:0, zIndex:400, display:"flex", alignItems:"center", justifyContent:"center", background: myWon?"rgba(2,12,1,0.92)":"rgba(12,2,2,0.92)", animation:"fadeIn 0.5s" }}>
+      <div style={{ textAlign:"center", padding:48 }}>
+        <div style={{ fontSize:90, marginBottom:16, animation:"pulse 1.2s ease-in-out infinite" }}>{myWon?"✨":"💀"}</div>
+        <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:64, fontWeight:900, color:myWon?"#78cc45":"#e05050", margin:"0 0 12px", textShadow:`0 0 60px ${myWon?"#78cc45":"#e05050"}, 0 4px 12px rgba(0,0,0,0.9)`, letterSpacing:8 }}>{myWon?"VICTORY":"DEFEATED"}</h2>
+        <p style={{ fontFamily:"'Cinzel',serif", fontSize:16, color:"#a09070", marginBottom:36, letterSpacing:2 }}>{myWon?`You defeated ${opponentName}!`:`${opponentName} wins this round.`}</p>
+        <button onClick={onExit} style={{ padding:"14px 36px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:10, fontFamily:"'Cinzel',serif", fontWeight:700, fontSize:14, letterSpacing:2, color:"#1a1000", cursor:"pointer", boxShadow:"0 0 24px #e8c06066" }}>EXIT</button>
+      </div>
     </div>)}
-    <div style={{ display:"grid", gridTemplateColumns:"250px 1fr 270px", gap:14 }}>
+    <div style={{ display:"grid", gridTemplateColumns:"280px 1fr 300px", gap:16 }}>
       {/* Left Panel — Synergy Tracker + Chat */}
       <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
         {/* Food Fight Synergy Tracker */}
