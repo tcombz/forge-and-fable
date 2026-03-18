@@ -1690,10 +1690,6 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         }
         s.firstCardPlayedThisTurn = true;
         s = resolveEffects("onPlay", card, s, "player", vfx, targetUid ? { targetUid } : {});
-        if (s.playerZeusInPlay) {
-          s.playerLightningMeter = (s.playerLightningMeter || 0) + 1;
-          if (s.playerLightningMeter >= 2) { const logRef2 = []; s = fireLightningMeter(s, "player", vfx, (m) => { logRef2.push(m); }); s.log = [...s.log.slice(-20), ...logRef2]; }
-        }
         if (s.enemyHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; }
         else if (s.playerHP <= 0) { s.phase = "gameover"; s.winner = "enemy"; s.log = [...s.log, "Defeated..."]; }
         return s;
@@ -2398,10 +2394,6 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         else { ai.enemyHP -= 1; ai.log = [...ai.log, "💥 Catapult hits enemy face!"]; }
       }
       ai = resolveEffects("onPlay", card, ai, "player", vfxInst);
-      if (ai.playerZeusInPlay) {
-        ai.playerLightningMeter = (ai.playerLightningMeter||0) + 1;
-        if (ai.playerLightningMeter >= 2) { const pvpLog=[]; ai = fireLightningMeter(ai,"player",null,m=>pvpLog.push(m)); ai.log=[...ai.log.slice(-20),...pvpLog]; }
-      }
       if (ai.enemyHP <= 0) { ai.winner = "player"; ai.log = [...ai.log, "Victory!"]; }
       else if (ai.playerHP <= 0) { ai.winner = "enemy"; ai.log = [...ai.log, "Defeated..."]; }
       const out1 = fromAI(ai, role, gs);
