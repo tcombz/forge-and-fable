@@ -862,11 +862,17 @@ function HandCard({ card, playable, onClick, onRightClick, onDragStart }) {
   const kws = KW.filter(k => (card.keywords || []).includes(k.name));
   return (
     <div
-      style={{ position: "relative" }}
+      style={{ position: "relative", zIndex: hov && playable ? 20 : undefined }}
       onMouseEnter={() => { if (!dragging) { setHov(true); if (playable) SFX.play("card_hover"); } }}
       onMouseLeave={() => setHov(false)}
       draggable={playable && !!onDragStart}
-      onDragStart={playable && onDragStart ? (e) => { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", card.uid); setDragging(true); setHov(false); onDragStart(card); } : undefined}
+      onDragStart={playable && onDragStart ? (e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        e.dataTransfer.setDragImage(e.currentTarget, e.clientX - rect.left, e.clientY - rect.top);
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", card.uid);
+        setDragging(true); setHov(false); onDragStart(card);
+      } : undefined}
       onDragEnd={() => setDragging(false)}
     >
       <div onClick={playable ? onClick : undefined} onContextMenu={onRightClick ? (e) => { e.preventDefault(); onRightClick(); } : undefined} style={{ width: 100, height: 140, flexShrink: 0, cursor: playable ? (onDragStart ? "grab" : "pointer") : "not-allowed", opacity: playable ? (dragging ? 0.45 : 1) : 0.35, border: `2px solid ${isBP ? "#a81830" : hov && playable ? card.border : "#201c10"}`, borderRadius: 10, overflow: "hidden", transform: hov && playable && !dragging ? "translateY(-22px) scale(1.05)" : "none", boxShadow: hov && playable && !dragging ? `0 22px 38px ${card.border}66` : "none", transition: "all .2s", userSelect: "none", position: "relative" }}>
@@ -1994,7 +2000,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
             {g.playerBoard.length === 0 ? <span style={{ fontSize: 10, color: dragOverField ? "#78cc45" : "#181408", letterSpacing: 3 }}>{dragOverField ? "DROP TO PLAY" : "PLAY A CARD"}</span> : g.playerBoard.map((c) => (<Token key={c.uid} c={resolveCardArt(c, user?.selectedArts || {})} animType={animUids[c.uid]} selected={attacker === c.uid} isTarget={false} canSelect={g.phase === "player" && c.canAttack && !c.hasAttacked && !aiThink} onClick={() => selectAtt(c)} onRightClick={() => { SFX.play("ability"); setPreviewCard(c); }} />))}
           </div>
           <div style={{ borderTop: "1px solid #2a2010", paddingTop: 10, marginBottom: 10, flex:"0 0 auto" }}>
-            <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "nowrap", overflowX: "auto" }}>
+            <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "nowrap", overflowX: "auto", paddingTop: 28, marginTop: -28 }}>
               {g.playerHand.map((card) => { const isEnv = card.type === "environment"; const isSpl = card.type === "spell"; const eff = getEffectiveCost(card, g.environment, "player"); const cp = g.phase === "player" && !aiThink && (isEnv || isSpl || g.playerBoard.length < CFG.maxBoard) && (card.bloodpact ? card.cost < g.playerHP : eff <= g.playerEnergy); return (<HandCard key={card.uid} card={resolveCardArt({ ...card, cost: eff }, user?.selectedArts || {})} playable={cp} onClick={() => playCard(card)} onRightClick={() => { SFX.play("card_inspect"); setPreviewCard(card); }} onDragStart={(c) => { dragCardRef.current = c; }} />); })}
             </div>
           </div>
