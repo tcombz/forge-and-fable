@@ -6141,9 +6141,10 @@ export default function App() {
     setGlobalChallenge(null);
     const { data: match, error } = await supabase.from("matches").insert([{
       player1_id: saved.fromId, player2_id: user.id,
-      status: "active", mode: "casual", created_at: new Date().toISOString()
+      status: "active"
     }]).select().single();
-    if (match && !error) {
+    if (error || !match) { console.error("match insert failed:", error); return; }
+    if (match) {
       const ch = supabase.channel(`challenge:${saved.fromId}`);
       ch.subscribe((status) => {
         if (status === "SUBSCRIBED") {
