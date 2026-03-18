@@ -3198,8 +3198,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
             style={{ height:182, flex:"0 0 auto", display:"flex", gap:8, flexWrap:"nowrap", justifyContent:"center", alignItems:"center", overflowX:"auto", overflowY:"visible", scrollbarWidth:"thin", marginBottom:6, borderRadius:8, border: dragOverField ? "2px dashed #78cc4599" : "2px dashed transparent", background: dragOverField ? "rgba(100,200,50,0.07)" : "transparent", transition:"all .15s" }}>
             {ai.playerBoard.length===0?<span style={{ fontSize:10, color:dragOverField?"#78cc45":"#181408", letterSpacing:3 }}>{dragOverField?"DROP TO PLAY":isMyTurn?"PLAY A CARD":"WAITING..."}</span>:ai.playerBoard.map((c)=>(<Token key={c.uid} c={resolveCardArt(c,myRole==="p1"?gs?.p1Arts||{}:gs?.p2Arts||{})} animType={animUids[c.uid]} selected={attacker===c.uid} isTarget={false} canSelect={isMyTurn&&c.canAttack&&!c.hasAttacked&&!syncing} onClick={()=>selectAtt(c)} onRightClick={()=>setPreviewCard(c)}/>))}
           </div>
-          <div style={{ borderTop:"1px solid #181408", paddingTop:10, marginBottom:10, flex:"0 0 auto" }}>
-            <div style={{ display:"flex", gap:6, justifyContent:"center", flexWrap:"nowrap", overflowX:"auto", overflowY:"visible" }}>
+          <div style={{ borderTop:"1px solid #181408", paddingTop:38, marginTop:-28, marginBottom:6, flex:"0 0 auto", overflow:"visible", position:"relative", zIndex:10 }}>
+            <div style={{ display:"flex", gap:6, justifyContent:"center", flexWrap:"nowrap", overflow:"visible" }}>
               {ai.playerHand.map((card)=>{
                 const needsAllies=(card.type==="spell")&&(card.effects||[]).some(e=>["buff_allies","heal_all_allies","buff_random_ally","buff_keyword_allies"].includes(e.effect));
                 const eff=getEffectiveCost(card,ai.environment);
@@ -5830,7 +5830,7 @@ function CommunityScreen({ user }) {
   const [communityCards, setCommunityCards] = useState([]);
   const [posting, setPosting] = useState(false);
   const [myVotes, setMyVotes] = useState(() => { try { return JSON.parse(localStorage.getItem("community_votes")||"{}"); } catch(_) { return {}; } });
-  const [activeTab, setActiveTab] = useState("forge"); // "forge" | "wall"
+  const [activeTab, setActiveTab] = useState("forge"); // "forge" | "wall" | "feedback" | "lore" | "guide"
   const [tableError, setTableError] = useState(null);
   const [postError, setPostError] = useState(null);
 
@@ -5915,8 +5915,8 @@ CREATE POLICY "vote" ON community_cards FOR UPDATE USING (true);`;
         <p style={{ fontSize:12, color:"#806040", maxWidth:460, margin:"0 auto", lineHeight:1.8 }}>Describe your card idea. The forge generates a full card — name, abilities, faction, stats. Post it to the community for votes.</p>
       </div>
       {/* Tab switcher */}
-      <div style={{ display:"flex", justifyContent:"center", gap:0, marginBottom:24, border:"1px solid #3a2c10", borderRadius:10, overflow:"hidden", maxWidth:320, margin:"0 auto 28px" }}>
-        {[["forge","⚗ FORGE"],["wall","🗳 VOTE WALL"],["feedback","💬 FEEDBACK"]].map(([id,label])=>(
+      <div style={{ display:"flex", justifyContent:"center", gap:0, marginBottom:24, border:"1px solid #3a2c10", borderRadius:10, overflow:"hidden", maxWidth:600, margin:"0 auto 28px" }}>
+        {[["forge","⚗ FORGE"],["wall","🗳 VOTE WALL"],["feedback","💬 FEEDBACK"],["lore","📖 LORE"],["guide","◉ GUIDE"]].map(([id,label])=>(
           <button key={id} onClick={()=>setActiveTab(id)} style={{ flex:1, padding:"10px 0", fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, letterSpacing:2, color:activeTab===id?"#1a1000":"#806040", background:activeTab===id?"linear-gradient(135deg,#c89010,#f0c040)":"transparent", border:"none", cursor:"pointer", transition:"all .18s" }}>{label}</button>
         ))}
       </div>
@@ -6029,6 +6029,8 @@ CREATE POLICY "vote" ON community_cards FOR UPDATE USING (true);`;
       )}
 
       {activeTab === "feedback" && <FeedbackWall user={user} />}
+      {activeTab === "lore" && <LoreScreen />}
+      {activeTab === "guide" && <GuideScreen />}
     </div>
   );
 }
@@ -6039,13 +6041,10 @@ const pvpForfeitRef = { current: null };
 
 const NAV = [
   { id: "home",       label: "Home",    icon: "⬡" },
-  { id: "play",       label: "Battle",  icon: "⚔" },
   { id: "store",      label: "Store",   icon: "◈" },
+  { id: "play",       label: "Battle",  icon: "⚔" },
   { id: "collection", label: "Cards",   icon: "❖" },
-  { id: "profile",    label: "Profile", icon: "🏆" },
-  { id: "lore",       label: "Lore",    icon: "📖" },
   { id: "community",  label: "Hub",     icon: "✦" },
-  { id: "howto",      label: "Guide",   icon: "◉" },
 ];
 
 // ═══ ALPHA KEY ADMIN PANEL (tcombz only) ═════════════════════════════════════
@@ -6395,6 +6394,32 @@ function PlayerSidebar({ user, onUpdateUser, onlineIds, onClose, onChallenge, on
           )}
         </div>
 
+        {/* Match History */}
+        {(user?.matchHistory||[]).length > 0 && (
+          <div style={{ padding:"10px 16px 10px", borderTop:"1px solid #1a1408", flexShrink:0 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", letterSpacing:3, marginBottom:8, fontWeight:700 }}>MATCH HISTORY</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:3, maxHeight:160, overflowY:"auto" }}>
+              {(user.matchHistory||[]).slice(0,20).map((h,i) => (
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"5px 8px", background:"rgba(255,255,255,0.02)", borderRadius:7, border:"1px solid #1a1408" }}>
+                  <div style={{ width:8, height:8, borderRadius:"50%", background:h.result==="W"?"#78cc45":"#e05050", flexShrink:0, boxShadow:h.result==="W"?"0 0 6px #78cc4566":"0 0 6px #e0505066" }} />
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#d0b878", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{h.result==="W"?"W":"L"} · {h.opponent||"Unknown"}</div>
+                    <div style={{ fontSize:8, color:"#504028", fontFamily:"'Cinzel',serif" }}>{h.ranked?"Ranked":"Casual"}{h.turns?" · "+h.turns+" turns":""}</div>
+                  </div>
+                  {h.ratingDelta != null && <div style={{ fontSize:9, fontFamily:"'Cinzel',serif", color:h.ratingDelta>=0?"#78cc45":"#e05050", flexShrink:0 }}>{h.ratingDelta>=0?"+":""}{h.ratingDelta}</div>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Admin — alpha keys (tcombz / sncombz only) */}
+        {(user?.name?.toLowerCase() === "tcombz" || user?.email === "sncombz@gmail.com" || user?.email === "tylercombz2@me.com") && (
+          <div style={{ padding:"10px 16px 6px", borderTop:"1px solid #1a1408", flexShrink:0 }}>
+            <AlphaKeyAdminPanel />
+          </div>
+        )}
+
         {/* Footer */}
         <div style={{ padding:"10px 16px 16px", borderTop:"1px solid #1a1408", marginTop:"auto", display:"flex", flexDirection:"column", gap:6, flexShrink:0 }}>
           <button onClick={onLogout} style={{ width:"100%", padding:"9px", background:"rgba(160,20,20,0.1)", border:"1px solid #4a1010", borderRadius:8, color:"#a05040", fontFamily:"'Cinzel',serif", fontSize:10, cursor:"pointer", letterSpacing:1 }}>SIGN OUT</button>
@@ -6670,10 +6695,7 @@ export default function App() {
       {tab === "play" && <GameTab user={user} onUpdateUser={update} setInPvpMatch={setInPvpMatch} setMatchActive={setMatchActive} pendingDuel={pendingDuel} clearPendingDuel={() => setPendingDuel(null)} />}
       {tab === "store" && <StoreScreen user={user} onUpdateUser={update} />}
       {tab === "collection" && <CollectionScreen user={user} onUpdateUser={update} onDeckBuilding={setDeckBuilding} />}
-      {tab === "profile" && <PlayerProfileScreen user={user} />}
-      {tab === "lore" && <LoreScreen />}
       {tab === "community" && <CommunityScreen user={user} />}
-      {tab === "howto" && <GuideScreen />}
       {!inBattle && <footer style={{ borderTop: "1px solid #1e1a0e", padding: 22, textAlign: "center" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, color: "#40301a" }}>Forge {"&"} Fable</div><p style={{ fontSize: 9, color: "#30280e", margin: "4px 0 0", letterSpacing: 1 }}>{CURRENT_PATCH}: FABLES CARDS LIVE · ZEUS LIGHTNING METER · HADES SOUL HARVEST · CERBERUS WHELP · MEDUSA'S GAZE</p></footer>}
     </div>
     <MusicPlayer />
