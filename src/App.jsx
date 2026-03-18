@@ -3504,7 +3504,7 @@ function MatchmakingScreen({ user, ranked, onMatch, onCancel, onRetry }) {
   );
 }
 // ═══ MATCH SETUP ═════════════════════════════════════════════
-function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive }) {
+function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDuel, clearPendingDuel }) {
   const [matchConfig, setMatchConfig] = useState(null);
   const [matchmaking, setMatchmaking] = useState(false);
   const [ranked, setRanked] = useState(() => localStorage.getItem("fnf_ranked") === "true");
@@ -3517,6 +3517,31 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive }) {
   const pvpDeck      = resolveDeck(pvpDeckVal);
   const userRank = getRank(user?.rankedRating);
   if (matchmaking) return (<MatchmakingScreen key={matchmaking} user={user} ranked={ranked} onMatch={(cfg) => { setMatchmaking(false); const cfg2 = { mode:"pvp", ranked, playerDeck: pvpDeck?.cards || null, ...cfg }; setMatchConfig(cfg2); setMatchActive?.(true); }} onCancel={() => setMatchmaking(false)} onRetry={() => { setMatchmaking(false); setTimeout(() => setMatchmaking(true), 80); }} />);
+  // Friend duel — deck selection before entering
+  if (pendingDuel && !matchConfig) return (
+    <div style={{ maxWidth:480, margin:"0 auto", padding:"60px 24px", textAlign:"center" }}>
+      <div style={{ fontSize:42, marginBottom:12 }}>⚔️</div>
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:"#e8c060", marginBottom:6, letterSpacing:1 }}>DUEL CHALLENGE</div>
+      <div style={{ fontSize:14, color:"#d0c098", marginBottom:28 }}>vs <span style={{ color:"#f0e0a0", fontWeight:700 }}>{pendingDuel.opponentName}</span></div>
+      <div style={{ background:"linear-gradient(160deg,#141010,#0e0c08)", border:"1px solid #3a2010", borderRadius:14, padding:24, marginBottom:20, textAlign:"left" }}>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#e8c060", letterSpacing:2, marginBottom:12 }}>CHOOSE YOUR DECK</div>
+        <select value={pvpDeckVal} onChange={(e) => { setPvpDeckVal(e.target.value); localStorage.setItem("fnf_pvp_deck", e.target.value); }} style={{ width:"100%", padding:"10px 12px", background:"#0c0a06", border:"1px solid #3a2010", borderRadius:7, color:"#f0e8d8", fontFamily:"'Cinzel',serif", fontSize:11, outline:"none" }}>
+          <option value="">-- Random deck --</option>
+          <option value="starter">Starter Deck</option>
+          {decks.map((d, i) => (<option key={i} value={i}>{d.name} ({d.cards?.length || 0} cards)</option>))}
+        </select>
+      </div>
+      <div style={{ display:"flex", gap:12, justifyContent:"center" }}>
+        <button onClick={() => {
+          const cfg = { mode:"pvp", ranked:false, matchId: pendingDuel.matchId, opponentName: pendingDuel.opponentName, opponentId: pendingDuel.opponentId, playerDeck: pvpDeck?.cards || null };
+          clearPendingDuel();
+          setMatchConfig(cfg);
+          setMatchActive?.(true);
+        }} style={{ padding:"14px 36px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:10, fontFamily:"'Cinzel',serif", fontSize:14, fontWeight:700, color:"#1a1000", cursor:"pointer", letterSpacing:1 }}>ENTER DUEL</button>
+        <button onClick={() => clearPendingDuel()} style={{ padding:"14px 20px", background:"transparent", border:"1px solid #3a1010", borderRadius:10, fontFamily:"'Cinzel',serif", fontSize:12, color:"#806040", cursor:"pointer" }}>DECLINE</button>
+      </div>
+    </div>
+  );
   if (!matchConfig) return (<div style={{ maxWidth:720, margin:"0 auto", padding:"60px 24px 60px", display:"flex", flexDirection:"column", alignItems:"center" }}><div style={{ width:"100%" }}>
     <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:28, fontWeight:700, color:"#e8c060", margin:"0 0 4px", textAlign:"center" }}>Battle Setup</h2>
     <p style={{ fontSize:13, color:"#a09070", margin:"0 0 28px", textAlign:"center" }}>Choose your battle mode!</p>
@@ -6080,6 +6105,7 @@ export default function App() {
   const [tab, setTab] = useState("home"); const { user, loading, login, logout, update, completeProfile } = useAuth(); const [showProfile, setShowProfile] = useState(false); const [showPatchNotes, setShowPatchNotes] = useState(false); const [inPvpMatch, setInPvpMatch] = useState(false); const [navLeaveModal, setNavLeaveModal] = useState(null); const [avatarErr, setAvatarErr] = useState(""); const [navHovered, setNavHovered] = useState(false); const [matchActive, setMatchActive] = useState(false); const [histPopup, setHistPopup] = useState(null); const [deckBuilding, setDeckBuilding] = useState(false); // { targetTab }
   const [friendBadge, setFriendBadge] = useState(0);
   const [globalChallenge, setGlobalChallenge] = useState(null); // { fromId, fromName, fromAvatar }
+  const [pendingDuel, setPendingDuel] = useState(null); // { matchId, opponentName, opponentId }
   const inBattle = matchActive;
   // Show patch notes once per account+device — triggers only when user logs in
   useEffect(() => {
@@ -6101,6 +6127,11 @@ export default function App() {
         setFriendBadge(p => p + 1);
       })
       .on("broadcast", { event: "challenge_cancel" }, () => setGlobalChallenge(null))
+      .on("broadcast", { event: "challenge_accepted" }, ({ payload }) => {
+        setGlobalChallenge(null);
+        setPendingDuel({ matchId: payload.matchId, opponentName: payload.accepterName, opponentId: null });
+        setTab("play");
+      })
       .subscribe();
     return () => { supabase.removeChannel(friendCh); supabase.removeChannel(challengeCh); };
   }, [user?.id]); // eslint-disable-line
@@ -6120,6 +6151,7 @@ export default function App() {
             .finally(() => supabase.removeChannel(ch));
         }
       });
+      setPendingDuel({ matchId: match.id, opponentName: saved.fromName, opponentId: saved.fromId });
       setTab("play");
     }
   };
@@ -6383,7 +6415,7 @@ export default function App() {
     </>)}
     <div style={{ position: "relative", paddingTop: inBattle ? 4 : 0 }} onClick={() => setShowProfile(false)}>
       {tab === "home" && <HomeScreen setTab={setTab} user={user} />}
-      {tab === "play" && <GameTab user={user} onUpdateUser={update} setInPvpMatch={setInPvpMatch} setMatchActive={setMatchActive} />}
+      {tab === "play" && <GameTab user={user} onUpdateUser={update} setInPvpMatch={setInPvpMatch} setMatchActive={setMatchActive} pendingDuel={pendingDuel} clearPendingDuel={() => setPendingDuel(null)} />}
       {tab === "store" && <StoreScreen user={user} onUpdateUser={update} />}
       {tab === "collection" && <CollectionScreen user={user} onUpdateUser={update} onDeckBuilding={setDeckBuilding} />}
       {tab === "profile" && <PlayerProfileScreen user={user} />}
