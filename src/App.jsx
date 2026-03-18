@@ -5259,7 +5259,7 @@ function FriendsScreen({ user, onStartDuel }) {
     if (!search.trim()) return;
     setSearching(true);
     setSearchErr(null);
-    const { data, error } = await supabase.from("profiles").select("id,name,avatar_url,avatarUrl").ilike("name", `%${search.trim()}%`).limit(8);
+    const { data, error } = await supabase.from("profiles").select("id,name,avatar_url").ilike("name", `%${search.trim()}%`).limit(8);
     if (error) {
       setSearchErr(error.message.includes("permission") || error.code === "42501"
         ? "blocked_rls"
@@ -5267,10 +5267,7 @@ function FriendsScreen({ user, onStartDuel }) {
       setSearching(false);
       return;
     }
-    const results = (data || []).filter(p => p.id !== user?.id).map(p => ({
-      ...p,
-      avatar_url: p.avatar_url || p.avatarUrl || null,
-    }));
+    const results = (data || []).filter(p => p.id !== user?.id);
     if (results.length === 0 && data?.length === 0) setSearchErr("no_results");
     setSearchResults(results);
     setSearching(false);
