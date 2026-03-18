@@ -6435,6 +6435,12 @@ export default function App() {
   const [globalChallenge, setGlobalChallenge] = useState(null); // { fromId, fromName, fromAvatar }
   const [pendingDuel, setPendingDuel] = useState(null); // { matchId, opponentName, opponentId }
   const [declinedToast, setDeclinedToast] = useState(null); // name of player who declined
+  const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
+  useEffect(() => {
+    const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFsChange);
+    return () => document.removeEventListener("fullscreenchange", onFsChange);
+  }, []);
   const inBattle = matchActive;
   // Show patch notes once per account+device — triggers only when user logs in
   useEffect(() => {
@@ -6592,6 +6598,14 @@ export default function App() {
             }} style={{ padding:"12px 20px", background:"transparent", border:"1px solid #4a2010", borderRadius:10, fontFamily:"'Cinzel',serif", fontSize:12, color:"#806040", cursor:"pointer" }}>DECLINE</button>
           </div>
         </div>
+      </div>
+    )}
+    {/* Fullscreen nudge — shown in battle when not fullscreen */}
+    {inBattle && !isFullscreen && (
+      <div style={{ position:"fixed", bottom:72, left:"50%", transform:"translateX(-50%)", zIndex:800, background:"linear-gradient(135deg,#0e0c08,#1a1608)", border:"1px solid #e8c06033", borderRadius:20, padding:"8px 18px", display:"flex", alignItems:"center", gap:10, boxShadow:"0 4px 24px rgba(0,0,0,0.8)", animation:"fadeIn 0.4s ease-out", pointerEvents:"none", whiteSpace:"nowrap" }}>
+        <span style={{ fontSize:14 }}>⛶</span>
+        <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#c0a050", letterSpacing:1 }}>We recommend <strong style={{ color:"#e8c060" }}>full screen</strong> for the best experience</span>
+        <span style={{ fontSize:9, color:"#504028", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>F11</span>
       </div>
     )}
     {/* Match declined toast */}
