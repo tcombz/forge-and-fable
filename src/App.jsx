@@ -2368,11 +2368,6 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         return fromAI(ai, role, gs);
       } else if (card.type === "spell") {
         ai.log = [...ai.log, `${(gs[role+"Name"]||"You")} casts ${card.name}!`];
-        // Lightning meter: any spell charges it
-        if (ai.playerZeusInPlay) {
-          ai.playerLightningMeter = (ai.playerLightningMeter||0) + 1;
-          if (ai.playerLightningMeter >= 2) { const pvpLog = []; ai = fireLightningMeter(ai, "player", null, m => pvpLog.push(m)); ai.log = [...ai.log.slice(-20), ...pvpLog]; }
-        }
       } else {
         const resBonus = (card.keywords||[]).includes("Resonate") ? ai.enemyBoard.length : 0;
         const inst = { ...makeInst(card, "pb"), canAttack: (card.keywords||[]).includes("Swift"), hasAttacked: false, currentAtk: card.atk + resBonus };
