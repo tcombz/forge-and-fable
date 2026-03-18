@@ -1921,7 +1921,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         {/* Environment particles */}
         {envTheme && <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1 }}><FloatingParticles count={20} color={envTheme.particle} speed={0.6} /></div>}
         {/* Enemy zone */}
-        <div style={{ background: "linear-gradient(180deg, rgba(160,30,20,0.22) 0%, rgba(100,18,12,0.18) 100%)", borderBottom: "1px solid #7a3020", padding: "7px 12px", position: "relative", zIndex: 2, boxShadow: "inset 0 -4px 20px rgba(180,40,20,0.12)", flex:"0 0 auto" }}>
+        <div style={{ background: "linear-gradient(180deg, rgba(180,30,20,0.28) 0%, rgba(120,18,12,0.22) 100%)", borderBottom: "2px solid #8a2010", borderLeft: "3px solid #c03020", padding: "7px 12px", position: "relative", zIndex: 2, boxShadow: "inset 0 -6px 24px rgba(200,40,20,0.18), inset 3px 0 12px rgba(200,40,20,0.12)", flex:"0 0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#3a0c0c,#200808)", border: "2px solid #a0202044", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "#cc6666", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>AI</div>
@@ -1960,7 +1960,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
           </div>
         </div>
         {/* Centre divider with timer */}
-        <div style={{ padding: "5px 14px", background: envTheme ? "rgba(0,0,0,0.25)" : "#121008", borderBottom: "1px solid #1c1408", borderTop: "1px solid #1c1408", display: "flex", alignItems: "center", gap: 10, position: "relative", zIndex: 2 }}>
+        <div style={{ padding: "5px 14px", background: envTheme ? "rgba(0,0,0,0.35)" : "#0e0c08", borderBottom: "2px solid #3a1a0a", borderTop: "2px solid #1a3a0a", display: "flex", alignItems: "center", gap: 10, position: "relative", zIndex: 2 }}>
           {g.phase === "player" && !aiThink ? (
             <TurnTimer key={timerKey} active={true} onExpire={endTurn} turnNum={g.turn}>
               {attCard ? (
@@ -1984,7 +1984,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
           )}
         </div>
         {/* Player zone */}
-        <div style={{ background: "linear-gradient(180deg, rgba(20,80,10,0.18) 0%, rgba(30,100,15,0.24) 100%)", padding: "7px 12px", position: "relative", zIndex: 2, boxShadow: "inset 0 4px 20px rgba(20,120,10,0.14)", flex:1, display:"flex", flexDirection:"column", overflow:"visible", minHeight:0 }}>
+        <div style={{ background: "linear-gradient(180deg, rgba(20,100,10,0.22) 0%, rgba(30,130,15,0.28) 100%)", borderLeft: "3px solid #307030", padding: "7px 12px", position: "relative", zIndex: 2, boxShadow: "inset 0 6px 24px rgba(20,160,10,0.18), inset 3px 0 12px rgba(20,160,10,0.12)", flex:1, display:"flex", flexDirection:"column", overflow:"visible", minHeight:0 }}>
           {g.environment?.owner === "player" && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 12px", background:`${g.environment.border}18`, border:`1px solid ${g.environment.border}33`, borderRadius:6, marginBottom:5, animation:"slideDown 0.3s" }}>
             <div style={{ width:6, height:6, borderRadius:"50%", background:g.environment.border, boxShadow:`0 0 6px ${g.environment.border}`, animation:"pulse 2s infinite", flexShrink:0 }} />
             <span style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:g.environment.border, fontWeight:700, flexShrink:0 }}>{g.environment.name}</span>
@@ -1999,8 +1999,8 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
             style={{ height:182, flex:"0 0 auto", display:"flex", gap:8, flexWrap:"nowrap", justifyContent:"center", alignItems:"center", overflowX:"auto", overflowY:"visible", scrollbarWidth:"thin", marginBottom:6, borderRadius:8, border: dragOverField ? "2px dashed #78cc4599" : "2px dashed transparent", background: dragOverField ? "rgba(100,200,50,0.07)" : "transparent", transition:"all .15s" }}>
             {g.playerBoard.length === 0 ? <span style={{ fontSize: 10, color: dragOverField ? "#78cc45" : "#181408", letterSpacing: 3 }}>{dragOverField ? "DROP TO PLAY" : "PLAY A CARD"}</span> : g.playerBoard.map((c) => (<Token key={c.uid} c={resolveCardArt(c, user?.selectedArts || {})} animType={animUids[c.uid]} selected={attacker === c.uid} isTarget={false} canSelect={g.phase === "player" && c.canAttack && !c.hasAttacked && !aiThink} onClick={() => selectAtt(c)} onRightClick={() => { SFX.play("ability"); setPreviewCard(c); }} />))}
           </div>
-          <div style={{ borderTop: "1px solid #2a2010", paddingTop: 10, marginBottom: 10, flex:"0 0 auto" }}>
-            <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "nowrap", overflowX: "auto" }}>
+          <div style={{ borderTop: "1px solid #1a2010", paddingTop: 38, marginTop: -28, marginBottom: 6, flex:"0 0 auto", overflow:"visible", position:"relative", zIndex:10 }}>
+            <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "nowrap", overflow:"visible" }}>
               {g.playerHand.map((card) => { const isEnv = card.type === "environment"; const isSpl = card.type === "spell"; const eff = getEffectiveCost(card, g.environment, "player"); const cp = g.phase === "player" && !aiThink && (isEnv || isSpl || g.playerBoard.length < CFG.maxBoard) && (card.bloodpact ? card.cost < g.playerHP : eff <= g.playerEnergy); return (<HandCard key={card.uid} card={resolveCardArt({ ...card, cost: eff }, user?.selectedArts || {})} playable={cp} onClick={() => playCard(card)} onRightClick={() => { SFX.play("card_inspect"); setPreviewCard(card); }} onDragStart={(c) => { dragCardRef.current = c; }} />); })}
             </div>
           </div>
@@ -3131,7 +3131,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           </div>
         )}
         {/* Opponent zone — use opponent's env theme */}
-        <div style={{ background: opEnvTheme ? opEnvTheme.bg : "rgba(180,40,40,0.09)", borderBottom:"1px solid #3a1818", padding:"7px 12px", position:"relative", zIndex:2, transition:"background 1.5s ease", flex:"0 0 auto" }}>
+        <div style={{ background: opEnvTheme ? opEnvTheme.bg : "rgba(180,30,20,0.22)", borderBottom:"2px solid #8a2010", borderLeft:"3px solid #c03020", padding:"7px 12px", position:"relative", zIndex:2, transition:"background 1.5s ease", boxShadow:"inset 0 -6px 24px rgba(200,40,20,0.14), inset 3px 0 12px rgba(200,40,20,0.1)", flex:"0 0 auto" }}>
           {opEnvTheme && <div style={{ position:"absolute", inset:0, pointerEvents:"none", zIndex:1 }}><FloatingParticles count={opEnvTheme.pCount||20} color={opEnvTheme.particle} speed={opEnvTheme.pSpeed||0.6} shape={opEnvTheme.pShape||"circle"} direction={opEnvTheme.pDir||"up"} /></div>}
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -3164,7 +3164,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           </div>
         </div>
         {/* Divider with timer */}
-        <div style={{ padding:"5px 14px", background:envTheme?"rgba(0,0,0,0.25)":"#121008", borderBottom:"1px solid #1c1408", borderTop:"1px solid #1c1408", display:"flex", alignItems:"center", gap:10, position:"relative", zIndex:2, flex:"0 0 auto" }}>
+        <div style={{ padding:"5px 14px", background:envTheme?"rgba(0,0,0,0.35)":"#0e0c08", borderBottom:"2px solid #1a3a0a", borderTop:"2px solid #3a1a0a", display:"flex", alignItems:"center", gap:10, position:"relative", zIndex:2, flex:"0 0 auto" }}>
           {!gs.winner ? (
             <TurnTimer key={timerKey} active={true} onExpire={isMyTurn ? endTurn : ()=>{}} turnNum={gs.turn}>
               {isMyTurn && attCard ? (
@@ -3182,7 +3182,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           )}
         </div>
         {/* My zone — use my env theme */}
-        <div style={{ background: myEnvTheme ? myEnvTheme.bg : "rgba(40,100,20,0.09)", padding:"7px 12px", position:"relative", zIndex:2, transition:"background 1.5s ease", flex:1, display:"flex", flexDirection:"column", overflow:"visible", minHeight:0 }}>
+        <div style={{ background: myEnvTheme ? myEnvTheme.bg : "rgba(20,100,10,0.22)", borderLeft:"3px solid #307030", padding:"7px 12px", position:"relative", zIndex:2, transition:"background 1.5s ease", boxShadow:"inset 0 6px 24px rgba(20,160,10,0.14), inset 3px 0 12px rgba(20,160,10,0.1)", flex:1, display:"flex", flexDirection:"column", overflow:"visible", minHeight:0 }}>
           {myEnvTheme && <div style={{ position:"absolute", inset:0, pointerEvents:"none", zIndex:1 }}><FloatingParticles count={myEnvTheme.pCount||20} color={myEnvTheme.particle} speed={myEnvTheme.pSpeed||0.6} shape={myEnvTheme.pShape||"circle"} direction={myEnvTheme.pDir||"up"} /></div>}
           {myEnvCard && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 12px", background:`${myEnvCard.border}18`, border:`1px solid ${myEnvCard.border}44`, borderRadius:6, marginBottom:5, position:"relative", zIndex:2, animation:"slideDown 0.3s" }}>
             <div style={{ width:6, height:6, borderRadius:"50%", background:myEnvCard.border, boxShadow:`0 0 6px ${myEnvCard.border}`, animation:"pulse 2s infinite", flexShrink:0 }} />
