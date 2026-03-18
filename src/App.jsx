@@ -23,7 +23,7 @@ const ALPHA_KEYS_LIST = [
   "FLAME-WARDEN-2","DUSK-HERALD-05","BONE-TIDE-RISE","STAR-FORGED-01","KRAKEN-WAKES-1",
 ];
 const ALPHA_KEYS = new Set(ALPHA_KEYS_LIST);
-const CURRENT_PATCH = "FABLES & FOOD FIGHT α";
+const CURRENT_PATCH = "FABLES & FOOD FIGHT α.2";
 
 // ═══ AUDIO ═══════════════════════════════════════════════════════════════════
 const SFX = (() => {
@@ -451,15 +451,15 @@ function PatchNotesModal({ onDismiss }) {
     <span style={{ marginLeft:6, padding:"1px 6px", background:"rgba(120,204,69,0.18)", border:"1px solid #78cc4555", borderRadius:8, fontSize:8, color:"#78cc45", fontFamily:"'Cinzel',serif", fontWeight:700, letterSpacing:1, verticalAlign:"middle" }}>NEW</span>
   );
   const rows = [
-    { icon:"📖", label:<>THE FABLES — NOW LIVE · Zeus, Hades, Lightning Meter, Soul Harvest<NEW /></> },
-    { icon:"🍓", label:<>FOOD FIGHT — NOW LIVE · Berry {"&"} Tooty, Master Jax, Group Synergy, Splat<NEW /></> },
-    { icon:"💥", label:<>New keyword: Splat — units deal 1 dmg on death · Protein T4 boosts to 2<NEW /></> },
-    { icon:"🛡", label:<>Shield rework — now blocks first hit, first spell, and first attacker strike<NEW /></> },
-    { icon:"🃏", label:<>All alpha accounts auto-granted Fables + Food Fight full sets<NEW /></> },
-    { icon:"⚡", label:"Zeus reworked — Lightning Meter fires at 2 stacks · charges from Spells + Swift attacks" },
+    { icon:"⚔", label:<>Friend Duels — challenge online friends directly from the player sidebar<NEW /></> },
+    { icon:"👤", label:<>New Player Sidebar — profile, level, shards, friends list and online status<NEW /></> },
+    { icon:"🟢", label:<>Live presence — online status now tracks globally, not just on the Friends tab<NEW /></> },
+    { icon:"🚫", label:<>Match declined notification — get notified when a challenge is turned down<NEW /></> },
+    { icon:"📖", label:"THE FABLES — Zeus, Hades, Lightning Meter, Soul Harvest, Anchor" },
+    { icon:"🍓", label:"FOOD FIGHT — Berry & Tooty, Master Jax, Group Synergy, Splat" },
+    { icon:"🛡", label:"Shield blocks first hit, first spell, and first attacker strike" },
+    { icon:"⚡", label:"Zeus — Lightning Meter fires at 2 stacks · charges from Spells + Swift attacks" },
     { icon:"💀", label:"Hades — Soul Harvest triggers from hand · gains HP on every friendly death" },
-    { icon:"⚖", label:"Mana now starts at 1 and scales to 7 · Shifting Dunes env cost only applies to owner" },
-    { icon:"🎯", label:"Spell targeting live — click targeted spell, then click your mark" },
     { icon:"🏆", label:"Ranked Season 1 live · ELO matchmaking · Iron → Bronze → Silver → Gold → Grandmaster" },
     { icon:"⚗", label:"Coming next: Leaderboard · Draft Mode · Faction pack openings in store", dim:true },
   ];
@@ -6224,26 +6224,34 @@ function PlayerSidebar({ user, onUpdateUser, onlineIds, onClose, onChallenge, on
           {avatarErr && <div style={{ fontSize:9, color:"#e05050", marginBottom:4, fontFamily:"'Cinzel',serif" }}>{avatarErr}</div>}
           <div style={{ fontFamily:"'Cinzel',serif", fontSize:19, fontWeight:900, color:"#f0d878", letterSpacing:1, marginBottom:5, textAlign:"center" }}>{user.name}</div>
           <div style={{ padding:"3px 12px", background:`${rank.color}18`, border:`1px solid ${rank.color}55`, borderRadius:10, fontSize:10, color:rank.color, fontFamily:"'Cinzel',serif", fontWeight:700, marginBottom:5, letterSpacing:1 }}>{rank.icon} {rank.name} · {user.rankedRating||1000} MMR</div>
-          <button onClick={onShowPatchNotes} style={{ background:"none", border:"none", cursor:"pointer", color:"#504028", fontFamily:"'Cinzel',serif", fontSize:9, letterSpacing:2 }}>⚙ Profile Settings</button>
+          <button onClick={onShowPatchNotes} style={{ background:"none", border:"none", cursor:"pointer", color:"#e05050", fontFamily:"'Cinzel',serif", fontSize:9, letterSpacing:2, fontWeight:700 }}>📋 PATCH NOTES</button>
         </div>
 
         {/* Currency & Progress */}
         <div style={{ padding:"14px 16px", borderBottom:"1px solid #1a1408", flexShrink:0 }}>
-          <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", letterSpacing:3, marginBottom:10, fontWeight:700 }}>CURRENCY & PROGRESS</div>
-          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
-            <div style={{ width:26, height:26, background:"linear-gradient(135deg,#e8c060,#a07820)", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:900, color:"#1a1000", flexShrink:0 }}>{user.battlesPlayed||0}</div>
-            <div style={{ flex:1, height:7, background:"rgba(255,255,255,0.06)", borderRadius:4, overflow:"hidden", border:"1px solid #2a1e08" }}>
-              <div style={{ height:"100%", width:`${Math.min(100,((user.battlesPlayed||0)%10)*10)}%`, background:"linear-gradient(90deg,#c89010,#f0c040)", borderRadius:4, transition:"width .4s", boxShadow:"0 0 6px #e8c06066" }} />
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", letterSpacing:3, marginBottom:10, fontWeight:700 }}>LEVEL & PROGRESS</div>
+          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+            <div style={{ width:32, height:32, background:"linear-gradient(135deg,#e8c060,#a07820)", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:13, fontWeight:900, color:"#1a1000", flexShrink:0, boxShadow:"0 0 12px #e8c06044" }}>{Math.floor((user.battlesPlayed||0)/10)+1}</div>
+            <div style={{ flex:1 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}>
+                <span style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#907050", letterSpacing:1 }}>Level {Math.floor((user.battlesPlayed||0)/10)+1}</span>
+                <span style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#604030" }}>{(user.battlesPlayed||0)%10}/10 battles</span>
+              </div>
+              <div style={{ height:7, background:"rgba(255,255,255,0.06)", borderRadius:4, overflow:"hidden", border:"1px solid #2a1e08" }}>
+                <div style={{ height:"100%", width:`${Math.min(100,((user.battlesPlayed||0)%10)*10)}%`, background:"linear-gradient(90deg,#c89010,#f0c040)", borderRadius:4, transition:"width .4s", boxShadow:"0 0 6px #e8c06066" }} />
+              </div>
             </div>
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
-            {[["🪙", user?.gold||0, "Gold", "#e8c060"], ["💎", user?.gems||0, "Gems", "#60c8ff"], ["⬙", user?.shards||0, "Dust", "#a0b0c0"]].map(([icon, val, label, color]) => (
-              <div key={label} style={{ background:"rgba(255,255,255,0.03)", border:"1px solid #2a2010", borderRadius:9, padding:"10px 6px", textAlign:"center" }}>
-                <div style={{ fontSize:18, marginBottom:3, lineHeight:1 }}>{icon}</div>
-                <div style={{ fontFamily:"'Cinzel',serif", fontSize:17, fontWeight:900, color, lineHeight:1, marginBottom:3 }}>{val}</div>
-                <div style={{ fontSize:8, color:"#504028", letterSpacing:1, fontFamily:"'Cinzel',serif" }}>{label}</div>
-              </div>
-            ))}
+          <div style={{ background:"rgba(255,255,255,0.03)", border:"1px solid #2a2010", borderRadius:9, padding:"10px 14px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+            <div style={{ textAlign:"center" }}>
+              <div style={{ fontSize:20, marginBottom:2 }}>⬙</div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:19, fontWeight:900, color:"#a0b8c8", lineHeight:1, marginBottom:2 }}>{user?.shards||0}</div>
+              <div style={{ fontSize:9, color:"#504028", letterSpacing:1, fontFamily:"'Cinzel',serif" }}>Shards</div>
+            </div>
+            <div style={{ flex:1, paddingLeft:16, borderLeft:"1px solid #2a2010", marginLeft:14 }}>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#907050", marginBottom:3 }}>{user.battlesPlayed||0} battles played</div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#604030" }}>{(user.decks||[]).length} decks built</div>
+            </div>
           </div>
         </div>
 
@@ -6364,6 +6372,7 @@ export default function App() {
   const [friendBadge, setFriendBadge] = useState(0);
   const [globalChallenge, setGlobalChallenge] = useState(null); // { fromId, fromName, fromAvatar }
   const [pendingDuel, setPendingDuel] = useState(null); // { matchId, opponentName, opponentId }
+  const [declinedToast, setDeclinedToast] = useState(null); // name of player who declined
   const inBattle = matchActive;
   // Show patch notes once per account+device — triggers only when user logs in
   useEffect(() => {
@@ -6394,6 +6403,10 @@ export default function App() {
         setFriendBadge(p => p + 1);
       })
       .on("broadcast", { event: "challenge_cancel" }, () => setGlobalChallenge(null))
+      .on("broadcast", { event: "challenge_declined" }, ({ payload }) => {
+        setDeclinedToast(payload?.declinerName || "Opponent");
+        setTimeout(() => setDeclinedToast(null), 4000);
+      })
       .on("broadcast", { event: "challenge_accepted" }, ({ payload }) => {
         setGlobalChallenge(null);
         setPendingDuel({ matchId: payload.matchId, opponentName: payload.accepterName, opponentId: null });
@@ -6505,8 +6518,27 @@ export default function App() {
           <div style={{ fontSize:14, color:"#d0c098", marginBottom:24 }}><span style={{ color:"#f0e0a0", fontWeight:700 }}>{globalChallenge.fromName}</span> challenges you to a duel!</div>
           <div style={{ display:"flex", gap:12, justifyContent:"center" }}>
             <button onClick={acceptGlobalChallenge} style={{ padding:"12px 28px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:10, fontFamily:"'Cinzel',serif", fontSize:13, fontWeight:700, color:"#1a1000", cursor:"pointer", letterSpacing:1 }}>ACCEPT</button>
-            <button onClick={() => setGlobalChallenge(null)} style={{ padding:"12px 20px", background:"transparent", border:"1px solid #4a2010", borderRadius:10, fontFamily:"'Cinzel',serif", fontSize:12, color:"#806040", cursor:"pointer" }}>DECLINE</button>
+            <button onClick={() => {
+              const ch = supabase.channel(`challenge:${globalChallenge.fromId}`);
+              ch.subscribe((status) => {
+                if (status === "SUBSCRIBED") {
+                  ch.send({ type:"broadcast", event:"challenge_declined", payload:{ declinerName: user.name } })
+                    .finally(() => supabase.removeChannel(ch));
+                }
+              });
+              setGlobalChallenge(null);
+            }} style={{ padding:"12px 20px", background:"transparent", border:"1px solid #4a2010", borderRadius:10, fontFamily:"'Cinzel',serif", fontSize:12, color:"#806040", cursor:"pointer" }}>DECLINE</button>
           </div>
+        </div>
+      </div>
+    )}
+    {/* Match declined toast */}
+    {declinedToast && (
+      <div style={{ position:"fixed", top:88, right:20, zIndex:800, background:"linear-gradient(135deg,#1a0808,#2a0e0e)", border:"1px solid #c04040aa", borderRadius:12, padding:"12px 18px", display:"flex", alignItems:"center", gap:10, boxShadow:"0 8px 32px rgba(0,0,0,0.9), 0 0 0 1px #8a202055", animation:"slideInRight 0.25s ease-out", pointerEvents:"none" }}>
+        <span style={{ fontSize:20 }}>🚫</span>
+        <div>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, color:"#e05050", letterSpacing:1 }}>MATCH DECLINED</div>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#a06060", marginTop:2 }}>{declinedToast} declined your challenge</div>
         </div>
       </div>
     )}
