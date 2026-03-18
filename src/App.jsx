@@ -2935,7 +2935,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
             if (friendAdded === profilePopup.id) return;
             await supabase.from("friendships").upsert([{
               requester: user.id, accepter: profilePopup.id,
-              requester_name: user.name, accepter_name: profilePopup.name, status: "pending"
+              status: "pending"
             }], { onConflict: "requester,accepter", ignoreDuplicates: true });
             setFriendAdded(profilePopup.id);
           }} style={{ padding:"8px 20px", background: friendAdded===profilePopup.id ? "rgba(120,200,69,0.1)" : "linear-gradient(135deg,#1a3a08,#2a5a10)", border:`1px solid ${friendAdded===profilePopup.id?"#78cc4566":"#4a8020"}`, borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, color: friendAdded===profilePopup.id ? "#78cc45" : "#a0e060", cursor: friendAdded===profilePopup.id ? "default":"pointer", letterSpacing:1, marginBottom:8, width:"100%" }}>
@@ -5258,16 +5258,17 @@ function FriendsScreen({ user, onStartDuel, incomingChallenge, setIncomingChalle
 
   const loadFriends = async () => {
     if (!user?.id) return;
-    const { data } = await supabase.from("friendships").select("*")
+    const { data } = await supabase.from("friendships")
+      .select(`*, rp:profiles!requester(name,avatar_url), ap:profiles!accepter(name,avatar_url)`)
       .or(`requester.eq.${user.id},accepter.eq.${user.id}`);
     if (!data) return;
     const accepted = data.filter(r => r.status === "accepted");
     const pending = data.filter(r => r.status === "pending");
     setFriends(accepted.map(r => r.requester === user.id
-      ? { id: r.accepter, name: r.accepter_name || r.accepter.slice(0,8), rowId: r.id }
-      : { id: r.requester, name: r.requester_name || r.requester.slice(0,8), rowId: r.id }));
-    setPendingIn(pending.filter(r => r.accepter === user.id).map(r => ({ id: r.requester, name: r.requester_name || r.requester.slice(0,8), rowId: r.id })));
-    setPendingOut(pending.filter(r => r.requester === user.id).map(r => ({ id: r.accepter, name: r.accepter_name || r.accepter.slice(0,8), rowId: r.id })));
+      ? { id: r.accepter, name: r.ap?.name || r.accepter.slice(0,8), avatar_url: r.ap?.avatar_url || null, rowId: r.id }
+      : { id: r.requester, name: r.rp?.name || r.requester.slice(0,8), avatar_url: r.rp?.avatar_url || null, rowId: r.id }));
+    setPendingIn(pending.filter(r => r.accepter === user.id).map(r => ({ id: r.requester, name: r.rp?.name || r.requester.slice(0,8), avatar_url: r.rp?.avatar_url || null, rowId: r.id })));
+    setPendingOut(pending.filter(r => r.requester === user.id).map(r => ({ id: r.accepter, name: r.ap?.name || r.accepter.slice(0,8), avatar_url: r.ap?.avatar_url || null, rowId: r.id })));
   };
 
   useEffect(() => {
@@ -5313,8 +5314,7 @@ function FriendsScreen({ user, onStartDuel, incomingChallenge, setIncomingChalle
     if (existing || sendingTo === target.id) return;
     setSendingTo(target.id);
     const { error } = await supabase.from("friendships").insert([{
-      requester: user.id, accepter: target.id,
-      requester_name: user.name, accepter_name: target.name || target.id.slice(0,8), status: "pending"
+      requester: user.id, accepter: target.id, status: "pending"
     }]);
     if (!error) {
       setSentTo(prev => ({ ...prev, [target.id]: true }));
