@@ -5266,6 +5266,13 @@ function FriendsScreen({ user, onStartDuel, incomingChallenge, setIncomingChalle
     if (error) { setFriendsRlsErr(true); return; }
     if (!data) return;
     setFriendsRlsErr(false);
+    // Supabase RLS silently returns [] (no error) when policies block rows for the accepter.
+    // If data is empty, verify with a count query that doesn't filter by user — if unreachable,
+    // at least we flag the issue so the user sees the SQL hint.
+    if (data.length === 0) {
+      const { error: cntErr } = await supabase.from("friendships").select("id", { count: "exact", head: true });
+      if (cntErr) setFriendsRlsErr(true);
+    }
 
     // Gather the "other" side IDs and fetch their profiles separately
     const otherIds = [...new Set(data.map(r => r.requester === user.id ? r.accepter : r.requester))];
@@ -5333,10 +5340,14 @@ function FriendsScreen({ user, onStartDuel, incomingChallenge, setIncomingChalle
     }]);
     if (!error) {
       setSentTo(prev => ({ ...prev, [target.id]: true }));
+      // Broadcast notification — wait for SUBSCRIBED before sending
       const notifCh = supabase.channel(`friends_notif:${target.id}`);
-      await notifCh.subscribe();
-      await notifCh.send({ type: "broadcast", event: "friend_request", payload: { fromId: user.id, fromName: user.name } });
-      supabase.removeChannel(notifCh);
+      notifCh.subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          notifCh.send({ type: "broadcast", event: "friend_request", payload: { fromId: user.id, fromName: user.name } })
+            .finally(() => supabase.removeChannel(notifCh));
+        }
+      });
       await loadFriends();
       setTimeout(() => setSearchResults(prev => prev.filter(p => p.id !== target.id)), 1200);
     } else {
@@ -5358,9 +5369,12 @@ function FriendsScreen({ user, onStartDuel, incomingChallenge, setIncomingChalle
   const sendChallenge = async (friend) => {
     setChallengeSent(friend.id);
     const ch = supabase.channel(`challenge:${friend.id}`);
-    await ch.subscribe();
-    await ch.send({ type: "broadcast", event: "challenge", payload: { fromId: user.id, fromName: user.name, fromAvatar: user.avatarUrl } });
-    supabase.removeChannel(ch);
+    ch.subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        ch.send({ type: "broadcast", event: "challenge", payload: { fromId: user.id, fromName: user.name, fromAvatar: user.avatarUrl } })
+          .finally(() => supabase.removeChannel(ch));
+      }
+    });
     setTimeout(() => setChallengeSent(null), 8000);
   };
 
@@ -6100,9 +6114,12 @@ export default function App() {
     }]).select().single();
     if (match && !error) {
       const ch = supabase.channel(`challenge:${saved.fromId}`);
-      await ch.subscribe();
-      await ch.send({ type: "broadcast", event: "challenge_accepted", payload: { matchId: match.id, accepterName: user.name } });
-      supabase.removeChannel(ch);
+      ch.subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          ch.send({ type: "broadcast", event: "challenge_accepted", payload: { matchId: match.id, accepterName: user.name } })
+            .finally(() => supabase.removeChannel(ch));
+        }
+      });
       setTab("play");
     }
   };
