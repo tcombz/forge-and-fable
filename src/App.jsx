@@ -824,7 +824,7 @@ function Token({ c, selected, isTarget, canSelect, onClick, onRightClick, animTy
   const opac = (c.hasAttacked && !isTarget) ? 0.45 : 1;
   const kws = KW.filter((k) => (c.keywords || []).includes(k.name));
   return (
-    <div onClick={onClick} onContextMenu={(e) => { e.preventDefault(); if (onRightClick) onRightClick(); }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ width: 130, height: 180, cursor: (canSelect || isTarget) ? "pointer" : "default", userSelect: "none", border: `2px solid ${selected ? "#f0d840" : animType==="hit" ? "#ff3030" : (animType==="attacking"||animType==="attacking-down") ? "#ff8030" : isTarget && hov ? "#e84040" : hov && canSelect ? c.border + "aa" : c.border + "55"}`, borderRadius: 10, overflow: "hidden", opacity: animType==="dying" ? 1 : opac, boxShadow: animType==="hit" ? "0 0 28px #ff303088, 0 0 60px #ff202044" : (animType==="attacking"||animType==="attacking-down") ? `0 0 28px ${c.border}aa, 0 0 50px ${c.border}55` : selected ? `0 0 22px #f0d84066` : hov ? `0 6px 18px ${c.border}44` : "none", transform: animType ? "none" : selected ? "translateY(-8px)" : hov ? "translateY(-4px)" : "none", animation: animType === "attacking" ? "cardLunge 0.45s cubic-bezier(0.25,0.46,0.45,0.94)" : animType === "attacking-down" ? "cardLungeDown 0.45s cubic-bezier(0.25,0.46,0.45,0.94)" : animType === "hit" ? "cardHit 0.5s ease-out" : animType === "dying" ? "cardDie 0.6s ease-out forwards" : animType === "summoning" ? (c.rarity==="Prismatic"?"prismaticPop 0.7s ease-out, cardSummon 0.5s ease-out":"cardSummon 0.5s ease-out") : "none", transition: animType ? "none" : "all .18s", position: "relative" }}>
+    <div className="token" onClick={onClick} onContextMenu={(e) => { e.preventDefault(); if (onRightClick) onRightClick(); }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ width: 125, height: 172, cursor: (canSelect || isTarget) ? "pointer" : "default", userSelect: "none", border: `2px solid ${selected ? "#f0d840" : animType==="hit" ? "#ff3030" : (animType==="attacking"||animType==="attacking-down") ? "#ff8030" : isTarget && hov ? "#e84040" : hov && canSelect ? c.border + "aa" : c.border + "55"}`, borderRadius: 10, overflow: "hidden", opacity: animType==="dying" ? 1 : opac, boxShadow: animType==="hit" ? "0 0 28px #ff303088, 0 0 60px #ff202044" : (animType==="attacking"||animType==="attacking-down") ? `0 0 28px ${c.border}aa, 0 0 50px ${c.border}55` : selected ? `0 0 22px #f0d84066` : hov ? `0 6px 18px ${c.border}44` : "none", transform: animType ? "none" : selected ? "translateY(-8px)" : hov ? "translateY(-4px)" : "none", animation: animType === "attacking" ? "cardLunge 0.45s cubic-bezier(0.25,0.46,0.45,0.94)" : animType === "attacking-down" ? "cardLungeDown 0.45s cubic-bezier(0.25,0.46,0.45,0.94)" : animType === "hit" ? "cardHit 0.5s ease-out" : animType === "dying" ? "cardDie 0.6s ease-out forwards" : animType === "summoning" ? (c.rarity==="Prismatic"?"prismaticPop 0.7s ease-out, cardSummon 0.5s ease-out":"cardSummon 0.5s ease-out") : "none", transition: animType ? "none" : "all .18s", position: "relative" }}>
       {/* Full art */}
       <div style={{ position: "absolute", inset: 0 }}><CardArt card={c} /></div>
       {/* Bottom gradient */}
@@ -854,6 +854,7 @@ function Token({ c, selected, isTarget, canSelect, onClick, onRightClick, animTy
     </div>
   );
 }
+Token = React.memo(Token);
 function HandCard({ card, playable, onClick, onRightClick }) {
   const [hov, setHov] = useState(false);
   const isBP = card.bloodpact; const isEnv = card.type === "environment";
@@ -888,8 +889,9 @@ function HandCard({ card, playable, onClick, onRightClick }) {
       {hasShield && <div style={{ position:"absolute", inset:0, borderRadius:10, border:"2px solid #60a0ffcc", pointerEvents:"none", zIndex:6, animation:"shieldPulse 2s ease-in-out infinite" }} />}
       </div>
       {/* Hover tooltip with full card info */}
-      {hov && playable && (
-        <div style={{ position: "absolute", bottom: "100%", left: "50%", transform: "translateX(-50%)", marginBottom: 8, width: 240, background: "linear-gradient(160deg,#1e1c10,#12100a)", border: `2px solid ${card.border}88`, borderRadius: 12, padding: 14, zIndex: 100, boxShadow: `0 16px 40px rgba(0,0,0,0.95), 0 0 30px ${card.border}33`, pointerEvents: "none" }}>
+      {hov && (
+        <div style={{ position: "fixed", top: "auto", left: "auto", transform: "none", marginBottom: 8, width: 240, background: "linear-gradient(160deg,#1e1c10,#12100a)", border: `2px solid ${card.border}88`, borderRadius: 12, padding: 14, zIndex: 9999, boxShadow: `0 16px 40px rgba(0,0,0,0.95), 0 0 30px ${card.border}33`, pointerEvents: "none" }}
+          ref={el => { if (el) { const rect = el.previousElementSibling?.getBoundingClientRect?.() || {}; el.style.left = Math.max(8, Math.min(window.innerWidth - 248, (rect.left||0) + (rect.width||0)/2 - 120)) + "px"; el.style.bottom = (window.innerHeight - (rect.top||0) + 8) + "px"; } }}>
           <div style={{ fontFamily: "'Cinzel',serif", fontSize: 14, fontWeight: 700, color: "#f0e0c8", marginBottom: 5 }}>{card.name}</div>
           <div style={{ fontSize: 11, color: card.border, marginBottom: 6, fontFamily: "'Cinzel',serif" }}>{(card.type || "creature").charAt(0).toUpperCase() + (card.type || "").slice(1)} · <span style={{ color: REGION_COLORS[card.region] || card.border }}>{card.region}</span></div>
           <div style={{ fontSize: 12, color: "#d0c098", lineHeight: 1.65, marginBottom: 6 }}>{card.ability}</div>
@@ -910,6 +912,7 @@ function HandCard({ card, playable, onClick, onRightClick }) {
     </div>
   );
 }
+HandCard = React.memo(HandCard);
 
 // ═══ TURN TIMER ══════════════════════════════════════════════════════════════
 function TurnTimer({ active, duration = CFG.turnTimer, onExpire, turnNum, children }) {
@@ -1779,7 +1782,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   const atkFace = async () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking" }); await new Promise(r => setTimeout(r, 380)); const dmg = att.currentAtk; vfx.add("damage", { amount: dmg, duration: 500 }); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if (s.playerZeusInPlay && (att.keywords || []).includes("Swift")) { s.playerLightningMeter = (s.playerLightningMeter || 0) + 1; if (s.playerLightningMeter >= 2) { s = fireLightningMeter(s, "player", vfx, (m) => { s.log = [...s.log.slice(-20), m]; }); } } s = resolveEffects("onAttack", att, s, "player", vfx); if (s.enemyHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 200)); setAnimUids({}); };
   const attCard = attacker ? g.playerBoard.find((c) => c.uid === attacker) : null;
 
-  return (<div style={{ width:"100%", height:"100vh", padding:"10px 16px 8px", background:"#000", boxSizing:"border-box", overflow:"hidden", display:"flex", flexDirection:"column" }} onClick={() => { SFX.init(); }}>
+  return (<div className="battle-wrapper" style={{ width:"100%", height:"calc(100vh - 72px)", padding:"8px 14px 6px", background:"#0a0806", boxSizing:"border-box", overflow:"hidden", display:"flex", flexDirection:"column" }} onClick={() => { SFX.init(); }}>
     {previewCard && <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />}
     {/* Live Action Ticker */}
     {liveAction && (
@@ -1824,9 +1827,9 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         </div>
       </div>
     </div>)}
-    <div style={{ display:"grid", gridTemplateColumns:"280px 1fr 300px", gap:14, flex:1, minHeight:0 }}>
+    <div className="battle-grid" style={{ display:"grid", gridTemplateColumns:"280px 1fr 300px", gap:14, flex:1, minHeight:0 }}>
       {/* Left Panel — Synergy Tracker + Chat */}
-      <div style={{ display:"flex", flexDirection:"column", gap:4, height:"100%", overflowY:"auto", minHeight:0 }}>
+      <div className="battle-side" style={{ display:"flex", flexDirection:"column", gap:4, height:"100%", overflowY:"auto", minHeight:0 }}>
         {/* Food Fight Synergy Tracker */}
         {(() => {
           const jaxRed = g.playerBoard.some(c => c.id === "master_jax") ? 1 : 0;
@@ -1904,7 +1907,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         {/* Environment particles */}
         {envTheme && <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1 }}><FloatingParticles count={20} color={envTheme.particle} speed={0.6} /></div>}
         {/* Enemy zone */}
-        <div style={{ background: "linear-gradient(180deg, rgba(160,30,20,0.22) 0%, rgba(100,18,12,0.18) 100%)", borderBottom: "1px solid #7a3020", padding: "10px 14px", position: "relative", zIndex: 2, boxShadow: "inset 0 -4px 20px rgba(180,40,20,0.12)", flex:"0 0 auto" }}>
+        <div style={{ background: "linear-gradient(180deg, rgba(160,30,20,0.22) 0%, rgba(100,18,12,0.18) 100%)", borderBottom: "1px solid #7a3020", padding: "7px 12px", position: "relative", zIndex: 2, boxShadow: "inset 0 -4px 20px rgba(180,40,20,0.12)", flex:"0 0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#3a0c0c,#200808)", border: "2px solid #a0202044", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "#cc6666", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>AI</div>
@@ -1938,7 +1941,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
             </div>);
           })()}
           <div style={{ fontSize: 13, color: targetingSpell ? "#ffe040" : "#5a2424", fontFamily: "'Cinzel',serif", letterSpacing: 3, marginBottom: 4, textAlign: "center", fontWeight: 700, textShadow: "0 1px 4px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.6)" }}>{targetingSpell ? `⚡ CHOOSE TARGET — ${targetingSpell.name}` : "ENEMY FIELD"}</div>
-          <div style={{ height:195, display:"flex", gap:8, flexWrap:"nowrap", justifyContent:"center", alignItems:"center", overflowX:"auto", overflowY:"hidden", scrollbarWidth:"thin" }}>
+          <div style={{ height:182, display:"flex", gap:8, flexWrap:"nowrap", justifyContent:"center", alignItems:"center", overflowX:"auto", overflowY:"visible", scrollbarWidth:"thin" }}>
             {g.enemyBoard.length === 0 ? <span style={{ fontSize: 10, color: "#241010", letterSpacing: 3 }}>---</span> : g.enemyBoard.map((c) => (<Token key={c.uid} c={resolveCardArt(c, {})} animType={animUids[c.uid]} isTarget={!!attacker || !!targetingSpell} canSelect={false} onClick={() => { if (targetingSpell) { playCard(targetingSpell, c.uid); } else if (attacker) { atkCreature(c); } else { SFX.play("ability"); setPreviewCard(c); } }} />))}
           </div>
         </div>
@@ -1967,7 +1970,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
           )}
         </div>
         {/* Player zone */}
-        <div style={{ background: "linear-gradient(180deg, rgba(20,80,10,0.18) 0%, rgba(30,100,15,0.24) 100%)", padding: "10px 14px", position: "relative", zIndex: 2, boxShadow: "inset 0 4px 20px rgba(20,120,10,0.14)", flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+        <div style={{ background: "linear-gradient(180deg, rgba(20,80,10,0.18) 0%, rgba(30,100,15,0.24) 100%)", padding: "7px 12px", position: "relative", zIndex: 2, boxShadow: "inset 0 4px 20px rgba(20,120,10,0.14)", flex:1, display:"flex", flexDirection:"column", overflow:"visible", minHeight:0 }}>
           {g.environment?.owner === "player" && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 12px", background:`${g.environment.border}18`, border:`1px solid ${g.environment.border}33`, borderRadius:6, marginBottom:5, animation:"slideDown 0.3s" }}>
             <div style={{ width:6, height:6, borderRadius:"50%", background:g.environment.border, boxShadow:`0 0 6px ${g.environment.border}`, animation:"pulse 2s infinite", flexShrink:0 }} />
             <span style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:g.environment.border, fontWeight:700, flexShrink:0 }}>{g.environment.name}</span>
@@ -1975,7 +1978,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
             <span style={{ fontSize:10, color:"#806040", fontFamily:"'Cinzel',serif", flexShrink:0 }}>{Math.ceil((g.environment.turnsRemaining||4)/2)}R</span>
           </div>}
           <div style={{ fontSize: 13, color: "#2e4818", fontFamily: "'Cinzel',serif", letterSpacing: 3, marginBottom: 4, textAlign: "center", fontWeight: 700, textShadow: "0 1px 4px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.6)" }}>YOUR FIELD</div>
-          <div style={{ height:195, flex:"0 0 auto", display:"flex", gap:8, flexWrap:"nowrap", justifyContent:"center", alignItems:"center", overflowX:"auto", overflowY:"hidden", scrollbarWidth:"thin", marginBottom:8 }}>
+          <div style={{ height:182, flex:"0 0 auto", display:"flex", gap:8, flexWrap:"nowrap", justifyContent:"center", alignItems:"center", overflowX:"auto", overflowY:"visible", scrollbarWidth:"thin", marginBottom:6 }}>
             {g.playerBoard.length === 0 ? <span style={{ fontSize: 10, color: "#181408", letterSpacing: 3 }}>PLAY A CARD</span> : g.playerBoard.map((c) => (<Token key={c.uid} c={resolveCardArt(c, user?.selectedArts || {})} animType={animUids[c.uid]} selected={attacker === c.uid} isTarget={false} canSelect={g.phase === "player" && c.canAttack && !c.hasAttacked && !aiThink} onClick={() => selectAtt(c)} onRightClick={() => { SFX.play("ability"); setPreviewCard(c); }} />))}
           </div>
           <div style={{ borderTop: "1px solid #2a2010", paddingTop: 10, marginBottom: 10, flex:"0 0 auto" }}>
@@ -2019,7 +2022,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         </div>
       </div>
       {/* Sidebar log */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, height:"100%", overflowY:"auto", minHeight:0 }}>
+      <div className="battle-log" style={{ display: "flex", flexDirection: "column", gap: 8, height:"100%", overflowY:"auto", minHeight:0 }}>
         {attCard && (<div style={{ background: `${attCard.border}15`, border: `1px solid ${attCard.border}55`, borderRadius: 10, padding: 10 }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, color: attCard.border, fontWeight: 600 }}>ATTACKING</div><div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#f0e8d8", fontWeight: 700 }}>{attCard.name}</div><div style={{ fontSize: 12, color: "#ff7050", fontWeight: 700 }}>ATK {attCard.currentAtk}</div><button onClick={() => setAttacker(null)} style={{ marginTop: 6, width: "100%", padding: "3px", background: "transparent", border: "1px solid #241408", borderRadius: 4, color: "#806040", fontFamily: "'Cinzel',serif", fontSize: 8, cursor: "pointer" }}>Cancel</button></div>)}
         <div style={{ background: "#080604", border: "1px solid #161408", borderRadius: 10, overflow: "hidden", display: "flex", flexDirection: "column", maxHeight: 500 }}>
           <div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, color: "#c09048", letterSpacing: 3, padding: "8px 12px", borderBottom: "1px solid #281e08", fontWeight: 700, textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>BATTLE LOG</div>
@@ -2861,7 +2864,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     }
     return <span key={key}>{parts}</span>;
   };
-  return (<div style={{ width:"100%", height:"100vh", padding:"10px 16px 8px", background:"#000", boxSizing:"border-box", overflow:"hidden", display:"flex", flexDirection:"column" }} onClick={() => { SFX.init(); }}>
+  return (<div className="battle-wrapper" style={{ width:"100%", height:"calc(100vh - 72px)", padding:"8px 14px 6px", background:"#0a0806", boxSizing:"border-box", overflow:"hidden", display:"flex", flexDirection:"column" }} onClick={() => { SFX.init(); }}>
     {previewCard && <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />}
     {/* Forfeit confirm */}
     {/* In-battle profile popup */}
@@ -2953,9 +2956,9 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         <button onClick={onExit} style={{ padding:"14px 36px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:10, fontFamily:"'Cinzel',serif", fontWeight:700, fontSize:14, letterSpacing:2, color:"#1a1000", cursor:"pointer", boxShadow:"0 0 24px #e8c06066" }}>EXIT</button>
       </div>
     </div>)}
-    <div style={{ display:"grid", gridTemplateColumns:"280px 1fr 300px", gap:14, flex:1, minHeight:0 }}>
+    <div className="battle-grid" style={{ display:"grid", gridTemplateColumns:"280px 1fr 300px", gap:14, flex:1, minHeight:0 }}>
       {/* Left Panel — Synergy Tracker + Chat */}
-      <div style={{ display:"flex", flexDirection:"column", gap:4, height:"100%", overflowY:"auto", minHeight:0 }}>
+      <div className="battle-side" style={{ display:"flex", flexDirection:"column", gap:4, height:"100%", overflowY:"auto", minHeight:0 }}>
         {/* Food Fight Synergy Tracker */}
         {(() => {
           const jaxRed = ai.playerBoard.some(c => c.id === "master_jax") ? 1 : 0;
@@ -3079,7 +3082,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           </div>
         )}
         {/* Opponent zone — use opponent's env theme */}
-        <div style={{ background: opEnvTheme ? opEnvTheme.bg : "rgba(180,40,40,0.09)", borderBottom:"1px solid #3a1818", padding:"10px 14px", position:"relative", zIndex:2, transition:"background 1.5s ease", flex:"0 0 auto" }}>
+        <div style={{ background: opEnvTheme ? opEnvTheme.bg : "rgba(180,40,40,0.09)", borderBottom:"1px solid #3a1818", padding:"7px 12px", position:"relative", zIndex:2, transition:"background 1.5s ease", flex:"0 0 auto" }}>
           {opEnvTheme && <div style={{ position:"absolute", inset:0, pointerEvents:"none", zIndex:1 }}><FloatingParticles count={opEnvTheme.pCount||20} color={opEnvTheme.particle} speed={opEnvTheme.pSpeed||0.6} shape={opEnvTheme.pShape||"circle"} direction={opEnvTheme.pDir||"up"} /></div>}
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -3107,7 +3110,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           {/* Opponent lightning meter */}
           {ai.enemyZeusInPlay && (() => { const em=ai.enemyLightningMeter||0; const full=em>=2; return (<div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6, padding:"5px 10px", background:full?"rgba(255,220,0,0.13)":"rgba(255,220,0,0.04)", border:`1px solid rgba(255,220,0,${full?0.65:0.2})`, borderRadius:8, boxShadow:full?"0 0 14px rgba(255,210,0,0.4)":"none", transition:"all .3s" }}><span style={{ fontSize:18, lineHeight:1, filter:full?"drop-shadow(0 0 6px #ffe040) drop-shadow(0 0 12px #f0a000)":"none", transition:"filter .3s" }}>⚡</span><div style={{ display:"flex", gap:5 }}>{[0,1].map(i=>{ const lit=i<em; return (<div key={i} style={{ width:28, height:14, borderRadius:4, background:lit?"linear-gradient(90deg,#fffaaa,#ffe030,#f09000)":"rgba(60,50,0,0.45)", border:`1px solid ${lit?"#f0d020":"#2a1c00"}`, boxShadow:lit?"0 0 10px #ffe040bb, inset 0 1px 0 rgba(255,255,200,0.4)":"none", transition:"all .25s" }}/>); })}</div><span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:full?"#ffe040":"#a08820", fontWeight:700 }}>{full?"READY!":"OPP ⚡"}</span></div>); })()}
           <div style={{ fontSize:13, color:targetingSpell?"#ffe040":"#5a2424", fontFamily:"'Cinzel',serif", letterSpacing:3, marginBottom:4, textAlign:"center", fontWeight:700, textShadow:"0 1px 4px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.6)" }}>{targetingSpell?`⚡ CHOOSE TARGET — ${targetingSpell.name}`:"ENEMY FIELD"}</div>
-          <div style={{ height:195, display:"flex", gap:8, flexWrap:"nowrap", justifyContent:"center", alignItems:"center", overflowX:"auto", overflowY:"hidden", scrollbarWidth:"thin" }}>
+          <div style={{ height:182, display:"flex", gap:8, flexWrap:"nowrap", justifyContent:"center", alignItems:"center", overflowX:"auto", overflowY:"visible", scrollbarWidth:"thin" }}>
             {ai.enemyBoard.length===0?<span style={{ fontSize:10, color:"#241010", letterSpacing:3 }}>---</span>:ai.enemyBoard.map((c)=>(<Token key={c.uid} c={resolveCardArt(c,myRole==="p1"?gs?.p2Arts||{}:gs?.p1Arts||{})} animType={animUids[c.uid]} isTarget={!!attacker||!!targetingSpell} canSelect={false} onClick={()=>{ if(targetingSpell){playCard(targetingSpell,c.uid);}else if(attacker)atkCreature(c); else setPreviewCard(c); }}/>))}
           </div>
         </div>
@@ -3130,7 +3133,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           )}
         </div>
         {/* My zone — use my env theme */}
-        <div style={{ background: myEnvTheme ? myEnvTheme.bg : "rgba(40,100,20,0.09)", padding:"10px 14px", position:"relative", zIndex:2, transition:"background 1.5s ease", flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+        <div style={{ background: myEnvTheme ? myEnvTheme.bg : "rgba(40,100,20,0.09)", padding:"7px 12px", position:"relative", zIndex:2, transition:"background 1.5s ease", flex:1, display:"flex", flexDirection:"column", overflow:"visible", minHeight:0 }}>
           {myEnvTheme && <div style={{ position:"absolute", inset:0, pointerEvents:"none", zIndex:1 }}><FloatingParticles count={myEnvTheme.pCount||20} color={myEnvTheme.particle} speed={myEnvTheme.pSpeed||0.6} shape={myEnvTheme.pShape||"circle"} direction={myEnvTheme.pDir||"up"} /></div>}
           {myEnvCard && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 12px", background:`${myEnvCard.border}18`, border:`1px solid ${myEnvCard.border}44`, borderRadius:6, marginBottom:5, position:"relative", zIndex:2, animation:"slideDown 0.3s" }}>
             <div style={{ width:6, height:6, borderRadius:"50%", background:myEnvCard.border, boxShadow:`0 0 6px ${myEnvCard.border}`, animation:"pulse 2s infinite", flexShrink:0 }} />
@@ -3139,7 +3142,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
             <span style={{ fontSize:10, color:"#78cc45", fontFamily:"'Cinzel',serif", flexShrink:0, background:"rgba(80,180,50,0.15)", padding:"1px 5px", borderRadius:4 }}>YOURS · {Math.ceil((myEnvCard.turnsRemaining||4)/2)}R</span>
           </div>}
           <div style={{ fontSize:13, color:"#2e4818", fontFamily:"'Cinzel',serif", letterSpacing:3, marginBottom:4, textAlign:"center", fontWeight:700, textShadow:"0 1px 4px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.6)", position:"relative", zIndex:2 }}>YOUR FIELD</div>
-          <div style={{ height:195, flex:"0 0 auto", display:"flex", gap:8, flexWrap:"nowrap", justifyContent:"center", alignItems:"center", overflowX:"auto", overflowY:"hidden", scrollbarWidth:"thin", marginBottom:8 }}>
+          <div style={{ height:182, flex:"0 0 auto", display:"flex", gap:8, flexWrap:"nowrap", justifyContent:"center", alignItems:"center", overflowX:"auto", overflowY:"visible", scrollbarWidth:"thin", marginBottom:6 }}>
             {ai.playerBoard.length===0?<span style={{ fontSize:10, color:"#181408", letterSpacing:3 }}>{isMyTurn?"PLAY A CARD":"WAITING..."}</span>:ai.playerBoard.map((c)=>(<Token key={c.uid} c={resolveCardArt(c,myRole==="p1"?gs?.p1Arts||{}:gs?.p2Arts||{})} animType={animUids[c.uid]} selected={attacker===c.uid} isTarget={false} canSelect={isMyTurn&&c.canAttack&&!c.hasAttacked&&!syncing} onClick={()=>selectAtt(c)} onRightClick={()=>setPreviewCard(c)}/>))}
           </div>
           <div style={{ borderTop:"1px solid #181408", paddingTop:10, marginBottom:10, flex:"0 0 auto" }}>
@@ -3178,7 +3181,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         </div>
       </div>
       {/* Log */}
-      <div style={{ display:"flex", flexDirection:"column", gap:8, height:"100%", overflowY:"auto", minHeight:0 }}>
+      <div className="battle-log" style={{ display:"flex", flexDirection:"column", gap:8, height:"100%", overflowY:"auto", minHeight:0 }}>
         {attCard&&(<div style={{ background:`${attCard.border}15`, border:`1px solid ${attCard.border}55`, borderRadius:10, padding:10 }}><div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:attCard.border, fontWeight:600 }}>ATTACKING</div><div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#f0e8d8", fontWeight:700 }}>{attCard.name}</div><div style={{ fontSize:12, color:"#ff7050", fontWeight:700 }}>ATK {attCard.currentAtk}</div><button onClick={()=>setAttacker(null)} style={{ marginTop:6, width:"100%", padding:"3px", background:"transparent", border:"1px solid #241408", borderRadius:4, color:"#806040", fontFamily:"'Cinzel',serif", fontSize:8, cursor:"pointer" }}>Cancel</button></div>)}
         <div style={{ background:"#080604", border:"1px solid #161408", borderRadius:10, overflow:"hidden", display:"flex", flexDirection:"column", maxHeight:500 }}>
           <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#c09048", letterSpacing:3, padding:"8px 12px", borderBottom:"1px solid #281e08", fontWeight:700, display:"flex", justifyContent:"space-between", alignItems:"center", textShadow:"0 1px 4px rgba(0,0,0,0.8)" }}><span>BATTLE LOG</span><span style={{ fontSize:9, color:"#403828" }}>TURN {gs.turn}</span></div>
@@ -4958,6 +4961,661 @@ CREATE POLICY "upvote" ON community_feedback FOR UPDATE USING (true);`;
   );
 }
 
+// ═══ PLAYER PROFILE SCREEN ═══════════════════════════════════════════════════
+const ACHIEVEMENTS = [
+  { id: "first_win",       icon: "⚔", name: "First Blood",          desc: "Win your first match.",              check: u => (u.rankedWins||0)+(u.casualWins||0) >= 1,            progress: u => Math.min(1,(u.rankedWins||0)+(u.casualWins||0)), total: 1 },
+  { id: "ten_wins",        icon: "🏅", name: "Veteran",              desc: "Win 10 matches total.",              check: u => (u.rankedWins||0)+(u.casualWins||0) >= 10,           progress: u => Math.min(10,(u.rankedWins||0)+(u.casualWins||0)), total: 10 },
+  { id: "fifty_wins",      icon: "🥈", name: "Battle-Hardened",      desc: "Win 50 matches total.",              check: u => (u.rankedWins||0)+(u.casualWins||0) >= 50,           progress: u => Math.min(50,(u.rankedWins||0)+(u.casualWins||0)), total: 50 },
+  { id: "hundred_wins",    icon: "🥇", name: "Forge Master",         desc: "Win 100 matches total.",             check: u => (u.rankedWins||0)+(u.casualWins||0) >= 100,          progress: u => Math.min(100,(u.rankedWins||0)+(u.casualWins||0)), total: 100 },
+  { id: "reach_silver",    icon: "🥈", name: "Silver Ranked",        desc: "Reach Silver rank (1200+ MMR).",     check: u => (u.rankedRating||1000) >= 1200,                       progress: u => Math.min(1200,u.rankedRating||1000), total: 1200 },
+  { id: "reach_gold",      icon: "🥇", name: "Gold Ranked",          desc: "Reach Gold rank (1400+ MMR).",       check: u => (u.rankedRating||1000) >= 1400,                       progress: u => Math.min(1400,u.rankedRating||1000), total: 1400 },
+  { id: "reach_diamond",   icon: "💎", name: "Diamond Ascendant",    desc: "Reach Diamond rank (1800+ MMR).",    check: u => (u.rankedRating||1000) >= 1800,                       progress: u => Math.min(1800,u.rankedRating||1000), total: 1800 },
+  { id: "collector_10",    icon: "❖",  name: "Collector",            desc: "Own 10 unique cards.",               check: u => Object.values(u.collection||{}).filter(v=>v>0).length >= 10,  progress: u => Math.min(10,Object.values(u.collection||{}).filter(v=>v>0).length), total: 10 },
+  { id: "collector_30",    icon: "❖",  name: "Archivist",            desc: "Own 30 unique cards.",               check: u => Object.values(u.collection||{}).filter(v=>v>0).length >= 30,  progress: u => Math.min(30,Object.values(u.collection||{}).filter(v=>v>0).length), total: 30 },
+  { id: "full_collection", icon: "👑", name: "Complete Set",         desc: "Own every card in the game.",        check: u => GAMEPLAY_POOL.every(c => (u.collection||{})[c.id] > 0),      progress: u => GAMEPLAY_POOL.filter(c=>(u.collection||{})[c.id]>0).length, total: GAMEPLAY_POOL.length },
+  { id: "deck_builder",    icon: "📋", name: "Deck Builder",         desc: "Build your first deck.",             check: u => (u.decks||[]).length >= 1,                            progress: u => Math.min(1,(u.decks||[]).length), total: 1 },
+  { id: "five_decks",      icon: "📚", name: "Tactician",            desc: "Build 5 different decks.",           check: u => (u.decks||[]).length >= 5,                            progress: u => Math.min(5,(u.decks||[]).length), total: 5 },
+  { id: "fables_owner",    icon: "⚡", name: "Touched by Olympus",   desc: "Own Zeus or Hades.",                 check: u => (u.collection||{}).zeus_storm_father > 0 || (u.collection||{}).hades_soul_reaper > 0, progress: u => ((u.collection||{}).zeus_storm_father>0?1:0)+((u.collection||{}).hades_soul_reaper>0?1:0), total: 2 },
+  { id: "food_fight_fan",  icon: "🍖", name: "Food Fight Fan",       desc: "Own 5 Food Fight cards.",            check: u => GAMEPLAY_POOL.filter(c=>c.region==="Food Fight"&&(u.collection||{})[c.id]>0).length >= 5, progress: u => GAMEPLAY_POOL.filter(c=>c.region==="Food Fight"&&(u.collection||{})[c.id]>0).length, total: 5 },
+  { id: "rich",            icon: "💎", name: "Shard Hoarder",        desc: "Accumulate 5000 shards.",            check: u => (u.shards||0) >= 5000,                               progress: u => Math.min(5000,u.shards||0), total: 5000 },
+];
+
+function PlayerProfileScreen({ user }) {
+  const [profileTab, setProfileTab] = useState("overview");
+
+  if (!user) return null;
+
+  const wins = (user.rankedWins||0) + (user.casualWins||0);
+  const losses = (user.rankedLosses||0) + (user.casualLosses||0);
+  const total = wins + losses;
+  const winRate = total > 0 ? Math.round((wins/total)*100) : 0;
+  const rank = getRank(user.rankedRating);
+  const gpIds = new Set(GAMEPLAY_POOL.map(c=>c.id));
+  const uniqueOwned = Object.entries(user.collection||{}).filter(([id,v])=>v>0&&gpIds.has(id)).length;
+  const totalCards = GAMEPLAY_POOL.filter(c=>!c.isToken).length;
+
+  // By-region breakdown
+  const regionStats = [...new Set(GAMEPLAY_POOL.filter(c=>!c.isToken).map(c=>c.region))].map(r => {
+    const regionCards = GAMEPLAY_POOL.filter(c=>c.region===r&&!c.isToken);
+    const owned = regionCards.filter(c=>(user.collection||{})[c.id]>0).length;
+    return { region: r, owned, total: regionCards.length, color: GLOW[r] || "#e8c060" };
+  }).sort((a,b) => b.owned/b.total - a.owned/a.total);
+
+  const decks = user.decks || [];
+
+  const TABS = [
+    { id: "overview", label: "Overview" },
+    { id: "collection", label: "Collection" },
+    { id: "decks", label: "Deck Boxes" },
+    { id: "achievements", label: "Achievements" },
+  ];
+
+  return (
+    <div style={{ maxWidth: 800, margin: "0 auto", padding: "28px 16px 60px", fontFamily: "'Cinzel', serif" }}>
+      {/* Profile Header */}
+      <div style={{ background: "linear-gradient(160deg,#1a1208,#0e0a04)", border: "1px solid #2a2010", borderRadius: 16, padding: "24px 28px", marginBottom: 20, display: "flex", alignItems: "center", gap: 24 }}>
+        <div style={{ width: 80, height: 80, borderRadius: "50%", overflow: "hidden", border: `3px solid ${rank.color}88`, display: "flex", alignItems: "center", justifyContent: "center", background: "#1a1408", fontFamily: "'Cinzel',serif", fontSize: 24, color: "#e8c060", flexShrink: 0, boxShadow: `0 0 20px ${rank.color}44` }}>
+          {user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user.name||"?").slice(0,2).toUpperCase()}
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 24, fontWeight: 900, color: "#f0d878", letterSpacing: 2, marginBottom: 4 }}>{user.name}</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+            <span style={{ padding: "3px 10px", background: `${rank.color}20`, border: `1px solid ${rank.color}55`, borderRadius: 8, fontSize: 10, color: rank.color, fontWeight: 700 }}>{rank.icon} {rank.name}</span>
+            <span style={{ padding: "3px 10px", background: "#20180a", border: "1px solid #3a2810", borderRadius: 8, fontSize: 10, color: "#a08040" }}>{user.rankedRating||1000} MMR</span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+            {[["WINS", wins, "#78cc45"], ["LOSSES", losses, "#e05050"], ["WIN%", winRate+"%", winRate>=50?"#78cc45":"#e8a020"], ["SHARDS", user.shards||0, "#60c8ff"]].map(([l,v,c]) => (
+              <div key={l} style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 16, fontWeight: 900, color: c }}>{v}</div>
+                <div style={{ fontSize: 8, color: "#604828", letterSpacing: 1 }}>{l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Tab Bar */}
+      <div style={{ display: "flex", gap: 2, marginBottom: 20, background: "#0e0c08", borderRadius: 10, padding: 4, border: "1px solid #1e1810" }}>
+        {TABS.map(t => (
+          <button key={t.id} onClick={() => setProfileTab(t.id)} style={{ flex: 1, padding: "8px 4px", background: profileTab === t.id ? "linear-gradient(135deg,#2a2010,#1a1408)" : "transparent", border: profileTab === t.id ? "1px solid #3a2810" : "1px solid transparent", borderRadius: 7, fontSize: 10, fontWeight: 700, color: profileTab === t.id ? "#e8c060" : "#806040", cursor: "pointer", fontFamily: "'Cinzel',serif", letterSpacing: 0.5, transition: "all .15s" }}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Overview Tab */}
+      {profileTab === "overview" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Match Stats */}
+          <div style={{ background: "#0e0c08", border: "1px solid #1e1810", borderRadius: 12, padding: 20 }}>
+            <div style={{ fontSize: 9, letterSpacing: 4, color: "#6a4c20", marginBottom: 14 }}>MATCH HISTORY</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {[
+                ["Ranked Wins", user.rankedWins||0, "#78cc45"],
+                ["Ranked Losses", user.rankedLosses||0, "#e05050"],
+                ["Casual Wins", user.casualWins||0, "#60c8a0"],
+                ["Casual Losses", user.casualLosses||0, "#e08060"],
+              ].map(([l,v,c]) => (
+                <div key={l} style={{ background: "#0a0806", border: "1px solid #1a1408", borderRadius: 8, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 11, color: "#806040" }}>{l}</span>
+                  <span style={{ fontSize: 18, fontWeight: 900, color: c }}>{v}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Collection Summary */}
+          <div style={{ background: "#0e0c08", border: "1px solid #1e1810", borderRadius: 12, padding: 20 }}>
+            <div style={{ fontSize: 9, letterSpacing: 4, color: "#6a4c20", marginBottom: 10 }}>COLLECTION SUMMARY</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+              <div style={{ flex: 1, height: 8, background: "#1a1408", borderRadius: 4, overflow: "hidden" }}>
+                <div style={{ width: `${Math.round((uniqueOwned/totalCards)*100)}%`, height: "100%", background: "linear-gradient(90deg,#c89010,#f0c040)", borderRadius: 4, transition: "width .5s" }} />
+              </div>
+              <span style={{ fontSize: 12, color: "#e8c060", fontWeight: 700, flexShrink: 0 }}>{uniqueOwned} / {totalCards}</span>
+            </div>
+            <div style={{ fontSize: 10, color: "#604828" }}>{Math.round((uniqueOwned/totalCards)*100)}% complete</div>
+          </div>
+          {/* Recent achievements unlocked */}
+          <div style={{ background: "#0e0c08", border: "1px solid #1e1810", borderRadius: 12, padding: 20 }}>
+            <div style={{ fontSize: 9, letterSpacing: 4, color: "#6a4c20", marginBottom: 14 }}>RECENT ACHIEVEMENTS</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {ACHIEVEMENTS.filter(a => a.check(user)).slice(-4).map(a => (
+                <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 12px", background: "#080604", border: "1px solid #2a2010", borderRadius: 8 }}>
+                  <span style={{ fontSize: 18 }}>{a.icon}</span>
+                  <div>
+                    <div style={{ fontSize: 11, color: "#e8c060", fontWeight: 700 }}>{a.name}</div>
+                    <div style={{ fontSize: 9, color: "#604828" }}>{a.desc}</div>
+                  </div>
+                  <span style={{ marginLeft: "auto", fontSize: 12, color: "#78cc45" }}>✓</span>
+                </div>
+              ))}
+              {ACHIEVEMENTS.filter(a => a.check(user)).length === 0 && (
+                <div style={{ fontSize: 11, color: "#503828", textAlign: "center", padding: 16 }}>No achievements yet — keep playing!</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Collection Tab */}
+      {profileTab === "collection" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ fontSize: 10, color: "#604828", textAlign: "center", marginBottom: 4 }}>Cards owned by region</div>
+          {regionStats.map(r => (
+            <div key={r.region} style={{ background: "#0e0c08", border: `1px solid ${r.color}33`, borderRadius: 10, padding: "14px 18px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: r.color }}>{r.region}</span>
+                <span style={{ fontSize: 11, color: "#a08040" }}>{r.owned} / {r.total}</span>
+              </div>
+              <div style={{ height: 6, background: "#1a1408", borderRadius: 3, overflow: "hidden" }}>
+                <div style={{ width: `${Math.round((r.owned/r.total)*100)}%`, height: "100%", background: `linear-gradient(90deg,${r.color}88,${r.color})`, borderRadius: 3, transition: "width .5s" }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Decks Tab */}
+      {profileTab === "decks" && (
+        <div>
+          {decks.length === 0 ? (
+            <div style={{ textAlign: "center", padding: 48, color: "#503828", fontSize: 12 }}>
+              <div style={{ fontSize: 32, marginBottom: 12 }}>📋</div>
+              No decks built yet. Head to Cards to build your first deck!
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {decks.map((deck, i) => {
+                const cardCount = (deck.cards||[]).reduce((s,c)=>s+(c.count||1),0);
+                const regions = [...new Set((deck.cards||[]).map(c=>{ const found = POOL.find(p=>p.id===c.id); return found?.region||"?"; }))];
+                return (
+                  <div key={i} style={{ background: "#0e0c08", border: "1px solid #2a2010", borderRadius: 12, padding: "16px 20px", display: "flex", alignItems: "center", gap: 16 }}>
+                    <div style={{ fontSize: 28, flexShrink: 0 }}>🃏</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "#e8c060", marginBottom: 4 }}>{deck.name || `Deck ${i+1}`}</div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 9, color: "#806040" }}>{cardCount} cards</span>
+                        {regions.slice(0,3).map(r => (
+                          <span key={r} style={{ fontSize: 9, color: GLOW[r]||"#e8c060", padding: "1px 6px", background: `${GLOW[r]||"#e8c060"}15`, border: `1px solid ${GLOW[r]||"#e8c060"}33`, borderRadius: 4 }}>{r}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Achievements Tab */}
+      {profileTab === "achievements" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ fontSize: 10, color: "#604828", textAlign: "center", marginBottom: 4 }}>
+            {ACHIEVEMENTS.filter(a=>a.check(user)).length} / {ACHIEVEMENTS.length} unlocked
+          </div>
+          {ACHIEVEMENTS.map(a => {
+            const done = a.check(user);
+            const prog = a.progress(user);
+            const pct = Math.min(100, Math.round((prog/a.total)*100));
+            return (
+              <div key={a.id} style={{ background: done ? "linear-gradient(135deg,#0e120a,#0a0e06)" : "#0e0c08", border: `1px solid ${done?"#78cc4444":"#1e1810"}`, borderRadius: 10, padding: "14px 18px", opacity: done ? 1 : 0.7, transition: "all .2s" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: done?0:8 }}>
+                  <span style={{ fontSize: 22, filter: done?"none":"grayscale(1) brightness(0.5)" }}>{a.icon}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: done?"#e8c060":"#605040" }}>{a.name}</div>
+                    <div style={{ fontSize: 9, color: "#504030", marginTop: 2 }}>{a.desc}</div>
+                  </div>
+                  {done && <span style={{ fontSize: 16, color: "#78cc45" }}>✓</span>}
+                </div>
+                {!done && (
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, fontSize: 9, color: "#604030" }}>
+                      <span>{prog} / {a.total}</span><span>{pct}%</span>
+                    </div>
+                    <div style={{ height: 4, background: "#1a1408", borderRadius: 2, overflow: "hidden" }}>
+                      <div style={{ width: pct+"%", height: "100%", background: "linear-gradient(90deg,#604010,#c08020)", borderRadius: 2, transition: "width .5s" }} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══ FRIENDS SCREEN ══════════════════════════════════════════════════════════
+function FriendsScreen({ user, onStartDuel }) {
+  const [friends, setFriends] = useState([]);
+  const [pendingIn, setPendingIn] = useState([]);
+  const [pendingOut, setPendingOut] = useState([]);
+  const [search, setSearch] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [onlineIds, setOnlineIds] = useState(new Set());
+  const [incomingChallenge, setIncomingChallenge] = useState(null);
+  const [challengeSent, setChallengeSent] = useState(null);
+  const presenceRef = useRef(null);
+  const challengeRef = useRef(null);
+
+  const loadFriends = async () => {
+    if (!user?.id) return;
+    const { data } = await supabase.from("friendships").select("*")
+      .or(`requester.eq.${user.id},accepter.eq.${user.id}`);
+    if (!data) return;
+    const accepted = data.filter(r => r.status === "accepted");
+    const pending = data.filter(r => r.status === "pending");
+    setFriends(accepted.map(r => r.requester === user.id
+      ? { id: r.accepter, name: r.accepter_name || r.accepter.slice(0,8), rowId: r.id }
+      : { id: r.requester, name: r.requester_name || r.requester.slice(0,8), rowId: r.id }));
+    setPendingIn(pending.filter(r => r.accepter === user.id).map(r => ({ id: r.requester, name: r.requester_name || r.requester.slice(0,8), rowId: r.id })));
+    setPendingOut(pending.filter(r => r.requester === user.id).map(r => ({ id: r.accepter, name: r.accepter_name || r.accepter.slice(0,8), rowId: r.id })));
+  };
+
+  useEffect(() => {
+    loadFriends();
+    // Presence channel for online status
+    const ch = supabase.channel("presence:forge_global", { config: { presence: { key: user?.id } } });
+    ch.on("presence", { event: "sync" }, () => {
+      const state = ch.presenceState();
+      setOnlineIds(new Set(Object.keys(state)));
+    }).subscribe(async (status) => {
+      if (status === "SUBSCRIBED" && user?.id) {
+        await ch.track({ user_id: user.id, name: user.name, online_at: new Date().toISOString() });
+      }
+    });
+    presenceRef.current = ch;
+    // Challenge receive channel
+    const cc = supabase.channel(`challenge:${user?.id}`);
+    cc.on("broadcast", { event: "challenge" }, ({ payload }) => {
+      setIncomingChallenge(payload);
+    }).on("broadcast", { event: "challenge_cancel" }, () => {
+      setIncomingChallenge(null);
+    }).subscribe();
+    challengeRef.current = cc;
+    return () => {
+      supabase.removeChannel(ch);
+      supabase.removeChannel(cc);
+    };
+  }, [user?.id]); // eslint-disable-line
+
+  const doSearch = async () => {
+    if (!search.trim()) return;
+    setSearching(true);
+    const { data } = await supabase.from("profiles").select("id,name,avatar_url").ilike("name", `%${search.trim()}%`).limit(8);
+    setSearchResults((data || []).filter(p => p.id !== user?.id));
+    setSearching(false);
+  };
+
+  const sendRequest = async (target) => {
+    const existing = [...friends, ...pendingIn, ...pendingOut].find(f => f.id === target.id);
+    if (existing) return;
+    await supabase.from("friendships").insert([{
+      requester: user.id, accepter: target.id,
+      requester_name: user.name, accepter_name: target.name, status: "pending"
+    }]);
+    await loadFriends();
+    setSearchResults(prev => prev.filter(p => p.id !== target.id));
+  };
+
+  const acceptRequest = async (row) => {
+    await supabase.from("friendships").update({ status: "accepted" }).eq("id", row.rowId);
+    await loadFriends();
+  };
+
+  const removeFriend = async (row) => {
+    await supabase.from("friendships").delete().eq("id", row.rowId);
+    await loadFriends();
+  };
+
+  const sendChallenge = async (friend) => {
+    setChallengeSent(friend.id);
+    const ch = supabase.channel(`challenge:${friend.id}`);
+    await ch.subscribe();
+    await ch.send({ type: "broadcast", event: "challenge", payload: { fromId: user.id, fromName: user.name, fromAvatar: user.avatarUrl } });
+    supabase.removeChannel(ch);
+    setTimeout(() => setChallengeSent(null), 8000);
+  };
+
+  const acceptChallenge = async () => {
+    if (!incomingChallenge) return;
+    const { data: match, error } = await supabase.from("matches").insert([{
+      player1_id: incomingChallenge.fromId, player2_id: user.id,
+      status: "active", mode: "casual", created_at: new Date().toISOString()
+    }]).select().single();
+    setIncomingChallenge(null);
+    if (match && !error) {
+      // Notify challenger via their challenge channel
+      const ch = supabase.channel(`challenge:${incomingChallenge.fromId}`);
+      await ch.subscribe();
+      await ch.send({ type: "broadcast", event: "challenge_accepted", payload: { matchId: match.id, accepterName: user.name } });
+      supabase.removeChannel(ch);
+      if (onStartDuel) onStartDuel({ matchId: match.id, opponentName: incomingChallenge.fromName, ranked: false });
+    }
+  };
+
+  const STATUS = { online: "#78cc45", offline: "#504030" };
+  const isOnline = (id) => onlineIds.has(id);
+
+  return (
+    <div style={{ maxWidth: 760, margin: "0 auto", padding: "28px 16px" }}>
+      {/* Incoming challenge modal */}
+      {incomingChallenge && (
+        <div style={{ position:"fixed", inset:0, zIndex:600, background:"rgba(0,0,0,0.88)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <div style={{ background:"linear-gradient(160deg,#1a1208,#0e0a04)", border:"2px solid #e8c060aa", borderRadius:18, padding:"36px 44px", textAlign:"center", maxWidth:340, animation:"fadeIn 0.3s" }}>
+            <div style={{ fontSize:48, marginBottom:12 }}>⚔️</div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:20, fontWeight:900, color:"#e8c060", marginBottom:6, letterSpacing:1 }}>CHALLENGE!</div>
+            <div style={{ fontSize:14, color:"#d0c098", marginBottom:24 }}><span style={{ color:"#f0e0a0", fontWeight:700 }}>{incomingChallenge.fromName}</span> challenges you to a duel!</div>
+            <div style={{ display:"flex", gap:12, justifyContent:"center" }}>
+              <button onClick={acceptChallenge} style={{ padding:"12px 28px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:10, fontFamily:"'Cinzel',serif", fontSize:13, fontWeight:700, color:"#1a1000", cursor:"pointer", letterSpacing:1 }}>ACCEPT</button>
+              <button onClick={() => setIncomingChallenge(null)} style={{ padding:"12px 20px", background:"transparent", border:"1px solid #4a2010", borderRadius:10, fontFamily:"'Cinzel',serif", fontSize:12, color:"#806040", cursor:"pointer" }}>DECLINE</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize:24, fontWeight:900, color:"#e8c060", marginBottom:4, letterSpacing:2 }}>⚉ FRIENDS</div>
+      <div style={{ fontSize:11, color:"#604030", fontFamily:"'Cinzel',serif", letterSpacing:2, marginBottom:24 }}>CHALLENGE FRIENDS · SEE WHO'S ONLINE</div>
+
+      {/* Search */}
+      <div style={{ display:"flex", gap:8, marginBottom:24 }}>
+        <input value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doSearch()} placeholder="Search by username…" style={{ flex:1, padding:"10px 14px", background:"#0e0c08", border:"1px solid #3a2a10", borderRadius:8, color:"#e8d8a0", fontFamily:"'Cinzel',serif", fontSize:12, outline:"none" }} />
+        <button onClick={doSearch} disabled={searching} style={{ padding:"10px 20px", background:"linear-gradient(135deg,#4a3010,#6a4818)", border:"1px solid #8a6030", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:"#e8c060", cursor:"pointer", fontWeight:700 }}>{searching?"…":"SEARCH"}</button>
+      </div>
+
+      {/* Search results */}
+      {searchResults.length > 0 && (
+        <div style={{ background:"#0a0806", border:"1px solid #2a1e08", borderRadius:10, marginBottom:20, overflow:"hidden" }}>
+          <div style={{ padding:"8px 14px", borderBottom:"1px solid #1a1408", fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", letterSpacing:3 }}>SEARCH RESULTS</div>
+          {searchResults.map(p => (
+            <div key={p.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", borderBottom:"1px solid #140e04" }}>
+              <div style={{ width:34, height:34, borderRadius:"50%", background:"#1a1208", border:"1px solid #3a2810", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:12, color:"#e8c060", overflow:"hidden", flexShrink:0 }}>
+                {p.avatar_url ? <img src={p.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (p.name||"?").slice(0,2).toUpperCase()}
+              </div>
+              <span style={{ flex:1, fontFamily:"'Cinzel',serif", fontSize:13, color:"#d0c098" }}>{p.name}</span>
+              <button onClick={()=>sendRequest(p)} style={{ padding:"6px 14px", background:"rgba(200,144,16,0.15)", border:"1px solid #8a6030", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:10, color:"#e8c060", cursor:"pointer" }}>+ ADD</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Pending incoming */}
+      {pendingIn.length > 0 && (
+        <div style={{ background:"#0a0806", border:"1px solid #3a2a10", borderRadius:10, marginBottom:20, overflow:"hidden" }}>
+          <div style={{ padding:"8px 14px", borderBottom:"1px solid #1a1408", fontFamily:"'Cinzel',serif", fontSize:9, color:"#e8c060", letterSpacing:3 }}>PENDING REQUESTS ({pendingIn.length})</div>
+          {pendingIn.map(p => (
+            <div key={p.rowId} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", borderBottom:"1px solid #100c04" }}>
+              <div style={{ width:34, height:34, borderRadius:"50%", background:"#1a1208", border:"1px solid #3a2810", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:12, color:"#e8c060" }}>{p.name.slice(0,2).toUpperCase()}</div>
+              <span style={{ flex:1, fontFamily:"'Cinzel',serif", fontSize:13, color:"#d0c098" }}>{p.name}</span>
+              <button onClick={()=>acceptRequest(p)} style={{ padding:"6px 14px", background:"linear-gradient(135deg,#1a4010,#2a6018)", border:"1px solid #4a8030", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:10, color:"#78cc45", cursor:"pointer", fontWeight:700 }}>ACCEPT</button>
+              <button onClick={()=>removeFriend(p)} style={{ padding:"6px 10px", background:"transparent", border:"1px solid #3a1010", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:10, color:"#804040", cursor:"pointer" }}>✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Friends list */}
+      <div style={{ background:"#0a0806", border:"1px solid #2a1e08", borderRadius:10, overflow:"hidden" }}>
+        <div style={{ padding:"8px 14px", borderBottom:"1px solid #1a1408", fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", letterSpacing:3 }}>FRIENDS — {friends.filter(f=>isOnline(f.id)).length} ONLINE</div>
+        {friends.length === 0 && <div style={{ padding:"28px", textAlign:"center", fontFamily:"'Cinzel',serif", fontSize:11, color:"#3a2a10", letterSpacing:2 }}>NO FRIENDS YET — SEARCH TO ADD</div>}
+        {friends.map(f => {
+          const online = isOnline(f.id);
+          return (
+            <div key={f.rowId} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", borderBottom:"1px solid #100c04", background: online ? "rgba(120,200,69,0.04)" : "transparent", transition:"background .3s" }}>
+              <div style={{ position:"relative", flexShrink:0 }}>
+                <div style={{ width:38, height:38, borderRadius:"50%", background:"#1a1208", border:`2px solid ${online?"#78cc4566":"#2a1e0a"}`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:13, color:"#e8c060", transition:"border-color .3s" }}>{f.name.slice(0,2).toUpperCase()}</div>
+                <div style={{ position:"absolute", bottom:1, right:1, width:10, height:10, borderRadius:"50%", background:online?"#78cc45":"#303020", border:"2px solid #0a0806", transition:"background .3s" }} />
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#d0c098", fontWeight:700 }}>{f.name}</div>
+                <div style={{ fontSize:9, color:online?"#78cc4599":"#403828", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>{online?"ONLINE":"OFFLINE"}</div>
+              </div>
+              {online && (
+                <button onClick={()=>sendChallenge(f)} disabled={challengeSent===f.id} style={{ padding:"8px 16px", background:challengeSent===f.id?"rgba(255,255,255,0.04)":"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:challengeSent===f.id?"#404030":"#1a1000", cursor:challengeSent===f.id?"default":"pointer", letterSpacing:1 }}>{challengeSent===f.id?"SENT…":"⚔ DUEL"}</button>
+              )}
+              <button onClick={()=>removeFriend(f)} style={{ padding:"6px 10px", background:"transparent", border:"1px solid #2a1010", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:10, color:"#603030", cursor:"pointer", opacity:0.6 }}>✕</button>
+            </div>
+          );
+        })}
+      </div>
+
+      {pendingOut.length > 0 && (
+        <div style={{ marginTop:16, background:"#0a0806", border:"1px solid #1a1408", borderRadius:10, overflow:"hidden" }}>
+          <div style={{ padding:"8px 14px", borderBottom:"1px solid #1a1408", fontFamily:"'Cinzel',serif", fontSize:9, color:"#403828", letterSpacing:3 }}>SENT REQUESTS</div>
+          {pendingOut.map(p => (
+            <div key={p.rowId} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", borderBottom:"1px solid #100c04" }}>
+              <div style={{ width:34, height:34, borderRadius:"50%", background:"#1a1208", border:"1px solid #2a1e0a", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:12, color:"#806040" }}>{p.name.slice(0,2).toUpperCase()}</div>
+              <span style={{ flex:1, fontFamily:"'Cinzel',serif", fontSize:13, color:"#806040" }}>{p.name}</span>
+              <button onClick={()=>removeFriend(p)} style={{ padding:"6px 12px", background:"transparent", border:"1px solid #2a1a08", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:10, color:"#604030", cursor:"pointer" }}>CANCEL</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── LORE SCREEN ──────────────────────────────────────────────────────────────
+const LORE_REGIONS = [
+  {
+    id: "thornwood",
+    name: "Thornwood",
+    glyph: "🌲",
+    color: "#4a9020",
+    bg: "linear-gradient(135deg,#0a1a06 0%,#0f2a08 50%,#0a1a06 100%)",
+    tagline: "Where roots remember every war.",
+    lore: `Deep within the Thornwood, the trees have grown for ten thousand years — and they remember everything. Every battle, every betrayal, every pact sworn under canopy shade is encoded in their rings. The wolves that prowl these ancient paths are not beasts. They are guardians of memory, their howls a language older than any written tongue.\n\nThe Thornwood Guard swear no oath to king or coin. Their allegiance is to the forest itself — to the slow pulse of sap through wood, to the decree that no blade may fell what nature raised. The Rootcaller Druids can commune with the oldest trees, drawing out their fury or their mercy.\n\nTanglers hunt from below. Centuries of war have taught the undergrowth patience. Invaders who march too deep find the ground rising to meet them.`,
+    cards: ["Stonefang Wolf", "Thornwood Guard", "Rootcaller Druid", "Tanglewood Trap", "Ancient Grove"],
+    champion: null,
+    flavor: `"The forest does not hate you. It simply does not need you to survive."`,
+  },
+  {
+    id: "shattered",
+    name: "Shattered Expanse",
+    glyph: "◈",
+    color: "#40a0c0",
+    bg: "linear-gradient(135deg,#060e1a 0%,#081828 50%,#060e1a 100%)",
+    tagline: "Time broke here. It never healed.",
+    lore: `When the first Rift tore open in the Expanse, it did not close. It fractured — shattering into hundreds of smaller rifts, each one a window into a slightly different when. The Echo Wisps that drift through this landscape are echoes of people who walked these sands in timelines that no longer exist.\n\nVelrun has navigated these rifts for longer than memory allows. They have watched themselves die. They have spoken to themselves at futures that never arrived. The Timeline Weaver draws threads from collapsed moments and weaves them into fresh possibility — sometimes to heal, sometimes to erase.\n\nThe Shattered Expanse rewards those who embrace contradiction. Here, cause follows effect. Here, arrival precedes departure.`,
+    cards: ["Echo Wisp", "Rift Shard", "Timeline Weaver", "Velrun", "Fractured Rift"],
+    champion: { name: "Velrun", title: "Walker Between Moments", lore: "Velrun remembers every version of this fight. In most of them, you lose. But Velrun has learned that memory is not prophecy — and occasionally, the forgotten path is the only one left." },
+    flavor: `"I've already been here. You just don't know it yet."`,
+  },
+  {
+    id: "azure",
+    name: "Azure Deep",
+    glyph: "◉",
+    color: "#2060e0",
+    bg: "linear-gradient(135deg,#040a1e 0%,#060f30 50%,#040a1e 100%)",
+    tagline: "The ocean is patient. The ocean always wins.",
+    lore: `Below the surface of the Moaning Sea lies a civilization older than any above it. The Azure Deep spans trenches and ridgelines, coral cities and abyssal plains. The Tidecaller communes with the current itself, drawing storms from calm water. Shellguards formed their shells over decades spent in war-zones — each crack in their carapace a story of survival.\n\nThe Abyssal Kraken does not hunt. It waits. Its patience is geological. When the Kraken stirs, fishermen say the sea itself holds its breath. Riptide Current can funnel the force of an entire ocean through a single point — enough to knock champions from their feet.\n\nThe Deep does not welcome visitors. But those who earn its respect become part of the tide.`,
+    cards: ["Tidecaller", "Shellguard", "Riptide Current", "Abyssal Kraken", "Sunken Depths"],
+    champion: { name: "Abyssal Kraken", title: "Hunger of the Deep", lore: "No one knows how old the Kraken is. Scholars have found cave paintings of it. The paintings are underwater now." },
+    flavor: `"It isn't attacking you. You swam into its dream."`,
+  },
+  {
+    id: "ashfen",
+    name: "Ashfen",
+    glyph: "🔥",
+    color: "#d04010",
+    bg: "linear-gradient(135deg,#1a0600 0%,#2a0800 50%,#1a0600 100%)",
+    tagline: "Nothing burns alone in Ashfen.",
+    lore: `Ashfen is what happens when a swamp catches fire and refuses to stop burning. The peat has been smoldering for three centuries. The sky is a permanent orange. The Emberveil Sprites emerged from the smoke — fragile, luminous, dangerous. The Ashfen Imps have adapted to the heat over generations, their skin cured to leather by constant exposure.\n\nThe Pyromancer does not control fire. They negotiate with it. Fire, in Ashfen's philosophy, is alive — a creature with opinions. To command a flame is to make a promise you cannot take back.\n\nThe Volcanic Eruption is not a disaster. It is a cleansing. Everything that survives becomes something stronger.`,
+    cards: ["Emberveil Sprite", "Ashfen Imp", "Pyromancer", "Volcanic Eruption", "Ashfen Caldera"],
+    champion: null,
+    flavor: `"We do not fear the fire. We are the fire's children."`,
+  },
+  {
+    id: "ironmarch",
+    name: "Ironmarch",
+    glyph: "⚙",
+    color: "#8090a0",
+    bg: "linear-gradient(135deg,#0a0e14 0%,#121820 50%,#0a0e14 100%)",
+    tagline: "Progress does not ask permission.",
+    lore: `The Ironmarch began as a forge-city — a single foundry where great weapons were cast in the age of the Titan Wars. It has become an empire. The Iron Sentinels are not soldiers. They are policies. Each one represents a law made physical, an edict given legs and blades.\n\nForge Automatons are built to build. They construct walls, mine ore, repair themselves, and occasionally request reassignment to combat units after witnessing too many battles. The Ironmarch Colossus is not the biggest thing the Ironmarch has ever made — it is simply the biggest thing they have ever let off the chain.\n\nThe Iron Barricade spell encodes the founding principle of Ironmarch: that the greatest weapon is the thing that cannot be moved.`,
+    cards: ["Iron Sentinel", "Forge Automaton", "Iron Barricade", "Ironmarch Colossus"],
+    champion: { name: "Ironmarch Colossus", title: "The Walking Edict", lore: "Constructed during the Siege of Velmarrow, the Colossus was meant to be dismantled after the war. No one gave the order. No one dared deliver it." },
+    flavor: `"It takes three months to build an Iron Sentinel. It takes a forge-master's entire career to build its heart."`,
+  },
+  {
+    id: "sunveil",
+    name: "Sunveil",
+    glyph: "☀",
+    color: "#d0a020",
+    bg: "linear-gradient(135deg,#1a1400 0%,#261e00 50%,#1a1400 100%)",
+    tagline: "In the light, nothing hides.",
+    lore: `The Sunveil Plains stretch from the Gilded Shelf to the Windwall Crags — vast, dry, and mercilessly honest. There is no cover here. The Sunveil Falcon sees every movement from a thousand feet up. The Sand Oracle reads the truth of things from the angle of shadows at noon.\n\nSunveil culture prizes clarity above all. Their magic is not subtle — Solar Flare does not creep or surprise. It announces itself and burns. The Shifting Dunes environment card captures Sunveil's defining philosophy: the ground itself refuses to let you stand still.\n\nThose who call Sunveil home do not hide from the sun. They use it.`,
+    cards: ["Sunveil Falcon", "Sand Oracle", "Solar Flare", "Shifting Dunes"],
+    champion: null,
+    flavor: `"Stand in the light and be judged. Or step into the shade and be forgotten."`,
+  },
+  {
+    id: "bloodpact",
+    name: "Bloodpact",
+    glyph: "⚉",
+    color: "#a01020",
+    bg: "linear-gradient(135deg,#14000a 0%,#200010 50%,#14000a 100%)",
+    tagline: "Every gift has a price. The Bloodpact collects.",
+    lore: `The Bloodpact is not a faction. It is a contract. Anyone may sign it — and many have, in moments of desperation when no other door remained open. The Siphon Wraith collects the interest. The Crimson Martyr demonstrates what full payment looks like.\n\nThe Hemomancer understands that blood is not waste. It is currency, communication, and causality. Every drop has potential. The Dark Bargain spell represents the core of the Bloodpact's philosophy: sacrifice something real, gain something real. No illusions.\n\nThose who wield Bloodpact power are not evil. They are pragmatic. They have simply accepted the arithmetic of power — and they are very good at math.`,
+    cards: ["Siphon Wraith", "Crimson Martyr", "Hemomancer", "Dark Bargain"],
+    champion: { name: "Hemomancer", title: "Architect of Sacrifice", lore: "The Hemomancer trains for years to learn a single lesson: how to give just enough to get everything." },
+    flavor: `"You still have two kidneys. Shall we discuss the exchange rate?"`,
+  },
+  {
+    id: "foodfight",
+    name: "Food Fight",
+    glyph: "🍖",
+    color: "#ff6040",
+    bg: "linear-gradient(135deg,#1a0800 0%,#2a0e00 50%,#1a0800 100%)",
+    tagline: "The most important battle of your life.",
+    lore: `Nobody knows how it started. The historians blame Berry & Tooty for the first incident — an aggressive Splat landing on a Protein delegation. The delegation retaliated with a Veggie Ingredient. Within an hour, the entire cafeteria was at war.\n\nNow the Food Fight spans realms. Master Jax brought tactical doctrine. Capt. Meatball brought raw aggression. The Broccoli Brute brought a passion for synergy that scholars call "deeply concerning." The Caffeine Catapult runs on refined sugar and grievances.\n\nThe Leftover Titan is what happens when nobody cleans up after the battle. It has absorbed nutrients from every group. It is considered a Fruit, Veggie, Protein, AND Sugar, which is unprecedented and frankly impressive. Food-nado is the signature finishing move: everything, everywhere, all at once. `,
+    cards: ["Berry & Tooty", "Master Jax", "Capt. Meatball", "Broccoli Brute", "Caffeine Catapult", "Sir Sizzles", "Leftover Titan", "Food-nado", "Bean Barrage"],
+    champion: { name: "Berry & Tooty", title: "The Champions of Chaos", lore: "They argue constantly. They also win constantly. The two facts are related." },
+    flavor: `"This is not a food fight. This is ART." — Master Jax, probably.`,
+  },
+  {
+    id: "fables",
+    name: "Fables",
+    glyph: "⚡",
+    color: "#9070ff",
+    bg: "linear-gradient(135deg,#0a0620 0%,#100a30 50%,#0a0620 100%)",
+    tagline: "The gods have returned. They are angry.",
+    lore: `Olympus did not fall. It descended. When the age of faith ended, the gods did not vanish — they contracted. They became denser, more specific, more dangerous. Zeus, Storm Father, traded worship for precision. Every lightning bolt now chosen. Every storm deliberate.\n\nHades came down last, and deepest. The Underworld is not below Olympus — it is below everything. His Soul Harvest began the moment living things first drew breath. He has been patient.\n\nMedusa never asked to be a monster. She asks it now. Her Gaze does not kill — it clarifies. The Cerberus Whelp has not yet grown three heads. It's working on it. The Spartan Recruits march because the alternative is explaining themselves to Hades.\n\nThe Fables expansion marks the gods' return to the field of play. For the first time in ten thousand years, they are taking sides.`,
+    cards: ["Zeus, Storm Father", "Hades, Soul Reaper", "Spartan Recruit", "Lost Soul", "Fables Guard", "Cerberus Whelp", "Titan-Slayer", "Bolt from the Blue", "River Styx", "Pandora's Box", "Hera's Command", "Medusa's Gaze"],
+    champion: { name: "Zeus & Hades", title: "Brothers of Sky and Grave", lore: "They do not cooperate. They compete. Every soul that dies is a point for Hades. Every storm that strikes is a point for Zeus. The game has been running since the first sunrise." },
+    flavor: `"Bring your best deck, mortal. We have been playing since before your kind had language."`,
+  },
+];
+
+function LoreScreen() {
+  const [selected, setSelected] = useState(null);
+  const [animating, setAnimating] = useState(false);
+
+  const select = (region) => {
+    if (selected?.id === region.id) { setSelected(null); return; }
+    setAnimating(true);
+    setSelected(region);
+    setTimeout(() => setAnimating(false), 80);
+  };
+
+  return (
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 16px 60px", fontFamily: "'Cinzel', serif" }}>
+      {/* Header */}
+      <div style={{ textAlign: "center", marginBottom: 36 }}>
+        <div style={{ fontSize: 11, letterSpacing: 6, color: "#6a4c20", marginBottom: 8 }}>CHRONICLES OF</div>
+        <h1 style={{ fontSize: 32, fontWeight: 900, color: "#c8a060", margin: 0, letterSpacing: 3, textShadow: "0 0 40px #8b6020aa" }}>FORGE &amp; FABLE</h1>
+        <div style={{ fontSize: 10, letterSpacing: 4, color: "#5a3c10", marginTop: 8 }}>THE KNOWN REALMS</div>
+        <div style={{ width: 60, height: 1, background: "linear-gradient(90deg,transparent,#6a4c20,transparent)", margin: "18px auto 0" }} />
+      </div>
+
+      {/* Region Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12, marginBottom: 32 }}>
+        {LORE_REGIONS.map(r => (
+          <div key={r.id} onClick={() => select(r)} style={{
+            background: selected?.id === r.id ? r.bg : "linear-gradient(135deg,#0e0c08,#141008)",
+            border: `1px solid ${selected?.id === r.id ? r.color + "88" : "#2a2010"}`,
+            borderRadius: 10,
+            padding: "14px 16px",
+            cursor: "pointer",
+            transition: "all 0.2s",
+            boxShadow: selected?.id === r.id ? `0 0 24px ${r.color}44, inset 0 0 20px ${r.color}11` : "none",
+            transform: selected?.id === r.id ? "scale(1.02)" : "scale(1)",
+          }}>
+            <div style={{ fontSize: 22, marginBottom: 6 }}>{r.glyph}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: selected?.id === r.id ? r.color : "#a08040", letterSpacing: 1 }}>{r.name}</div>
+            <div style={{ fontSize: 9, color: "#5a4820", marginTop: 4, letterSpacing: 0.5, fontStyle: "italic", lineHeight: 1.4 }}>{r.tagline}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Expanded Lore Panel */}
+      {selected && (
+        <div style={{
+          background: selected.bg,
+          border: `1px solid ${selected.color}55`,
+          borderRadius: 14,
+          padding: "32px 28px",
+          marginBottom: 32,
+          opacity: animating ? 0 : 1,
+          transition: "opacity 0.08s",
+          boxShadow: `0 0 60px ${selected.color}22, inset 0 0 40px ${selected.color}08`,
+        }}>
+          {/* Region header */}
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 20, marginBottom: 24 }}>
+            <div style={{ fontSize: 40, lineHeight: 1 }}>{selected.glyph}</div>
+            <div>
+              <div style={{ fontSize: 9, letterSpacing: 5, color: selected.color + "aa", marginBottom: 4 }}>REALM LORE</div>
+              <div style={{ fontSize: 26, fontWeight: 900, color: selected.color, letterSpacing: 2, textShadow: `0 0 20px ${selected.color}66` }}>{selected.name}</div>
+              <div style={{ fontSize: 11, color: "#806040", fontStyle: "italic", marginTop: 4 }}>{selected.tagline}</div>
+            </div>
+          </div>
+
+          {/* Lore text */}
+          <div style={{ fontSize: 13, color: "#c8a870", lineHeight: 1.85, marginBottom: 24 }}>
+            {selected.lore.split("\n\n").map((para, i) => (
+              <p key={i} style={{ margin: i === 0 ? 0 : "16px 0 0" }}>{para}</p>
+            ))}
+          </div>
+
+          {/* Flavor quote */}
+          <div style={{ borderLeft: `3px solid ${selected.color}55`, paddingLeft: 16, marginBottom: 24 }}>
+            <div style={{ fontSize: 12, color: selected.color + "cc", fontStyle: "italic", lineHeight: 1.6 }}>{selected.flavor}</div>
+          </div>
+
+          {/* Cards in this realm */}
+          <div style={{ marginBottom: selected.champion ? 24 : 0 }}>
+            <div style={{ fontSize: 9, letterSpacing: 4, color: "#6a4c20", marginBottom: 10 }}>KNOWN CARDS</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {selected.cards.map(name => (
+                <span key={name} style={{ background: selected.color + "22", border: `1px solid ${selected.color}44`, borderRadius: 6, padding: "4px 10px", fontSize: 10, color: selected.color + "dd", letterSpacing: 0.5 }}>{name}</span>
+              ))}
+            </div>
+          </div>
+
+          {/* Champion spotlight */}
+          {selected.champion && (
+            <div style={{ marginTop: 24, background: "rgba(0,0,0,0.4)", border: `1px solid ${selected.color}44`, borderRadius: 10, padding: "18px 20px" }}>
+              <div style={{ fontSize: 9, letterSpacing: 4, color: selected.color + "88", marginBottom: 8 }}>CHAMPION SPOTLIGHT</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: selected.color, marginBottom: 2 }}>{selected.champion.name}</div>
+              <div style={{ fontSize: 10, color: "#806040", fontStyle: "italic", marginBottom: 10, letterSpacing: 1 }}>{selected.champion.title}</div>
+              <div style={{ fontSize: 12, color: "#c0a060", lineHeight: 1.7 }}>{selected.champion.lore}</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Bottom flavor */}
+      {!selected && (
+        <div style={{ textAlign: "center", color: "#3a2c10", fontSize: 11, fontStyle: "italic", letterSpacing: 1 }}>
+          Select a realm to read its chronicle.
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CommunityScreen({ user }) {
   const [idea, setIdea] = useState("");
   const [generating, setGenerating] = useState(false);
@@ -5177,6 +5835,9 @@ const NAV = [
   { id: "play",       label: "Battle",  icon: "⚔" },
   { id: "store",      label: "Store",   icon: "◈" },
   { id: "collection", label: "Cards",   icon: "❖" },
+  { id: "profile",    label: "Profile", icon: "🏆" },
+  { id: "friends",    label: "Friends", icon: "⚉" },
+  { id: "lore",       label: "Lore",    icon: "📖" },
   { id: "community",  label: "Hub",     icon: "✦" },
   { id: "howto",      label: "Guide",   icon: "◉" },
 ];
@@ -5292,20 +5953,21 @@ export default function App() {
       @media(prefers-reduced-motion:reduce){*{animation-duration:0.01ms!important;transition-duration:0.01ms!important}}
       @supports(-webkit-backdrop-filter:blur(0px)){nav{-webkit-backdrop-filter:blur(10px)!important;backdrop-filter:blur(10px)!important}}
       @media(max-width:768px){
-        nav{height:60px!important;padding:0 6px!important}
-        nav button{padding:6px 8px!important;min-width:44px!important}
-        nav button span:first-child{font-size:16px!important}
-        nav button span:last-child{font-size:8px!important}
+        nav{height:56px!important;padding:0 2px!important;overflow-x:auto!important;overflow-y:hidden!important;flex-wrap:nowrap!important;scrollbar-width:none!important}
+        nav::-webkit-scrollbar{display:none!important}
+        nav button{padding:4px 8px!important;min-width:40px!important;flex-shrink:0!important}
+        nav button span:first-child{font-size:15px!important}
         h1{font-size:36px!important}
         h2{font-size:20px!important}
         .home-grid{grid-template-columns:1fr!important;gap:24px!important}
         .battle-grid{grid-template-columns:1fr!important}
+        .battle-side{display:none!important}
         .battle-log{display:none!important}
+        .battle-wrapper{height:calc(100vh - 56px)!important}
         .hand-row{overflow-x:auto!important;flex-wrap:nowrap!important;padding-bottom:8px!important;justify-content:flex-start!important}
-        .token{width:88px!important}
+        .token{width:88px!important;height:118px!important}
         .board-row{overflow-x:auto!important;flex-wrap:nowrap!important;justify-content:flex-start!important}
-        .nav-labels{display:none}
-        .nav-icon{display:block!important}
+        .nav-labels{display:none!important}
       }
       @media(max-width:640px){
         section>div{grid-template-columns:1fr!important}
@@ -5354,7 +6016,7 @@ export default function App() {
               style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8px 16px", gap: 4, background: active ? "linear-gradient(180deg,rgba(232,192,96,0.18) 0%,rgba(232,192,96,0.06) 100%)" : "transparent", border: "none", borderBottom: active ? "3px solid #e8c060" : "3px solid transparent", cursor: "pointer", minWidth: 68, transition: "all .18s", position: "relative", opacity: locked ? 0.45 : 1 }}
 >
               <span style={{ fontFamily: "'Cinzel',serif", fontSize: 18, fontWeight: 900, color: active ? "#e8c060" : "#b09458", lineHeight: 1, textShadow: active ? "0 0 20px #e8c06088" : "none", transition: "all .18s" }}>{t.icon}</span>
-              <span style={{ fontFamily: "'Cinzel',serif", fontSize: 10, fontWeight: 700, color: active ? "#e8c060" : "#a08858", letterSpacing: 1, lineHeight: 1, transition: "all .18s" }}>{t.label}</span>
+              <span className="nav-labels" style={{ fontFamily: "'Cinzel',serif", fontSize: 10, fontWeight: 700, color: active ? "#e8c060" : "#a08858", letterSpacing: 1, lineHeight: 1, transition: "all .18s" }}>{t.label}</span>
             </button>
           );
         })}
@@ -5485,6 +6147,9 @@ export default function App() {
       {tab === "play" && <GameTab user={user} onUpdateUser={update} setInPvpMatch={setInPvpMatch} setMatchActive={setMatchActive} />}
       {tab === "store" && <StoreScreen user={user} onUpdateUser={update} />}
       {tab === "collection" && <CollectionScreen user={user} onUpdateUser={update} onDeckBuilding={setDeckBuilding} />}
+      {tab === "profile" && <PlayerProfileScreen user={user} />}
+      {tab === "friends" && <FriendsScreen user={user} onStartDuel={({ matchId, opponentName }) => { setTab("play"); }} />}
+      {tab === "lore" && <LoreScreen />}
       {tab === "community" && <CommunityScreen user={user} />}
       {tab === "howto" && <GuideScreen />}
       {!inBattle && <footer style={{ borderTop: "1px solid #1e1a0e", padding: 22, textAlign: "center" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, color: "#40301a" }}>Forge {"&"} Fable</div><p style={{ fontSize: 9, color: "#30280e", margin: "4px 0 0", letterSpacing: 1 }}>{CURRENT_PATCH}: FABLES CARDS LIVE · ZEUS LIGHTNING METER · HADES SOUL HARVEST · CERBERUS WHELP · MEDUSA'S GAZE</p></footer>}
