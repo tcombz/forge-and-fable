@@ -1938,7 +1938,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
               <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:full?"#ffe040":"#a08820", fontWeight:700 }}>{full?"READY!":"ENEMY ⚡"}</span>
             </div>);
           })()}
-          <div style={{ fontSize: 13, color: targetingSpell ? "#ffe040" : "#5a2424", fontFamily: "'Cinzel',serif", letterSpacing: 3, marginBottom: 4, textAlign: "center", fontWeight: 700, textShadow: "0 1px 4px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.6)" }}>{targetingSpell ? `⚡ CHOOSE TARGET — ${targetingSpell.name}` : "ENEMY FIELD"}</div>
+          <div style={{ fontSize: 13, color: targetingSpell ? "#ffe040" : "#e05050", fontFamily: "'Cinzel',serif", letterSpacing: 3, marginBottom: 4, textAlign: "center", fontWeight: 700, textShadow: "0 -1px 0 rgba(255,255,255,0.3), 0 1px 4px rgba(0,0,0,0.95), 0 0 12px rgba(0,0,0,0.8)" }}>{targetingSpell ? `⚡ CHOOSE TARGET — ${targetingSpell.name}` : "ENEMY FIELD"}</div>
           <div style={{ height:182, display:"flex", gap:8, flexWrap:"nowrap", justifyContent:"center", alignItems:"center", overflowX:"auto", overflowY:"visible", scrollbarWidth:"thin" }}>
             {g.enemyBoard.length === 0 ? <span style={{ fontSize: 10, color: "#241010", letterSpacing: 3 }}>---</span> : g.enemyBoard.map((c) => (<Token key={c.uid} c={resolveCardArt(c, {})} animType={animUids[c.uid]} isTarget={!!attacker || !!targetingSpell} canSelect={false} onClick={() => { if (targetingSpell) { playCard(targetingSpell, c.uid); } else if (attacker) { atkCreature(c); } else { SFX.play("ability"); setPreviewCard(c); } }} />))}
           </div>
@@ -1975,7 +1975,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
             <span style={{ fontSize:10, color:"#a09068", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.environment.ability}</span>
             <span style={{ fontSize:10, color:"#806040", fontFamily:"'Cinzel',serif", flexShrink:0 }}>{Math.ceil((g.environment.turnsRemaining||4)/2)}R</span>
           </div>}
-          <div style={{ fontSize: 13, color: "#2e4818", fontFamily: "'Cinzel',serif", letterSpacing: 3, marginBottom: 4, textAlign: "center", fontWeight: 700, textShadow: "0 1px 4px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.6)" }}>YOUR FIELD</div>
+          <div style={{ fontSize: 13, color: "#6dc830", fontFamily: "'Cinzel',serif", letterSpacing: 3, marginBottom: 4, textAlign: "center", fontWeight: 700, textShadow: "0 -1px 0 rgba(255,255,255,0.3), 0 1px 4px rgba(0,0,0,0.95), 0 0 12px rgba(0,0,0,0.8)" }}>YOUR FIELD</div>
           <div style={{ height:182, flex:"0 0 auto", display:"flex", gap:8, flexWrap:"nowrap", justifyContent:"center", alignItems:"center", overflowX:"auto", overflowY:"visible", scrollbarWidth:"thin", marginBottom:6 }}>
             {g.playerBoard.length === 0 ? <span style={{ fontSize: 10, color: "#181408", letterSpacing: 3 }}>PLAY A CARD</span> : g.playerBoard.map((c) => (<Token key={c.uid} c={resolveCardArt(c, user?.selectedArts || {})} animType={animUids[c.uid]} selected={attacker === c.uid} isTarget={false} canSelect={g.phase === "player" && c.canAttack && !c.hasAttacked && !aiThink} onClick={() => selectAtt(c)} onRightClick={() => { SFX.play("ability"); setPreviewCard(c); }} />))}
           </div>
@@ -2239,7 +2239,7 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
 
 // ═══ EMOTES ══════════════════════════════════════════════════════════════════
 function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatch }) {
-  const { matchId, opponentName } = matchConfig;
+  const { matchId, opponentName, opponentId } = matchConfig;
   const [gs, setGs] = useState(null);
   const [myRole, setMyRole] = useState(null);
   const [attacker, setAttacker] = useState(null);
@@ -2255,7 +2255,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   const [turnBanner, setTurnBanner] = useState(null);
   const [logHoverCard, setLogHoverCard] = useState(null);
   const [forfeitConfirm, setForfeitConfirm] = useState(false);
-  const [profilePopup, setProfilePopup] = useState(null); // { name, avatar, rating, wins, losses }
+  const [profilePopup, setProfilePopup] = useState(null); // { id, name, avatar, rating, wins, losses, role }
+  const [friendAdded, setFriendAdded] = useState(null); // id of recently added user
   const [dyingCards, setDyingCards] = useState([]); // cards mid-death animation
   const [connectError, setConnectError] = useState(false);
   const [liveAction, setLiveAction] = useState(null);
@@ -2891,6 +2892,18 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
             <div style={{ fontSize:8, color:"#305060", letterSpacing:2, marginTop:4, fontFamily:"'Cinzel',serif" }}>RATING</div>
           </div>
         </div>
+        {profilePopup.role === "opp" && profilePopup.id && (
+          <button onClick={async () => {
+            if (friendAdded === profilePopup.id) return;
+            await supabase.from("friendships").upsert([{
+              requester: user.id, accepter: profilePopup.id,
+              requester_name: user.name, accepter_name: profilePopup.name, status: "pending"
+            }], { onConflict: "requester,accepter", ignoreDuplicates: true });
+            setFriendAdded(profilePopup.id);
+          }} style={{ padding:"8px 20px", background: friendAdded===profilePopup.id ? "rgba(120,200,69,0.1)" : "linear-gradient(135deg,#1a3a08,#2a5a10)", border:`1px solid ${friendAdded===profilePopup.id?"#78cc4566":"#4a8020"}`, borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, color: friendAdded===profilePopup.id ? "#78cc45" : "#a0e060", cursor: friendAdded===profilePopup.id ? "default":"pointer", letterSpacing:1, marginBottom:8, width:"100%" }}>
+            {friendAdded===profilePopup.id ? "✓ REQUEST SENT" : "⚉ ADD FRIEND"}
+          </button>
+        )}
         <button onClick={()=>setProfilePopup(null)} style={{ padding:"8px 24px", background:"transparent", border:"1px solid #3a2010", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, color:"#806040", cursor:"pointer", letterSpacing:1 }}>CLOSE</button>
       </div>
     </div>)}
@@ -3084,7 +3097,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           {opEnvTheme && <div style={{ position:"absolute", inset:0, pointerEvents:"none", zIndex:1 }}><FloatingParticles count={opEnvTheme.pCount||20} color={opEnvTheme.particle} speed={opEnvTheme.pSpeed||0.6} shape={opEnvTheme.pShape||"circle"} direction={opEnvTheme.pDir||"up"} /></div>}
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <div onClick={()=>setProfilePopup({ name:opponentName, avatar:myRole==="p1"?gs?.p2Avatar:gs?.p1Avatar, role:"opp", rating:myRole==="p1"?gs?.p2Rating:gs?.p1Rating, wins:myRole==="p1"?gs?.p2Wins:gs?.p1Wins, losses:myRole==="p1"?gs?.p2Losses:gs?.p1Losses })} style={{ width:36, height:36, borderRadius:"50%", background:"linear-gradient(135deg,#3a0c0c,#200808)", border:"2px solid #a0202044", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, color:"#cc6666", fontFamily:"'Cinzel',serif", fontWeight:700, cursor:"pointer", transition:"border-color .18s", boxShadow:"none" }} title="View profile">
+              <div onClick={()=>setProfilePopup({ id:opponentId, name:opponentName, avatar:myRole==="p1"?gs?.p2Avatar:gs?.p1Avatar, role:"opp", rating:myRole==="p1"?gs?.p2Rating:gs?.p1Rating, wins:myRole==="p1"?gs?.p2Wins:gs?.p1Wins, losses:myRole==="p1"?gs?.p2Losses:gs?.p1Losses })} style={{ width:36, height:36, borderRadius:"50%", background:"linear-gradient(135deg,#3a0c0c,#200808)", border:"2px solid #a0202044", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, color:"#cc6666", fontFamily:"'Cinzel',serif", fontWeight:700, cursor:"pointer", transition:"border-color .18s", boxShadow:"none" }} title="View profile">
                 {(myRole==="p1" ? gs?.p2Avatar : gs?.p1Avatar) ? <img src={myRole==="p1" ? gs.p2Avatar : gs.p1Avatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (opponentName||"?").slice(0,2).toUpperCase()}
               </div>
               <span style={{ fontFamily:"'Cinzel',serif", fontSize:14, color:"#cc4848", letterSpacing:2, fontWeight:700, textShadow:"0 1px 4px rgba(0,0,0,0.8)" }}>{(opponentName||"OPPONENT").toUpperCase()}</span>
@@ -3139,7 +3152,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
             <span style={{ fontSize:10, color:"#a09068", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{myEnvCard.ability}</span>
             <span style={{ fontSize:10, color:"#78cc45", fontFamily:"'Cinzel',serif", flexShrink:0, background:"rgba(80,180,50,0.15)", padding:"1px 5px", borderRadius:4 }}>YOURS · {Math.ceil((myEnvCard.turnsRemaining||4)/2)}R</span>
           </div>}
-          <div style={{ fontSize:13, color:"#2e4818", fontFamily:"'Cinzel',serif", letterSpacing:3, marginBottom:4, textAlign:"center", fontWeight:700, textShadow:"0 1px 4px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.6)", position:"relative", zIndex:2 }}>YOUR FIELD</div>
+          <div style={{ fontSize:13, color:"#6dc830", fontFamily:"'Cinzel',serif", letterSpacing:3, marginBottom:4, textAlign:"center", fontWeight:700, textShadow:"0 -1px 0 rgba(255,255,255,0.3), 0 1px 4px rgba(0,0,0,0.95), 0 0 12px rgba(0,0,0,0.8)", position:"relative", zIndex:2 }}>YOUR FIELD</div>
           <div style={{ height:182, flex:"0 0 auto", display:"flex", gap:8, flexWrap:"nowrap", justifyContent:"center", alignItems:"center", overflowX:"auto", overflowY:"visible", scrollbarWidth:"thin", marginBottom:6 }}>
             {ai.playerBoard.length===0?<span style={{ fontSize:10, color:"#181408", letterSpacing:3 }}>{isMyTurn?"PLAY A CARD":"WAITING..."}</span>:ai.playerBoard.map((c)=>(<Token key={c.uid} c={resolveCardArt(c,myRole==="p1"?gs?.p1Arts||{}:gs?.p2Arts||{})} animType={animUids[c.uid]} selected={attacker===c.uid} isTarget={false} canSelect={isMyTurn&&c.canAttack&&!c.hasAttacked&&!syncing} onClick={()=>selectAtt(c)} onRightClick={()=>setPreviewCard(c)}/>))}
           </div>
@@ -5192,6 +5205,7 @@ function FriendsScreen({ user, onStartDuel }) {
   const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
+  const [searchErr, setSearchErr] = useState(null);
   const [onlineIds, setOnlineIds] = useState(new Set());
   const [incomingChallenge, setIncomingChallenge] = useState(null);
   const [challengeSent, setChallengeSent] = useState(null);
@@ -5239,23 +5253,40 @@ function FriendsScreen({ user, onStartDuel }) {
     };
   }, [user?.id]); // eslint-disable-line
 
+  const FRIENDS_SQL = `-- Run this in Supabase SQL Editor to allow friend search:\nCREATE POLICY "profiles_public_read" ON profiles\n  FOR SELECT TO authenticated\n  USING (true);`;
+
   const doSearch = async () => {
     if (!search.trim()) return;
     setSearching(true);
-    const { data } = await supabase.from("profiles").select("id,name,avatar_url").ilike("name", `%${search.trim()}%`).limit(8);
-    setSearchResults((data || []).filter(p => p.id !== user?.id));
+    setSearchErr(null);
+    const { data, error } = await supabase.from("profiles").select("id,name,avatar_url,avatarUrl").ilike("name", `%${search.trim()}%`).limit(8);
+    if (error) {
+      setSearchErr(error.message.includes("permission") || error.code === "42501"
+        ? "blocked_rls"
+        : error.message);
+      setSearching(false);
+      return;
+    }
+    const results = (data || []).filter(p => p.id !== user?.id).map(p => ({
+      ...p,
+      avatar_url: p.avatar_url || p.avatarUrl || null,
+    }));
+    if (results.length === 0 && data?.length === 0) setSearchErr("no_results");
+    setSearchResults(results);
     setSearching(false);
   };
 
   const sendRequest = async (target) => {
     const existing = [...friends, ...pendingIn, ...pendingOut].find(f => f.id === target.id);
     if (existing) return;
-    await supabase.from("friendships").insert([{
+    const { error } = await supabase.from("friendships").upsert([{
       requester: user.id, accepter: target.id,
-      requester_name: user.name, accepter_name: target.name, status: "pending"
-    }]);
-    await loadFriends();
-    setSearchResults(prev => prev.filter(p => p.id !== target.id));
+      requester_name: user.name, accepter_name: target.name || target.id.slice(0,8), status: "pending"
+    }], { onConflict: "requester,accepter", ignoreDuplicates: true });
+    if (!error) {
+      await loadFriends();
+      setSearchResults(prev => prev.filter(p => p.id !== target.id));
+    }
   };
 
   const acceptRequest = async (row) => {
@@ -5322,6 +5353,25 @@ function FriendsScreen({ user, onStartDuel }) {
         <input value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doSearch()} placeholder="Search by username…" style={{ flex:1, padding:"10px 14px", background:"#0e0c08", border:"1px solid #3a2a10", borderRadius:8, color:"#e8d8a0", fontFamily:"'Cinzel',serif", fontSize:12, outline:"none" }} />
         <button onClick={doSearch} disabled={searching} style={{ padding:"10px 20px", background:"linear-gradient(135deg,#4a3010,#6a4818)", border:"1px solid #8a6030", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:"#e8c060", cursor:"pointer", fontWeight:700 }}>{searching?"…":"SEARCH"}</button>
       </div>
+
+      {/* Search error / hints */}
+      {searchErr === "blocked_rls" && (
+        <div style={{ background:"#1a0808", border:"1px solid #a02020aa", borderRadius:10, padding:"14px 18px", marginBottom:16, fontSize:11, color:"#e06060", fontFamily:"'Cinzel',serif" }}>
+          <div style={{ fontWeight:700, marginBottom:6 }}>⚠ Search blocked by Supabase row-level security.</div>
+          <div style={{ fontSize:9, color:"#c05040", marginBottom:8 }}>Run this SQL in your Supabase dashboard → SQL Editor:</div>
+          <pre style={{ background:"#0a0404", border:"1px solid #3a1010", borderRadius:6, padding:"8px 10px", fontSize:9, color:"#ff9090", overflowX:"auto", margin:0 }}>{`ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;\nCREATE POLICY "profiles_public_read"\n  ON profiles FOR SELECT\n  TO authenticated USING (true);`}</pre>
+        </div>
+      )}
+      {searchErr && searchErr !== "blocked_rls" && searchErr !== "no_results" && (
+        <div style={{ background:"#100808", border:"1px solid #5a1010", borderRadius:8, padding:"10px 14px", marginBottom:12, fontSize:10, color:"#d05050", fontFamily:"'Cinzel',serif" }}>
+          ⚠ {searchErr}
+        </div>
+      )}
+      {searchErr === "no_results" && (
+        <div style={{ padding:"12px 14px", marginBottom:12, fontSize:11, color:"#504030", fontFamily:"'Cinzel',serif", textAlign:"center" }}>
+          No players found matching "{search}".
+        </div>
+      )}
 
       {/* Search results */}
       {searchResults.length > 0 && (
@@ -5971,6 +6021,8 @@ export default function App() {
         section>div{grid-template-columns:1fr!important}
         .pack-grid{grid-template-columns:repeat(2,1fr)!important}
       }
+      /* Raised gold text — white top highlight + deep drop shadow on all Cinzel elements */
+      [style*="Cinzel"]{text-shadow:0 -1px 0 rgba(255,255,255,0.22),0 1px 0 rgba(0,0,0,0.65),0 2px 6px rgba(0,0,0,0.88);}
     `}</style>
     {!user && !loading && <ForgeAndFableTeaser />}
     {(!user || user.__needsProfile) && <LoginModal needsProfile={!!user?.__needsProfile} userId={user?.id} userEmail={user?.email} onSignOut={logout} onProfileCreated={completeProfile} />}
