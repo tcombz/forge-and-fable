@@ -585,7 +585,7 @@ const POOL = [
   { id: "olympus_guard",      name: "Fables Guard",       type: "creature", region: "Fables",     rarity: "Uncommon", cost: 3, atk: 2, hp: 5,        keywords: ["Anchor", "Shield"],  border: "#9070ff", seed: 404, bloodpact: false, imageUrl: "/cards/olympus_guard.jpg", ability: "\"Not on my watch.\"", effects: [] },
   { id: "cerberus_whelp",     name: "Cerberus Whelp",     type: "creature", region: "Fables",     rarity: "Uncommon", cost: 2, atk: 2, hp: 2,        keywords: ["Fracture", "Swift"], border: "#9070ff", seed: 405, bloodpact: false, imageUrl: "/cards/cerberus_whelp.jpg", ability: "\"Three times the treats!\"", effects: [] },
   { id: "titan_slayer",       name: "Titan-Slayer",       type: "creature", region: "Fables",     rarity: "Rare",     cost: 4, atk: 5, hp: 3,        keywords: ["Swift"],             border: "#9070ff", seed: 406, bloodpact: false, imageUrl: "/cards/titan_slayer.jpg", ability: "\"Size isn't everything.\"", effects: [] },
-  { id: "bolt_from_the_blue", name: "Bolt from the Blue", type: "spell",    region: "Fables",     rarity: "Rare",     cost: 2, atk: null, hp: null,   keywords: [],                    border: "#9070ff", seed: 407, bloodpact: false, imageUrl: "/cards/bolt_from_the_blue.jpg", altObjectPosition: "center", ability: "Deal 3 damage. If this kills a unit, +1 to Lightning Meter.", effects: [{ trigger: "onPlay", effect: "bolt_damage", amount: 3 }] },
+  { id: "bolt_from_the_blue", name: "Bolt from the Blue", type: "spell",    region: "Fables",     rarity: "Rare",     cost: 2, atk: null, hp: null,   keywords: [],                    border: "#9070ff", seed: 407, bloodpact: false, imageUrl: "/cards/bolt_from_the_blue.jpg", altObjectPosition: "center", ability: "Deal 3 damage to a chosen target. If this kills a unit, +1 to Lightning Meter.", effects: [{ trigger: "onPlay", effect: "bolt_damage", amount: 3 }] },
   { id: "river_styx",         name: "River Styx",         type: "spell",    region: "Fables",     rarity: "Uncommon", cost: 3, atk: null, hp: null,   keywords: [],                    border: "#9070ff", seed: 408, bloodpact: false, imageUrl: "/cards/river_styx.jpg", ability: "Inflict Bleed on all enemies.", effects: [{ trigger: "onPlay", effect: "bleed_all_enemies", amount: 1 }] },
   { id: "pandoras_box",       name: "Pandora's Box",      type: "spell",    region: "Fables",     rarity: "Uncommon", cost: 1, atk: null, hp: null,   keywords: [],                    border: "#9070ff", seed: 409, bloodpact: false, imageUrl: "/cards/pandoras_box.jpg", ability: "Each player draws 1. If you have a unit with Shield on field, only you draw.", effects: [{ trigger: "onPlay", effect: "pandora_draw" }] },
   { id: "heras_command",      name: "Hera's Command",     type: "spell",    region: "Fables",     rarity: "Epic",     cost: 4, atk: null, hp: null,   keywords: [],                    border: "#9070ff", seed: 410, bloodpact: false, imageUrl: "/cards/heras_command.jpg", ability: "Give all friendly units Shield.", effects: [{ trigger: "onPlay", effect: "shield_all_allies" }] },
@@ -2259,6 +2259,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   const [connectError, setConnectError] = useState(false);
   const [liveAction, setLiveAction] = useState(null);
   const [expandedSynGroup, setExpandedSynGroup] = useState(null);
+  const [targetingSpell, setTargetingSpell] = useState(null);
   const flashAction = (msg) => { setLiveAction(msg); setTimeout(() => setLiveAction(null), 1800); };
   const showTurnBanner = (type) => { setTurnBanner(type); setTimeout(() => setTurnBanner(null), 1100); };
   const [animUids, setAnimUids] = useState({});
@@ -2388,7 +2389,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         if (catTargets.length > 0) { const ct = catTargets[Math.floor(Math.random() * catTargets.length)]; ai.enemyBoard = ai.enemyBoard.map(c => c.uid === ct.uid ? { ...c, currentHp: c.currentHp - 1 } : c).filter(c => c.currentHp > 0); ai.log = [...ai.log, `💥 Catapult! ${ct.name} takes 1!`]; }
         else { ai.enemyHP -= 1; ai.log = [...ai.log, "💥 Catapult hits enemy face!"]; }
       }
-      ai = resolveEffects("onPlay", card, ai, "player", vfxInst);
+      ai = resolveEffects("onPlay", card, ai, "player", vfxInst, action.targetUid ? { targetUid: action.targetUid } : {});
       if (ai.enemyHP <= 0) { ai.winner = "player"; ai.log = [...ai.log, "Victory!"]; }
       else if (ai.playerHP <= 0) { ai.winner = "enemy"; ai.log = [...ai.log, "Defeated..."]; }
       const out1 = fromAI(ai, role, gs);
@@ -2737,17 +2738,23 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   };
   const isMyTurn = gs && myRole && gs.phase === myRole && !gs.winner;
 
-  const playCard = (card) => {
+  const playCard = (card, targetUid = null) => {
     if (!isMyTurn || syncingRef.current) return;
     const ai = toAI(gs, myRole);
     const canAfford = card.bloodpact ? card.cost < ai.playerHP : getEffectiveCost(card, ai.environment) <= ai.playerEnergy;
     if (!canAfford) return;
     if (card.type !== "spell" && card.type !== "environment" && ai.playerBoard.length >= CFG.maxBoard) return;
+    // Enter targeting mode for spells that need a target
+    if (card.type === "spell" && !targetUid) {
+      const needsTarget = (card.effects || []).some(e => TARGETED_SPELL_EFFECTS.includes(e.effect));
+      if (needsTarget && ai.enemyBoard.length > 0) { setTargetingSpell(card); return; }
+    }
     SFX.play(card.type === "environment" ? "env_play" : card.type === "spell" ? "ability" : "card");
     if (card.type === "environment") { vfx.add("envchange", { color: card.border || "#40a020" }); vfx.add("environment", { color: card.border, duration: 2000 }); }
     if (card.type === "spell") vfx.add("spell", { color: card.border || "#c090d0" });
     flashAction(`${card.type === "spell" ? "Cast" : card.type === "environment" ? "Field:" : "Play"} ${card.name}!`);
-    invokeAction({ type: "play_card", cardUid: card.uid });
+    setTargetingSpell(null);
+    invokeAction({ type: "play_card", cardUid: card.uid, targetUid });
   };
 
   const selectAtt = (c) => { if (!isMyTurn || syncingRef.current) return; setAttacker(attacker === c.uid ? null : (c.canAttack && !c.hasAttacked ? c.uid : attacker)); };
@@ -3099,9 +3106,9 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           </div>}
           {/* Opponent lightning meter */}
           {ai.enemyZeusInPlay && (() => { const em=ai.enemyLightningMeter||0; const full=em>=2; return (<div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6, padding:"5px 10px", background:full?"rgba(255,220,0,0.13)":"rgba(255,220,0,0.04)", border:`1px solid rgba(255,220,0,${full?0.65:0.2})`, borderRadius:8, boxShadow:full?"0 0 14px rgba(255,210,0,0.4)":"none", transition:"all .3s" }}><span style={{ fontSize:18, lineHeight:1, filter:full?"drop-shadow(0 0 6px #ffe040) drop-shadow(0 0 12px #f0a000)":"none", transition:"filter .3s" }}>⚡</span><div style={{ display:"flex", gap:5 }}>{[0,1].map(i=>{ const lit=i<em; return (<div key={i} style={{ width:28, height:14, borderRadius:4, background:lit?"linear-gradient(90deg,#fffaaa,#ffe030,#f09000)":"rgba(60,50,0,0.45)", border:`1px solid ${lit?"#f0d020":"#2a1c00"}`, boxShadow:lit?"0 0 10px #ffe040bb, inset 0 1px 0 rgba(255,255,200,0.4)":"none", transition:"all .25s" }}/>); })}</div><span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:full?"#ffe040":"#a08820", fontWeight:700 }}>{full?"READY!":"OPP ⚡"}</span></div>); })()}
-          <div style={{ fontSize:13, color:"#5a2424", fontFamily:"'Cinzel',serif", letterSpacing:3, marginBottom:4, textAlign:"center", fontWeight:700, textShadow:"0 1px 4px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.6)" }}>ENEMY FIELD</div>
+          <div style={{ fontSize:13, color:targetingSpell?"#ffe040":"#5a2424", fontFamily:"'Cinzel',serif", letterSpacing:3, marginBottom:4, textAlign:"center", fontWeight:700, textShadow:"0 1px 4px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.6)" }}>{targetingSpell?`⚡ CHOOSE TARGET — ${targetingSpell.name}`:"ENEMY FIELD"}</div>
           <div style={{ height:195, display:"flex", gap:8, flexWrap:"nowrap", justifyContent:"center", alignItems:"center", overflowX:"auto", overflowY:"hidden", scrollbarWidth:"thin" }}>
-            {ai.enemyBoard.length===0?<span style={{ fontSize:10, color:"#241010", letterSpacing:3 }}>---</span>:ai.enemyBoard.map((c)=>(<Token key={c.uid} c={resolveCardArt(c,myRole==="p1"?gs?.p2Arts||{}:gs?.p1Arts||{})} animType={animUids[c.uid]} isTarget={!!attacker} canSelect={false} onClick={()=>{ if(attacker)atkCreature(c); else setPreviewCard(c); }}/>))}
+            {ai.enemyBoard.length===0?<span style={{ fontSize:10, color:"#241010", letterSpacing:3 }}>---</span>:ai.enemyBoard.map((c)=>(<Token key={c.uid} c={resolveCardArt(c,myRole==="p1"?gs?.p2Arts||{}:gs?.p1Arts||{})} animType={animUids[c.uid]} isTarget={!!attacker||!!targetingSpell} canSelect={false} onClick={()=>{ if(targetingSpell){playCard(targetingSpell,c.uid);}else if(attacker)atkCreature(c); else setPreviewCard(c); }}/>))}
           </div>
         </div>
         {/* Divider with timer */}
