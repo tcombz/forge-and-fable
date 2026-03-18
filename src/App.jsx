@@ -3005,9 +3005,9 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         <button onClick={onExit} style={{ padding:"14px 36px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:10, fontFamily:"'Cinzel',serif", fontWeight:700, fontSize:14, letterSpacing:2, color:"#1a1000", cursor:"pointer", boxShadow:"0 0 24px #e8c06066" }}>EXIT</button>
       </div>
     </div>)}
-    <div className="battle-grid" style={{ display:"grid", gridTemplateColumns:"280px 1fr 300px", gap:14, flex:1, minHeight:0 }}>
+    <div className="battle-grid" style={{ display:"grid", gridTemplateColumns:"300px 1fr 340px", gap:14, flex:1, minHeight:0 }}>
       {/* Left Panel — Synergy Tracker + Chat */}
-      <div className="battle-side" style={{ display:"flex", flexDirection:"column", gap:4, height:"100%", overflowY:"auto", minHeight:0 }}>
+      <div className="battle-side" style={{ display:"flex", flexDirection:"column", gap:6, height:"100%", overflowY:"auto", minHeight:0 }}>
         {/* Food Fight Synergy Tracker */}
         {(() => {
           const jaxRed = ai.playerBoard.some(c => c.id === "master_jax") ? 1 : 0;
@@ -3025,7 +3025,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           const jaxNote = jaxRed > 0 ? " (Jax -1)" : "";
           return (
             <div style={{ background:"rgba(10,8,4,0.95)", border:"2px solid #604018", borderRadius:10, padding:"10px 12px", fontSize:10, fontFamily:"'Cinzel',serif", boxShadow:"0 0 16px rgba(200,100,20,0.18)" }}>
-              <div style={{ color:"#f0b040", letterSpacing:3, marginBottom:8, fontSize:9, fontWeight:700, display:"flex", alignItems:"center", gap:6 }}>
+              <div style={{ color:"#f0b040", letterSpacing:3, marginBottom:8, fontSize:11, fontWeight:700, display:"flex", alignItems:"center", gap:6 }}>
                 <span>🍽</span><span>GROUP SYNERGY</span>{jaxRed > 0 && <span style={{ fontSize:8, color:"#b08030", fontWeight:400 }}>Jax: thresholds -1</span>}
               </div>
               {Object.entries(syn.counts).map(([grp, cnt]) => {
@@ -3038,7 +3038,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
                 return (
                   <div key={grp} style={{ marginBottom: isExpanded ? 8 : 4 }}>
                     <div onClick={() => setExpandedSynGroup(isExpanded ? null : grp)} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:3, cursor:"pointer", padding:"3px 4px", borderRadius:5, background: isExpanded ? `${col}18` : "transparent", transition:"background .2s" }}>
-                      <span style={{ color: hasAny ? col : "#503020", fontWeight: hasAny ? 700 : 400, fontSize:11 }}>{GROUP_ICON[grp]} {grp}</span>
+                      <span style={{ color: hasAny ? col : "#503020", fontWeight: hasAny ? 700 : 400, fontSize:13 }}>{GROUP_ICON[grp]} {grp}</span>
                       <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                         <span style={{ color: hasAny ? col : "#503020", fontWeight:700, fontSize:13 }}>{cnt}</span>
                         <span style={{ color: hasAny ? col : "#503020", fontSize:8 }}>{isExpanded ? "▲" : "▼"}</span>
@@ -3096,7 +3096,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
                 return (
                   <div key={grp} style={{ marginBottom:4 }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:3 }}>
-                      <span style={{ color: hasAny ? col : "#503020", fontWeight: hasAny ? 700 : 400, fontSize:11 }}>{GROUP_ICON[grp]} {grp}</span>
+                      <span style={{ color: hasAny ? col : "#503020", fontWeight: hasAny ? 700 : 400, fontSize:13 }}>{GROUP_ICON[grp]} {grp}</span>
                       <span style={{ color: hasAny ? col : "#503020", fontWeight:700, fontSize:13 }}>{cnt}</span>
                     </div>
                     <div style={{ display:"flex", gap:2 }}>
@@ -3115,7 +3115,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           <button onClick={()=>{ const el=document.documentElement; if(!document.fullscreenElement){el.requestFullscreen?.();}else{document.exitFullscreen?.();} }} style={{ flex:1, padding:"8px 4px", background:"rgba(14,12,8,0.8)", border:"1px solid #604028aa", borderRadius:8, color:"#a08050", fontFamily:"'Cinzel',serif", fontSize:13, cursor:"pointer" }} title="Fullscreen">⛶</button>
         </div>
       </div>
-      <div style={{ background: envTheme ? envTheme.bg : "linear-gradient(180deg,#2a1c0c 0%,#1e1408 50%,#281a08 100%)", border:`1px solid ${envTheme?envTheme.glow+"44":"#5a3c1a55"}`, borderRadius:14, overflow:"hidden", position:"relative", transition:"background 1.5s ease, border-color 1s ease", boxShadow: envTheme ? undefined : "inset 0 0 60px rgba(0,0,0,0.4), 0 0 0 1px #3a2010", display:"flex", flexDirection:"column", height:"100%" }}>
+      <div style={{ background: envTheme ? envTheme.bg : "linear-gradient(180deg,#2a1c0c 0%,#1e1408 50%,#281a08 100%)", border:`1px solid ${envTheme?envTheme.glow+"44":"#5a3c1a55"}`, borderRadius:14, overflow:"visible", position:"relative", transition:"background 1.5s ease, border-color 1s ease", boxShadow: envTheme ? undefined : "inset 0 0 60px rgba(0,0,0,0.4), 0 0 0 1px #3a2010", display:"flex", flexDirection:"column", height:"100%" }}>
         {envTheme && <div style={{ position:"absolute", inset:0, pointerEvents:"none", zIndex:1 }}><FloatingParticles count={20} color={envTheme.particle} speed={0.6} /></div>}
         <VFXOverlay effects={vfx.effects} />
         {/* Dying cards overlay — renders cards mid-death animation so they don't pop out */}
@@ -3237,8 +3237,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       <div className="battle-log" style={{ display:"flex", flexDirection:"column", gap:8, height:"100%", overflowY:"auto", minHeight:0 }}>
         {attCard&&(<div style={{ background:`${attCard.border}15`, border:`1px solid ${attCard.border}55`, borderRadius:10, padding:10 }}><div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:attCard.border, fontWeight:600 }}>ATTACKING</div><div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#f0e8d8", fontWeight:700 }}>{attCard.name}</div><div style={{ fontSize:12, color:"#ff7050", fontWeight:700 }}>ATK {attCard.currentAtk}</div><button onClick={()=>setAttacker(null)} style={{ marginTop:6, width:"100%", padding:"3px", background:"transparent", border:"1px solid #241408", borderRadius:4, color:"#806040", fontFamily:"'Cinzel',serif", fontSize:8, cursor:"pointer" }}>Cancel</button></div>)}
         <div style={{ background:"#080604", border:"1px solid #161408", borderRadius:10, overflow:"hidden", display:"flex", flexDirection:"column", maxHeight:500 }}>
-          <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#c09048", letterSpacing:3, padding:"8px 12px", borderBottom:"1px solid #281e08", fontWeight:700, display:"flex", justifyContent:"space-between", alignItems:"center", textShadow:"0 1px 4px rgba(0,0,0,0.8)" }}><span>BATTLE LOG</span><span style={{ fontSize:9, color:"#403828" }}>TURN {gs.turn}</span></div>
-          <div ref={logRef} style={{ overflowY:"auto", padding:"8px 12px", maxHeight:460 }}>{(gs.log||[]).map((l,i)=>{const isLast=i===(gs.log||[]).length-1;return(<div key={i} style={{ fontSize:11, lineHeight:1.7, marginBottom:5, color:logColor(l), borderLeft:isLast?`2px solid ${logColor(l)}`:"2px solid #1a160e", paddingLeft:6, fontFamily:"'Cinzel',serif", fontWeight:isLast?700:400, display:"flex", alignItems:"flex-start", gap:4 }}><span style={{ opacity:0.5, flexShrink:0 }}>{logIcon(l)}</span>{renderLogLine(l, i)}</div>);})}</div>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:15, color:"#c09048", letterSpacing:3, padding:"8px 12px", borderBottom:"1px solid #281e08", fontWeight:700, display:"flex", justifyContent:"space-between", alignItems:"center", textShadow:"0 1px 4px rgba(0,0,0,0.8)" }}><span>BATTLE LOG</span><span style={{ fontSize:9, color:"#403828" }}>TURN {gs.turn}</span></div>
+          <div ref={logRef} style={{ overflowY:"auto", padding:"8px 12px", maxHeight:460 }}>{(gs.log||[]).map((l,i)=>{const isLast=i===(gs.log||[]).length-1;return(<div key={i} style={{ fontSize:13, lineHeight:1.7, marginBottom:5, color:logColor(l), borderLeft:isLast?`2px solid ${logColor(l)}`:"2px solid #1a160e", paddingLeft:6, fontFamily:"'Cinzel',serif", fontWeight:isLast?700:400, display:"flex", alignItems:"flex-start", gap:4 }}><span style={{ opacity:0.5, flexShrink:0 }}>{logIcon(l)}</span>{renderLogLine(l, i)}</div>);})}</div>
         </div>
       </div>
     </div>
@@ -3575,7 +3575,7 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDue
     </div>
     <p style={{ fontSize:10, color:"#504030", textAlign:"center", margin:0 }}>Build and manage decks in the <strong style={{ color:"#806040" }}>Cards</strong> tab.</p>
   </div></div>);
-  if (matchConfig?.mode === "pvp") return (<PvpBattleScreen user={user} matchConfig={matchConfig} onExit={() => { setMatchConfig(null); setInPvpMatch?.(false); setMatchActive?.(false); setSelectedDeck(null); }} onUpdateUser={onUpdateUser} setInPvpMatch={setInPvpMatch} />);
+  if (matchConfig?.mode === "pvp") return (<PvpBattleScreen user={user} matchConfig={matchConfig} onExit={() => { setMatchConfig(null); setInPvpMatch?.(false); setMatchActive?.(false); }} onUpdateUser={onUpdateUser} setInPvpMatch={setInPvpMatch} />);
   return (<BattleScreen user={user} onUpdateUser={onUpdateUser} matchConfig={matchConfig} onExit={() => { setMatchConfig(null); setMatchActive?.(false); setSelectedDeck(null); }} />);
 }
 // ═══ PACK OPENING ════════════════════════════════════════════════════════════
@@ -6043,7 +6043,6 @@ const NAV = [
   { id: "store",      label: "Store",   icon: "◈" },
   { id: "collection", label: "Cards",   icon: "❖" },
   { id: "profile",    label: "Profile", icon: "🏆" },
-  { id: "friends",    label: "Friends", icon: "⚉" },
   { id: "lore",       label: "Lore",    icon: "📖" },
   { id: "community",  label: "Hub",     icon: "✦" },
   { id: "howto",      label: "Guide",   icon: "◉" },
@@ -6101,8 +6100,267 @@ function AlphaKeyAdminPanel() {
   );
 }
 
+function PlayerSidebar({ user, onUpdateUser, onlineIds, onClose, onChallenge, onLogout, onShowPatchNotes }) {
+  const [friends, setFriends] = useState([]);
+  const [pendingIn, setPendingIn] = useState([]);
+  const [pendingOut, setPendingOut] = useState([]);
+  const [search, setSearch] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [sendingTo, setSendingTo] = useState(null);
+  const [sentTo, setSentTo] = useState({});
+  const [avatarErr, setAvatarErr] = useState("");
+  const [challengeSent, setChallengeSent] = useState(null);
+
+  useEffect(() => { loadFriends(); }, []); // eslint-disable-line
+
+  const loadFriends = async () => {
+    if (!user?.id) return;
+    const { data, error } = await supabase.from("friendships").select("*")
+      .or(`requester.eq.${user.id},accepter.eq.${user.id}`);
+    if (error || !data) return;
+    const otherIds = [...new Set(data.map(r => r.requester === user.id ? r.accepter : r.requester))];
+    let pm = {};
+    if (otherIds.length > 0) {
+      const { data: profs } = await supabase.from("profiles").select("id,name,avatar_url").in("id", otherIds);
+      if (profs) profs.forEach(p => { pm[p.id] = p; });
+    }
+    const nm = (id) => pm[id]?.name || id.slice(0, 8);
+    const av = (id) => pm[id]?.avatar_url || null;
+    const accepted = data.filter(r => r.status === "accepted");
+    const pending  = data.filter(r => r.status === "pending");
+    setFriends(accepted.map(r => r.requester === user.id
+      ? { id: r.accepter,  name: nm(r.accepter),  avatar_url: av(r.accepter),  rowId: r.id }
+      : { id: r.requester, name: nm(r.requester), avatar_url: av(r.requester), rowId: r.id }));
+    setPendingIn( pending.filter(r => r.accepter  === user.id).map(r => ({ id: r.requester, name: nm(r.requester), avatar_url: av(r.requester), rowId: r.id })));
+    setPendingOut(pending.filter(r => r.requester === user.id).map(r => ({ id: r.accepter,  name: nm(r.accepter),  avatar_url: av(r.accepter),  rowId: r.id })));
+  };
+
+  const acceptFriend = async (row) => {
+    await supabase.from("friendships").update({ status: "accepted" }).eq("id", row.rowId);
+    await loadFriends();
+  };
+  const declineFriend = async (row) => {
+    await supabase.from("friendships").delete().eq("id", row.rowId);
+    await loadFriends();
+  };
+
+  const doSearch = async () => {
+    if (!search.trim()) return;
+    setSearching(true);
+    const { data } = await supabase.from("profiles").select("id,name,avatar_url").ilike("name", `%${search.trim()}%`).limit(8);
+    const results = (data || []).filter(p => p.id !== user?.id && !friends.some(f => f.id === p.id) && !pendingOut.some(f => f.id === p.id));
+    setSearchResults(results);
+    setSearching(false);
+  };
+
+  const sendRequest = async (target) => {
+    if (sendingTo === target.id || sentTo[target.id]) return;
+    setSendingTo(target.id);
+    const { error } = await supabase.from("friendships").insert([{ requester: user.id, accepter: target.id, status: "pending" }]);
+    if (!error) {
+      setSentTo(prev => ({ ...prev, [target.id]: true }));
+      const notifCh = supabase.channel(`friends_notif:${target.id}`);
+      notifCh.subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          notifCh.send({ type: "broadcast", event: "friend_request", payload: { fromId: user.id, fromName: user.name } })
+            .finally(() => supabase.removeChannel(notifCh));
+        }
+      });
+      setSearchResults(prev => prev.filter(p => p.id !== target.id));
+    }
+    setSendingTo(null);
+  };
+
+  const sendChallenge = (friend) => {
+    if (challengeSent) return;
+    setChallengeSent(friend.id);
+    const ch = supabase.channel(`challenge:${friend.id}`);
+    ch.subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        ch.send({ type: "broadcast", event: "challenge", payload: { fromId: user.id, fromName: user.name, fromAvatar: user.avatarUrl } })
+          .finally(() => supabase.removeChannel(ch));
+      }
+    });
+    if (onChallenge) onChallenge(friend);
+    setTimeout(() => setChallengeSent(null), 12000);
+  };
+
+  const rank = getRank(user?.rankedRating);
+  const wins = user?.rankedWins || 0;
+  const losses = user?.rankedLosses || 0;
+  const winRate = (wins + losses) > 0 ? Math.round((wins / (wins + losses)) * 100) : 0;
+  const gpCount = Object.entries(user?.collection || {}).filter(([,v]) => v > 0).length;
+
+  return (
+    <>
+      <div style={{ position:"fixed", inset:0, zIndex:490 }} onClick={onClose} />
+      <div style={{ position:"fixed", top:0, right:0, bottom:0, width:300, zIndex:500, background:"linear-gradient(180deg,#0f0d09 0%,#0a0806 100%)", borderLeft:"2px solid #2a2010", display:"flex", flexDirection:"column", boxShadow:"-12px 0 48px rgba(0,0,0,0.95)", animation:"slideInRight 0.22s ease-out", overflowY:"auto" }} onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div style={{ padding:"16px 16px 12px", borderBottom:"1px solid #1a1408", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#604030", letterSpacing:4, fontWeight:700 }}>PLAYER PROFILE</div>
+          <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#604030", fontSize:18, padding:"2px 6px", lineHeight:1 }}>✕</button>
+        </div>
+
+        {/* Avatar + Identity */}
+        <div style={{ padding:"20px 16px 16px", display:"flex", flexDirection:"column", alignItems:"center", borderBottom:"1px solid #1a1408", flexShrink:0 }}>
+          <label style={{ position:"relative", cursor:"pointer", marginBottom:12 }}>
+            <div style={{ width:84, height:84, borderRadius:"50%", overflow:"hidden", border:`3px solid ${rank.color}88`, background:"#1a1408", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:22, color:"#e8c060", boxShadow:`0 0 24px ${rank.color}44, 0 0 48px ${rank.color}22` }}>
+              {user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user.name||"?").slice(0,2).toUpperCase()}
+            </div>
+            <div style={{ position:"absolute", bottom:2, right:2, width:24, height:24, background:"#1a1408", border:`1px solid ${rank.color}66`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, boxShadow:"0 2px 8px rgba(0,0,0,0.6)" }}>📷</div>
+            <input type="file" accept="image/*" style={{ display:"none" }} onChange={async (e) => {
+              const file = e.target.files[0]; if (!file) return;
+              if (file.size > 2*1024*1024) { setAvatarErr("Must be under 2MB"); return; }
+              const ext = file.name.split(".").pop().toLowerCase();
+              const path = `avatars/${user.id}.${ext}`;
+              const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert:true, contentType:file.type });
+              if (upErr) { setAvatarErr("Upload failed"); return; }
+              const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+              if (urlData?.publicUrl) { await onUpdateUser?.({ avatarUrl: urlData.publicUrl + "?t=" + Date.now() }); setAvatarErr(""); }
+            }} />
+          </label>
+          {avatarErr && <div style={{ fontSize:9, color:"#e05050", marginBottom:4, fontFamily:"'Cinzel',serif" }}>{avatarErr}</div>}
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:19, fontWeight:900, color:"#f0d878", letterSpacing:1, marginBottom:5, textAlign:"center" }}>{user.name}</div>
+          <div style={{ padding:"3px 12px", background:`${rank.color}18`, border:`1px solid ${rank.color}55`, borderRadius:10, fontSize:10, color:rank.color, fontFamily:"'Cinzel',serif", fontWeight:700, marginBottom:5, letterSpacing:1 }}>{rank.icon} {rank.name} · {user.rankedRating||1000} MMR</div>
+          <button onClick={onShowPatchNotes} style={{ background:"none", border:"none", cursor:"pointer", color:"#504028", fontFamily:"'Cinzel',serif", fontSize:9, letterSpacing:2 }}>⚙ Profile Settings</button>
+        </div>
+
+        {/* Currency & Progress */}
+        <div style={{ padding:"14px 16px", borderBottom:"1px solid #1a1408", flexShrink:0 }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", letterSpacing:3, marginBottom:10, fontWeight:700 }}>CURRENCY & PROGRESS</div>
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+            <div style={{ width:26, height:26, background:"linear-gradient(135deg,#e8c060,#a07820)", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:900, color:"#1a1000", flexShrink:0 }}>{user.battlesPlayed||0}</div>
+            <div style={{ flex:1, height:7, background:"rgba(255,255,255,0.06)", borderRadius:4, overflow:"hidden", border:"1px solid #2a1e08" }}>
+              <div style={{ height:"100%", width:`${Math.min(100,((user.battlesPlayed||0)%10)*10)}%`, background:"linear-gradient(90deg,#c89010,#f0c040)", borderRadius:4, transition:"width .4s", boxShadow:"0 0 6px #e8c06066" }} />
+            </div>
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
+            {[["🪙", user?.gold||0, "Gold", "#e8c060"], ["💎", user?.gems||0, "Gems", "#60c8ff"], ["⬙", user?.shards||0, "Dust", "#a0b0c0"]].map(([icon, val, label, color]) => (
+              <div key={label} style={{ background:"rgba(255,255,255,0.03)", border:"1px solid #2a2010", borderRadius:9, padding:"10px 6px", textAlign:"center" }}>
+                <div style={{ fontSize:18, marginBottom:3, lineHeight:1 }}>{icon}</div>
+                <div style={{ fontFamily:"'Cinzel',serif", fontSize:17, fontWeight:900, color, lineHeight:1, marginBottom:3 }}>{val}</div>
+                <div style={{ fontSize:8, color:"#504028", letterSpacing:1, fontFamily:"'Cinzel',serif" }}>{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Stats row */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", borderBottom:"1px solid #1a1408", flexShrink:0 }}>
+          {[["WIN%", winRate+"%", winRate>=50?"#78cc45":"#e8a020"], ["WINS", wins, "#78cc45"], ["LOSS", losses, "#e05050"], ["CARDS", gpCount, "#e8c060"]].map(([l,v,c],i) => (
+            <div key={l} style={{ padding:"10px 4px", textAlign:"center", borderRight:i<3?"1px solid #1a1408":"none" }}>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:15, fontWeight:900, color:c, lineHeight:1 }}>{v}</div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:"#504028", letterSpacing:1, marginTop:4 }}>{l}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Friends section */}
+        <div style={{ padding:"14px 16px 6px", flexShrink:0 }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#604030", letterSpacing:3, marginBottom:10, fontWeight:700, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <span>FRIENDS</span>
+            <span style={{ color:"#403020", fontSize:12, fontWeight:900 }}>{friends.length}</span>
+          </div>
+
+          {/* Pending incoming requests */}
+          {pendingIn.map(f => (
+            <div key={f.rowId} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", marginBottom:5, background:"rgba(232,192,96,0.06)", border:"1px solid #3a2810", borderRadius:10 }}>
+              <div style={{ width:34, height:34, borderRadius:"50%", overflow:"hidden", background:"#1a1408", border:"1px solid #4a3010", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, color:"#e8c060", fontFamily:"'Cinzel',serif", flexShrink:0 }}>
+                {f.avatar_url ? <img src={f.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (f.name||"?").slice(0,2).toUpperCase()}
+              </div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontFamily:"'Cinzel',serif", fontSize:12, color:"#d0b878", fontWeight:700, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.name}</div>
+                <div style={{ fontSize:9, color:"#e8c06088", fontFamily:"'Cinzel',serif" }}>Friend request</div>
+              </div>
+              <button onClick={() => acceptFriend(f)} style={{ width:28, height:28, background:"rgba(120,200,69,0.15)", border:"1px solid #78cc4555", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:13, color:"#78cc45", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✓</button>
+              <button onClick={() => declineFriend(f)} style={{ width:28, height:28, background:"transparent", border:"1px solid #3a1010", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:13, color:"#e05050", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+            </div>
+          ))}
+
+          {/* Friend list */}
+          {friends.length === 0 && pendingIn.length === 0 && (
+            <div style={{ fontSize:11, color:"#3a2810", textAlign:"center", padding:"10px 0 4px", fontStyle:"italic", fontFamily:"'Lora',serif" }}>No friends yet — search below!</div>
+          )}
+          {friends.map(f => {
+            const online = onlineIds.has(f.id);
+            const challenged = challengeSent === f.id;
+            return (
+              <div key={f.rowId} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 10px", marginBottom:5, background:online?"rgba(120,200,69,0.04)":"rgba(255,255,255,0.015)", borderRadius:11, border:`1px solid ${online?"#78cc4522":"#1a1408"}`, transition:"all .3s" }}>
+                <div style={{ position:"relative", flexShrink:0 }}>
+                  <div style={{ width:40, height:40, borderRadius:"50%", overflow:"hidden", background:"#1a1408", border:`2px solid ${online?"#78cc4566":"#2a1e0a"}`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:13, color:"#e8c060", transition:"border-color .3s" }}>
+                    {f.avatar_url ? <img src={f.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (f.name||"?").slice(0,2).toUpperCase()}
+                  </div>
+                  <div style={{ position:"absolute", bottom:1, right:1, width:11, height:11, borderRadius:"50%", background:online?"#78cc45":"#503020", border:"2px solid #0a0806", boxShadow:online?"0 0 7px #78cc4588":"none", transition:"all .3s" }} />
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#d0b878", fontWeight:700, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.name}</div>
+                  <div style={{ fontSize:9, color:online?"#78cc4599":"#503020", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>{online ? "Online" : "Offline"}</div>
+                </div>
+                {online && (
+                  <button onClick={() => sendChallenge(f)} disabled={!!challengeSent} title="Challenge to duel" style={{ width:32, height:32, background:challenged?"rgba(232,192,96,0.2)":"rgba(200,120,20,0.13)", border:`1px solid ${challenged?"#e8c060aa":"#5a3810"}`, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", cursor:challengeSent?"default":"pointer", fontSize:15, flexShrink:0, transition:"all .18s" }} onMouseEnter={e=>{if(!challengeSent){e.currentTarget.style.background="rgba(232,192,96,0.22)";e.currentTarget.style.borderColor="#c89010";}}} onMouseLeave={e=>{if(!challengeSent){e.currentTarget.style.background="rgba(200,120,20,0.13)";e.currentTarget.style.borderColor="#5a3810";}}}>
+                    {challenged ? "⏳" : "⚔"}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Pending outgoing */}
+          {pendingOut.length > 0 && (
+            <div style={{ marginTop:4 }}>
+              {pendingOut.map(f => (
+                <div key={f.rowId} style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 10px", marginBottom:4, background:"rgba(255,255,255,0.02)", borderRadius:9, border:"1px solid #1a1408", opacity:0.7 }}>
+                  <div style={{ width:30, height:30, borderRadius:"50%", overflow:"hidden", background:"#1a1408", display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, color:"#e8c060", flexShrink:0 }}>
+                    {f.avatar_url ? <img src={f.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (f.name||"?").slice(0,2).toUpperCase()}
+                  </div>
+                  <div style={{ flex:1, fontFamily:"'Cinzel',serif", fontSize:11, color:"#907050", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.name}</div>
+                  <div style={{ fontSize:8, color:"#604020", fontFamily:"'Cinzel',serif" }}>pending…</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Add Friend Search */}
+        <div style={{ padding:"10px 16px 16px", borderTop:"1px solid #1a1408", flexShrink:0 }}>
+          <div style={{ display:"flex", gap:6, marginBottom:8 }}>
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && doSearch()}
+              placeholder="Find Friend..."
+              style={{ flex:1, padding:"9px 12px", background:"rgba(255,255,255,0.04)", border:"1px solid #3a2010", borderRadius:9, color:"#f0e8d8", fontFamily:"'Cinzel',serif", fontSize:11, outline:"none" }}
+            />
+            <button onClick={doSearch} disabled={searching} style={{ padding:"9px 14px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:"#1a1000", cursor:"pointer", letterSpacing:1 }}>
+              {searching ? "…" : "FIND"}
+            </button>
+          </div>
+          {searchResults.map(p => (
+            <div key={p.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 10px", marginBottom:5, background:"rgba(255,255,255,0.02)", borderRadius:9, border:"1px solid #1a1408" }}>
+              <div style={{ width:32, height:32, borderRadius:"50%", overflow:"hidden", background:"#1a1408", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:"#e8c060", flexShrink:0 }}>
+                {p.avatar_url ? <img src={p.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (p.name||"?").slice(0,2).toUpperCase()}
+              </div>
+              <div style={{ flex:1, fontFamily:"'Cinzel',serif", fontSize:12, color:"#d0b878", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</div>
+              <button onClick={() => sendRequest(p)} disabled={!!sentTo[p.id] || sendingTo === p.id} style={{ padding:"5px 12px", background:sentTo[p.id]?"rgba(120,200,69,0.1)":"rgba(232,192,96,0.1)", border:`1px solid ${sentTo[p.id]?"#78cc4555":"#e8c06055"}`, borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:9, color:sentTo[p.id]?"#78cc45":"#e8c060", cursor:sentTo[p.id]?"default":"pointer", letterSpacing:1 }}>
+                {sentTo[p.id] ? "SENT ✓" : sendingTo === p.id ? "…" : "ADD"}
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding:"10px 16px 16px", borderTop:"1px solid #1a1408", marginTop:"auto", display:"flex", flexDirection:"column", gap:6, flexShrink:0 }}>
+          <button onClick={onLogout} style={{ width:"100%", padding:"9px", background:"rgba(160,20,20,0.1)", border:"1px solid #4a1010", borderRadius:8, color:"#a05040", fontFamily:"'Cinzel',serif", fontSize:10, cursor:"pointer", letterSpacing:1 }}>SIGN OUT</button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function App() {
-  const [tab, setTab] = useState("home"); const { user, loading, login, logout, update, completeProfile } = useAuth(); const [showProfile, setShowProfile] = useState(false); const [showPatchNotes, setShowPatchNotes] = useState(false); const [inPvpMatch, setInPvpMatch] = useState(false); const [navLeaveModal, setNavLeaveModal] = useState(null); const [avatarErr, setAvatarErr] = useState(""); const [navHovered, setNavHovered] = useState(false); const [matchActive, setMatchActive] = useState(false); const [histPopup, setHistPopup] = useState(null); const [deckBuilding, setDeckBuilding] = useState(false); // { targetTab }
+  const [tab, setTab] = useState("home"); const { user, loading, login, logout, update, completeProfile } = useAuth(); const [showSidebar, setShowSidebar] = useState(false); const [onlineIds, setOnlineIds] = useState(new Set()); const [showPatchNotes, setShowPatchNotes] = useState(false); const [inPvpMatch, setInPvpMatch] = useState(false); const [navLeaveModal, setNavLeaveModal] = useState(null); const [avatarErr, setAvatarErr] = useState(""); const [navHovered, setNavHovered] = useState(false); const [matchActive, setMatchActive] = useState(false); const [histPopup, setHistPopup] = useState(null); const [deckBuilding, setDeckBuilding] = useState(false); // { targetTab }
   const [friendBadge, setFriendBadge] = useState(0);
   const [globalChallenge, setGlobalChallenge] = useState(null); // { fromId, fromName, fromAvatar }
   const [pendingDuel, setPendingDuel] = useState(null); // { matchId, opponentName, opponentId }
@@ -6118,6 +6376,15 @@ export default function App() {
   // App-level notification subscriptions — active regardless of current tab
   useEffect(() => {
     if (!user?.id) return;
+    const presenceCh = supabase.channel("presence:forge_global", { config: { presence: { key: user.id } } });
+    presenceCh.on("presence", { event: "sync" }, () => {
+      const state = presenceCh.presenceState();
+      setOnlineIds(new Set(Object.keys(state)));
+    }).subscribe(async (status) => {
+      if (status === "SUBSCRIBED") {
+        await presenceCh.track({ user_id: user.id, name: user.name, online_at: new Date().toISOString() });
+      }
+    });
     const friendCh = supabase.channel(`friends_notif:${user.id}`)
       .on("broadcast", { event: "friend_request" }, () => setFriendBadge(p => p + 1))
       .subscribe();
@@ -6133,7 +6400,7 @@ export default function App() {
         setTab("play");
       })
       .subscribe();
-    return () => { supabase.removeChannel(friendCh); supabase.removeChannel(challengeCh); };
+    return () => { supabase.removeChannel(presenceCh); supabase.removeChannel(friendCh); supabase.removeChannel(challengeCh); };
   }, [user?.id]); // eslint-disable-line
   const acceptGlobalChallenge = async () => {
     if (!globalChallenge) return;
@@ -6157,7 +6424,7 @@ export default function App() {
     }
   };
   if (loading) return (<div style={{ minHeight: "100vh", background: "#161210", display: "flex", alignItems: "center", justifyContent: "center" }}><div style={{ fontFamily: "'Cinzel',serif", color: "#e8c060", fontSize: 16, letterSpacing: 4, animation: "pulse 1.5s ease-in-out infinite" }}>FORGING...</div></div>);
-  return (<div style={{ minHeight: "100vh", background: "#161210", color: "#e8e0d0", fontFamily: "'Lora',Georgia,serif", overflowX: "hidden" }} onClick={() => setShowProfile(false)}>
+  return (<div style={{ minHeight: "100vh", background: "#161210", color: "#e8e0d0", fontFamily: "'Lora',Georgia,serif", overflowX: "hidden" }} onClick={() => setShowSidebar(false)}>
     <style>{`
       @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Lora:ital,wght@0,400;0,500;1,400&display=swap');
       html{zoom:1.25}
@@ -6277,16 +6544,12 @@ export default function App() {
           return (
             <button key={t.id} onClick={() => {
               if (locked) { setNavLeaveModal({ targetTab: t.id }); return; }
-              if (t.id === "friends") setFriendBadge(0);
               setTab(t.id);
             }}
               style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8px 16px", gap: 4, background: active ? "linear-gradient(180deg,rgba(232,192,96,0.18) 0%,rgba(232,192,96,0.06) 100%)" : "transparent", border: "none", borderBottom: active ? "3px solid #e8c060" : "3px solid transparent", cursor: "pointer", minWidth: 68, transition: "all .18s", position: "relative", opacity: locked ? 0.45 : 1 }}
 >
               <span style={{ position: "relative", fontFamily: "'Cinzel',serif", fontSize: 18, fontWeight: 900, color: active ? "#e8c060" : "#b09458", lineHeight: 1, textShadow: active ? "0 0 20px #e8c06088" : "none", transition: "all .18s" }}>
                 {t.icon}
-                {t.id === "friends" && friendBadge > 0 && (
-                  <span style={{ position: "absolute", top: -4, right: -6, width: 10, height: 10, borderRadius: "50%", background: "#e04040", border: "2px solid #181408", animation: "pulse 1.2s ease-in-out infinite", boxShadow: "0 0 8px #e0404088" }} />
-                )}
               </span>
               <span className="nav-labels" style={{ fontFamily: "'Cinzel',serif", fontSize: 10, fontWeight: 700, color: active ? "#e8c060" : "#a08858", letterSpacing: 1, lineHeight: 1, transition: "all .18s" }}>{t.label}</span>
             </button>
@@ -6297,103 +6560,22 @@ export default function App() {
         <a href="https://discord.gg/RrjBaN8Akk" target="_blank" rel="noopener noreferrer" title="Join our Discord" style={{ display:"flex", alignItems:"center", justifyContent:"center", width:34, height:34, borderRadius:8, background:"rgba(88,101,242,0.18)", border:"1px solid #5865F255", color:"#8b9bff", flexShrink:0, transition:"all .18s", textDecoration:"none" }} onMouseEnter={(e)=>{e.currentTarget.style.background="rgba(88,101,242,0.35)";e.currentTarget.style.color="#fff";}} onMouseLeave={(e)=>{e.currentTarget.style.background="rgba(88,101,242,0.18)";e.currentTarget.style.color="#8b9bff";}}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.032.054a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
         </a>
-        <button onClick={(e) => { e.stopPropagation(); setShowProfile((p) => !p); }} style={{ background:"none", border:"2px solid #e8c06044", borderRadius:"50%", padding:0, cursor:"pointer", width:36, height:36, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:"#e8c060" }}>{user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user.name||"?").slice(0,2).toUpperCase()}</button>
+        <button onClick={(e) => { e.stopPropagation(); setShowSidebar((p) => !p); }} style={{ background:"none", border:"2px solid #e8c06044", borderRadius:"50%", padding:0, cursor:"pointer", width:36, height:36, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:"#e8c060" }}>{user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user.name||"?").slice(0,2).toUpperCase()}</button>
+        {friendBadge > 0 && <span style={{ position:"absolute", top:0, right:0, width:10, height:10, borderRadius:"50%", background:"#e04040", border:"2px solid #181408", animation:"pulse 1.2s ease-in-out infinite", boxShadow:"0 0 8px #e0404088", pointerEvents:"none", zIndex:10 }} />}
       </div>)}
     </nav>
     {/* Profile popup — rendered OUTSIDE nav to avoid backdropFilter/overflow:hidden clipping */}
-    {showProfile && user && (() => {
-      const wins = user.rankedWins || 0;
-      const losses = user.rankedLosses || 0;
-      const totalRanked = wins + losses;
-      const winRate = totalRanked > 0 ? Math.round((wins / totalRanked) * 100) : 0;
-      const gpIds = new Set(GAMEPLAY_POOL.map(c=>c.id));
-      const cardCount = Object.entries(user.collection||{}).filter(([id,v])=>v>0&&gpIds.has(id)).length;
-      const deckCount = (user.decks||[]).length;
-      const rank = getRank(user.rankedRating);
-      return (<>
-        <div style={{ position:"fixed", inset:0, zIndex:490 }} onClick={() => setShowProfile(false)} />
-        <div style={{ position:"fixed", top:76, right:16, background:"#0e0c08", border:"1px solid #2a2010", borderRadius:16, width:330, zIndex:500, boxShadow:"0 24px 60px rgba(0,0,0,0.98), 0 0 0 1px #1a1408", animation:"fadeIn 0.2s ease-out", maxHeight:"calc(100vh - 90px)", display:"flex", flexDirection:"column", overflow:"hidden" }} onClick={(e) => e.stopPropagation()}>
-          {/* Hero header */}
-          <div style={{ position:"relative", height:90, flexShrink:0, background:"linear-gradient(160deg,#1a1208,#0e0a04,#181208)", overflow:"hidden" }}>
-            <div style={{ position:"absolute", top:"50%", left:30, transform:"translateY(-50%)", width:100, height:100, borderRadius:"50%", background:`radial-gradient(circle, ${rank.color}22 0%, transparent 70%)`, pointerEvents:"none" }} />
-            <label style={{ position:"absolute", top:"50%", left:20, transform:"translateY(-50%)", cursor:"pointer", flexShrink:0 }}>
-              <div style={{ width:58, height:58, borderRadius:"50%", overflow:"hidden", border:`2px solid ${rank.color}88`, display:"flex", alignItems:"center", justifyContent:"center", background:"#1a1408", fontFamily:"'Cinzel',serif", fontSize:16, color:"#e8c060", boxShadow:`0 0 14px ${rank.color}44` }}>
-                {user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user.name||"?").slice(0,2).toUpperCase()}
-              </div>
-              <div style={{ position:"absolute", bottom:2, right:2, width:20, height:20, background:"#1a1408", border:`1px solid ${rank.color}55`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10 }}>📷</div>
-              <input type="file" accept="image/*" style={{ display:"none" }} onChange={async (e) => {
-                const file = e.target.files[0]; if (!file) return;
-                setAvatarErr("");
-                if (file.size > 2*1024*1024) { setAvatarErr("Image must be under 2MB"); return; }
-                const ext = file.name.split(".").pop().toLowerCase();
-                const path = `avatars/${user.id}.${ext}`;
-                const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert:true, contentType:file.type });
-                if (upErr) { setAvatarErr("Upload failed: " + upErr.message); return; }
-                const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
-                if (urlData?.publicUrl) await update({ avatarUrl: urlData.publicUrl + "?t=" + Date.now() });
-              }} />
-            </label>
-            <div style={{ position:"absolute", top:"50%", left:106, transform:"translateY(-50%)", right:16 }}>
-              {avatarErr && <div style={{ fontSize:8, color:"#e05050", marginBottom:3, fontFamily:"'Cinzel',serif" }}>{avatarErr}</div>}
-              <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, color:"#f0d878", fontWeight:900, letterSpacing:1, lineHeight:1, marginBottom:4 }}>{user.name}</div>
-              <div style={{ fontSize:8, color:"#907050", marginBottom:6, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user.email}</div>
-              <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
-                <div style={{ padding:"3px 8px", background:`${rank.color}20`, border:`1px solid ${rank.color}55`, borderRadius:8, fontSize:9, color:rank.color, fontFamily:"'Cinzel',serif", fontWeight:700 }}>{rank.icon} {rank.name} · {user.rankedRating||1000}</div>
-              </div>
-            </div>
-          </div>
-          <div style={{ overflowY:"auto", flex:1 }}>
-          {/* Stats row */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", borderBottom:"1px solid #1a1408" }}>
-            {[["W%",winRate+"%",winRate>=50?"#78cc45":"#e8a020"],["WIN",wins,"#78cc45"],["LOSS",losses,"#e05050"],["CARDS",cardCount,"#e8c060"],["DECKS",deckCount,"#c0a870"],["SHARDS",user.shards||0,"#60c8ff"]].map(([l,v,c],i) => (
-              <div key={i} style={{ padding:"10px 4px", textAlign:"center", borderRight:i<5?"1px solid #1a1408":"none", background:i%2===0?"rgba(0,0,0,0.2)":"transparent" }}>
-                <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#907050", letterSpacing:1, marginBottom:4 }}>{l}</div>
-                <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:900, color:c, lineHeight:1 }}>{v}</div>
-              </div>
-            ))}
-          </div>
-          {/* Match history */}
-          <div style={{ padding:"12px 14px 10px" }}>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#604030", letterSpacing:3, marginBottom:8, fontWeight:700 }}>⚔ RECENT BATTLES</div>
-            {(user.matchHistory||[]).length === 0
-              ? <div style={{ fontSize:11, color:"#3a2810", fontStyle:"italic", textAlign:"center", padding:"12px 0" }}>No battles yet — fight someone!</div>
-              : <div style={{ maxHeight:180, overflowY:"auto", display:"flex", flexDirection:"column", gap:3 }}>
-                  {(user.matchHistory||[]).map((m,i) => {
-                    const won = m.result==="W"; const ff = m.result==="FF"||m.forfeit;
-                    const rc = won?"#78cc45":ff?"#e8a020":"#e05050";
-                    return (
-                      <div key={i} style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 8px", background:i%2===0?"rgba(255,255,255,0.02)":"transparent", borderRadius:7, borderLeft:`3px solid ${rc}55` }}>
-                        <div style={{ width:26, height:26, borderRadius:"50%", overflow:"hidden", border:`1.5px solid ${rc}44`, flexShrink:0, background:"#1a1408", display:"flex", alignItems:"center", justifyContent:"center", fontSize:6, color:"#e8c060", fontFamily:"'Cinzel',serif", fontWeight:700 }}>
-                          {user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (user.name||"?").slice(0,2).toUpperCase()}
-                        </div>
-                        <span style={{ fontSize:7, color:"#3a2a10", fontFamily:"'Cinzel',serif" }}>VS</span>
-                        <div onClick={(e)=>{e.stopPropagation();setHistPopup(m);}} style={{ width:26, height:26, borderRadius:"50%", border:"1.5px solid #2a1a0855", flexShrink:0, background:"#0a0806", display:"flex", alignItems:"center", justifyContent:"center", fontSize:6, color:"#503020", fontFamily:"'Cinzel',serif", fontWeight:700, overflow:"hidden", cursor:"pointer" }} title="View opponent">
-                          {m.opponentAvatar ? <img src={m.opponentAvatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (m.opponent||"??").slice(0,2).toUpperCase()}
-                        </div>
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:10, color:"#d0b080", fontFamily:"'Cinzel',serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:600 }}>{m.opponent||"Unknown"}</div>
-                          <div style={{ fontSize:9, color:"#b08a58", fontFamily:"'Cinzel',serif" }}>{m.turns||0} turns · {m.date ? new Date(m.date).toLocaleDateString() : ""}{m.ranked ? " · Ranked" : " · Casual"}</div>
-                        </div>
-                        <div style={{ flexShrink:0, textAlign:"right" }}>
-                          <div style={{ fontSize:9, fontWeight:900, fontFamily:"'Cinzel',serif", color:rc, padding:"2px 8px", background:`${rc}14`, borderRadius:5, border:`1px solid ${rc}33`, letterSpacing:1, display:"inline-block" }}>{won?"WIN":ff?"FF":"LOSS"}</div>
-                          {m.ranked && m.ratingDelta != null && <div style={{ fontSize:7, color:m.ratingDelta>=0?"#78cc45":"#e05050", fontFamily:"'Cinzel',serif", marginTop:2 }}>{m.ratingDelta>=0?"+":""}{m.ratingDelta} MMR</div>}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-            }
-          </div>
-          {/* Footer */}
-          <div style={{ padding:"8px 14px 12px", borderTop:"1px solid #1a1408", display:"flex", flexDirection:"column", gap:5 }}>
-            {user.name?.toLowerCase() === "tcombz" && <AlphaKeyAdminPanel />}
-            <button onClick={()=>{ localStorage.removeItem(`patchSeen_${user.id}`); update({ lastPatchSeen: null }); setShowPatchNotes(true); setShowProfile(false); }} style={{ width:"100%", padding:"7px", background:"transparent", border:"1px solid #2a2010", borderRadius:7, color:"#504028", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer", letterSpacing:1 }}>📋 PATCH NOTES</button>
-            <button onClick={() => { logout(); setShowProfile(false); }} style={{ width:"100%", padding:"8px", background:"rgba(160,20,20,0.1)", border:"1px solid #4a1010", borderRadius:7, color:"#a05040", fontFamily:"'Cinzel',serif", fontSize:9, cursor:"pointer", letterSpacing:1 }}>SIGN OUT</button>
-          </div>
-          </div>{/* end scrollable body */}
-        </div>
-      </>);
-    })()}
+    {showSidebar && user && (
+      <PlayerSidebar
+        user={user}
+        onUpdateUser={update}
+        onlineIds={onlineIds}
+        onClose={() => { setShowSidebar(false); setFriendBadge(0); }}
+        onChallenge={() => {}}
+        onLogout={() => { logout(); setShowSidebar(false); }}
+        onShowPatchNotes={() => { localStorage.removeItem(`patchSeen_${user.id}`); update({ lastPatchSeen: null }); setShowPatchNotes(true); setShowSidebar(false); }}
+      />
+    )}
     {histPopup && (<>
       <div style={{ position:"fixed", inset:0, zIndex:510 }} onClick={()=>setHistPopup(null)}/>
       <div style={{ position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)", zIndex:520, background:"#0e0c08", border:"1px solid #3a2a10", borderRadius:16, padding:"24px 28px", minWidth:230, textAlign:"center", boxShadow:"0 24px 60px rgba(0,0,0,0.98)", animation:"fadeIn 0.2s ease-out" }} onClick={e=>e.stopPropagation()}>
@@ -6414,13 +6596,12 @@ export default function App() {
         <button onClick={()=>setHistPopup(null)} style={{ padding:"6px 22px", background:"transparent", border:"1px solid #3a2810", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:9, color:"#806040", cursor:"pointer", letterSpacing:1 }}>CLOSE</button>
       </div>
     </>)}
-    <div style={{ position: "relative", paddingTop: inBattle ? 4 : 0 }} onClick={() => setShowProfile(false)}>
+    <div style={{ position: "relative", paddingTop: inBattle ? 4 : 0 }} onClick={() => setShowSidebar(false)}>
       {tab === "home" && <HomeScreen setTab={setTab} user={user} />}
       {tab === "play" && <GameTab user={user} onUpdateUser={update} setInPvpMatch={setInPvpMatch} setMatchActive={setMatchActive} pendingDuel={pendingDuel} clearPendingDuel={() => setPendingDuel(null)} />}
       {tab === "store" && <StoreScreen user={user} onUpdateUser={update} />}
       {tab === "collection" && <CollectionScreen user={user} onUpdateUser={update} onDeckBuilding={setDeckBuilding} />}
       {tab === "profile" && <PlayerProfileScreen user={user} />}
-      {tab === "friends" && <FriendsScreen user={user} onStartDuel={({ matchId, opponentName }) => { setTab("play"); }} incomingChallenge={globalChallenge} setIncomingChallenge={setGlobalChallenge} />}
       {tab === "lore" && <LoreScreen />}
       {tab === "community" && <CommunityScreen user={user} />}
       {tab === "howto" && <GuideScreen />}
