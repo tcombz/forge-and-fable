@@ -2267,6 +2267,22 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   const [animUids, setAnimUids] = useState({});
   const vfx = useVFX();
   const logRef = useRef(null);
+  const prevBoardUidsRef = useRef({ player: new Set(), enemy: new Set() });
+
+  // Detect new board cards and trigger summoning animation
+  useEffect(() => {
+    if (!gs || !myRole) return;
+    const ai = toAI(gs, myRole);
+    const prev = prevBoardUidsRef.current;
+    const newUids = {};
+    ai.playerBoard.forEach(c => { if (!prev.player.has(c.uid)) newUids[c.uid] = "summoning"; });
+    ai.enemyBoard.forEach(c => { if (!prev.enemy.has(c.uid)) newUids[c.uid] = "summoning"; });
+    if (Object.keys(newUids).length > 0) {
+      setAnimUids(p => ({ ...p, ...newUids }));
+      setTimeout(() => setAnimUids(p => { const n = {...p}; Object.keys(newUids).forEach(u => delete n[u]); return n; }), 600);
+    }
+    prevBoardUidsRef.current = { player: new Set(ai.playerBoard.map(c=>c.uid)), enemy: new Set(ai.enemyBoard.map(c=>c.uid)) };
+  }, [gs, myRole]); // eslint-disable-line
 
   // Mark nav as in-match so tabs are blocked; register forfeit for nav-leave auto-FF
   useEffect(() => {
@@ -5365,8 +5381,14 @@ function FriendsScreen({ user, onStartDuel }) {
         </div>
       )}
       {searchErr === "no_results" && (
-        <div style={{ padding:"12px 14px", marginBottom:12, fontSize:11, color:"#504030", fontFamily:"'Cinzel',serif", textAlign:"center" }}>
-          No players found matching "{search}".
+        <div style={{ marginBottom:16 }}>
+          <div style={{ padding:"12px 14px", fontSize:11, color:"#504030", fontFamily:"'Cinzel',serif", textAlign:"center", marginBottom:8 }}>
+            No players found matching "{search}".
+          </div>
+          <div style={{ background:"#0e0e08", border:"1px solid #3a2a10", borderRadius:8, padding:"10px 14px", fontSize:9, color:"#705040", fontFamily:"'Cinzel',serif" }}>
+            <div style={{ marginBottom:6, color:"#c0a060" }}>If you expect to find players, RLS may be blocking the search. Run in Supabase SQL Editor:</div>
+            <pre style={{ background:"#080804", border:"1px solid #2a1e08", borderRadius:6, padding:"8px 10px", fontSize:9, color:"#a09060", overflowX:"auto", margin:0 }}>{`CREATE POLICY "profiles_public_read"\n  ON profiles FOR SELECT\n  TO authenticated USING (true);`}</pre>
+          </div>
         </div>
       )}
 
@@ -5411,11 +5433,11 @@ function FriendsScreen({ user, onStartDuel }) {
             <div key={f.rowId} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", borderBottom:"1px solid #100c04", background: online ? "rgba(120,200,69,0.04)" : "transparent", transition:"background .3s" }}>
               <div style={{ position:"relative", flexShrink:0 }}>
                 <div style={{ width:38, height:38, borderRadius:"50%", background:"#1a1208", border:`2px solid ${online?"#78cc4566":"#2a1e0a"}`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:13, color:"#e8c060", transition:"border-color .3s" }}>{f.name.slice(0,2).toUpperCase()}</div>
-                <div style={{ position:"absolute", bottom:1, right:1, width:10, height:10, borderRadius:"50%", background:online?"#78cc45":"#303020", border:"2px solid #0a0806", transition:"background .3s" }} />
+                <div style={{ position:"absolute", bottom:1, right:1, width:10, height:10, borderRadius:"50%", background:online?"#78cc45":"#e05050", border:"2px solid #0a0806", transition:"background .3s", boxShadow:online?"0 0 6px #78cc4588":"0 0 4px #e0505055" }} />
               </div>
               <div style={{ flex:1 }}>
                 <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#d0c098", fontWeight:700 }}>{f.name}</div>
-                <div style={{ fontSize:9, color:online?"#78cc4599":"#403828", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>{online?"ONLINE":"OFFLINE"}</div>
+                <div style={{ fontSize:9, color:online?"#78cc4599":"#e0505088", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>{online?"ONLINE":"OFFLINE"}</div>
               </div>
               {online && (
                 <button onClick={()=>sendChallenge(f)} disabled={challengeSent===f.id} style={{ padding:"8px 16px", background:challengeSent===f.id?"rgba(255,255,255,0.04)":"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:challengeSent===f.id?"#404030":"#1a1000", cursor:challengeSent===f.id?"default":"pointer", letterSpacing:1 }}>{challengeSent===f.id?"SENT…":"⚔ DUEL"}</button>
