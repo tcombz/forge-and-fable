@@ -6072,30 +6072,50 @@ function AlphaKeyAdminPanel() {
     setTimeout(() => setCopied(null), 1800);
   };
 
+  const [showUsed, setShowUsed] = useState(false);
+
   return (
     <div style={{ marginBottom:14, padding:"10px 12px", background:"rgba(0,30,60,0.4)", border:"1px solid #102840", borderRadius:9 }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-        <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#40c8ff", letterSpacing:2, fontWeight:700 }}>⚿ ALPHA KEYS</span>
-        <button onClick={load} disabled={loading} style={{ fontSize:8, color:"#406080", background:"transparent", border:"none", cursor:"pointer", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>{loading ? "loading…" : `↻ ${unused.length} / ${ALPHA_KEYS_LIST.length} unused`}</button>
+        <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#40c8ff", letterSpacing:2, fontWeight:700 }}>⚿ ALPHA KEYS — {unused.length} unused / {(usedKeys||[]).length} claimed</span>
+        <button onClick={load} disabled={loading} style={{ fontSize:8, color:"#406080", background:"transparent", border:"none", cursor:"pointer", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>{loading ? "…" : "↻"}</button>
       </div>
       {usedKeys === null
         ? <div style={{ fontSize:9, color:"#406080", textAlign:"center", padding:6 }}>Loading…</div>
-        : unused.length === 0
-          ? <div style={{ fontSize:9, color:"#e05050", textAlign:"center", padding:6 }}>All keys have been claimed!</div>
-          : <div style={{ display:"flex", flexDirection:"column", gap:3, maxHeight:200, overflowY:"auto" }}>
-              {unused.map(k => (
-                <div key={k} onClick={() => copy(k)} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"5px 8px", background:"rgba(0,40,80,0.35)", border:`1px solid ${copied===k?"#40c8ff33":"#102840"}`, borderRadius:6, cursor:"pointer", transition:"border-color .15s" }}>
-                  <span style={{ fontFamily:"monospace", fontSize:10, color:"#60c8ff", letterSpacing:1 }}>{k}</span>
-                  <span style={{ fontSize:8, fontFamily:"'Cinzel',serif", color: copied===k ? "#78cc45" : "#406080", flexShrink:0, marginLeft:6 }}>{copied===k ? "✓ COPIED" : "COPY"}</span>
-                </div>
+        : <>
+            {/* Tab toggle */}
+            <div style={{ display:"flex", gap:4, marginBottom:8 }}>
+              {[["UNUSED", false], ["CLAIMED", true]].map(([label, val]) => (
+                <button key={label} onClick={() => setShowUsed(val)} style={{ flex:1, padding:"4px 0", fontFamily:"'Cinzel',serif", fontSize:8, fontWeight:700, letterSpacing:1, cursor:"pointer", borderRadius:5, border:`1px solid ${showUsed===val?"#40c8ff":"#102840"}`, background:showUsed===val?"rgba(64,200,255,0.12)":"transparent", color:showUsed===val?"#40c8ff":"#406080", transition:"all .15s" }}>{label}</button>
               ))}
             </div>
+            {!showUsed
+              ? unused.length === 0
+                ? <div style={{ fontSize:9, color:"#e05050", textAlign:"center", padding:6 }}>All keys claimed!</div>
+                : <div style={{ display:"flex", flexDirection:"column", gap:3, maxHeight:220, overflowY:"auto" }}>
+                    {unused.map(k => (
+                      <div key={k} onClick={() => copy(k)} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"5px 8px", background:"rgba(0,40,80,0.35)", border:`1px solid ${copied===k?"#40c8ff44":"#102840"}`, borderRadius:6, cursor:"pointer", transition:"border-color .15s" }}>
+                        <span style={{ fontFamily:"monospace", fontSize:10, color:"#60c8ff", letterSpacing:1 }}>{k}</span>
+                        <span style={{ fontSize:8, fontFamily:"'Cinzel',serif", color:copied===k?"#78cc45":"#406080", flexShrink:0, marginLeft:6 }}>{copied===k?"✓ COPIED":"COPY"}</span>
+                      </div>
+                    ))}
+                  </div>
+              : (usedKeys||[]).length === 0
+                ? <div style={{ fontSize:9, color:"#406080", textAlign:"center", padding:6 }}>No keys claimed yet</div>
+                : <div style={{ display:"flex", flexDirection:"column", gap:3, maxHeight:220, overflowY:"auto" }}>
+                    {(usedKeys||[]).map(r => (
+                      <div key={r.key} style={{ display:"flex", alignItems:"center", gap:8, padding:"5px 8px", background:"rgba(0,20,40,0.4)", border:"1px solid #0e1e2e", borderRadius:6 }}>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontFamily:"monospace", fontSize:9, color:"#40a0c8", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.key}</div>
+                          <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#78cc45", marginTop:1 }}>{r.used_by_name}</div>
+                        </div>
+                        <div style={{ fontSize:7, color:"#305060", fontFamily:"'Cinzel',serif", flexShrink:0, textAlign:"right" }}>{r.used_at ? new Date(r.used_at).toLocaleDateString() : ""}</div>
+                      </div>
+                    ))}
+                  </div>
+            }
+          </>
       }
-      {usedKeys?.length > 0 && (
-        <div style={{ fontSize:7, color:"#60a0c0", marginTop:6, textAlign:"right", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>
-          {usedKeys.length} claimed · {usedKeys.map(r => r.used_by_name).join(", ")}
-        </div>
-      )}
     </div>
   );
 }
@@ -6111,6 +6131,7 @@ function PlayerSidebar({ user, onUpdateUser, onlineIds, onClose, onChallenge, on
   const [sentTo, setSentTo] = useState({});
   const [avatarErr, setAvatarErr] = useState("");
   const [challengeSent, setChallengeSent] = useState(null);
+  const [removeConfirm, setRemoveConfirm] = useState(null); // friend object pending removal
 
   useEffect(() => { loadFriends(); }, []); // eslint-disable-line
 
@@ -6142,6 +6163,11 @@ function PlayerSidebar({ user, onUpdateUser, onlineIds, onClose, onChallenge, on
   };
   const declineFriend = async (row) => {
     await supabase.from("friendships").delete().eq("id", row.rowId);
+    await loadFriends();
+  };
+  const removeFriend = async (f) => {
+    await supabase.from("friendships").delete().eq("id", f.rowId);
+    setRemoveConfirm(null);
     await loadFriends();
   };
 
@@ -6265,6 +6291,33 @@ function PlayerSidebar({ user, onUpdateUser, onlineIds, onClose, onChallenge, on
           ))}
         </div>
 
+        {/* Add Friend Search — above friends list */}
+        <div style={{ padding:"10px 16px 10px", borderBottom:"1px solid #1a1408", flexShrink:0 }}>
+          <div style={{ display:"flex", gap:6, marginBottom:searchResults.length > 0 ? 8 : 0 }}>
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && doSearch()}
+              placeholder="Find Friend..."
+              style={{ flex:1, padding:"9px 12px", background:"rgba(255,255,255,0.04)", border:"1px solid #3a2010", borderRadius:9, color:"#f0e8d8", fontFamily:"'Cinzel',serif", fontSize:11, outline:"none" }}
+            />
+            <button onClick={doSearch} disabled={searching} style={{ padding:"9px 14px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:"#1a1000", cursor:"pointer", letterSpacing:1 }}>
+              {searching ? "…" : "FIND"}
+            </button>
+          </div>
+          {searchResults.map(p => (
+            <div key={p.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 10px", marginBottom:5, background:"rgba(255,255,255,0.02)", borderRadius:9, border:"1px solid #1a1408" }}>
+              <div style={{ width:32, height:32, borderRadius:"50%", overflow:"hidden", background:"#1a1408", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:"#e8c060", flexShrink:0 }}>
+                {p.avatar_url ? <img src={p.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (p.name||"?").slice(0,2).toUpperCase()}
+              </div>
+              <div style={{ flex:1, fontFamily:"'Cinzel',serif", fontSize:12, color:"#d0b878", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</div>
+              <button onClick={() => sendRequest(p)} disabled={!!sentTo[p.id] || sendingTo === p.id} style={{ padding:"5px 12px", background:sentTo[p.id]?"rgba(120,200,69,0.1)":"rgba(232,192,96,0.1)", border:`1px solid ${sentTo[p.id]?"#78cc4555":"#e8c06055"}`, borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:9, color:sentTo[p.id]?"#78cc45":"#e8c060", cursor:sentTo[p.id]?"default":"pointer", letterSpacing:1 }}>
+                {sentTo[p.id] ? "SENT ✓" : sendingTo === p.id ? "…" : "ADD"}
+              </button>
+            </div>
+          ))}
+        </div>
+
         {/* Friends section */}
         <div style={{ padding:"14px 16px 6px", flexShrink:0 }}>
           <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#604030", letterSpacing:3, marginBottom:10, fontWeight:700, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
@@ -6295,21 +6348,32 @@ function PlayerSidebar({ user, onUpdateUser, onlineIds, onClose, onChallenge, on
             const online = onlineIds.has(f.id);
             const challenged = challengeSent === f.id;
             return (
-              <div key={f.rowId} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 10px", marginBottom:5, background:online?"rgba(120,200,69,0.04)":"rgba(255,255,255,0.015)", borderRadius:11, border:`1px solid ${online?"#78cc4522":"#1a1408"}`, transition:"all .3s" }}>
-                <div style={{ position:"relative", flexShrink:0 }}>
-                  <div style={{ width:40, height:40, borderRadius:"50%", overflow:"hidden", background:"#1a1408", border:`2px solid ${online?"#78cc4566":"#2a1e0a"}`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:13, color:"#e8c060", transition:"border-color .3s" }}>
-                    {f.avatar_url ? <img src={f.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (f.name||"?").slice(0,2).toUpperCase()}
+              <div key={f.rowId} style={{ marginBottom:5 }}>
+                {removeConfirm?.rowId === f.rowId ? (
+                  <div style={{ display:"flex", alignItems:"center", gap:6, padding:"9px 10px", background:"rgba(180,20,20,0.08)", borderRadius:11, border:"1px solid #5a1010" }}>
+                    <div style={{ flex:1, fontFamily:"'Cinzel',serif", fontSize:10, color:"#c07060" }}>Remove <strong style={{ color:"#e09070" }}>{f.name}</strong> as a friend?</div>
+                    <button onClick={() => removeFriend(f)} style={{ padding:"4px 10px", background:"rgba(200,40,40,0.2)", border:"1px solid #a02020", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:9, color:"#e05050", cursor:"pointer", fontWeight:700 }}>YES</button>
+                    <button onClick={() => setRemoveConfirm(null)} style={{ padding:"4px 10px", background:"transparent", border:"1px solid #2a1a0a", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", cursor:"pointer" }}>NO</button>
                   </div>
-                  <div style={{ position:"absolute", bottom:1, right:1, width:11, height:11, borderRadius:"50%", background:online?"#78cc45":"#503020", border:"2px solid #0a0806", boxShadow:online?"0 0 7px #78cc4588":"none", transition:"all .3s" }} />
-                </div>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#d0b878", fontWeight:700, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.name}</div>
-                  <div style={{ fontSize:9, color:online?"#78cc4599":"#503020", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>{online ? "Online" : "Offline"}</div>
-                </div>
-                {online && (
-                  <button onClick={() => sendChallenge(f)} disabled={!!challengeSent} title="Challenge to duel" style={{ width:32, height:32, background:challenged?"rgba(232,192,96,0.2)":"rgba(200,120,20,0.13)", border:`1px solid ${challenged?"#e8c060aa":"#5a3810"}`, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", cursor:challengeSent?"default":"pointer", fontSize:15, flexShrink:0, transition:"all .18s" }} onMouseEnter={e=>{if(!challengeSent){e.currentTarget.style.background="rgba(232,192,96,0.22)";e.currentTarget.style.borderColor="#c89010";}}} onMouseLeave={e=>{if(!challengeSent){e.currentTarget.style.background="rgba(200,120,20,0.13)";e.currentTarget.style.borderColor="#5a3810";}}}>
-                    {challenged ? "⏳" : "⚔"}
-                  </button>
+                ) : (
+                  <div style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 10px", background:online?"rgba(120,200,69,0.04)":"rgba(255,255,255,0.015)", borderRadius:11, border:`1px solid ${online?"#78cc4522":"#1a1408"}`, transition:"all .3s" }}>
+                    <div style={{ position:"relative", flexShrink:0 }}>
+                      <div style={{ width:40, height:40, borderRadius:"50%", overflow:"hidden", background:"#1a1408", border:`2px solid ${online?"#78cc4566":"#2a1e0a"}`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:13, color:"#e8c060", transition:"border-color .3s" }}>
+                        {f.avatar_url ? <img src={f.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (f.name||"?").slice(0,2).toUpperCase()}
+                      </div>
+                      <div style={{ position:"absolute", bottom:1, right:1, width:11, height:11, borderRadius:"50%", background:online?"#78cc45":"#503020", border:"2px solid #0a0806", boxShadow:online?"0 0 7px #78cc4588":"none", transition:"all .3s" }} />
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#d0b878", fontWeight:700, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.name}</div>
+                      <div style={{ fontSize:9, color:online?"#78cc4599":"#503020", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>{online ? "Online" : "Offline"}</div>
+                    </div>
+                    {online && (
+                      <button onClick={() => sendChallenge(f)} disabled={!!challengeSent} title="Challenge to duel" style={{ width:32, height:32, background:challenged?"rgba(232,192,96,0.2)":"rgba(200,120,20,0.13)", border:`1px solid ${challenged?"#e8c060aa":"#5a3810"}`, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", cursor:challengeSent?"default":"pointer", fontSize:15, flexShrink:0, transition:"all .18s" }} onMouseEnter={e=>{if(!challengeSent){e.currentTarget.style.background="rgba(232,192,96,0.22)";e.currentTarget.style.borderColor="#c89010";}}} onMouseLeave={e=>{if(!challengeSent){e.currentTarget.style.background="rgba(200,120,20,0.13)";e.currentTarget.style.borderColor="#5a3810";}}}>
+                        {challenged ? "⏳" : "⚔"}
+                      </button>
+                    )}
+                    <button onClick={() => setRemoveConfirm(f)} title="Remove friend" style={{ width:24, height:24, background:"transparent", border:"none", borderRadius:5, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:12, color:"#3a2010", flexShrink:0, transition:"color .15s" }} onMouseEnter={e=>e.currentTarget.style.color="#a05040"} onMouseLeave={e=>e.currentTarget.style.color="#3a2010"}>✕</button>
+                  </div>
                 )}
               </div>
             );
@@ -6329,33 +6393,6 @@ function PlayerSidebar({ user, onUpdateUser, onlineIds, onClose, onChallenge, on
               ))}
             </div>
           )}
-        </div>
-
-        {/* Add Friend Search */}
-        <div style={{ padding:"10px 16px 16px", borderTop:"1px solid #1a1408", flexShrink:0 }}>
-          <div style={{ display:"flex", gap:6, marginBottom:8 }}>
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && doSearch()}
-              placeholder="Find Friend..."
-              style={{ flex:1, padding:"9px 12px", background:"rgba(255,255,255,0.04)", border:"1px solid #3a2010", borderRadius:9, color:"#f0e8d8", fontFamily:"'Cinzel',serif", fontSize:11, outline:"none" }}
-            />
-            <button onClick={doSearch} disabled={searching} style={{ padding:"9px 14px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:"#1a1000", cursor:"pointer", letterSpacing:1 }}>
-              {searching ? "…" : "FIND"}
-            </button>
-          </div>
-          {searchResults.map(p => (
-            <div key={p.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 10px", marginBottom:5, background:"rgba(255,255,255,0.02)", borderRadius:9, border:"1px solid #1a1408" }}>
-              <div style={{ width:32, height:32, borderRadius:"50%", overflow:"hidden", background:"#1a1408", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, color:"#e8c060", flexShrink:0 }}>
-                {p.avatar_url ? <img src={p.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (p.name||"?").slice(0,2).toUpperCase()}
-              </div>
-              <div style={{ flex:1, fontFamily:"'Cinzel',serif", fontSize:12, color:"#d0b878", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</div>
-              <button onClick={() => sendRequest(p)} disabled={!!sentTo[p.id] || sendingTo === p.id} style={{ padding:"5px 12px", background:sentTo[p.id]?"rgba(120,200,69,0.1)":"rgba(232,192,96,0.1)", border:`1px solid ${sentTo[p.id]?"#78cc4555":"#e8c06055"}`, borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:9, color:sentTo[p.id]?"#78cc45":"#e8c060", cursor:sentTo[p.id]?"default":"pointer", letterSpacing:1 }}>
-                {sentTo[p.id] ? "SENT ✓" : sendingTo === p.id ? "…" : "ADD"}
-              </button>
-            </div>
-          ))}
         </div>
 
         {/* Footer */}
@@ -6593,7 +6630,7 @@ export default function App() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.032.054a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
         </a>
         <button onClick={(e) => { e.stopPropagation(); setShowSidebar((p) => !p); }} style={{ background:"none", border:"2px solid #e8c06044", borderRadius:"50%", padding:0, cursor:"pointer", width:36, height:36, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:"#e8c060" }}>{user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user.name||"?").slice(0,2).toUpperCase()}</button>
-        {friendBadge > 0 && <span style={{ position:"absolute", top:0, right:0, width:10, height:10, borderRadius:"50%", background:"#e04040", border:"2px solid #181408", animation:"pulse 1.2s ease-in-out infinite", boxShadow:"0 0 8px #e0404088", pointerEvents:"none", zIndex:10 }} />}
+        {friendBadge > 0 && <span style={{ position:"absolute", top:-4, right:-4, minWidth:18, height:18, borderRadius:9, background:"#e04040", border:"2px solid #181408", animation:"pulse 1.2s ease-in-out infinite", boxShadow:"0 0 8px #e0404088", pointerEvents:"none", zIndex:10, fontFamily:"'Cinzel',serif", fontSize:9, fontWeight:900, color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", padding:"0 4px", lineHeight:1 }}>{friendBadge > 9 ? "9+" : friendBadge}</span>}
       </div>)}
     </nav>
     {/* Profile popup — rendered OUTSIDE nav to avoid backdropFilter/overflow:hidden clipping */}
