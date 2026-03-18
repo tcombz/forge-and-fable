@@ -875,7 +875,7 @@ function HandCard({ card, playable, onClick, onRightClick, onDragStart }) {
       } : undefined}
       onDragEnd={() => setDragging(false)}
     >
-      <div onClick={playable ? onClick : undefined} onContextMenu={onRightClick ? (e) => { e.preventDefault(); onRightClick(); } : undefined} style={{ width: 100, height: 140, flexShrink: 0, cursor: playable ? (onDragStart ? "grab" : "pointer") : "not-allowed", opacity: playable ? (dragging ? 0.45 : 1) : 0.35, border: `2px solid ${isBP ? "#a81830" : hov && playable ? card.border : "#201c10"}`, borderRadius: 10, overflow: "hidden", transform: hov && playable && !dragging ? "translateY(-22px) scale(1.05)" : "none", boxShadow: hov && playable && !dragging ? `0 22px 38px ${card.border}66` : "none", transition: "all .2s", userSelect: "none", position: "relative" }}>
+      <div onClick={playable ? onClick : undefined} onContextMenu={onRightClick ? (e) => { e.preventDefault(); onRightClick(); } : undefined} style={{ width: 100, height: 140, flexShrink: 0, cursor: playable ? (onDragStart ? "grab" : "pointer") : "not-allowed", opacity: playable ? (dragging ? 0.45 : 1) : 0.35, border: `2px solid ${isBP ? "#a81830" : hov && playable ? card.border : "#201c10"}`, borderRadius: 10, overflow: "hidden", transform: hov && playable && !dragging ? "scale(1.12)" : "none", transformOrigin: "50% 100%", boxShadow: hov && playable && !dragging ? `0 8px 28px ${card.border}88, 0 0 40px ${card.border}44` : "none", transition: "all .2s", userSelect: "none", position: "relative" }}>
         {/* Full art */}
         <div style={{ position: "absolute", inset: 0 }}><CardArt card={card} /></div>
         {/* Bottom gradient */}
@@ -2000,7 +2000,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
             {g.playerBoard.length === 0 ? <span style={{ fontSize: 10, color: dragOverField ? "#78cc45" : "#181408", letterSpacing: 3 }}>{dragOverField ? "DROP TO PLAY" : "PLAY A CARD"}</span> : g.playerBoard.map((c) => (<Token key={c.uid} c={resolveCardArt(c, user?.selectedArts || {})} animType={animUids[c.uid]} selected={attacker === c.uid} isTarget={false} canSelect={g.phase === "player" && c.canAttack && !c.hasAttacked && !aiThink} onClick={() => selectAtt(c)} onRightClick={() => { SFX.play("ability"); setPreviewCard(c); }} />))}
           </div>
           <div style={{ borderTop: "1px solid #2a2010", paddingTop: 10, marginBottom: 10, flex:"0 0 auto" }}>
-            <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "nowrap", overflowX: "auto", paddingTop: 28, marginTop: -28 }}>
+            <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "nowrap", overflowX: "auto" }}>
               {g.playerHand.map((card) => { const isEnv = card.type === "environment"; const isSpl = card.type === "spell"; const eff = getEffectiveCost(card, g.environment, "player"); const cp = g.phase === "player" && !aiThink && (isEnv || isSpl || g.playerBoard.length < CFG.maxBoard) && (card.bloodpact ? card.cost < g.playerHP : eff <= g.playerEnergy); return (<HandCard key={card.uid} card={resolveCardArt({ ...card, cost: eff }, user?.selectedArts || {})} playable={cp} onClick={() => playCard(card)} onRightClick={() => { SFX.play("card_inspect"); setPreviewCard(card); }} onDragStart={(c) => { dragCardRef.current = c; }} />); })}
             </div>
           </div>
@@ -3199,7 +3199,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
             {ai.playerBoard.length===0?<span style={{ fontSize:10, color:dragOverField?"#78cc45":"#181408", letterSpacing:3 }}>{dragOverField?"DROP TO PLAY":isMyTurn?"PLAY A CARD":"WAITING..."}</span>:ai.playerBoard.map((c)=>(<Token key={c.uid} c={resolveCardArt(c,myRole==="p1"?gs?.p1Arts||{}:gs?.p2Arts||{})} animType={animUids[c.uid]} selected={attacker===c.uid} isTarget={false} canSelect={isMyTurn&&c.canAttack&&!c.hasAttacked&&!syncing} onClick={()=>selectAtt(c)} onRightClick={()=>setPreviewCard(c)}/>))}
           </div>
           <div style={{ borderTop:"1px solid #181408", paddingTop:10, marginBottom:10, flex:"0 0 auto" }}>
-            <div style={{ display:"flex", gap:6, justifyContent:"center", flexWrap:"nowrap", overflowX:"auto" }}>
+            <div style={{ display:"flex", gap:6, justifyContent:"center", flexWrap:"nowrap", overflowX:"auto", overflowY:"visible" }}>
               {ai.playerHand.map((card)=>{
                 const needsAllies=(card.type==="spell")&&(card.effects||[]).some(e=>["buff_allies","heal_all_allies","buff_random_ally","buff_keyword_allies"].includes(e.effect));
                 const eff=getEffectiveCost(card,ai.environment);
@@ -5251,6 +5251,9 @@ function FriendsScreen({ user, onStartDuel, incomingChallenge, setIncomingChalle
   const [onlineIds, setOnlineIds] = useState(new Set());
   const [challengeSent, setChallengeSent] = useState(null);
   const [sendingTo, setSendingTo] = useState(null);
+  const [sentTo, setSentTo] = useState({});
+  const [addErr, setAddErr] = useState({});
+  const [viewProfile, setViewProfile] = useState(null); // { id, name, avatar_url, ... }
   const presenceRef = useRef(null);
 
   const loadFriends = async () => {
@@ -5314,13 +5317,15 @@ function FriendsScreen({ user, onStartDuel, incomingChallenge, setIncomingChalle
       requester_name: user.name, accepter_name: target.name || target.id.slice(0,8), status: "pending"
     }]);
     if (!error) {
-      // Notify the target player
+      setSentTo(prev => ({ ...prev, [target.id]: true }));
       const notifCh = supabase.channel(`friends_notif:${target.id}`);
       await notifCh.subscribe();
       await notifCh.send({ type: "broadcast", event: "friend_request", payload: { fromId: user.id, fromName: user.name } });
       supabase.removeChannel(notifCh);
       await loadFriends();
-      setSearchResults(prev => prev.filter(p => p.id !== target.id));
+      setTimeout(() => setSearchResults(prev => prev.filter(p => p.id !== target.id)), 1200);
+    } else {
+      setAddErr(prev => ({ ...prev, [target.id]: error.code === "23505" ? "Already sent" : (error.message || "Failed") }));
     }
     setSendingTo(null);
   };
@@ -5342,6 +5347,13 @@ function FriendsScreen({ user, onStartDuel, incomingChallenge, setIncomingChalle
     await ch.send({ type: "broadcast", event: "challenge", payload: { fromId: user.id, fromName: user.name, fromAvatar: user.avatarUrl } });
     supabase.removeChannel(ch);
     setTimeout(() => setChallengeSent(null), 8000);
+  };
+
+  const openProfile = async (id, name) => {
+    setViewProfile({ id, name, loading: true });
+    const { data } = await supabase.from("profiles").select("id,name,avatar_url,ranked_wins,ranked_losses,ranked_rating,collection").eq("id", id).single();
+    if (data) setViewProfile({ ...data, loading: false });
+    else setViewProfile({ id, name, loading: false });
   };
 
   const STATUS = { online: "#78cc45", offline: "#504030" };
@@ -5393,7 +5405,10 @@ function FriendsScreen({ user, onStartDuel, incomingChallenge, setIncomingChalle
                 {p.avatar_url ? <img src={p.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (p.name||"?").slice(0,2).toUpperCase()}
               </div>
               <span style={{ flex:1, fontFamily:"'Cinzel',serif", fontSize:13, color:"#d0c098" }}>{p.name}</span>
-              <button onClick={()=>sendRequest(p)} disabled={sendingTo===p.id} style={{ padding:"6px 14px", background:sendingTo===p.id?"rgba(100,100,100,0.15)":"rgba(200,144,16,0.15)", border:"1px solid #8a6030", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:10, color:sendingTo===p.id?"#806040":"#e8c060", cursor:sendingTo===p.id?"default":"pointer" }}>{sendingTo===p.id?"…":"+ ADD"}</button>
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:3 }}>
+                <button onClick={()=>sendRequest(p)} disabled={sendingTo===p.id||sentTo[p.id]} style={{ padding:"6px 14px", background:sentTo[p.id]?"rgba(80,180,40,0.18)":sendingTo===p.id?"rgba(100,100,100,0.15)":"rgba(200,144,16,0.15)", border:`1px solid ${sentTo[p.id]?"#4a8030":"#8a6030"}`, borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:10, color:sentTo[p.id]?"#78cc45":sendingTo===p.id?"#806040":"#e8c060", cursor:sentTo[p.id]||sendingTo===p.id?"default":"pointer" }}>{sentTo[p.id]?"✓ SENT":sendingTo===p.id?"…":"+ ADD"}</button>
+                {addErr[p.id] && <span style={{ fontSize:9, color:"#e05050", fontFamily:"'Cinzel',serif" }}>{addErr[p.id]}</span>}
+              </div>
             </div>
           ))}
         </div>
@@ -5422,13 +5437,15 @@ function FriendsScreen({ user, onStartDuel, incomingChallenge, setIncomingChalle
           const online = isOnline(f.id);
           return (
             <div key={f.rowId} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", borderBottom:"1px solid #100c04", background: online ? "rgba(120,200,69,0.04)" : "transparent", transition:"background .3s" }}>
-              <div style={{ position:"relative", flexShrink:0 }}>
-                <div style={{ width:38, height:38, borderRadius:"50%", background:"#1a1208", border:`2px solid ${online?"#78cc4566":"#2a1e0a"}`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:13, color:"#e8c060", transition:"border-color .3s" }}>{f.name.slice(0,2).toUpperCase()}</div>
+              <div onClick={()=>openProfile(f.id, f.name)} style={{ position:"relative", flexShrink:0, cursor:"pointer" }} title="View profile">
+                <div style={{ width:38, height:38, borderRadius:"50%", background:"#1a1208", border:`2px solid ${online?"#78cc4566":"#2a1e0a"}`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:13, color:"#e8c060", transition:"border-color .3s", overflow:"hidden" }}>
+                  {f.avatar_url ? <img src={f.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : f.name.slice(0,2).toUpperCase()}
+                </div>
                 <div style={{ position:"absolute", bottom:1, right:1, width:10, height:10, borderRadius:"50%", background:online?"#78cc45":"#e05050", border:"2px solid #0a0806", transition:"background .3s", boxShadow:online?"0 0 6px #78cc4588":"0 0 4px #e0505055" }} />
               </div>
-              <div style={{ flex:1 }}>
+              <div onClick={()=>openProfile(f.id, f.name)} style={{ flex:1, cursor:"pointer" }}>
                 <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#d0c098", fontWeight:700 }}>{f.name}</div>
-                <div style={{ fontSize:9, color:online?"#78cc4599":"#e0505088", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>{online?"ONLINE":"OFFLINE"}</div>
+                <div style={{ fontSize:9, color:online?"#78cc4599":"#e0505088", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>{online?"ONLINE · TAP TO VIEW":"OFFLINE · TAP TO VIEW"}</div>
               </div>
               {online && (
                 <button onClick={()=>sendChallenge(f)} disabled={challengeSent===f.id} style={{ padding:"8px 16px", background:challengeSent===f.id?"rgba(255,255,255,0.04)":"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:challengeSent===f.id?"#404030":"#1a1000", cursor:challengeSent===f.id?"default":"pointer", letterSpacing:1 }}>{challengeSent===f.id?"SENT…":"⚔ DUEL"}</button>
@@ -5449,6 +5466,75 @@ function FriendsScreen({ user, onStartDuel, incomingChallenge, setIncomingChalle
               <button onClick={()=>removeFriend(p)} style={{ padding:"6px 12px", background:"transparent", border:"1px solid #2a1a08", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:10, color:"#604030", cursor:"pointer" }}>CANCEL</button>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Friend profile modal */}
+      {viewProfile && (
+        <div style={{ position:"fixed", inset:0, zIndex:600, background:"rgba(0,0,0,0.88)", display:"flex", alignItems:"center", justifyContent:"center" }} onClick={() => setViewProfile(null)}>
+          <div style={{ background:"linear-gradient(160deg,#1a1208,#0e0a04)", border:"2px solid #3a2810", borderRadius:18, width:320, maxHeight:"80vh", overflowY:"auto", animation:"fadeIn 0.2s" }} onClick={e=>e.stopPropagation()}>
+            {viewProfile.loading ? (
+              <div style={{ padding:40, textAlign:"center", fontFamily:"'Cinzel',serif", color:"#e8c060", fontSize:13, letterSpacing:2, animation:"pulse 1.5s infinite" }}>LOADING…</div>
+            ) : (() => {
+              const wins = viewProfile.ranked_wins || 0;
+              const losses = viewProfile.ranked_losses || 0;
+              const rating = viewProfile.ranked_rating || 1000;
+              const total = wins + losses;
+              const wr = total > 0 ? Math.round(wins/total*100) : 0;
+              const rank = getRank(rating);
+              const colSize = Object.values(viewProfile.collection||{}).filter(v=>v>0).length;
+              return (
+                <>
+                  {/* Header */}
+                  <div style={{ position:"relative", height:80, background:`linear-gradient(160deg,${rank.color}22,#0e0a04)`, borderRadius:"16px 16px 0 0", overflow:"hidden", flexShrink:0 }}>
+                    <div style={{ position:"absolute", top:"50%", left:20, transform:"translateY(-50%)", display:"flex", alignItems:"center", gap:14 }}>
+                      <div style={{ width:52, height:52, borderRadius:"50%", overflow:"hidden", border:`2px solid ${rank.color}88`, display:"flex", alignItems:"center", justifyContent:"center", background:"#1a1408", fontFamily:"'Cinzel',serif", fontSize:16, color:"#e8c060", flexShrink:0 }}>
+                        {viewProfile.avatar_url ? <img src={viewProfile.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (viewProfile.name||"?").slice(0,2).toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ fontFamily:"'Cinzel',serif", fontSize:15, fontWeight:900, color:"#f0e0c8", letterSpacing:1 }}>{viewProfile.name}</div>
+                        <div style={{ fontSize:10, color:rank.color, fontFamily:"'Cinzel',serif", fontWeight:700 }}>{rank.icon} {rank.label}</div>
+                      </div>
+                    </div>
+                    <button onClick={()=>setViewProfile(null)} style={{ position:"absolute", top:10, right:14, background:"none", border:"none", color:"#604030", fontSize:18, cursor:"pointer", lineHeight:1 }}>✕</button>
+                  </div>
+                  {/* Stats */}
+                  <div style={{ padding:"18px 22px", display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12, borderBottom:"1px solid #1a1408" }}>
+                    {[["RATING", rating],["WINS", wins],["WIN RATE", wr+"%"]].map(([label,val])=>(
+                      <div key={label} style={{ textAlign:"center" }}>
+                        <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:900, color:"#e8c060" }}>{val}</div>
+                        <div style={{ fontSize:8, color:"#504030", fontFamily:"'Cinzel',serif", letterSpacing:2, marginTop:2 }}>{label}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Record */}
+                  <div style={{ padding:"14px 22px", borderBottom:"1px solid #1a1408" }}>
+                    <div style={{ fontSize:9, color:"#604030", fontFamily:"'Cinzel',serif", letterSpacing:2, marginBottom:8 }}>RANKED RECORD</div>
+                    <div style={{ display:"flex", gap:4, alignItems:"center" }}>
+                      <div style={{ height:8, borderRadius:4, background:"#78cc45", width:`${total>0?wr:50}%`, minWidth:4, transition:"width .4s" }} />
+                      <div style={{ height:8, borderRadius:4, background:"#e05050", flex:1, minWidth:4 }} />
+                    </div>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginTop:5, fontSize:10, fontFamily:"'Cinzel',serif" }}>
+                      <span style={{ color:"#78cc45" }}>{wins}W</span>
+                      <span style={{ color:"#806040" }}>{total} games</span>
+                      <span style={{ color:"#e05050" }}>{losses}L</span>
+                    </div>
+                  </div>
+                  {/* Collection */}
+                  <div style={{ padding:"14px 22px" }}>
+                    <div style={{ fontSize:9, color:"#604030", fontFamily:"'Cinzel',serif", letterSpacing:2, marginBottom:8 }}>COLLECTION</div>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <span style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:"#e8c060" }}>{colSize}</span>
+                      <span style={{ fontSize:10, color:"#604030", fontFamily:"'Cinzel',serif" }}>/ {GAMEPLAY_POOL.length} cards</span>
+                    </div>
+                    <div style={{ height:6, background:"#0e0c08", borderRadius:3, overflow:"hidden", marginTop:8, border:"1px solid #1a1408" }}>
+                      <div style={{ height:"100%", width:`${Math.round(colSize/GAMEPLAY_POOL.length*100)}%`, background:"linear-gradient(90deg,#804010,#e8c060)", borderRadius:3, transition:"width .5s" }} />
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
         </div>
       )}
     </div>
