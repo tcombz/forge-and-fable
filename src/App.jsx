@@ -2407,8 +2407,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       if (att.shielded) ai.log = [...ai.log, `${att.name} shield absorbs counter!`];
       ai.enemyBoard = ai.enemyBoard.map(c => c.uid === tgt.uid ? { ...c, currentHp: nTHP, shielded: false, bleed: (c.bleed||0)+((att.keywords||[]).includes("Bleed")?1:0) } : c).filter(c => c.currentHp > 0);
       ai.playerBoard = ai.playerBoard.map(c => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP, shielded: false } : c).filter(c => c.currentHp > 0);
-      if (nTHP <= 0) { ai.log = [...ai.log, `💀 ${tgt.name} slain by ${att.name}!`]; ai = resolveEffects("onDeath", tgt, ai, "enemy", vfxInst); }
-      if (nAHP <= 0) { ai.log = [...ai.log, `💀 ${att.name} slain by ${tgt.name}!`]; ai = resolveEffects("onDeath", att, ai, "player", vfxInst); }
+      if (nTHP <= 0) { ai.log = [...ai.log, `💀 ${tgt.name} slain by ${att.name}!`]; ai = resolveEffects("onDeath", tgt, ai, "enemy", vfxInst); if (ai.enemyBoard.find(c=>c.id==="hades_soul_reaper")||ai.enemyHand.find(c=>c.id==="hades_soul_reaper")) { ai = resolveEffects("onFriendlyDeath",{id:"hades_soul_reaper",effects:[{trigger:"onFriendlyDeath",effect:"soul_harvest"}]},ai,"enemy",vfxInst); } }
+      if (nAHP <= 0) { ai.log = [...ai.log, `💀 ${att.name} slain by ${tgt.name}!`]; ai = resolveEffects("onDeath", att, ai, "player", vfxInst); if (ai.playerBoard.find(c=>c.id==="hades_soul_reaper")||ai.playerHand.find(c=>c.id==="hades_soul_reaper")) { ai = resolveEffects("onFriendlyDeath",{id:"hades_soul_reaper",effects:[{trigger:"onFriendlyDeath",effect:"soul_harvest"}]},ai,"player",vfxInst); } }
       // onAttack triggers (spawn tokens, etc.)
       const attAfterCreature = ai.playerBoard.find(c => c.uid === action.attackerUid);
       if (attAfterCreature) ai = resolveEffects("onAttack", attAfterCreature, ai, "player", vfxInst);
