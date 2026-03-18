@@ -854,7 +854,6 @@ function Token({ c, selected, isTarget, canSelect, onClick, onRightClick, animTy
     </div>
   );
 }
-Token = React.memo(Token);
 function HandCard({ card, playable, onClick, onRightClick }) {
   const [hov, setHov] = useState(false);
   const isBP = card.bloodpact; const isEnv = card.type === "environment";
@@ -912,7 +911,6 @@ function HandCard({ card, playable, onClick, onRightClick }) {
     </div>
   );
 }
-HandCard = React.memo(HandCard);
 
 // ═══ TURN TIMER ══════════════════════════════════════════════════════════════
 function TurnTimer({ active, duration = CFG.turnTimer, onExpire, turnNum, children }) {
