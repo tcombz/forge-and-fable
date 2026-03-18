@@ -5253,22 +5253,37 @@ function FriendsScreen({ user, onStartDuel, incomingChallenge, setIncomingChalle
   const [sendingTo, setSendingTo] = useState(null);
   const [sentTo, setSentTo] = useState({});
   const [addErr, setAddErr] = useState({});
+  const [friendsRlsErr, setFriendsRlsErr] = useState(false);
   const [viewProfile, setViewProfile] = useState(null); // { id, name, avatar_url, ... }
   const presenceRef = useRef(null);
 
   const loadFriends = async () => {
     if (!user?.id) return;
-    const { data } = await supabase.from("friendships")
-      .select(`*, rp:profiles!requester(name,avatar_url), ap:profiles!accepter(name,avatar_url)`)
+    // Plain select — avoid FK join which fails if foreign keys aren't declared
+    const { data, error } = await supabase.from("friendships")
+      .select("*")
       .or(`requester.eq.${user.id},accepter.eq.${user.id}`);
+    if (error) { setFriendsRlsErr(true); return; }
     if (!data) return;
+    setFriendsRlsErr(false);
+
+    // Gather the "other" side IDs and fetch their profiles separately
+    const otherIds = [...new Set(data.map(r => r.requester === user.id ? r.accepter : r.requester))];
+    let pm = {};
+    if (otherIds.length > 0) {
+      const { data: profs } = await supabase.from("profiles").select("id,name,avatar_url").in("id", otherIds);
+      if (profs) profs.forEach(p => { pm[p.id] = p; });
+    }
+    const nm = (id) => pm[id]?.name || id.slice(0, 8);
+    const av = (id) => pm[id]?.avatar_url || null;
+
     const accepted = data.filter(r => r.status === "accepted");
-    const pending = data.filter(r => r.status === "pending");
+    const pending  = data.filter(r => r.status === "pending");
     setFriends(accepted.map(r => r.requester === user.id
-      ? { id: r.accepter, name: r.ap?.name || r.accepter.slice(0,8), avatar_url: r.ap?.avatar_url || null, rowId: r.id }
-      : { id: r.requester, name: r.rp?.name || r.requester.slice(0,8), avatar_url: r.rp?.avatar_url || null, rowId: r.id }));
-    setPendingIn(pending.filter(r => r.accepter === user.id).map(r => ({ id: r.requester, name: r.rp?.name || r.requester.slice(0,8), avatar_url: r.rp?.avatar_url || null, rowId: r.id })));
-    setPendingOut(pending.filter(r => r.requester === user.id).map(r => ({ id: r.accepter, name: r.ap?.name || r.accepter.slice(0,8), avatar_url: r.ap?.avatar_url || null, rowId: r.id })));
+      ? { id: r.accepter,  name: nm(r.accepter),  avatar_url: av(r.accepter),  rowId: r.id }
+      : { id: r.requester, name: nm(r.requester), avatar_url: av(r.requester), rowId: r.id }));
+    setPendingIn( pending.filter(r => r.accepter === user.id).map(r => ({ id: r.requester, name: nm(r.requester), avatar_url: av(r.requester), rowId: r.id })));
+    setPendingOut(pending.filter(r => r.requester === user.id).map(r => ({ id: r.accepter,  name: nm(r.accepter),  avatar_url: av(r.accepter),  rowId: r.id })));
   };
 
   useEffect(() => {
@@ -5411,6 +5426,15 @@ function FriendsScreen({ user, onStartDuel, incomingChallenge, setIncomingChalle
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* RLS hint for friendships table */}
+      {friendsRlsErr && (
+        <div style={{ background:"#1a0808", border:"1px solid #a02020aa", borderRadius:10, padding:"14px 18px", marginBottom:16, fontSize:11, color:"#e06060", fontFamily:"'Cinzel',serif" }}>
+          <div style={{ fontWeight:700, marginBottom:6 }}>⚠ Friend list blocked by Supabase RLS.</div>
+          <div style={{ fontSize:9, color:"#c05040", marginBottom:8 }}>Run this SQL in Supabase → SQL Editor:</div>
+          <pre style={{ background:"#0a0404", border:"1px solid #3a1010", borderRadius:6, padding:"8px 10px", fontSize:9, color:"#ff9090", overflowX:"auto", margin:0 }}>{`CREATE POLICY "friendships_read" ON friendships\n  FOR SELECT TO authenticated\n  USING (requester = auth.uid() OR accepter = auth.uid());\n\nCREATE POLICY "friendships_insert" ON friendships\n  FOR INSERT TO authenticated\n  WITH CHECK (requester = auth.uid());\n\nCREATE POLICY "friendships_update" ON friendships\n  FOR UPDATE TO authenticated\n  USING (requester = auth.uid() OR accepter = auth.uid());\n\nCREATE POLICY "friendships_delete" ON friendships\n  FOR DELETE TO authenticated\n  USING (requester = auth.uid() OR accepter = auth.uid());`}</pre>
         </div>
       )}
 
