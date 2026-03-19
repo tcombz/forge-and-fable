@@ -838,11 +838,13 @@ const ALT_ARTS = {
 
 /** Returns the card with the correct imageUrl applied based on selectedArts map */
 function resolveCardArt(card, selectedArts) {
+  const base = POOL.find(x => x.id === card.id) || card;
+  const merged = card.imageUrl ? card : { ...card, imageUrl: base.imageUrl, imageScale: base.imageScale, altObjectPosition: base.altObjectPosition };
   const altSetId = selectedArts && selectedArts[card.id];
-  if (!altSetId) return card;
+  if (!altSetId) return merged;
   const alts = ALT_ARTS[card.id] || [];
   const alt = alts.find((a) => a.setId === altSetId);
-  return alt ? { ...card, imageUrl: alt.imageUrl, ...(alt.altObjectPosition ? { altObjectPosition: alt.altObjectPosition } : {}) } : card;
+  return alt ? { ...merged, imageUrl: alt.imageUrl, ...(alt.altObjectPosition ? { altObjectPosition: alt.altObjectPosition } : {}) } : merged;
 }
 
 // ═══ TOKEN + HAND CARD ═══════════════════════════════════════════════════════
@@ -1009,7 +1011,7 @@ function getEffectiveCost(card, env, side = null) {
   const reduction = envEffects.filter(e => e.effect === "cost_reduction").reduce((n,e) => n+(e.amount||0), 0);
   return Math.max(1, card.cost - reduction);
 }
-function makeInst(c, p = "p") { const pool = POOL.find(x => x.id === c.id) || c; const kw = pool.keywords || c.keywords || []; return { ...c, uid: uid(p + c.id), currentHp: c.hp, maxHp: c.hp, currentAtk: c.atk, canAttack: false, hasAttacked: false, bleed: 0, echoQueued: false, keywords: kw, shielded: kw.includes("Shield") }; }
+function makeInst(c, p = "p") { const pool = POOL.find(x => x.id === c.id) || c; const kw = pool.keywords || c.keywords || []; return { ...c, imageUrl: pool.imageUrl || c.imageUrl, imageScale: pool.imageScale || c.imageScale, altObjectPosition: pool.altObjectPosition || c.altObjectPosition, uid: uid(p + c.id), currentHp: c.hp, maxHp: c.hp, currentAtk: c.atk, canAttack: false, hasAttacked: false, bleed: 0, echoQueued: false, keywords: kw, shielded: kw.includes("Shield") }; }
 const TARGETED_SPELL_EFFECTS = ["bolt_damage", "anchor_target", "freeze_target"];
 
 function resolveEffects(trigger, card, state, side, vfx, opts = {}) {
