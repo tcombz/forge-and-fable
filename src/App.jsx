@@ -2364,6 +2364,10 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   const pollRef = useRef(null);
   const prevGsRef = useRef(null);
   const pvpBcRef = useRef(null);
+  const gsRef = useRef(null);
+  const myRoleRef = useRef(null);
+  const pendingTimerRef = useRef(null);
+  const opAnimFnRef = useRef(null);
   const drawDismissedRef = useRef(false);
   const [turnBanner, setTurnBanner] = useState(null);
   const [logHoverCard, setLogHoverCard] = useState(null);
@@ -2385,6 +2389,10 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   const vfx = useVFX();
   const logRef = useRef(null);
   const prevBoardUidsRef = useRef({ player: new Set(), enemy: new Set() });
+
+  // Keep sync refs current so broadcast handler (set up once) always sees latest state
+  useEffect(() => { gsRef.current = gs; }, [gs]);
+  useEffect(() => { myRoleRef.current = myRole; }, [myRole]);
 
   // Detect new board cards and trigger summoning animation
   useEffect(() => {
@@ -2676,14 +2684,25 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           setGs(prev => ((fresh.game_state.seq||0) > (prev?.seq||-1)) ? fresh.game_state : prev);
         }
       };
-      // Fast broadcast — use embedded gs if present to skip the DB re-fetch round-trip
+      // Fast broadcast — fires ~30ms after action vs ~200ms for DB change notification
       pvpBcRef.current = supabase.channel("pvp_bc_" + matchId)
         .on("broadcast", { event: "updated" }, (msg) => {
-          if (msg?.payload?.gs) {
-            if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-            setGs(prev => ((msg.payload.gs.seq||0) > (prev?.seq||-1)) ? msg.payload.gs : prev);
+          if (!msg?.payload?.gs) { fetchFresh(); return; }
+          if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+          const incoming = msg.payload.gs;
+          const currentGs = gsRef.current;
+          const role = myRoleRef.current;
+          if (!currentGs || (incoming.seq||0) <= (currentGs?.seq||-1)) return;
+          if (role && currentGs.phase !== role && !incoming.winner) {
+            // Opponent just moved: run animations on current board first, then apply new state
+            const animDur = opAnimFnRef.current ? opAnimFnRef.current(currentGs, incoming) : 400;
+            if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current);
+            pendingTimerRef.current = setTimeout(() => {
+              setGs(curr => ((incoming.seq||0) > (curr?.seq||-1)) ? incoming : curr);
+            }, animDur);
           } else {
-            fetchFresh();
+            // My turn starting or game over — apply immediately
+            setGs(incoming);
           }
         })
         .subscribe();
@@ -2766,122 +2785,12 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     return () => clearInterval(interval);
   }, [gs, myRole]); // eslint-disable-line
 
-  // Animate opponent actions + show turn banner when gs changes
+  // Show turn banners when gs phase changes; opponent animations are handled in the broadcast handler
   useEffect(() => {
     if (!gs || !myRole) { prevGsRef.current = gs; return; }
     const prev = prevGsRef.current;
     if (prev && prev.phase !== myRole && gs.phase === myRole && !gs.winner) { showTurnBanner("YOUR TURN"); SFX.play("ability"); setTimerKey(k => k + 1); }
     else if (prev && prev.phase === myRole && gs.phase !== myRole && !gs.winner) { showTurnBanner("OPPONENT'S TURN"); setTimerKey(k => k + 1); }
-    if (prev && prev.phase !== myRole) {
-      const prevAi = toAI(prev, myRole), currAi = toAI(gs, myRole);
-      const anims = {};
-      currAi.enemyBoard.forEach(c => { if (!prevAi.enemyBoard.find(p => p.uid === c.uid)) { anims[c.uid] = "summoning"; vfx.add("summonBurst", { color: c.border||"#e8c060", duration:700 }); } });
-      // Store dying cards so we can render them during death animation
-      const dying = [];
-      prevAi.enemyBoard.forEach(c => { if (!currAi.enemyBoard.find(n => n.uid === c.uid)) { anims[c.uid] = "dying"; dying.push({ ...c, _side:"enemy" }); } });
-      prevAi.playerBoard.forEach(c => { if (!currAi.playerBoard.find(n => n.uid === c.uid)) { anims[c.uid] = "dying"; dying.push({ ...c, _side:"player" }); } });
-      if (dying.length > 0) { setDyingCards(dying); setTimeout(() => setDyingCards([]), 750); }
-      prevAi.playerBoard.forEach(c => { const cur = currAi.playerBoard.find(n => n.uid === c.uid); if (cur && cur.currentHp < c.currentHp && !anims[c.uid]) anims[c.uid] = "hit"; });
-
-      const newEntries = (gs.log||[]).slice((prev.log||[]).length);
-
-      // Opponent VFX: environment change
-      if (gs.env?.id !== prev.env?.id && gs.env) { vfx.add("envchange", { color: gs.env.border||"#40a020" }); vfx.add("environment", { color: gs.env.border, duration:2200 }); SFX.play("env_play"); }
-
-      // Opponent VFX: spell cast — color by effect type
-      const spellEntries = newEntries.filter(l => l.includes("casts ") || l.includes("Cast ") || l.includes("spell"));
-      spellEntries.forEach(l => {
-        const color = /heal|restore|mend/i.test(l) ? "#40c060" : /damage|blast|burn|fire|bolt/i.test(l) ? "#e05030" : "#c090d0";
-        vfx.add("spell", { color, duration:1100 });
-        SFX.play("ability");
-      });
-      // Opponent VFX: card played (new summon)
-      const newSummons = currAi.enemyBoard.filter(c => !prevAi.enemyBoard.find(p => p.uid === c.uid));
-      if (newSummons.length > 0) { SFX.play("card"); }
-
-      // Opponent VFX: heal (detect HP gain)
-      const opHPKey = (myRole==="p1"?"p2":"p1")+"HP";
-      if (gs[opHPKey] > prev[opHPKey]) { vfx.add("heal", { amount: gs[opHPKey]-prev[opHPKey] }); SFX.play("heal"); }
-
-      // Receiving damage: my HP dropped — show floating damage text
-      const myHPKey = myRole+"HP";
-      const hpDrop = (prev[myHPKey]||0) - (gs[myHPKey]||0);
-      if (hpDrop > 0) {
-        vfx.add("damage", { amount: hpDrop, duration: 1200 });
-        vfx.add("faceAttack", { duration: 600 });
-        SFX.play("attack");
-      }
-      // My HP healed from opponent effect
-      const myHPGain = (gs[myHPKey]||0) - (prev[myHPKey]||0);
-      if (myHPGain > 0) { vfx.add("heal", { amount: myHPGain }); SFX.play("heal"); }
-
-      // Opponent attack sequence: parse creature attacks and face attacks
-      const atkEntries = newEntries.filter(l => / attacks /.test(l));
-      const directEntries = newEntries.filter(l => / deals .* direct/.test(l));
-      const allAtkEntries = [...atkEntries, ...directEntries];
-
-      let delay = 0;
-      allAtkEntries.forEach(atkEntry => {
-        const isFace = / deals .* direct/.test(atkEntry);
-        const m = isFace
-          ? atkEntry.match(/^(.+?) deals/)
-          : atkEntry.match(/^(.+?)\(\d+\) attacks (.+?)(?:\s|$)/);
-        if (!m) return;
-        const atkName = m[1].trim();
-        const tgtName = isFace ? null : m[2].trim();
-        const atkCard = prevAi.enemyBoard.find(c => c.name === atkName);
-        const tgtCard = tgtName ? prevAi.playerBoard.find(c => c.name === tgtName) : null;
-        setTimeout(() => {
-          SFX.play("attack");
-          if (atkCard) setAnimUids(p => ({ ...p, [atkCard.uid]: "attacking-down" }));
-          setTimeout(() => {
-            if (tgtCard) {
-              setAnimUids(p => ({ ...p, ...(atkCard?{[atkCard.uid]:"attacking-down"}:{}), [tgtCard.uid]: "hit" }));
-              vfx.add("attackImpact", { duration:650 });
-              SFX.play("attack");
-            } else {
-              // face attack — dramatic screen impact
-              vfx.add("faceAttack", { duration:900 });
-              SFX.play("attack");
-            }
-            setTimeout(() => {
-              if (atkCard) setAnimUids(p => { const n={...p}; delete n[atkCard.uid]; return n; });
-              if (tgtCard) setAnimUids(p => { const n={...p}; delete n[tgtCard.uid]; return n; });
-            }, 500);
-          }, 380);
-        }, delay);
-        delay += 950;
-      });
-
-      if (Object.keys(anims).length > 0) {
-        const hasDying = Object.values(anims).includes("dying");
-        const atkDelay = allAtkEntries.length * 950;
-        setTimeout(() => {
-          setAnimUids(p => ({ ...p, ...anims }));
-          if (hasDying) { SFX.play("kill"); vfx.add("creatureDie", { color:"#e06040", duration:800 }); }
-          setTimeout(() => setAnimUids(p => {
-            const n = {...p};
-            Object.keys(anims).forEach(k => delete n[k]);
-            return n;
-          }), 750);
-        }, atkDelay);
-      }
-
-      // VFX: my creature healed
-      const myHealedCard = currAi.playerBoard.find(c => { const prev = prevAi.playerBoard.find(p=>p.uid===c.uid); return prev && c.currentHp > prev.currentHp; });
-      if (myHealedCard) { SFX.play("heal"); }
-
-      // Summon animation: newly appeared board cards
-      const myNewCards = currAi.playerBoard.filter(c => !prevAi.playerBoard.find(p => p.uid === c.uid));
-      const opNewCards = currAi.enemyBoard.filter(c => !prevAi.enemyBoard.find(p => p.uid === c.uid));
-      const summonAnims = {};
-      myNewCards.forEach(c => { summonAnims[c.uid] = "summoning"; });
-      opNewCards.forEach(c => { summonAnims[c.uid] = "summoning"; });
-      if (Object.keys(summonAnims).length > 0) {
-        setAnimUids(p => ({ ...p, ...summonAnims }));
-        setTimeout(() => setAnimUids(p => { const n = {...p}; Object.keys(summonAnims).forEach(k => delete n[k]); return n; }), 550);
-      }
-    }
     prevGsRef.current = gs;
   }, [gs]); // eslint-disable-line
 
@@ -2898,9 +2807,10 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       setSyncing(false);
     }
     if (!newGs) return;
+    // Broadcast first (~30ms to opponent), then DB write for persistence
+    if (pvpBcRef.current) pvpBcRef.current.send({ type:"broadcast", event:"updated", payload:{ gs: newGs } });
     try {
       await supabase.from("matches").update({ game_state: newGs }).eq("id", matchId);
-      if (pvpBcRef.current) pvpBcRef.current.send({ type:"broadcast", event:"updated", payload:{ gs: newGs } });
     } catch (err) {
       console.error("PvP action failed:", err);
     }
@@ -2952,7 +2862,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     syncingRef.current = true; setSyncing(true); setAttacker(null);
     setGs(newGs); // optimistic
     syncingRef.current = false; setSyncing(false);
-    try { await supabase.from("matches").update({ game_state: newGs }).eq("id", matchId); if (pvpBcRef.current) pvpBcRef.current.send({ type:"broadcast", event:"updated", payload:{ gs: newGs } }); } catch (err) { console.error("PvP action failed:", err); }
+    if (pvpBcRef.current) pvpBcRef.current.send({ type:"broadcast", event:"updated", payload:{ gs: newGs } });
+    try { await supabase.from("matches").update({ game_state: newGs }).eq("id", matchId); } catch (err) { console.error("PvP action failed:", err); }
     await new Promise(r => setTimeout(r, 200));
     setAnimUids({});
   };
@@ -2982,13 +2893,78 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     const newGs = { ...gs, winner: op, seq: (gs.seq||0)+1, log: [...(gs.log||[]).slice(-20), `${user?.name||"Player"} forfeited.`] };
     setForfeitConfirm(false);
     setGs(newGs); // optimistic
+    if (pvpBcRef.current) pvpBcRef.current.send({ type:"broadcast", event:"updated", payload:{ gs: newGs } });
     try {
       await supabase.from("matches").update({ game_state: newGs }).eq("id", matchId);
-      if (pvpBcRef.current) pvpBcRef.current.send({ type:"broadcast", event:"updated", payload:{ gs: newGs } });
-      // Allow a moment for the opponent to read the forfeit state, then clean up
       setTimeout(() => { if (matchId) supabase.from("matches").delete().eq("id", matchId).catch(() => {}); }, 5000);
     } catch (err) { console.error("Forfeit failed:", err); }
     // History/stats are saved by the gs?.winner useEffect which fires when gs updates
+  };
+
+  // Updated every render so the broadcast handler (set up once) always gets fresh closures
+  opAnimFnRef.current = (prevGs, newGs) => {
+    const role = myRoleRef.current;
+    if (!role || !prevGs || !newGs) return 350;
+    const prevAi = toAI(prevGs, role), currAi = toAI(newGs, role);
+    const newEntries = (newGs.log||[]).slice((prevGs.log||[]).length);
+    // Dying cards — collected before board updates
+    const dying = [];
+    prevAi.enemyBoard.forEach(c => { if (!currAi.enemyBoard.find(n => n.uid === c.uid)) dying.push({ ...c, _side:"enemy" }); });
+    prevAi.playerBoard.forEach(c => { if (!currAi.playerBoard.find(n => n.uid === c.uid)) dying.push({ ...c, _side:"player" }); });
+    const hitAnims = {};
+    prevAi.playerBoard.forEach(c => { const cur = currAi.playerBoard.find(n => n.uid === c.uid); if (cur && cur.currentHp < c.currentHp) hitAnims[c.uid] = "hit"; });
+    // VFX: environment, spells, summons, HP changes
+    if (newGs.env?.id !== prevGs.env?.id && newGs.env) { vfx.add("envchange", { color: newGs.env.border||"#40a020" }); vfx.add("environment", { color: newGs.env.border, duration:2200 }); SFX.play("env_play"); }
+    newEntries.filter(l => l.includes("casts ") || l.includes("Cast ") || l.includes("spell")).forEach(l => {
+      const color = /heal|restore|mend/i.test(l) ? "#40c060" : /damage|blast|burn|fire|bolt/i.test(l) ? "#e05030" : "#c090d0";
+      vfx.add("spell", { color, duration:1100 }); SFX.play("ability");
+    });
+    if (currAi.enemyBoard.some(c => !prevAi.enemyBoard.find(p => p.uid === c.uid))) { vfx.add("summonBurst", { color:"#e8c060", duration:700 }); SFX.play("card"); }
+    const opHPKey = (role==="p1"?"p2":"p1")+"HP";
+    if (newGs[opHPKey] > prevGs[opHPKey]) { vfx.add("heal", { amount: newGs[opHPKey]-prevGs[opHPKey] }); SFX.play("heal"); }
+    const myHPKey = role+"HP";
+    const hpDrop = (prevGs[myHPKey]||0) - (newGs[myHPKey]||0);
+    if (hpDrop > 0) { vfx.add("damage", { amount: hpDrop, duration:1200 }); vfx.add("faceAttack", { duration:600 }); SFX.play("attack"); }
+    const myHPGain = (newGs[myHPKey]||0) - (prevGs[myHPKey]||0);
+    if (myHPGain > 0) { vfx.add("heal", { amount: myHPGain }); SFX.play("heal"); }
+    // Attack sequence — plays on old board state (before setGs fires)
+    const allAtkEntries = [...newEntries.filter(l => / attacks /.test(l)), ...newEntries.filter(l => / deals .* direct/.test(l))];
+    let delay = 0;
+    allAtkEntries.forEach(atkEntry => {
+      const isFace = / deals .* direct/.test(atkEntry);
+      const m = isFace ? atkEntry.match(/^(.+?) deals/) : atkEntry.match(/^(.+?)\(\d+\) attacks (.+?)(?:\s|$)/);
+      if (!m) return;
+      const atkCard = prevAi.enemyBoard.find(c => c.name === m[1].trim());
+      const tgtCard = !isFace ? prevAi.playerBoard.find(c => c.name === m[2].trim()) : null;
+      setTimeout(() => {
+        SFX.play("attack");
+        if (atkCard) setAnimUids(p => ({ ...p, [atkCard.uid]: "attacking-down" }));
+        setTimeout(() => {
+          if (tgtCard) { setAnimUids(p => ({ ...p, ...(atkCard?{[atkCard.uid]:"attacking-down"}:{}), [tgtCard.uid]: "hit" })); vfx.add("attackImpact", { duration:650 }); SFX.play("attack"); }
+          else { vfx.add("faceAttack", { duration:900 }); SFX.play("attack"); }
+          setTimeout(() => {
+            if (atkCard) setAnimUids(p => { const n={...p}; delete n[atkCard.uid]; return n; });
+            if (tgtCard) setAnimUids(p => { const n={...p}; delete n[tgtCard.uid]; return n; });
+          }, 500);
+        }, 380);
+      }, delay);
+      delay += 950;
+    });
+    const atkDelay = allAtkEntries.length * 950;
+    // Death + hit animations fire after all attacks
+    setTimeout(() => {
+      if (dying.length > 0) { setDyingCards(dying); SFX.play("kill"); vfx.add("creatureDie", { color:"#e06040", duration:800 }); setTimeout(() => setDyingCards([]), 850); }
+      const deathAnims = Object.fromEntries(dying.map(c => [c.uid, "dying"]));
+      const allAnims = { ...hitAnims, ...deathAnims };
+      if (Object.keys(allAnims).length > 0) { setAnimUids(p => ({ ...p, ...allAnims })); setTimeout(() => setAnimUids(p => { const n={...p}; Object.keys(allAnims).forEach(k=>delete n[k]); return n; }), 800); }
+    }, atkDelay);
+    // Summon anim for opponent new cards
+    const summonAnims = {};
+    currAi.enemyBoard.filter(c => !prevAi.enemyBoard.find(p => p.uid === c.uid)).forEach(c => { summonAnims[c.uid] = "summoning"; });
+    currAi.playerBoard.filter(c => !prevAi.playerBoard.find(p => p.uid === c.uid)).forEach(c => { summonAnims[c.uid] = "summoning"; });
+    if (Object.keys(summonAnims).length > 0) { setAnimUids(p => ({ ...p, ...summonAnims })); setTimeout(() => setAnimUids(p => { const n={...p}; Object.keys(summonAnims).forEach(k=>delete n[k]); return n; }), 550); }
+    if (currAi.playerBoard.some(c => { const p = prevAi.playerBoard.find(x=>x.uid===c.uid); return p && c.currentHp > p.currentHp; })) SFX.play("heal");
+    return Math.max(400, atkDelay + (dying.length > 0 ? 950 : Object.keys(hitAnims).length > 0 ? 400 : 200));
   };
 
   if (!gs || !myRole) return (
