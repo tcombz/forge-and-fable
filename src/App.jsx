@@ -2677,11 +2677,26 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       if (!match) { onExit(); return; }
       const role = match.player1_id === user.id ? "p1" : "p2";
       setMyRole(role);
+      const applyIncoming = (incoming) => {
+        const currentGs = gsRef.current;
+        const role = myRoleRef.current;
+        if (currentGs && (incoming.seq||0) <= (currentGs?.seq||-1)) return; // already up to date
+        if (role && currentGs && currentGs.phase !== role && !incoming.winner) {
+          // Opponent action — animate first, then apply
+          const animDur = opAnimFnRef.current ? opAnimFnRef.current(currentGs, incoming) : 400;
+          if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current);
+          pendingTimerRef.current = setTimeout(() => {
+            setGs(curr => ((incoming.seq||0) > (curr?.seq||-1)) ? incoming : curr);
+          }, animDur);
+        } else {
+          setGs(incoming); // my turn start, game over, or no prior state
+        }
+      };
       const fetchFresh = async () => {
         const { data: fresh } = await supabase.from("matches").select("game_state").eq("id", matchId).single();
         if (fresh?.game_state) {
           if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-          setGs(prev => ((fresh.game_state.seq||0) > (prev?.seq||-1)) ? fresh.game_state : prev);
+          applyIncoming(fresh.game_state);
         }
       };
       // Fast broadcast — fires ~30ms after action vs ~200ms for DB change notification
@@ -2689,21 +2704,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         .on("broadcast", { event: "updated" }, (msg) => {
           if (!msg?.payload?.gs) { fetchFresh(); return; }
           if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-          const incoming = msg.payload.gs;
-          const currentGs = gsRef.current;
-          const role = myRoleRef.current;
-          if (!currentGs || (incoming.seq||0) <= (currentGs?.seq||-1)) return;
-          if (role && currentGs.phase !== role && !incoming.winner) {
-            // Opponent just moved: run animations on current board first, then apply new state
-            const animDur = opAnimFnRef.current ? opAnimFnRef.current(currentGs, incoming) : 400;
-            if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current);
-            pendingTimerRef.current = setTimeout(() => {
-              setGs(curr => ((incoming.seq||0) > (curr?.seq||-1)) ? incoming : curr);
-            }, animDur);
-          } else {
-            // My turn starting or game over — apply immediately
-            setGs(incoming);
-          }
+          applyIncoming(msg.payload.gs);
         })
         .subscribe();
       // postgres_changes as reliable fallback
@@ -2764,7 +2765,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       }
     };
     setup();
-    return () => { if (channel) supabase.removeChannel(channel); if (pvpBcRef.current) supabase.removeChannel(pvpBcRef.current); if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } MusicCtx.play("home"); };
+    return () => { if (channel) supabase.removeChannel(channel); if (pvpBcRef.current) supabase.removeChannel(pvpBcRef.current); if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } if (pendingTimerRef.current) { clearTimeout(pendingTimerRef.current); pendingTimerRef.current = null; } MusicCtx.play("home"); };
   }, [matchId]);
 
   useEffect(() => { if (logRef.current) logRef.current.scrollTo({ top: 99999, behavior: "smooth" }); }, [gs?.log]);
