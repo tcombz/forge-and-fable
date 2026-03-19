@@ -854,7 +854,7 @@ function Token({ c, selected, isTarget, canSelect, onClick, onRightClick, animTy
   const opac = (c.hasAttacked && !isTarget) ? 0.45 : 1;
   const kws = KW.filter((k) => (c.keywords || []).includes(k.name));
   return (
-    <div className="token" onClick={onClick} onContextMenu={(e) => { e.preventDefault(); if (onRightClick) onRightClick(); }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ width: 125, height: 172, cursor: (canSelect || isTarget) ? "pointer" : "default", userSelect: "none", border: `2px solid ${selected ? "#f0d840" : animType==="hit" ? "#ff3030" : (animType==="attacking"||animType==="attacking-down") ? "#ff8030" : isTarget && hov ? "#e84040" : hov && canSelect ? c.border + "aa" : c.border + "55"}`, borderRadius: 10, overflow: "hidden", opacity: animType==="dying" ? 1 : opac, boxShadow: animType==="hit" ? "0 0 28px #ff303088, 0 0 60px #ff202044" : (animType==="attacking"||animType==="attacking-down") ? `0 0 28px ${c.border}aa, 0 0 50px ${c.border}55` : selected ? `0 0 22px #f0d84066` : hov ? `0 6px 18px ${c.border}44` : "none", transform: animType ? "none" : selected ? "translateY(-8px)" : hov ? "translateY(-4px)" : "none", animation: animType === "attacking" ? "cardLunge 0.45s cubic-bezier(0.25,0.46,0.45,0.94)" : animType === "attacking-down" ? "cardLungeDown 0.45s cubic-bezier(0.25,0.46,0.45,0.94)" : animType === "hit" ? "cardHit 0.5s ease-out" : animType === "dying" ? "cardDie 0.6s ease-out forwards" : animType === "summoning" ? (c.rarity==="Prismatic"?"prismaticPop 0.7s ease-out, cardSummon 0.5s ease-out":"cardSummon 0.5s ease-out") : "none", transition: animType ? "none" : "all .18s", position: "relative" }}>
+    <div className="token" onClick={onClick} onContextMenu={(e) => { e.preventDefault(); if (onRightClick) onRightClick(); }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ width: 125, height: 172, cursor: (canSelect || isTarget) ? "pointer" : "default", userSelect: "none", border: `2px solid ${selected ? "#f0d840" : animType==="hit" ? "#ff3030" : (animType==="attacking"||animType==="attacking-down"||animType==="attacking-face"||animType==="attacking-face-down") ? "#ff8030" : isTarget && hov ? "#e84040" : hov && canSelect ? c.border + "aa" : c.border + "55"}`, borderRadius: 10, overflow: "hidden", opacity: animType==="dying" ? 1 : opac, boxShadow: animType==="hit" ? "0 0 28px #ff303088, 0 0 60px #ff202044" : (animType==="attacking"||animType==="attacking-down") ? `0 0 28px ${c.border}aa, 0 0 50px ${c.border}55` : (animType==="attacking-face"||animType==="attacking-face-down") ? `0 0 40px #ff6020cc, 0 0 80px #ff401088` : selected ? `0 0 22px #f0d84066` : hov ? `0 6px 18px ${c.border}44` : "none", transform: animType ? "none" : selected ? "translateY(-8px)" : hov ? "translateY(-4px)" : "none", animation: animType === "attacking" ? "cardLunge 0.45s cubic-bezier(0.25,0.46,0.45,0.94)" : animType === "attacking-down" ? "cardLungeDown 0.45s cubic-bezier(0.25,0.46,0.45,0.94)" : animType === "attacking-face" ? "cardLungeFace 0.55s cubic-bezier(0.22,0.61,0.36,1)" : animType === "attacking-face-down" ? "cardLungeFaceDown 0.55s cubic-bezier(0.22,0.61,0.36,1)" : animType === "hit" ? "cardHit 0.5s ease-out" : animType === "dying" ? "cardDie 0.6s ease-out forwards" : animType === "summoning" ? (c.rarity==="Prismatic"?"prismaticPop 0.7s ease-out, cardSummon 0.5s ease-out":"cardSummon 0.5s ease-out") : "none", transition: animType ? "none" : "all .18s", position: "relative" }}>
       {/* Full art */}
       <div style={{ position: "absolute", inset: 0 }}><CardArt card={c} /></div>
       {/* Bottom gradient */}
@@ -1855,7 +1855,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     await new Promise(r => setTimeout(r, 200));
     setAnimUids({});
   };
-  const atkFace = async () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking" }); await new Promise(r => setTimeout(r, 380)); const dmg = att.currentAtk; vfx.add("damage", { amount: dmg, duration: 500 }); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if (s.playerZeusInPlay && (att.keywords || []).includes("Swift")) { s.playerLightningMeter = (s.playerLightningMeter || 0) + 1; if (s.playerLightningMeter >= 2) { s = fireLightningMeter(s, "player", vfx, (m) => { s.log = [...s.log.slice(-20), m]; }); } } s = resolveEffects("onAttack", att, s, "player", vfx); if (s.enemyHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 200)); setAnimUids({}); };
+  const atkFace = async () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking-face" }); await new Promise(r => setTimeout(r, 380)); const dmg = att.currentAtk; vfx.add("damage", { amount: dmg, duration: 500 }); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if (s.playerZeusInPlay && (att.keywords || []).includes("Swift")) { s.playerLightningMeter = (s.playerLightningMeter || 0) + 1; if (s.playerLightningMeter >= 2) { s = fireLightningMeter(s, "player", vfx, (m) => { s.log = [...s.log.slice(-20), m]; }); } } s = resolveEffects("onAttack", att, s, "player", vfx); if (s.enemyHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 200)); setAnimUids({}); };
   const attCard = attacker ? g.playerBoard.find((c) => c.uid === attacker) : null;
 
   return (<div className="battle-wrapper" style={{ width:"100%", height:"calc(100vh - 72px)", padding:"8px 14px 6px", background:"#0a0806", boxSizing:"border-box", overflow:"hidden", display:"flex", flexDirection:"column" }} onClick={() => { SFX.init(); }}>
@@ -2384,6 +2384,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   const showTurnBanner = (type) => { setTurnBanner(type); setTimeout(() => setTurnBanner(null), 1100); };
   const [animUids, setAnimUids] = useState({});
   const cardsPlayedRef = useRef(0);
+  const lastSentSeqRef = useRef(-1);
   const lastOpMoveRef = useRef(Date.now());
   const [disconnectWarn, setDisconnectWarn] = useState(false);
   const vfx = useVFX();
@@ -2681,6 +2682,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         const currentGs = gsRef.current;
         const role = myRoleRef.current;
         if (currentGs && (incoming.seq||0) <= (currentGs?.seq||-1)) return; // already up to date
+        if ((incoming.seq||0) === lastSentSeqRef.current) return; // own echo — skip
         if (role && currentGs && currentGs.phase !== role && !incoming.winner) {
           // Opponent action — animate first, then apply
           const animDur = opAnimFnRef.current ? opAnimFnRef.current(currentGs, incoming) : 400;
@@ -2808,7 +2810,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       setSyncing(false);
     }
     if (!newGs) return;
-    // Broadcast first (~30ms to opponent), then DB write for persistence
+    // Stamp before broadcast so our own echo is ignored in applyIncoming
+    lastSentSeqRef.current = newGs.seq;
     if (pvpBcRef.current) pvpBcRef.current.send({ type:"broadcast", event:"updated", payload:{ gs: newGs } });
     try {
       await supabase.from("matches").update({ game_state: newGs }).eq("id", matchId);
@@ -2863,6 +2866,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     syncingRef.current = true; setSyncing(true); setAttacker(null);
     setGs(newGs); // optimistic
     syncingRef.current = false; setSyncing(false);
+    lastSentSeqRef.current = newGs.seq;
     if (pvpBcRef.current) pvpBcRef.current.send({ type:"broadcast", event:"updated", payload:{ gs: newGs } });
     try { await supabase.from("matches").update({ game_state: newGs }).eq("id", matchId); } catch (err) { console.error("PvP action failed:", err); }
     await new Promise(r => setTimeout(r, 200));
@@ -2875,7 +2879,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     const attUid = attacker;
     const attCard2 = toAI(gs, myRole).playerBoard.find(c => c.uid === attUid);
     if (attCard2) flashAction(`${attCard2.name} hits ${opponentName || "opponent"} directly!`);
-    setAnimUids({ [attUid]: "attacking" });
+    setAnimUids({ [attUid]: "attacking-face" });
     await new Promise(r => setTimeout(r, 280));
     invokeAction({ type: "attack_face", attackerUid: attUid });
     await new Promise(r => setTimeout(r, 400));
@@ -2894,6 +2898,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     const newGs = { ...gs, winner: op, seq: (gs.seq||0)+1, log: [...(gs.log||[]).slice(-20), `${user?.name||"Player"} forfeited.`] };
     setForfeitConfirm(false);
     setGs(newGs); // optimistic
+    lastSentSeqRef.current = newGs.seq;
     if (pvpBcRef.current) pvpBcRef.current.send({ type:"broadcast", event:"updated", payload:{ gs: newGs } });
     try {
       await supabase.from("matches").update({ game_state: newGs }).eq("id", matchId);
@@ -2939,9 +2944,10 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       const tgtCard = !isFace ? prevAi.playerBoard.find(c => c.name === m[2].trim()) : null;
       setTimeout(() => {
         SFX.play("attack");
-        if (atkCard) setAnimUids(p => ({ ...p, [atkCard.uid]: "attacking-down" }));
+        const faceAtkAnim = isFace ? "attacking-face-down" : "attacking-down";
+        if (atkCard) setAnimUids(p => ({ ...p, [atkCard.uid]: faceAtkAnim }));
         setTimeout(() => {
-          if (tgtCard) { setAnimUids(p => ({ ...p, ...(atkCard?{[atkCard.uid]:"attacking-down"}:{}), [tgtCard.uid]: "hit" })); vfx.add("attackImpact", { duration:650 }); SFX.play("attack"); }
+          if (tgtCard) { setAnimUids(p => ({ ...p, ...(atkCard?{[atkCard.uid]:faceAtkAnim}:{}), [tgtCard.uid]: "hit" })); vfx.add("attackImpact", { duration:650 }); SFX.play("attack"); }
           else { vfx.add("faceAttack", { duration:900 }); SFX.play("attack"); }
           setTimeout(() => {
             if (atkCard) setAnimUids(p => { const n={...p}; delete n[atkCard.uid]; return n; });
@@ -6733,6 +6739,8 @@ export default function App() {
       @keyframes vfxSpellFlash{0%{opacity:0}15%{opacity:1}100%{opacity:0}}
       @keyframes cardLunge{0%{transform:translateY(0) scale(1)}30%{transform:translateY(-44px) scale(1.1) rotate(-3deg)}55%{transform:translateY(-36px) scale(1.06) rotate(-1deg)}100%{transform:translateY(0) scale(1) rotate(0deg)}}
       @keyframes cardLungeDown{0%{transform:translateY(0) scale(1)}30%{transform:translateY(44px) scale(1.1) rotate(3deg)}55%{transform:translateY(36px) scale(1.06) rotate(1deg)}100%{transform:translateY(0) scale(1) rotate(0deg)}}
+      @keyframes cardLungeFace{0%{transform:translateY(0) scale(1);filter:brightness(1)}15%{transform:translateY(-90px) scale(1.18) rotate(-4deg);filter:brightness(1.9)}45%{transform:translateY(-76px) scale(1.14) rotate(-2deg);filter:brightness(1.5)}75%{transform:translateY(-12px) scale(1.03);filter:brightness(1.1)}100%{transform:translateY(0) scale(1);filter:brightness(1)}}
+      @keyframes cardLungeFaceDown{0%{transform:translateY(0) scale(1);filter:brightness(1)}15%{transform:translateY(90px) scale(1.18) rotate(4deg);filter:brightness(1.9)}45%{transform:translateY(76px) scale(1.14) rotate(2deg);filter:brightness(1.5)}75%{transform:translateY(12px) scale(1.03);filter:brightness(1.1)}100%{transform:translateY(0) scale(1);filter:brightness(1)}}
       @keyframes coinSpin{0%{transform:rotateY(0deg);opacity:1}40%{transform:rotateY(720deg)}70%{transform:rotateY(1260deg)}100%{transform:rotateY(1440deg)}}
       @keyframes cardHit{0%{transform:translate(0,0) rotate(0deg);filter:none}8%{transform:translate(-14px,6px) rotate(-4deg);filter:brightness(5) saturate(0) drop-shadow(0 0 18px #ff1010)}22%{transform:translate(12px,5px) rotate(3deg);filter:brightness(3.5) saturate(0.1) drop-shadow(0 0 12px #ff2020)}40%{transform:translate(-8px,3px) rotate(-2deg);filter:brightness(2.5) drop-shadow(0 0 8px #ff3030)}58%{transform:translate(6px,1px) rotate(1deg);filter:brightness(1.8)}75%{transform:translate(-4px,0) rotate(0deg);filter:brightness(1.2)}100%{transform:translate(0,0) rotate(0deg);filter:none}}
       @media(prefers-reduced-motion:reduce){*{animation-duration:0.01ms!important;transition-duration:0.01ms!important}}
