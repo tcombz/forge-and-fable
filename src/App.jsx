@@ -854,7 +854,7 @@ function Token({ c, selected, isTarget, canSelect, onClick, onRightClick, animTy
   const opac = (c.hasAttacked && !isTarget) ? 0.45 : 1;
   const kws = KW.filter((k) => (c.keywords || []).includes(k.name));
   return (
-    <div className="token" onClick={onClick} onContextMenu={(e) => { e.preventDefault(); if (onRightClick) onRightClick(); }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ width: 125, height: 172, cursor: (canSelect || isTarget) ? "pointer" : "default", userSelect: "none", border: `2px solid ${selected ? "#f0d840" : animType==="hit" ? "#ff3030" : (animType==="attacking"||animType==="attacking-down"||animType==="attacking-face"||animType==="attacking-face-down") ? "#ff8030" : isTarget && hov ? "#e84040" : hov && canSelect ? c.border + "aa" : c.border + "55"}`, borderRadius: 10, overflow: "hidden", opacity: animType==="dying" ? 1 : opac, boxShadow: animType==="hit" ? "0 0 28px #ff303088, 0 0 60px #ff202044" : (animType==="attacking"||animType==="attacking-down") ? `0 0 28px ${c.border}aa, 0 0 50px ${c.border}55` : (animType==="attacking-face"||animType==="attacking-face-down") ? `0 0 40px #ff6020cc, 0 0 80px #ff401088` : selected ? `0 0 22px #f0d84066` : hov ? `0 6px 18px ${c.border}44` : "none", transform: animType ? "none" : selected ? "translateY(-8px)" : hov ? "translateY(-4px)" : "none", animation: animType === "attacking" ? "cardLunge 0.45s cubic-bezier(0.25,0.46,0.45,0.94)" : animType === "attacking-down" ? "cardLungeDown 0.45s cubic-bezier(0.25,0.46,0.45,0.94)" : animType === "attacking-face" ? "cardLungeFace 0.55s cubic-bezier(0.22,0.61,0.36,1)" : animType === "attacking-face-down" ? "cardLungeFaceDown 0.55s cubic-bezier(0.22,0.61,0.36,1)" : animType === "hit" ? "cardHit 0.5s ease-out" : animType === "dying" ? "cardDie 0.6s ease-out forwards" : animType === "summoning" ? (c.rarity==="Prismatic"?"prismaticPop 0.7s ease-out, cardSummon 0.5s ease-out":"cardSummon 0.5s ease-out") : "none", transition: animType ? "none" : "all .18s", position: "relative" }}>
+    <div className="token" onClick={onClick} onContextMenu={(e) => { e.preventDefault(); if (onRightClick) onRightClick(); }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ width: 125, height: 172, cursor: (canSelect || isTarget) ? "pointer" : "default", userSelect: "none", border: `2px solid ${selected ? "#f0d840" : animType==="hit" ? "#ff3030" : (animType==="attacking"||animType==="attacking-down"||animType==="attacking-face"||animType==="attacking-face-down") ? "#ff8030" : isTarget && hov ? "#e84040" : hov && canSelect ? c.border + "aa" : c.border + "55"}`, borderRadius: 10, overflow: "hidden", opacity: animType==="dying" ? 1 : opac, boxShadow: animType==="hit" ? "0 0 28px #ff303088, 0 0 60px #ff202044" : (animType==="attacking"||animType==="attacking-down") ? `0 0 28px ${c.border}aa, 0 0 50px ${c.border}55` : (animType==="attacking-face"||animType==="attacking-face-down") ? `0 0 40px #ff6020cc, 0 0 80px #ff401088` : selected ? `0 0 22px #f0d84066` : hov ? `0 6px 18px ${c.border}44` : "none", transform: animType ? "none" : selected ? "translateY(-8px)" : hov ? "translateY(-4px)" : "none", animation: animType === "attacking" ? "cardLunge 0.45s cubic-bezier(0.25,0.46,0.45,0.94)" : animType === "attacking-down" ? "cardLungeDown 0.45s cubic-bezier(0.25,0.46,0.45,0.94)" : animType === "attacking-face" ? "cardLungeFace 0.55s cubic-bezier(0.22,0.61,0.36,1)" : animType === "attacking-face-down" ? "cardLungeFaceDown 0.55s cubic-bezier(0.22,0.61,0.36,1)" : animType === "hit" ? "cardHit 0.5s ease-out" : animType === "dying" ? "cardDie 0.6s ease-out forwards" : animType === "summoning" ? (c.rarity==="Prismatic"?"prismaticPop 0.7s ease-out, cardSummon 0.5s ease-out":"cardSummon 0.5s ease-out") : "none", transition: animType ? "none" : "all .18s", position: "relative", zIndex: animType ? 50 : undefined }}>
       {/* Full art */}
       <div style={{ position: "absolute", inset: 0 }}><CardArt card={c} /></div>
       {/* Bottom gradient */}
@@ -1648,7 +1648,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
       const att=s.enemyBoard.find(c=>c.uid===attUid);
       if(!att||att.hasAttacked)continue;
       const av=att.currentAtk;
-      setAnimUids(p=>({...p,[att.uid]:"attacking"}));SFX.play("attack");await wait(340);
+      setAnimUids(p=>({...p,[att.uid]:"attacking-down"}));SFX.play("attack");await wait(340);
       if(s.playerBoard.length>0){
         const tgt=[...s.playerBoard].sort((a,b)=>a.currentHp-b.currentHp)[0];
         setAnimUids(p=>({...p,[tgt.uid]:"hit"}));vfx.add("attackImpact",{duration:500});await wait(200);
@@ -1858,7 +1858,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   const atkFace = async () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking-face" }); await new Promise(r => setTimeout(r, 380)); const dmg = att.currentAtk; vfx.add("damage", { amount: dmg, duration: 500 }); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if (s.playerZeusInPlay && (att.keywords || []).includes("Swift")) { s.playerLightningMeter = (s.playerLightningMeter || 0) + 1; if (s.playerLightningMeter >= 2) { s = fireLightningMeter(s, "player", vfx, (m) => { s.log = [...s.log.slice(-20), m]; }); } } s = resolveEffects("onAttack", att, s, "player", vfx); if (s.enemyHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 200)); setAnimUids({}); };
   const attCard = attacker ? g.playerBoard.find((c) => c.uid === attacker) : null;
 
-  return (<div className="battle-wrapper" style={{ width:"100%", height:"calc(100vh - 72px)", padding:"8px 14px 6px", background:"#0a0806", boxSizing:"border-box", overflow:"hidden", display:"flex", flexDirection:"column" }} onClick={() => { SFX.init(); }}>
+  return (<div className="battle-wrapper" style={{ width:"100%", height:"calc(100vh - 72px)", padding:"8px 14px 6px", background:"#0a0806", boxSizing:"border-box", overflow:"visible", display:"flex", flexDirection:"column" }} onClick={() => { SFX.init(); }}>
     {previewCard && <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />}
     {/* Live Action Ticker */}
     {liveAction && (
@@ -2379,6 +2379,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   const [liveAction, setLiveAction] = useState(null);
   const [pvpMatchResult, setPvpMatchResult] = useState(null);
   const [expandedSynGroup, setExpandedSynGroup] = useState(null);
+  const [expandedOpSynGroup, setExpandedOpSynGroup] = useState(null);
   const [targetingSpell, setTargetingSpell] = useState(null);
   const flashAction = (msg) => { setLiveAction(msg); setTimeout(() => setLiveAction(null), 1800); };
   const showTurnBanner = (type) => { setTurnBanner(type); setTimeout(() => setTurnBanner(null), 1100); };
@@ -3014,7 +3015,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     }
     return <span key={key}>{parts}</span>;
   };
-  return (<div className="battle-wrapper" style={{ width:"100%", height:"calc(100vh - 72px)", padding:"8px 14px 6px", background:"#0a0806", boxSizing:"border-box", overflow:"hidden", display:"flex", flexDirection:"column" }} onClick={() => { SFX.init(); }}>
+  return (<div className="battle-wrapper" style={{ width:"100%", height:"calc(100vh - 72px)", padding:"8px 14px 6px", background:"#0a0806", boxSizing:"border-box", overflow:"visible", display:"flex", flexDirection:"column" }} onClick={() => { SFX.init(); }}>
     {previewCard && <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />}
     {/* Forfeit confirm */}
     {/* In-battle profile popup */}
@@ -3245,6 +3246,12 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           const syn = getActiveSynergies(opBoard, jaxRed);
           const GROUP_COLOR = { Fruit:"#ff8040", Veggie:"#50c040", Protein:"#e08020", Sugar:"#d040b0" };
           const GROUP_ICON  = { Fruit:"🍎", Veggie:"🥦", Protein:"🍖", Sugar:"🍬" };
+          const GROUP_DESCS = {
+            Fruit:   { t2:"Berry & Tooty heals +1 HP each turn", t4:"Berry & Tooty gains +1 ATK each turn", t6:"All Fruit units gain Swift" },
+            Veggie:  { t2:"All Veggie units gain +1/+1 each turn", t4:"All friendly units gain Anchor", t6:"All enemy units gain Bleed" },
+            Protein: { t2:"All Protein units gain +1 ATK each turn", t4:"Splat deals 2 dmg instead of 1", t6:"All Protein units gain Bleed" },
+            Sugar:   { t2:"First unit played each turn gains Swift", t4:"All Sugar units gain +2 ATK each turn", t6:"+3 ATK & -1 HP to all (Sugar Crash)" },
+          };
           return (
             <div style={{ background:"rgba(10,4,4,0.95)", border:"2px solid #601818", borderRadius:10, padding:"10px 12px", fontSize:10, fontFamily:"'Cinzel',serif", boxShadow:"0 0 16px rgba(200,40,20,0.18)" }}>
               <div style={{ color:"#e06040", letterSpacing:3, marginBottom:8, fontSize:9, fontWeight:700, display:"flex", alignItems:"center", gap:6 }}>
@@ -3253,17 +3260,42 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
               {Object.entries(syn.counts).map(([grp, cnt]) => {
                 const active = syn[grp.toLowerCase()];
                 const col = GROUP_COLOR[grp];
+                const isExpanded = expandedOpSynGroup === grp;
+                const descs = GROUP_DESCS[grp];
                 const thresholds = [2,4,6];
                 const hasAny = cnt > 0;
                 return (
-                  <div key={grp} style={{ marginBottom:4 }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:3 }}>
+                  <div key={grp} style={{ marginBottom: isExpanded ? 8 : 4 }}>
+                    <div onClick={() => setExpandedOpSynGroup(isExpanded ? null : grp)} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:3, cursor:"pointer", padding:"3px 4px", borderRadius:5, background: isExpanded ? `${col}18` : "transparent", transition:"background .2s" }}>
                       <span style={{ color: hasAny ? col : "#503020", fontWeight: hasAny ? 700 : 400, fontSize:13 }}>{GROUP_ICON[grp]} {grp}</span>
-                      <span style={{ color: hasAny ? col : "#503020", fontWeight:700, fontSize:13 }}>{cnt}</span>
+                      <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                        <span style={{ color: hasAny ? col : "#503020", fontWeight:700, fontSize:13 }}>{cnt}</span>
+                        <span style={{ color: hasAny ? col : "#503020", fontSize:8 }}>{isExpanded ? "▲" : "▼"}</span>
+                      </div>
                     </div>
-                    <div style={{ display:"flex", gap:2 }}>
-                      {thresholds.map(t => { const isActive = active?.[`t${t}`]; return <div key={t} style={{ flex:1, height:6, borderRadius:3, background: isActive ? col : "rgba(255,255,255,0.06)", boxShadow: isActive ? `0 0 8px ${col}aa` : "none", transition:"all .3s" }} />; })}
+                    <div style={{ display:"flex", gap:2, marginBottom: isExpanded ? 5 : 0 }}>
+                      {thresholds.map(t => {
+                        const isActive = active?.[`t${t}`];
+                        const thresh = Math.max(1, t - jaxRed);
+                        return <div key={t} style={{ flex:1, height:6, borderRadius:3, background: isActive ? col : "rgba(255,255,255,0.06)", boxShadow: isActive ? `0 0 8px ${col}aa` : "none", transition:"all .3s", cursor:"pointer" }} title={`T${t} (${thresh}): ${descs[`t${t}`]}`} />;
+                      })}
                     </div>
+                    {isExpanded && (
+                      <div style={{ paddingLeft:4 }}>
+                        {thresholds.map(t => {
+                          const isActive = active?.[`t${t}`];
+                          const thresh = Math.max(1, t - jaxRed);
+                          return (
+                            <div key={t} style={{ display:"flex", alignItems:"flex-start", gap:5, marginBottom:3, opacity: isActive ? 1 : 0.45 }}>
+                              <span style={{ color: isActive ? col : "#604020", fontWeight:700, fontSize:9, minWidth:18, paddingTop:1 }}>T{t}</span>
+                              <span style={{ color: isActive ? "#e0d0a0" : "#604020", fontSize:9, lineHeight:1.4 }}>
+                                {thresh} {grp}: {descs[`t${t}`]}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               })}
