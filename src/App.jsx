@@ -1577,6 +1577,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     if (game.phase !== "gameover" || wonSavedRef.current) return;
     wonSavedRef.current = true;
     const won = game.winner === "player";
+    SFX.play(won ? "victory" : "defeat");
     const shardsBase = won ? 25 : 10;
     const storedQuests = initDailyQuests(user?.dailyQuests);
     const types = ["played"];
@@ -1675,14 +1676,14 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
       push();await wait(400);setAnimUids({});if(s.playerHP<=0)break;
     }
     // Player death check
-    if(s.playerHP<=0){SFX.play("defeat");setGame(()=>({...s,phase:"gameover",winner:"enemy",log:[...s.log,"Defeated..."]}));return;}
+    if(s.playerHP<=0){setGame(()=>({...s,phase:"gameover",winner:"enemy",log:[...s.log,"Defeated..."]}));return;}
     // End of enemy turn: fire + clear bleed on player board only
     s.playerBoard=s.playerBoard.map(c=>c.bleed>0?{...c,currentHp:c.currentHp-c.bleed,bleed:0}:c).filter(c=>c.currentHp>0);
     // Hades End of Turn: 1 dmg to all players if enemy has Hades
     if(s.enemyBoard.some(c=>c.id==="hades_soul_reaper")){s=resolveEffects("onTurnEnd",{id:"hades_soul_reaper",effects:[{trigger:"onTurnEnd",effect:"soul_reap"}]},s,"enemy",vfx);if(s.playerHP<=0){setGame(()=>({...s,phase:"gameover",winner:"enemy",log:[...s.log,"Defeated..."]}));return;}}
     // Lightning Meter: enemy Swift attacks tracked above; fire if at 4
     if(s.enemyZeusInPlay&&(s.enemyLightningMeter||0)>=2){s=fireLightningMeter(s,"enemy",vfx,(m)=>{s.log=[...s.log.slice(-20),m];});}
-    if(s.playerHP<=0){SFX.play("defeat");setGame(()=>({...s,phase:"gameover",winner:"enemy",log:[...s.log,"Defeated..."]}));return;}
+    if(s.playerHP<=0){setGame(()=>({...s,phase:"gameover",winner:"enemy",log:[...s.log,"Defeated..."]}));return;}
     // Clear temp frozen/anchored from enemy units
     s.enemyBoard=s.enemyBoard.map(c=>(c.anchored||c.frozen)?{...c,anchored:false,frozen:false,canAttack:true}:c);
     s.playerBoard.forEach(c=>{if(c.effects&&c.effects.length)s=resolveEffects("onTurnStart",c,s,"player",vfx);});
@@ -1705,7 +1706,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     }
     s.enemyBoard=s.enemyBoard.map(c=>({...c,canAttack:true,hasAttacked:false}));
     if(s.playerDeck.length>0&&s.playerHand.length<CFG.maxHand){s.playerHand=[...s.playerHand,makeInst(s.playerDeck[0],"p")];s.playerDeck=s.playerDeck.slice(1);}
-    if(s.enemyHP<=0){SFX.play("victory");setGame(()=>({...s,phase:"gameover",winner:"player",log:[...s.log,"Victory!"]}));return;}
+    if(s.enemyHP<=0){setGame(()=>({...s,phase:"gameover",winner:"player",log:[...s.log,"Victory!"]}));return;}
     const newTurn=s.turn+1,newMax=Math.min(CFG.maxEnergy,newTurn);
     s.log=[...s.log,`Turn ${newTurn}`];
     setGame(()=>({...s,turn:newTurn,phase:"player",playerEnergy:newMax,maxEnergy:newMax}));
@@ -6820,7 +6821,7 @@ export default function App() {
     )}
     {/* Fullscreen nudge — shown in battle when not fullscreen */}
     {inBattle && !isFullscreen && (
-      <div style={{ position:"fixed", right:20, bottom:80, zIndex:800, background:"linear-gradient(160deg,#141008,#1e1a0a)", border:"1px solid #e8c06055", borderRadius:14, padding:"16px 20px", display:"flex", flexDirection:"column", alignItems:"center", gap:8, boxShadow:"0 8px 32px rgba(0,0,0,0.9), 0 0 0 1px #e8c06022", animation:"fadeIn 0.35s ease-out", pointerEvents:"none", minWidth:180, textAlign:"center" }}>
+      <div style={{ position:"fixed", right:20, bottom:80, zIndex:350, background:"linear-gradient(160deg,#141008,#1e1a0a)", border:"1px solid #e8c06055", borderRadius:14, padding:"16px 20px", display:"flex", flexDirection:"column", alignItems:"center", gap:8, boxShadow:"0 8px 32px rgba(0,0,0,0.9), 0 0 0 1px #e8c06022", animation:"fadeIn 0.35s ease-out", pointerEvents:"none", minWidth:180, textAlign:"center" }}>
         <span style={{ fontSize:32, lineHeight:1, filter:"drop-shadow(0 0 8px #e8c06066)" }}>⛶</span>
         <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:"#e8c060", letterSpacing:1, lineHeight:1.5 }}>FULL SCREEN<br/>RECOMMENDED</div>
         <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#806040", letterSpacing:1 }}>Press <strong style={{ color:"#c0a050" }}>F11</strong> for the best experience</div>
