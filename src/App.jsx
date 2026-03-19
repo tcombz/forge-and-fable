@@ -24,6 +24,34 @@ const ALPHA_KEYS_LIST = [
 ];
 const ALPHA_KEYS = new Set(ALPHA_KEYS_LIST);
 const CURRENT_PATCH = "FABLES & FOOD FIGHT α.2";
+const DAILY_QUEST_POOL = [
+  { id:"win2",      label:"Win 2 matches",             goal:2, type:"wins",    reward:50 },
+  { id:"win1ranked",label:"Win a ranked match",         goal:1, type:"rankwin", reward:75 },
+  { id:"play3",     label:"Play 3 matches",             goal:3, type:"played",  reward:35 },
+  { id:"winai2",    label:"Beat the AI twice",          goal:2, type:"aiwins",  reward:40 },
+  { id:"fastwin",   label:"Win in under 8 turns",       goal:1, type:"fastwin", reward:60 },
+  { id:"bigwin",    label:"Win with 15+ HP remaining",  goal:1, type:"bigwin",  reward:55 },
+  { id:"casual1",   label:"Win a casual match",         goal:1, type:"caswin",  reward:30 },
+  { id:"play5",     label:"Play 5 matches",             goal:5, type:"played",  reward:60 },
+];
+const getTodayStr = () => new Date().toISOString().slice(0, 10);
+const initDailyQuests = (stored) => {
+  const today = getTodayStr();
+  if (stored?.date === today && stored?.quests?.length === 3) return stored;
+  const shuffled = [...DAILY_QUEST_POOL].sort(() => Math.random() - 0.5);
+  return { date: today, quests: shuffled.slice(0, 3).map(q => ({ ...q, progress: 0, completed: false })) };
+};
+const applyQuestProgress = (dailyQuests, types) => {
+  if (!dailyQuests?.quests) return dailyQuests;
+  let changed = false;
+  const updated = dailyQuests.quests.map(q => {
+    if (q.completed || !types.includes(q.type)) return q;
+    const newProg = Math.min(q.goal, q.progress + 1);
+    if (newProg !== q.progress) changed = true;
+    return { ...q, progress: newProg, completed: newProg >= q.goal };
+  });
+  return changed ? { ...dailyQuests, quests: updated } : dailyQuests;
+};
 
 // ═══ AUDIO ═══════════════════════════════════════════════════════════════════
 const SFX = (() => {
@@ -1532,6 +1560,9 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   const [timerKey, setTimerKey] = useState(0);
   const [dragOverField, setDragOverField] = useState(false);
   const dragCardRef = useRef(null);
+  const cardsPlayedRef = useRef(0);
+  const wonSavedRef = useRef(false);
+  const [matchResult, setMatchResult] = useState(null);
   const [expandedSynGroup, setExpandedSynGroup] = useState(null);
   const [turnBanner, setTurnBanner] = useState(null); // "YOUR TURN" | "ENEMY TURN"
   const logRef = useRef(null);
@@ -1540,6 +1571,33 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   // Start battle music when component mounts, home music on unmount
   useEffect(() => { MusicCtx.play("battle"); return () => MusicCtx.play("home"); }, []);
   useEffect(() => { if (logRef.current) logRef.current.scrollTo({ top: 99999, behavior: "smooth" }); }, [game?.log]);
+
+  // Save stats + quests when AI match ends
+  useEffect(() => {
+    if (game.phase !== "gameover" || wonSavedRef.current) return;
+    wonSavedRef.current = true;
+    const won = game.winner === "player";
+    const shardsBase = won ? 25 : 10;
+    const storedQuests = initDailyQuests(user?.dailyQuests);
+    const types = ["played"];
+    if (won) { types.push("wins"); types.push("aiwins"); }
+    if (won && game.turn < 8) types.push("fastwin");
+    if (won && game.playerHP >= 15) types.push("bigwin");
+    const updatedQuests = applyQuestProgress(storedQuests, types);
+    let questShards = 0;
+    updatedQuests.quests.forEach((q, i) => { if (q.completed && !storedQuests.quests[i]?.completed) questShards += q.reward; });
+    const questsGained = updatedQuests.quests.filter((q, i) => q.completed && !storedQuests.quests[i]?.completed);
+    const histEntry = { opponent: "AI", result: won ? "W" : "L", date: new Date().toISOString(), turns: game.turn, ranked: false };
+    const update = {
+      battlesPlayed: (user?.battlesPlayed || 0) + 1,
+      shards: (user?.shards || 0) + shardsBase + questShards,
+      dailyQuests: updatedQuests,
+      matchHistory: [histEntry, ...(user?.matchHistory || [])].slice(0, 50),
+    };
+    if (won) update.battlesWon = (user?.battlesWon || 0) + 1;
+    if (onUpdateUser) onUpdateUser(update);
+    setMatchResult({ won, turns: game.turn, cardsPlayed: cardsPlayedRef.current, hpLeft: game.playerHP, shardsEarned: shardsBase + questShards, questsGained });
+  }, [game.phase, game.winner]); // eslint-disable-line
 
   const g = game;
   const envTheme = g.environment ? ENV_THEMES[g.environment.region] || null : null;
@@ -1685,6 +1743,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
 
   const playCard = (card, targetUid = null) => {
     if (g.phase !== "player" || aiThink) return;
+    cardsPlayedRef.current += 1;
     if (card.type === "environment") {
       const ec = getEffectiveCost(card, g.environment, "player");
       if (card.bloodpact ? card.cost >= g.playerHP : ec > g.playerEnergy) return; SFX.play("env_play"); vfx.add("envchange", { color: card.border || "#40a020" }); setAttacker(null); setGame((prev) => { let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= ec; s.log = [...s.log, `${card.name} reshapes the field! (2 rounds)`]; } s.environment = { ...card, owner: "player", turnsRemaining: 2 }; s = resolveEffects("onPlay", card, s, "player", vfx); vfx.add("environment", { color: card.border, duration: 2000 }); return s; }); return; }
@@ -1830,14 +1889,43 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         </div>
       </div>
     )}
-    {g.phase === "gameover" && (<div style={{ position:"fixed", inset:0, zIndex:400, display:"flex", alignItems:"center", justifyContent:"center", background: g.winner === "player" ? "rgba(2,12,1,0.92)" : "rgba(12,2,2,0.92)", animation:"fadeIn 0.5s ease-out" }}>
-      <div style={{ textAlign:"center", padding:48 }}>
-        <div style={{ fontSize:90, marginBottom:16, animation:"pulse 1.2s ease-in-out infinite" }}>{g.winner === "player" ? "✨" : "💀"}</div>
-        <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:64, fontWeight:900, color: g.winner === "player" ? "#78cc45" : "#e05050", margin:"0 0 12px", textShadow:`0 0 60px ${g.winner === "player" ? "#78cc45" : "#e05050"}, 0 4px 12px rgba(0,0,0,0.9)`, letterSpacing:8 }}>{g.winner === "player" ? "VICTORY" : "DEFEATED"}</h2>
-        <p style={{ fontFamily:"'Cinzel',serif", fontSize:16, color:"#a09070", marginBottom:36, letterSpacing:2 }}>{g.winner === "player" ? "You crushed the enemy!" : "The enemy prevails..."}</p>
-        <div style={{ display:"flex", gap:14, justifyContent:"center" }}>
-          <button onClick={() => { setGame(initGame()); setAttacker(null); setAiThink(false); }} style={{ padding:"14px 36px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:10, fontFamily:"'Cinzel',serif", fontWeight:700, fontSize:14, letterSpacing:2, color:"#1a1000", cursor:"pointer", boxShadow:"0 0 24px #e8c06066" }}>REMATCH</button>
-          <button onClick={onExit} style={{ padding:"14px 28px", background:"transparent", border:"2px solid #3a2c10", borderRadius:10, fontFamily:"'Cinzel',serif", fontSize:13, color:"#a09058", cursor:"pointer" }}>EXIT</button>
+    {g.phase === "gameover" && matchResult && (<div style={{ position:"fixed", inset:0, zIndex:400, display:"flex", alignItems:"center", justifyContent:"center", background: matchResult.won ? "rgba(2,12,1,0.95)" : "rgba(12,2,2,0.95)", animation:"fadeIn 0.5s ease-out" }}>
+      <div style={{ textAlign:"center", maxWidth:460, width:"100%", padding:"0 20px" }}>
+        {/* Result header */}
+        <div style={{ fontSize:72, marginBottom:8, animation:"pulse 1.2s ease-in-out infinite" }}>{matchResult.won ? "✨" : "💀"}</div>
+        <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:52, fontWeight:900, color: matchResult.won ? "#78cc45" : "#e05050", margin:"0 0 4px", textShadow:`0 0 60px ${matchResult.won ? "#78cc45" : "#e05050"}, 0 4px 12px rgba(0,0,0,0.9)`, letterSpacing:8 }}>{matchResult.won ? "VICTORY" : "DEFEATED"}</h2>
+        <p style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#807060", marginBottom:20, letterSpacing:2 }}>{matchResult.won ? "You crushed the enemy!" : "The enemy prevails..."}</p>
+        {/* Stats grid */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8, marginBottom:16, background:"rgba(255,255,255,0.03)", border:"1px solid #2a2010", borderRadius:12, padding:"14px 12px" }}>
+          {[["TURNS", matchResult.turns, "#e8c060"], ["CARDS PLAYED", matchResult.cardsPlayed, "#c090ff"], ["HP LEFT", matchResult.won ? matchResult.hpLeft : "—", matchResult.won ? "#78cc45" : "#604030"]].map(([l,v,c]) => (
+            <div key={l} style={{ textAlign:"center" }}>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:c, lineHeight:1 }}>{v}</div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#504028", letterSpacing:2, marginTop:5 }}>{l}</div>
+            </div>
+          ))}
+        </div>
+        {/* Shards earned */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginBottom:16, background:"rgba(160,184,200,0.07)", border:"1px solid #2a3a4a", borderRadius:10, padding:"10px 20px" }}>
+          <span style={{ fontSize:20 }}>⬙</span>
+          <span style={{ fontFamily:"'Cinzel',serif", fontSize:20, fontWeight:900, color:"#a0b8c8" }}>+{matchResult.shardsEarned}</span>
+          <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#506070", letterSpacing:2 }}>SHARDS EARNED</span>
+        </div>
+        {/* Quest completions */}
+        {matchResult.questsGained.length > 0 && (
+          <div style={{ marginBottom:16, background:"rgba(120,200,69,0.06)", border:"1px solid #78cc4533", borderRadius:10, padding:"10px 16px" }}>
+            {matchResult.questsGained.map(q => (
+              <div key={q.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"4px 0" }}>
+                <span style={{ fontSize:14 }}>✓</span>
+                <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#78cc45", flex:1, textAlign:"left" }}>{q.label}</span>
+                <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#a0b8c8" }}>+{q.reward} shards</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {/* Buttons */}
+        <div style={{ display:"flex", gap:12, justifyContent:"center" }}>
+          <button onClick={() => { wonSavedRef.current = false; cardsPlayedRef.current = 0; setMatchResult(null); setGame(initGame()); setAttacker(null); setAiThink(false); }} style={{ padding:"13px 32px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:10, fontFamily:"'Cinzel',serif", fontWeight:700, fontSize:13, letterSpacing:2, color:"#1a1000", cursor:"pointer", boxShadow:"0 0 24px #e8c06066" }}>REMATCH</button>
+          <button onClick={onExit} style={{ padding:"13px 26px", background:"transparent", border:"2px solid #3a2c10", borderRadius:10, fontFamily:"'Cinzel',serif", fontSize:12, color:"#a09058", cursor:"pointer" }}>EXIT</button>
         </div>
       </div>
     </div>)}
@@ -2282,11 +2370,15 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   const [dyingCards, setDyingCards] = useState([]); // cards mid-death animation
   const [connectError, setConnectError] = useState(false);
   const [liveAction, setLiveAction] = useState(null);
+  const [pvpMatchResult, setPvpMatchResult] = useState(null);
   const [expandedSynGroup, setExpandedSynGroup] = useState(null);
   const [targetingSpell, setTargetingSpell] = useState(null);
   const flashAction = (msg) => { setLiveAction(msg); setTimeout(() => setLiveAction(null), 1800); };
   const showTurnBanner = (type) => { setTurnBanner(type); setTimeout(() => setTurnBanner(null), 1100); };
   const [animUids, setAnimUids] = useState({});
+  const cardsPlayedRef = useRef(0);
+  const lastOpMoveRef = useRef(Date.now());
+  const [disconnectWarn, setDisconnectWarn] = useState(false);
   const vfx = useVFX();
   const logRef = useRef(null);
   const prevBoardUidsRef = useRef({ player: new Set(), enemy: new Set() });
@@ -2341,7 +2433,24 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       ranked: isRanked, ratingDelta: isRanked ? ratingDelta : undefined,
     };
     const newHistory = [histEntry, ...(user?.matchHistory || [])].slice(0, 50);
-    const update = { matchHistory: newHistory, battlesPlayed: (user?.battlesPlayed || 0) + 1 };
+    // Quest tracking
+    const shardsBase = won ? 25 : 10;
+    const storedQuests = initDailyQuests(user?.dailyQuests);
+    const types = ["played"];
+    if (won) { types.push("wins"); if (!isRanked) types.push("caswin"); if (isRanked) types.push("rankwin"); }
+    if (won && (gs.turn||0) < 8) types.push("fastwin");
+    const myHPNow = myRole === "p1" ? (gs?.p1HP||0) : (gs?.p2HP||0);
+    if (won && myHPNow >= 15) types.push("bigwin");
+    const updatedQuests = applyQuestProgress(storedQuests, types);
+    let questShards = 0;
+    updatedQuests.quests.forEach((q, i) => { if (q.completed && !storedQuests.quests[i]?.completed) questShards += q.reward; });
+    const questsGained = updatedQuests.quests.filter((q, i) => q.completed && !storedQuests.quests[i]?.completed);
+    const update = {
+      matchHistory: newHistory,
+      battlesPlayed: (user?.battlesPlayed || 0) + 1,
+      shards: (user?.shards || 0) + shardsBase + questShards,
+      dailyQuests: updatedQuests,
+    };
     if (won) update.battlesWon = (user?.battlesWon || 0) + 1;
     if (isRanked) {
       update.rankedRating = newRating;
@@ -2349,9 +2458,10 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       update.rankedLosses = !won ? (user?.rankedLosses||0)+1 : (user?.rankedLosses||0);
     }
     if (onUpdateUser) onUpdateUser(update);
+    setPvpMatchResult({ won, turns: gs.turn||0, cardsPlayed: cardsPlayedRef.current, hpLeft: myHPNow, shardsEarned: shardsBase + questShards, questsGained, ratingDelta: isRanked ? ratingDelta : null });
     // Clean up match row so stale data doesn't accumulate
     if (matchId) supabase.from("matches").delete().eq("id", matchId).then(() => {}).catch(() => {});
-  }, [gs?.winner]);
+  }, [gs?.winner]); // eslint-disable-line
 
   // Convert DB state (p1/p2) to AI state format (player/enemy) from my perspective
   const toAI = (g, role) => {
@@ -2637,6 +2747,22 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
 
   useEffect(() => { if (logRef.current) logRef.current.scrollTo({ top: 99999, behavior: "smooth" }); }, [gs?.log]);
 
+  // Track opponent's last move for disconnect detection
+  useEffect(() => {
+    if (gs && myRole && gs.phase !== myRole && !gs.winner) lastOpMoveRef.current = Date.now();
+    if (gs?.winner) setDisconnectWarn(false);
+  }, [gs?.seq]); // eslint-disable-line
+  // Disconnect detection: if opponent's turn > 90s, show claim-victory UI
+  useEffect(() => {
+    if (!gs || !myRole || gs.winner) return;
+    const interval = setInterval(() => {
+      const isOppTurn = gs.phase !== myRole;
+      if (isOppTurn && Date.now() - lastOpMoveRef.current > 90000) setDisconnectWarn(true);
+      else setDisconnectWarn(false);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [gs, myRole]); // eslint-disable-line
+
   // Animate opponent actions + show turn banner when gs changes
   useEffect(() => {
     if (!gs || !myRole) { prevGsRef.current = gs; return; }
@@ -2780,6 +2906,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
 
   const playCard = (card, targetUid = null) => {
     if (!isMyTurn || syncingRef.current) return;
+    cardsPlayedRef.current += 1;
     const ai = toAI(gs, myRole);
     const canAfford = card.bloodpact ? card.cost < ai.playerHP : getEffectiveCost(card, ai.environment) <= ai.playerEnergy;
     if (!canAfford) return;
@@ -2956,6 +3083,20 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         </div>
       </div>
     </div>)}
+    {/* Disconnect warning */}
+    {disconnectWarn && !gs.winner && (
+      <div style={{ position:"fixed", inset:0, zIndex:550, background:"rgba(0,0,0,0.88)", display:"flex", alignItems:"center", justifyContent:"center", animation:"fadeIn 0.3s" }}>
+        <div style={{ background:"#120a06", border:"1px solid #e8c06055", borderRadius:14, padding:"32px 40px", textAlign:"center", maxWidth:340 }}>
+          <div style={{ fontSize:40, marginBottom:12 }}>⚡</div>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:16, color:"#e8c060", fontWeight:700, marginBottom:8, letterSpacing:2 }}>OPPONENT MAY HAVE DISCONNECTED</div>
+          <p style={{ fontSize:11, color:"#907060", marginBottom:24, lineHeight:1.7 }}>No activity from {opponentName||"your opponent"} in 90+ seconds. You may claim victory or continue waiting.</p>
+          <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
+            <button onClick={async () => { const newGs = { ...gs, winner: myRole, seq: (gs.seq||0)+1, log: [...(gs.log||[]).slice(-20), `${opponentName||"Opponent"} disconnected.`] }; setGs(newGs); try { await supabase.from("matches").update({ game_state: newGs }).eq("id", matchId); } catch(_){} }} style={{ padding:"10px 22px", background:"linear-gradient(135deg,#1a5a08,#2a8010)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:"#a0e060", cursor:"pointer", fontWeight:700, letterSpacing:1 }}>CLAIM VICTORY</button>
+            <button onClick={() => { lastOpMoveRef.current = Date.now(); setDisconnectWarn(false); }} style={{ padding:"10px 22px", background:"transparent", border:"1px solid #3a2010", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:"#806040", cursor:"pointer" }}>KEEP WAITING</button>
+          </div>
+        </div>
+      </div>
+    )}
     {/* Opening draw overlay — coin flip result */}
     {gs?.drawAnim && !gs.winner && !drawDismissedRef.current && (<div style={{ position:"fixed", inset:0, zIndex:500, background:"rgba(0,0,0,0.92)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:20, animation:"fadeIn 0.4s" }}>
       <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#a09060", letterSpacing:5 }}>COIN FLIP</div>
@@ -2997,12 +3138,47 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         {syncing && <span style={{ fontSize:8, color:"#806040", fontFamily:"'Cinzel',serif" }}>SYNC…</span>}
       </div>
     </div>)}
-    {gs.winner && (<div style={{ position:"fixed", inset:0, zIndex:400, display:"flex", alignItems:"center", justifyContent:"center", background: myWon?"rgba(2,12,1,0.92)":"rgba(12,2,2,0.92)", animation:"fadeIn 0.5s" }}>
-      <div style={{ textAlign:"center", padding:48 }}>
-        <div style={{ fontSize:90, marginBottom:16, animation:"pulse 1.2s ease-in-out infinite" }}>{myWon?"✨":"💀"}</div>
-        <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:64, fontWeight:900, color:myWon?"#78cc45":"#e05050", margin:"0 0 12px", textShadow:`0 0 60px ${myWon?"#78cc45":"#e05050"}, 0 4px 12px rgba(0,0,0,0.9)`, letterSpacing:8 }}>{myWon?"VICTORY":"DEFEATED"}</h2>
-        <p style={{ fontFamily:"'Cinzel',serif", fontSize:16, color:"#a09070", marginBottom:36, letterSpacing:2 }}>{myWon?`You defeated ${opponentName}!`:`${opponentName} wins this round.`}</p>
-        <button onClick={onExit} style={{ padding:"14px 36px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:10, fontFamily:"'Cinzel',serif", fontWeight:700, fontSize:14, letterSpacing:2, color:"#1a1000", cursor:"pointer", boxShadow:"0 0 24px #e8c06066" }}>EXIT</button>
+    {gs.winner && pvpMatchResult && (<div style={{ position:"fixed", inset:0, zIndex:400, display:"flex", alignItems:"center", justifyContent:"center", background: myWon?"rgba(2,12,1,0.95)":"rgba(12,2,2,0.95)", animation:"fadeIn 0.5s" }}>
+      <div style={{ textAlign:"center", maxWidth:460, width:"100%", padding:"0 20px" }}>
+        <div style={{ fontSize:72, marginBottom:8, animation:"pulse 1.2s ease-in-out infinite" }}>{myWon?"✨":"💀"}</div>
+        <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:52, fontWeight:900, color:myWon?"#78cc45":"#e05050", margin:"0 0 4px", textShadow:`0 0 60px ${myWon?"#78cc45":"#e05050"}, 0 4px 12px rgba(0,0,0,0.9)`, letterSpacing:8 }}>{myWon?"VICTORY":"DEFEATED"}</h2>
+        <p style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#807060", marginBottom:20, letterSpacing:2 }}>{myWon?`You defeated ${opponentName}!`:`${opponentName} wins this round.`}</p>
+        {/* Stats grid */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8, marginBottom:16, background:"rgba(255,255,255,0.03)", border:"1px solid #2a2010", borderRadius:12, padding:"14px 12px" }}>
+          {[["TURNS", pvpMatchResult.turns, "#e8c060"], ["CARDS PLAYED", pvpMatchResult.cardsPlayed, "#c090ff"], ["HP LEFT", myWon ? pvpMatchResult.hpLeft : "—", myWon ? "#78cc45" : "#604030"]].map(([l,v,c]) => (
+            <div key={l} style={{ textAlign:"center" }}>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:c, lineHeight:1 }}>{v}</div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#504028", letterSpacing:2, marginTop:5 }}>{l}</div>
+            </div>
+          ))}
+        </div>
+        {/* Shards + rating */}
+        <div style={{ display:"grid", gridTemplateColumns: pvpMatchResult.ratingDelta != null ? "1fr 1fr" : "1fr", gap:8, marginBottom:16 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, background:"rgba(160,184,200,0.07)", border:"1px solid #2a3a4a", borderRadius:10, padding:"10px 16px" }}>
+            <span style={{ fontSize:18 }}>⬙</span>
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:900, color:"#a0b8c8" }}>+{pvpMatchResult.shardsEarned}</span>
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#506070", letterSpacing:1 }}>SHARDS</span>
+          </div>
+          {pvpMatchResult.ratingDelta != null && (
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, background: pvpMatchResult.ratingDelta >= 0 ? "rgba(120,200,69,0.07)" : "rgba(200,80,80,0.07)", border:`1px solid ${pvpMatchResult.ratingDelta >= 0 ? "#78cc4533" : "#e0505033"}`, borderRadius:10, padding:"10px 16px" }}>
+              <span style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:900, color: pvpMatchResult.ratingDelta >= 0 ? "#78cc45" : "#e05050" }}>{pvpMatchResult.ratingDelta >= 0 ? "+" : ""}{pvpMatchResult.ratingDelta}</span>
+              <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#506070", letterSpacing:1 }}>MMR</span>
+            </div>
+          )}
+        </div>
+        {/* Quest completions */}
+        {pvpMatchResult.questsGained.length > 0 && (
+          <div style={{ marginBottom:16, background:"rgba(120,200,69,0.06)", border:"1px solid #78cc4533", borderRadius:10, padding:"10px 16px" }}>
+            {pvpMatchResult.questsGained.map(q => (
+              <div key={q.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"4px 0" }}>
+                <span style={{ fontSize:14 }}>✓</span>
+                <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#78cc45", flex:1, textAlign:"left" }}>{q.label}</span>
+                <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#a0b8c8" }}>+{q.reward} shards</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <button onClick={onExit} style={{ padding:"13px 48px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:10, fontFamily:"'Cinzel',serif", fontWeight:700, fontSize:13, letterSpacing:2, color:"#1a1000", cursor:"pointer", boxShadow:"0 0 24px #e8c06066" }}>EXIT</button>
       </div>
     </div>)}
     <div className="battle-grid" style={{ display:"grid", gridTemplateColumns:"300px 1fr 340px", gap:14, flex:1, minHeight:0 }}>
@@ -3748,7 +3924,7 @@ function useAuth() {
     completeProfile: (row, email) => { setUser(toAppUser(row, email)); setLoading(false); },
     update: async (delta) => {
       const updated = { ...user, ...delta };
-      const dbMap = { battlesPlayed: "battles_played", battlesWon: "battles_won", shards: "shards", collection: "collection", decks: "decks", avatarUrl: "avatar_url", selectedArts: "selected_arts", matchHistory: "match_history", altOwned: "alt_owned", freePackUsed: "free_pack_used", lastPatchSeen: "last_patch_seen", rankedRating: "ranked_rating", rankedWins: "ranked_wins", rankedLosses: "ranked_losses" };
+      const dbMap = { battlesPlayed: "battles_played", battlesWon: "battles_won", shards: "shards", collection: "collection", decks: "decks", avatarUrl: "avatar_url", selectedArts: "selected_arts", matchHistory: "match_history", altOwned: "alt_owned", freePackUsed: "free_pack_used", lastPatchSeen: "last_patch_seen", rankedRating: "ranked_rating", rankedWins: "ranked_wins", rankedLosses: "ranked_losses", dailyQuests: "daily_quests" };
       const dbDelta = {};
       Object.entries(delta).forEach(([k, v]) => { if (dbMap[k]) dbDelta[dbMap[k]] = v; });
       if (Object.keys(dbDelta).length > 0) {
@@ -6290,6 +6466,33 @@ function PlayerSidebar({ user, onUpdateUser, onlineIds, onClose, onChallenge, on
           ))}
         </div>
 
+        {/* Daily Quests */}
+        {(() => {
+          const dq = initDailyQuests(user?.dailyQuests);
+          return (
+            <div style={{ padding:"12px 16px 12px", borderBottom:"1px solid #1a1408", flexShrink:0 }}>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", letterSpacing:3, marginBottom:10, fontWeight:700, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <span>DAILY QUESTS</span>
+                <span style={{ color:"#3a2010", fontSize:8 }}>RESETS DAILY</span>
+              </div>
+              {dq.quests.map(q => {
+                const pct = Math.min(100, Math.round((q.progress / q.goal) * 100));
+                return (
+                  <div key={q.id} style={{ marginBottom:8 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:3 }}>
+                      <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color: q.completed ? "#78cc45" : "#c0a060", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{q.completed ? "✓ " : ""}{q.label}</span>
+                      <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#a0b8c8", flexShrink:0, marginLeft:6 }}>⬙ {q.reward}</span>
+                    </div>
+                    <div style={{ height:5, background:"rgba(255,255,255,0.05)", borderRadius:3, overflow:"hidden", border:"1px solid #1e1408" }}>
+                      <div style={{ height:"100%", width:`${pct}%`, background: q.completed ? "linear-gradient(90deg,#50a030,#78cc45)" : "linear-gradient(90deg,#6a4010,#c89010)", borderRadius:3, transition:"width .5s" }} />
+                    </div>
+                    <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#3a2810", marginTop:2, textAlign:"right" }}>{q.progress}/{q.goal}</div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
         {/* Add Friend Search — above friends list */}
         <div style={{ padding:"10px 16px 10px", borderBottom:"1px solid #1a1408", flexShrink:0 }}>
           <div style={{ display:"flex", gap:6, marginBottom:searchResults.length > 0 ? 8 : 0 }}>
@@ -6435,6 +6638,7 @@ export default function App() {
   const [globalChallenge, setGlobalChallenge] = useState(null); // { fromId, fromName, fromAvatar }
   const [pendingDuel, setPendingDuel] = useState(null); // { matchId, opponentName, opponentId }
   const [declinedToast, setDeclinedToast] = useState(null); // name of player who declined
+  const [isMobile] = useState(() => window.innerWidth < 900);
   const checkFs = () => !!(document.fullscreenElement || window.innerHeight === screen.height);
   const [isFullscreen, setIsFullscreen] = useState(checkFs);
   useEffect(() => {
@@ -6526,7 +6730,7 @@ export default function App() {
       @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
       @keyframes turnBannerIn{0%{opacity:0;transform:translate(-50%,-50%) scale(0.7)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}25%{transform:translate(-50%,-50%) scale(1)}75%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.1)}}
       @keyframes turnStamp{0%{opacity:0;transform:scale(1.4)}8%{opacity:1;transform:scale(0.94)}16%{transform:scale(1.02)}22%{transform:scale(1)}70%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.05)}}
-      @keyframes cardDie{0%{opacity:1;transform:scale(1) rotate(0deg)}40%{opacity:.5;transform:scale(0.88) rotate(-6deg)}100%{opacity:0;transform:scale(0.55) rotate(-25deg) translateY(40px)}}
+      @keyframes cardDie{0%{opacity:1;transform:scale(1) rotate(0deg);filter:brightness(1)}12%{opacity:1;transform:scale(1.08) rotate(2deg);filter:brightness(2.8) saturate(0.4)}28%{opacity:.8;transform:scale(0.9) rotate(-10deg) translateY(6px);filter:brightness(0.7) blur(1px)}55%{opacity:.4;transform:scale(0.68) rotate(-24deg) translateY(22px);filter:brightness(0.3) blur(2.5px)}100%{opacity:0;transform:scale(0.3) rotate(-45deg) translateY(50px);filter:brightness(0) blur(5px)}}
       @keyframes cardSummon{0%{opacity:0;transform:translateY(48px) scale(0.82)}60%{opacity:1;transform:translateY(-6px) scale(1.04)}100%{opacity:1;transform:translateY(0) scale(1)}}
       @keyframes spellCast{0%{opacity:0;transform:translate(-50%,-50%) scale(0.4)}30%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}70%{opacity:.9;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.4)}}
       @keyframes envFlash{0%{opacity:0}20%{opacity:1}80%{opacity:.8}100%{opacity:0}}
@@ -6577,6 +6781,18 @@ export default function App() {
       /* Raised gold text — white top highlight + deep drop shadow on all Cinzel elements */
       [style*="Cinzel"]{text-shadow:0 -1px 0 rgba(255,255,255,0.22),0 1px 0 rgba(0,0,0,0.65),0 2px 6px rgba(0,0,0,0.88);}
     `}</style>
+    {isMobile && (
+      <div style={{ position:"fixed", inset:0, zIndex:9999, background:"linear-gradient(160deg,#0a0806,#0e0c08)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:32, textAlign:"center" }}>
+        <div style={{ fontSize:64, marginBottom:20, lineHeight:1 }}>⚔</div>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:"#e8c060", letterSpacing:4, marginBottom:12 }}>FORGE & FABLE</div>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:12, color:"#c08040", letterSpacing:2, marginBottom:20 }}>BEST EXPERIENCED ON DESKTOP</div>
+        <div style={{ maxWidth:320, fontFamily:"'Lora',serif", fontSize:13, color:"#907060", lineHeight:1.8, marginBottom:28 }}>
+          The battle board requires a wider screen for the full experience. Open this page on a laptop or desktop to play.
+        </div>
+        <div style={{ width:60, height:2, background:"linear-gradient(90deg,transparent,#e8c06066,transparent)", marginBottom:24 }} />
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#503020", letterSpacing:3 }}>MOBILE SUPPORT COMING SOON</div>
+      </div>
+    )}
     {!user && !loading && <ForgeAndFableTeaser />}
     {(!user || user.__needsProfile) && <LoginModal needsProfile={!!user?.__needsProfile} userId={user?.id} userEmail={user?.email} onSignOut={logout} onProfileCreated={completeProfile} />}
     {user && showPatchNotes && <PatchNotesModal onDismiss={() => { localStorage.setItem(`patchSeen_${user.id}`, CURRENT_PATCH); update({ lastPatchSeen: CURRENT_PATCH }); setShowPatchNotes(false); }} />}
