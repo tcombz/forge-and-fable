@@ -2006,13 +2006,13 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
           <button onClick={()=>{ const el=document.documentElement; if(!document.fullscreenElement){el.requestFullscreen?.();}else{document.exitFullscreen?.();} }} style={{ flex:1, padding:"8px 4px", background:"rgba(14,12,8,0.8)", border:"1px solid #604028aa", borderRadius:8, color:"#a08050", fontFamily:"'Cinzel',serif", fontSize:13, cursor:"pointer" }} title="Fullscreen">⛶</button>
         </div>
       </div>
-      <div style={{ background: envTheme ? envTheme.bg : "linear-gradient(180deg,#2a1c0c 0%,#1e1408 50%,#281a08 100%)", border: `1px solid ${envTheme ? envTheme.glow + "44" : "#5a3c1a55"}`, borderRadius: 14, overflow: "hidden", position: "relative", transition: "background 1.5s ease, border-color 1s ease", boxShadow: envTheme ? undefined : "inset 0 0 60px rgba(0,0,0,0.4), 0 0 0 1px #3a2010", display:"flex", flexDirection:"column", height:"100%" }}>
+      <div style={{ background: envTheme ? envTheme.bg : "linear-gradient(180deg,#2a1c0c 0%,#1e1408 50%,#281a08 100%)", border: `1px solid ${envTheme ? envTheme.glow + "44" : "#5a3c1a55"}`, borderRadius: 14, overflow: "visible", position: "relative", transition: "background 1.5s ease, border-color 1s ease", boxShadow: envTheme ? undefined : "inset 0 0 60px rgba(0,0,0,0.4), 0 0 0 1px #3a2010", display:"flex", flexDirection:"column", height:"100%" }}>
         {g.phase === "opening" && <OpeningDraw onResult={handleOpeningResult} />}
         <VFXOverlay effects={vfx.effects} />
         {/* Environment particles */}
         {envTheme && <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1 }}><FloatingParticles count={20} color={envTheme.particle} speed={0.6} /></div>}
         {/* Enemy zone */}
-        <div style={{ background: "linear-gradient(180deg, rgba(180,30,20,0.28) 0%, rgba(120,18,12,0.22) 100%)", borderBottom: "2px solid #8a2010", borderLeft: "3px solid #c03020", padding: "7px 12px", position: "relative", zIndex: 2, boxShadow: "inset 0 -6px 24px rgba(200,40,20,0.18), inset 3px 0 12px rgba(200,40,20,0.12)", flex:"0 0 auto" }}>
+        <div style={{ background: "linear-gradient(180deg, rgba(180,30,20,0.28) 0%, rgba(120,18,12,0.22) 100%)", borderBottom: "2px solid #8a2010", borderLeft: "3px solid #c03020", padding: "7px 12px", position: "relative", zIndex: Object.keys(animUids).some(uid => g.enemyBoard?.some(c => c.uid === uid)) ? 5 : 2, boxShadow: "inset 0 -6px 24px rgba(200,40,20,0.18), inset 3px 0 12px rgba(200,40,20,0.12)", flex:"0 0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#3a0c0c,#200808)", border: "2px solid #a0202044", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "#cc6666", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>AI</div>
@@ -2075,7 +2075,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
           )}
         </div>
         {/* Player zone */}
-        <div style={{ background: "linear-gradient(180deg, rgba(20,100,10,0.22) 0%, rgba(30,130,15,0.28) 100%)", borderLeft: "3px solid #307030", padding: "7px 12px", position: "relative", zIndex: 2, boxShadow: "inset 0 6px 24px rgba(20,160,10,0.18), inset 3px 0 12px rgba(20,160,10,0.12)", flex:1, display:"flex", flexDirection:"column", overflow:"visible", minHeight:0 }}>
+        <div style={{ background: "linear-gradient(180deg, rgba(20,100,10,0.22) 0%, rgba(30,130,15,0.28) 100%)", borderLeft: "3px solid #307030", padding: "7px 12px", position: "relative", zIndex: Object.keys(animUids).some(uid => g.playerBoard?.some(c => c.uid === uid)) ? 5 : 2, boxShadow: "inset 0 6px 24px rgba(20,160,10,0.18), inset 3px 0 12px rgba(20,160,10,0.12)", flex:1, display:"flex", flexDirection:"column", overflow:"visible", minHeight:0 }}>
           {g.environment?.owner === "player" && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 12px", background:`${g.environment.border}18`, border:`1px solid ${g.environment.border}33`, borderRadius:6, marginBottom:5, animation:"slideDown 0.3s" }}>
             <div style={{ width:6, height:6, borderRadius:"50%", background:g.environment.border, boxShadow:`0 0 6px ${g.environment.border}`, animation:"pulse 2s infinite", flexShrink:0 }} />
             <span style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:g.environment.border, fontWeight:700, flexShrink:0 }}>{g.environment.name}</span>
@@ -2386,6 +2386,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   const [animUids, setAnimUids] = useState({});
   const cardsPlayedRef = useRef(0);
   const lastSentSeqRef = useRef(-1);
+  const lastAcceptedSeqRef = useRef(-1);
   const lastOpMoveRef = useRef(Date.now());
   const [disconnectWarn, setDisconnectWarn] = useState(false);
   const vfx = useVFX();
@@ -2682,14 +2683,16 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       const applyIncoming = (incoming) => {
         const currentGs = gsRef.current;
         const role = myRoleRef.current;
-        if (currentGs && (incoming.seq||0) <= (currentGs?.seq||-1)) return; // already up to date
-        if ((incoming.seq||0) === lastSentSeqRef.current) return; // own echo — skip
+        const incomingSeq = incoming.seq || 0;
+        if (incomingSeq <= Math.max(currentGs?.seq ?? -1, lastAcceptedSeqRef.current)) return; // already processing
+        if (incomingSeq === lastSentSeqRef.current) return; // own echo — skip
+        lastAcceptedSeqRef.current = incomingSeq; // lock immediately so duplicate events are ignored
         if (role && currentGs && currentGs.phase !== role && !incoming.winner) {
           // Opponent action — animate first, then apply
           const animDur = opAnimFnRef.current ? opAnimFnRef.current(currentGs, incoming) : 400;
           if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current);
           pendingTimerRef.current = setTimeout(() => {
-            setGs(curr => ((incoming.seq||0) > (curr?.seq||-1)) ? incoming : curr);
+            setGs(curr => (incomingSeq > (curr?.seq ?? -1)) ? incoming : curr);
           }, animDur);
         } else {
           setGs(incoming); // my turn start, game over, or no prior state
@@ -3325,7 +3328,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           </div>
         )}
         {/* Opponent zone — use opponent's env theme */}
-        <div style={{ background: opEnvTheme ? opEnvTheme.bg : "rgba(180,30,20,0.22)", borderBottom:"2px solid #8a2010", borderLeft:"3px solid #c03020", padding:"7px 12px", position:"relative", zIndex:2, transition:"background 1.5s ease", boxShadow:"inset 0 -6px 24px rgba(200,40,20,0.14), inset 3px 0 12px rgba(200,40,20,0.1)", flex:"0 0 auto" }}>
+        <div style={{ background: opEnvTheme ? opEnvTheme.bg : "rgba(180,30,20,0.22)", borderBottom:"2px solid #8a2010", borderLeft:"3px solid #c03020", padding:"7px 12px", position:"relative", zIndex:Object.keys(animUids).some(uid => ai.enemyBoard?.some(c => c.uid === uid)) ? 5 : 2, transition:"background 1.5s ease", boxShadow:"inset 0 -6px 24px rgba(200,40,20,0.14), inset 3px 0 12px rgba(200,40,20,0.1)", flex:"0 0 auto" }}>
           {opEnvTheme && <div style={{ position:"absolute", inset:0, pointerEvents:"none", zIndex:1 }}><FloatingParticles count={opEnvTheme.pCount||20} color={opEnvTheme.particle} speed={opEnvTheme.pSpeed||0.6} shape={opEnvTheme.pShape||"circle"} direction={opEnvTheme.pDir||"up"} /></div>}
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -3376,7 +3379,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           )}
         </div>
         {/* My zone — use my env theme */}
-        <div style={{ background: myEnvTheme ? myEnvTheme.bg : "rgba(20,100,10,0.22)", borderLeft:"3px solid #307030", padding:"7px 12px", position:"relative", zIndex:2, transition:"background 1.5s ease", boxShadow:"inset 0 6px 24px rgba(20,160,10,0.14), inset 3px 0 12px rgba(20,160,10,0.1)", flex:1, display:"flex", flexDirection:"column", overflow:"visible", minHeight:0 }}>
+        <div style={{ background: myEnvTheme ? myEnvTheme.bg : "rgba(20,100,10,0.22)", borderLeft:"3px solid #307030", padding:"7px 12px", position:"relative", zIndex:Object.keys(animUids).some(uid => ai.playerBoard?.some(c => c.uid === uid)) ? 5 : 2, transition:"background 1.5s ease", boxShadow:"inset 0 6px 24px rgba(20,160,10,0.14), inset 3px 0 12px rgba(20,160,10,0.1)", flex:1, display:"flex", flexDirection:"column", overflow:"visible", minHeight:0 }}>
           {myEnvTheme && <div style={{ position:"absolute", inset:0, pointerEvents:"none", zIndex:1 }}><FloatingParticles count={myEnvTheme.pCount||20} color={myEnvTheme.particle} speed={myEnvTheme.pSpeed||0.6} shape={myEnvTheme.pShape||"circle"} direction={myEnvTheme.pDir||"up"} /></div>}
           {myEnvCard && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 12px", background:`${myEnvCard.border}18`, border:`1px solid ${myEnvCard.border}44`, borderRadius:6, marginBottom:5, position:"relative", zIndex:2, animation:"slideDown 0.3s" }}>
             <div style={{ width:6, height:6, borderRadius:"50%", background:myEnvCard.border, boxShadow:`0 0 6px ${myEnvCard.border}`, animation:"pulse 2s infinite", flexShrink:0 }} />
