@@ -3739,39 +3739,104 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDue
       </div>
     </div>
   );
-  if (!matchConfig) return (<div style={{ maxWidth:720, margin:"0 auto", padding:"60px 24px 60px", display:"flex", flexDirection:"column", alignItems:"center" }}><div style={{ width:"100%" }}>
-    <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:28, fontWeight:700, color:"#e8c060", margin:"0 0 4px", textAlign:"center" }}>Battle Setup</h2>
-    <p style={{ fontSize:13, color:"#a09070", margin:"0 0 28px", textAlign:"center" }}>Choose your battle mode!</p>
-    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:24 }}>
-      <div style={{ background:"linear-gradient(160deg,#141010,#0e0c08)", border:"1px solid #3a2010", borderRadius:14, padding:24, textAlign:"center" }}>
-        <div style={{ fontSize:32, marginBottom:12 }}>🤖</div>
-        <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:15, color:"#e8c060", margin:"0 0 8px" }}>VS AI</h3>
-        <p style={{ fontSize:11, color:"#806040", marginBottom:16, lineHeight:1.6 }}>Test your deck against the AI opponent. Great for practice!</p>
-        <select value={aiDeckVal} onChange={(e) => { setAiDeckVal(e.target.value); localStorage.setItem("fnf_ai_deck", e.target.value); }} style={{ width:"100%", padding:"7px", background:"#0c0a06", border:"1px solid #3a2010", borderRadius:7, color:"#f0e8d8", fontFamily:"'Cinzel',serif", fontSize:10, outline:"none", marginBottom:10 }}>
-          <option value="">-- Random deck --</option>
-          <option value="starter">Starter Deck</option>
-          {decks.map((d, i) => (<option key={i} value={i}>{d.name} ({d.cards?.length || 0} cards)</option>))}
-        </select>
-        <button onClick={() => { SFX.play("card"); setMatchConfig({ mode:"ai", playerDeck: selectedDeck?.cards || null }); setMatchActive?.(true); }} style={{ width:"100%", padding:"12px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, letterSpacing:2, color:"#1a1000", cursor:"pointer" }}>START BATTLE</button>
-      </div>
-      <div style={{ background:"linear-gradient(160deg,#101420,#080c14)", border:`1px solid ${ranked?"#6040c0":"#102038"}`, borderRadius:14, padding:24, textAlign:"center", transition:"border-color .25s" }}>
-        <div style={{ fontSize:32, marginBottom:12 }}>{ranked ? "🏆" : "⚔"}</div>
-        <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:15, color:ranked?"#c080ff":"#60a0e0", margin:"0 0 8px" }}>VS PLAYER</h3>
-        {/* Ranked toggle */}
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginBottom:12 }}>
-          <button onClick={()=>{ setRanked(false); localStorage.setItem("fnf_ranked","false"); }} style={{ padding:"4px 12px", background:!ranked?"rgba(60,150,240,0.2)":"transparent", border:`1px solid ${!ranked?"#3090e0":"#1a2030"}`, borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:9, color:!ranked?"#60a0e0":"#304050", cursor:"pointer" }}>CASUAL</button>
-          <button onClick={()=>{ setRanked(true); localStorage.setItem("fnf_ranked","true"); }} style={{ padding:"4px 12px", background:ranked?"rgba(160,80,240,0.2)":"transparent", border:`1px solid ${ranked?"#a050f0":"#1a1030"}`, borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:9, color:ranked?"#c080ff":"#403060", cursor:"pointer" }}>RANKED</button>
+  if (!matchConfig) {
+    const selStyle = { width:"100%", padding:"9px 10px", background:"#080606", border:"1px solid rgba(232,192,96,0.12)", borderRadius:8, color:"#d0c090", fontFamily:"'Cinzel',serif", fontSize:10, outline:"none", cursor:"pointer", appearance:"none", backgroundImage:"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23806040'/%3E%3C/svg%3E\")", backgroundRepeat:"no-repeat", backgroundPosition:"right 10px center" };
+    const wins = user?.rankedWins || 0;
+    const losses = user?.rankedLosses || 0;
+    const totalGames = (user?.battles_played || 0);
+    const winPct = totalGames > 0 ? Math.round((wins / Math.max(wins+losses,1))*100) : null;
+    return (
+    <div style={{ maxWidth:860, margin:"0 auto", padding:"36px 24px 60px", display:"flex", flexDirection:"column", gap:20 }}>
+      {/* Player stats header */}
+      {user && (
+        <div style={{ background:"linear-gradient(135deg,rgba(18,14,6,0.95),rgba(10,8,4,0.95))", border:"1px solid rgba(232,192,96,0.14)", borderRadius:14, padding:"14px 22px", display:"flex", alignItems:"center", gap:18, backdropFilter:"blur(8px)" }}>
+          <div style={{ width:50, height:50, borderRadius:"50%", background:`linear-gradient(135deg,${userRank.color}28,${userRank.color}0a)`, border:`2px solid ${userRank.color}55`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>{userRank.icon}</div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:15, fontWeight:700, color:"#f0e8d0", marginBottom:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user.username || "Adventurer"}</div>
+            <div style={{ fontSize:10, color:userRank.color, fontFamily:"'Cinzel',serif", letterSpacing:1 }}>{userRank.name} · {user.rankedRating || 1000} MMR</div>
+          </div>
+          <div style={{ display:"flex", gap:20 }}>
+            {[{ val: wins, label:"WINS", col:"#78cc45" }, { val: losses, label:"LOSSES", col:"#cc5050" }, { val: totalGames, label:"PLAYED", col:"#e8c060" }, ...(winPct !== null ? [{ val: winPct+"%", label:"WIN RATE", col:"#80b8ff" }] : [])].map(s => (
+              <div key={s.label} style={{ textAlign:"center" }}>
+                <div style={{ fontFamily:"'Cinzel',serif", fontSize:17, fontWeight:700, color:s.col, lineHeight:1 }}>{s.val}</div>
+                <div style={{ fontSize:8, color:"#504030", letterSpacing:1.5, marginTop:3 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
         </div>
-        {ranked && <div style={{ fontSize:9, color:userRank.color, fontFamily:"'Cinzel',serif", marginBottom:8, padding:"3px 10px", background:`${userRank.color}15`, border:`1px solid ${userRank.color}33`, borderRadius:8, display:"inline-block" }}>{userRank.icon} {userRank.name} · {user?.rankedRating||1000} MMR</div>}
-        {!ranked && <p style={{ fontSize:11, color:"#6080a0", marginBottom:10, lineHeight:1.5 }}>Casual — no rating change</p>}
-        {ranked && <p style={{ fontSize:11, color:"#8060a0", marginBottom:10, lineHeight:1.5 }}>Rating changes on win/loss. ELO-based.</p>}
-        <select value={pvpDeckVal} onChange={(e) => { setPvpDeckVal(e.target.value); localStorage.setItem("fnf_pvp_deck", e.target.value); }} style={{ width:"100%", padding:"7px", background:"#0c0a06", border:"1px solid #1a2038", borderRadius:7, color:"#f0e8d8", fontFamily:"'Cinzel',serif", fontSize:10, outline:"none", marginBottom:10 }}><option value="">-- Random deck --</option><option value="starter">Starter Deck</option>{decks.map((d, i) => (<option key={i} value={i}>{d.name} ({d.cards?.length || 0} cards)</option>))}</select>
-        <div style={{ fontSize:9, color:"#405060", fontFamily:"'Cinzel',serif", marginBottom:10, letterSpacing:1 }}>Using: {pvpDeck?.name || "Random deck"}</div>
-        <button onClick={() => { SFX.play("card"); setMatchmaking(true); }} style={{ width:"100%", padding:"12px", background:ranked?"linear-gradient(135deg,#5020a0,#8040d0)":"linear-gradient(135deg,#1060a0,#2080d0)", border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, letterSpacing:2, color:"#fff", cursor:"pointer" }}>{ranked?"RANKED MATCH":"FIND MATCH"}</button>
+      )}
+
+      {/* Mode cards */}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:14 }}>
+
+        {/* VS AI */}
+        <div style={{ background:"linear-gradient(170deg,#140e04,#0c0902)", border:"1px solid rgba(200,144,16,0.22)", borderRadius:14, padding:"22px 18px", display:"flex", flexDirection:"column", gap:16 }}>
+          <div style={{ textAlign:"center" }}>
+            <div style={{ fontSize:40, marginBottom:10, filter:"drop-shadow(0 0 12px rgba(200,144,16,0.5))" }}>🤖</div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:17, fontWeight:700, color:"#e8c060", marginBottom:6 }}>VS AI</div>
+            <div style={{ fontSize:10, color:"#806040", lineHeight:1.7 }}>Practice mode<br/>No rating at stake</div>
+          </div>
+          <div style={{ flex:1 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#604828", letterSpacing:2, marginBottom:6 }}>DECK</div>
+            <select value={aiDeckVal} onChange={(e) => { setAiDeckVal(e.target.value); localStorage.setItem("fnf_ai_deck", e.target.value); }} style={selStyle}>
+              <option value="">Random deck</option>
+              <option value="starter">Starter Deck</option>
+              {decks.map((d, i) => (<option key={i} value={i}>{d.name}</option>))}
+            </select>
+          </div>
+          <button onClick={() => { SFX.play("card"); setMatchConfig({ mode:"ai", playerDeck: selectedDeck?.cards || null }); setMatchActive?.(true); }} style={{ width:"100%", padding:"13px", background:"linear-gradient(135deg,#b07808,#e8b820)", border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, letterSpacing:2.5, color:"#1a0e00", cursor:"pointer", transition:"opacity .15s" }} onMouseEnter={e=>e.currentTarget.style.opacity=".85"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>START BATTLE</button>
+        </div>
+
+        {/* CASUAL PvP */}
+        <div style={{ background:"linear-gradient(170deg,#06101e,#040c16)", border:"1px solid rgba(48,120,220,0.22)", borderRadius:14, padding:"22px 18px", display:"flex", flexDirection:"column", gap:16 }}>
+          <div style={{ textAlign:"center" }}>
+            <div style={{ fontSize:40, marginBottom:10, filter:"drop-shadow(0 0 12px rgba(48,120,220,0.5))" }}>⚔️</div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:17, fontWeight:700, color:"#60a8e8", marginBottom:6 }}>CASUAL</div>
+            <div style={{ fontSize:10, color:"#304860", lineHeight:1.7 }}>Live PvP<br/>No rating change</div>
+          </div>
+          <div style={{ flex:1 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#203850", letterSpacing:2, marginBottom:6 }}>DECK</div>
+            <select value={pvpDeckVal} onChange={(e) => { setPvpDeckVal(e.target.value); localStorage.setItem("fnf_pvp_deck", e.target.value); }} style={{ ...selStyle, border:"1px solid rgba(48,120,220,0.18)" }}>
+              <option value="">Random deck</option>
+              <option value="starter">Starter Deck</option>
+              {decks.map((d, i) => (<option key={i} value={i}>{d.name}</option>))}
+            </select>
+          </div>
+          <button onClick={() => { SFX.play("card"); setRanked(false); localStorage.setItem("fnf_ranked","false"); setMatchmaking(true); }} style={{ width:"100%", padding:"13px", background:"linear-gradient(135deg,#0e5090,#1878c8)", border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, letterSpacing:2.5, color:"#d0e8ff", cursor:"pointer", transition:"opacity .15s" }} onMouseEnter={e=>e.currentTarget.style.opacity=".85"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>FIND MATCH</button>
+        </div>
+
+        {/* RANKED PvP */}
+        <div style={{ background:"linear-gradient(170deg,#0e0618,#08040e)", border:`1px solid ${userRank.color}38`, borderRadius:14, padding:"22px 18px", display:"flex", flexDirection:"column", gap:16, position:"relative", overflow:"hidden" }}>
+          <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,transparent,${userRank.color}66,transparent)` }} />
+          <div style={{ textAlign:"center" }}>
+            <div style={{ fontSize:40, marginBottom:6, filter:`drop-shadow(0 0 12px ${userRank.color}88)` }}>🏆</div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:17, fontWeight:700, color:"#c080ff", marginBottom:8 }}>RANKED</div>
+            <div style={{ display:"inline-flex", alignItems:"center", gap:6, background:`${userRank.color}14`, border:`1px solid ${userRank.color}40`, borderRadius:20, padding:"4px 14px" }}>
+              <span style={{ fontSize:12 }}>{userRank.icon}</span>
+              <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:userRank.color, fontWeight:700, letterSpacing:1 }}>{userRank.name} · {user?.rankedRating||1000}</span>
+            </div>
+          </div>
+          <div style={{ flex:1 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#402860", letterSpacing:2, marginBottom:6 }}>DECK</div>
+            <select value={pvpDeckVal} onChange={(e) => { setPvpDeckVal(e.target.value); localStorage.setItem("fnf_pvp_deck", e.target.value); }} style={{ ...selStyle, border:`1px solid ${userRank.color}22` }}>
+              <option value="">Random deck</option>
+              <option value="starter">Starter Deck</option>
+              {decks.map((d, i) => (<option key={i} value={i}>{d.name}</option>))}
+            </select>
+          </div>
+          <button onClick={() => { SFX.play("card"); setRanked(true); localStorage.setItem("fnf_ranked","true"); setMatchmaking(true); }} style={{ width:"100%", padding:"13px", background:`linear-gradient(135deg,#420890,#7020c8)`, border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, letterSpacing:2.5, color:"#e0c8ff", cursor:"pointer", transition:"opacity .15s" }} onMouseEnter={e=>e.currentTarget.style.opacity=".85"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>RANKED MATCH</button>
+        </div>
+
       </div>
+
+      {/* No decks hint */}
+      {decks.length === 0 && (
+        <div style={{ textAlign:"center", padding:"11px 18px", background:"rgba(232,192,96,0.04)", border:"1px solid rgba(232,192,96,0.10)", borderRadius:10, fontSize:10, color:"#706040", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>
+          No custom decks yet — open <strong style={{ color:"#c8a040" }}>Cards</strong> to build your first deck
+        </div>
+      )}
     </div>
-    <p style={{ fontSize:10, color:"#504030", textAlign:"center", margin:0 }}>Build and manage decks in the <strong style={{ color:"#806040" }}>Cards</strong> tab.</p>
-  </div></div>);
+  );}
   if (matchConfig?.mode === "pvp") return (<PvpBattleScreen user={user} matchConfig={matchConfig} onExit={() => { setMatchConfig(null); setInPvpMatch?.(false); setMatchActive?.(false); }} onUpdateUser={onUpdateUser} setInPvpMatch={setInPvpMatch} />);
   return (<BattleScreen user={user} onUpdateUser={onUpdateUser} matchConfig={matchConfig} onExit={() => { setMatchConfig(null); setMatchActive?.(false); setSelectedDeck(null); }} />);
 }
@@ -4432,7 +4497,7 @@ function HomeScreen({ setTab, user }) {
       obs = new IntersectionObserver(entries => {
         if (entries.some(e=>e.isIntersecting) && !statsCountedRef.current) {
           statsCountedRef.current = true;
-          const targets = { cards:65, factions:9, keywords:8 };
+          const targets = { cards:POOL.length, factions:REGIONS.length, keywords:8 };
           const dur = 1600; const start = performance.now();
           const tick = now => {
             const t = Math.min((now-start)/dur,1), ease=1-Math.pow(1-t,3);
@@ -4500,7 +4565,7 @@ function HomeScreen({ setTab, user }) {
           <h1 style={{ fontFamily: "'Cinzel',serif", fontSize: "clamp(48px,6.5vw,80px)", fontWeight: 900, lineHeight: 0.95, color: "#f0d878", margin: "0 0 22px", textShadow: "0 0 80px #c89020bb, 0 0 140px #c8902055, 0 4px 8px rgba(0,0,0,0.9)" }}>
             {"&"} Fable
           </h1>
-          <p style={{ fontSize: 15, lineHeight: 1.9, color: "#b8aad0", margin: "0 0 24px", maxWidth: 420, textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>44 cards across 8 factions. Real abilities, the Lightning Meter, and environments that reshape the battlefield. Creatures that level up, bleed, echo, and strike.</p>
+          <p style={{ fontSize: 15, lineHeight: 1.9, color: "#b8aad0", margin: "0 0 24px", maxWidth: 420, textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>{POOL.length}+ cards across {REGIONS.length} factions. Real abilities, the Lightning Meter, and environments that reshape the battlefield. Creatures that level up, bleed, echo, and strike.</p>
           {/* Stat boxes */}
           <div ref={statsRef} style={{ display: "flex", gap: 10, marginBottom: 28 }}>
             {[{ val: statCounts.cards, sub: "CARDS" }, { val: statCounts.factions, sub: "FACTIONS" }, { val: statCounts.keywords, sub: "KEYWORDS" }].map((s) => (<div key={s.sub} style={{ background: "rgba(232,192,96,0.08)", border: "1px solid rgba(232,192,96,0.2)", borderRadius: 10, padding: "12px 20px", textAlign: "center", backdropFilter:"blur(4px)" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 22, fontWeight: 900, color: "#e8c060", textShadow:"0 0 20px #e8c06066" }}>{s.val}</div><div style={{ fontSize: 8, color: "#806040", letterSpacing: 2, fontFamily: "'Cinzel',serif", marginTop: 2 }}>{s.sub}</div></div>))}
@@ -4530,7 +4595,7 @@ function HomeScreen({ setTab, user }) {
       `}</style>
       <div style={{ maxWidth:1100, margin:"0 auto" }}>
         <div style={{ textAlign:"center", marginBottom:28 }}>
-          <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#504038", letterSpacing:5, fontWeight:700 }}>COMING SOON</div>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#504038", letterSpacing:5, fontWeight:700 }}>EXPANSIONS</div>
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:0 }}>
 
@@ -4643,7 +4708,7 @@ function HomeScreen({ setTab, user }) {
     {/* Bottom info bar */}
     <div style={{ background:"rgba(0,0,0,0.5)", borderTop:"1px solid rgba(255,255,255,0.05)", padding:"10px 28px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
       <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#504038", letterSpacing:2 }}>FORGE {"&"} FABLE</div>
-      <div style={{ fontSize:9, color:"#3a3028", letterSpacing:2, fontFamily:"'Cinzel',serif" }}>{CURRENT_PATCH} · 44 CARDS · 8 REGIONS · {user ? "ALPHA" : "GUEST"}</div>
+      <div style={{ fontSize:9, color:"#3a3028", letterSpacing:2, fontFamily:"'Cinzel',serif" }}>{CURRENT_PATCH} · {POOL.length} CARDS · {REGIONS.length} FACTIONS · {user ? "ALPHA" : "GUEST"}</div>
       <div style={{ fontSize:9, color:"#3a3028", letterSpacing:1 }}>MULTIPLAYER ALPHA</div>
     </div>
   </>);
