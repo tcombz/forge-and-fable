@@ -1597,10 +1597,12 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     const resolveFromPool = (c) => { const fresh = ACTIVE_POOL.find(p => p.id === c.id); return fresh ? { ...c, atk: fresh.atk, hp: fresh.hp, keywords: fresh.keywords, effects: fresh.effects, ability: fresh.ability } : c; };
     const playerCards = matchConfig?.playerDeck?.length > 0 ? [...matchConfig.playerDeck] : buildRandomDeck(ACTIVE_POOL, user?.collection);
     const pd = shuf(playerCards.slice(0, CFG.deck.size).map(resolveFromPool));
-    const ed = shuf(buildRandomDeck(GAMEPLAY_POOL, getStarterCollection()));
+    const rawEd = matchConfig?.ghostEnemyDeck?.length > 0 ? [...matchConfig.ghostEnemyDeck] : buildRandomDeck(GAMEPLAY_POOL, getStarterCollection());
+    const ed = shuf(rawEd.slice(0, CFG.deck.size).map(resolveFromPool));
     const playerZeusInPlay = pd.some(c => c.id === "zeus_storm_father");
     const enemyZeusInPlay = ed.some(c => c.id === "zeus_storm_father");
-    return { matchId: uid("m"), turn: 1, phase: "opening", winner: null, playerHP: CFG.startHP, playerEnergy: CFG.startEnergy, maxEnergy: CFG.startEnergy, playerHand: pd.slice(0, CFG.startHand).map((c) => makeInst(c, "p")), playerDeck: pd.slice(CFG.startHand), playerBoard: [], enemyHP: CFG.startHP, enemyHand: ed.slice(0, CFG.startHand).map((c) => makeInst(c, "e")), enemyDeck: ed.slice(CFG.startHand), enemyBoard: [], environment: null, envLastTurn: null, mapTheme: "default", log: ["Draw for priority!"], playerLightningMeter: 0, enemyLightningMeter: 0, firstCardPlayedThisTurn: false, spellsPlayedThisTurn: 0, playerZeusInPlay, enemyZeusInPlay, playerName: user?.name || "You", enemyName: "Enemy" };
+    const enemyName = matchConfig?.opponentName || "Enemy";
+    return { matchId: uid("m"), turn: 1, phase: "opening", winner: null, playerHP: CFG.startHP, playerEnergy: CFG.startEnergy, maxEnergy: CFG.startEnergy, playerHand: pd.slice(0, CFG.startHand).map((c) => makeInst(c, "p")), playerDeck: pd.slice(CFG.startHand), playerBoard: [], enemyHP: CFG.startHP, enemyHand: ed.slice(0, CFG.startHand).map((c) => makeInst(c, "e")), enemyDeck: ed.slice(CFG.startHand), enemyBoard: [], environment: null, envLastTurn: null, mapTheme: "default", log: ["Draw for priority!"], playerLightningMeter: 0, enemyLightningMeter: 0, firstCardPlayedThisTurn: false, spellsPlayedThisTurn: 0, playerZeusInPlay, enemyZeusInPlay, playerName: user?.name || "You", enemyName };
   };
   const [game, setGame] = useState(initGame);
   const [animUids, setAnimUids] = useState({});
@@ -1632,7 +1634,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     const shardsBase = won ? 25 : 10;
     const storedQuests = initDailyQuests(user?.dailyQuests);
     const types = ["played"];
-    if (won) { types.push("wins"); types.push("aiwins"); }
+    if (won) { types.push("wins"); types.push("aiwins"); if (matchConfig?.ghostAI) types.push("caswin"); }
     if (won && game.turn < 8) types.push("fastwin");
     if (won && game.playerHP >= 15) types.push("bigwin");
     const updatedQuests = applyQuestProgress(storedQuests, types);
@@ -1663,6 +1665,8 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     showTurnBanner("ENEMY TURN");
     setAiThink(true);
     const wait = ms => new Promise(r => setTimeout(r, ms));
+    // Ghost AI: randomised human-like thinking delay (1–3s)
+    if (matchConfig?.ghostAI) await wait(900 + Math.random() * 1800);
     try {
     // Snapshot state
     let s = await new Promise(r => { setGame(p => { r({ ...p, playerBoard: p.playerBoard.map(c=>({...c})), enemyBoard: p.enemyBoard.map(c=>({...c})), playerHand:[...p.playerHand], enemyHand:[...p.enemyHand], enemyDeck:[...p.enemyDeck], playerDeck:[...p.playerDeck], log:[...p.log] }); return p; }); });
@@ -1946,6 +1950,13 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         {/* Result header */}
         <div style={{ fontSize:72, marginBottom:8, animation:"pulse 1.2s ease-in-out infinite" }}>{matchResult.won ? "✨" : "💀"}</div>
         <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:52, fontWeight:900, color: matchResult.won ? "#78cc45" : "#e05050", margin:"0 0 4px", textShadow:`0 0 60px ${matchResult.won ? "#78cc45" : "#e05050"}, 0 4px 12px rgba(0,0,0,0.9)`, letterSpacing:8 }}>{matchResult.won ? "VICTORY" : "DEFEATED"}</h2>
+        {matchConfig?.ghostAI && g.enemyName && (
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginBottom:6 }}>
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize:12, color:"#605848" }}>vs</span>
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#c0a868", fontWeight:700 }}>{g.enemyName}</span>
+            <span style={{ fontSize:9, color:"#503828", background:"rgba(255,255,255,0.04)", border:"1px solid #3a2a10", borderRadius:4, padding:"1px 6px", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>AI MATCH</span>
+          </div>
+        )}
         <p style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#807060", marginBottom:20, letterSpacing:2 }}>{matchResult.won ? "You crushed the enemy!" : "The enemy prevails..."}</p>
         {/* Stats grid */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8, marginBottom:16, background:"rgba(255,255,255,0.03)", border:"1px solid #2a2010", borderRadius:12, padding:"14px 12px" }}>
@@ -3572,15 +3583,39 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   </div>);
 }
 
+// ═══ GHOST AI HELPERS ════════════════════════════════════════════════════════
+const GHOST_ADJ  = ["Shadow","Frost","Iron","Storm","Void","Ember","Crypt","Blaze","Rune","Thorn","Echo","Ash","Grim","Silver","Dark","Blood","Nether","Drake","Forge","Dusk"];
+const GHOST_NOUN = ["Mage","Knight","Warden","Hunter","Bane","Blade","Walker","Weaver","Stalker","Reaver","Shade","Lord","Soul","Tide","Seeker","Caller","Born","Forge","Rift","Ward"];
+function makeGhostName() {
+  const a = GHOST_ADJ[Math.floor(Math.random() * GHOST_ADJ.length)];
+  const n = GHOST_NOUN[Math.floor(Math.random() * GHOST_NOUN.length)];
+  return `${a}${n}_${10 + Math.floor(Math.random() * 90)}`;
+}
+function makeGhostDeck() {
+  // Pick a random competitive archetype filter, fall back to full pool if too small
+  const archetypes = [
+    c => (c.cost||0) <= 3 && c.type !== "environment",                         // aggro
+    c => c.type === "spell" || ((c.cost||0) >= 3 && (c.hp||0) >= 3),           // control
+    c => (c.cost||0) >= 2 && (c.cost||0) <= 5,                                 // midrange
+    c => (c.keywords||[]).some(k => ["Swift","Echo","Shield","Bleed"].includes(k)), // keyword synergy
+    () => true,                                                                  // random
+  ];
+  const filter = archetypes[Math.floor(Math.random() * archetypes.length)];
+  const base = GAMEPLAY_POOL.filter(filter);
+  return buildRandomDeck(base.length >= 12 ? base : GAMEPLAY_POOL, getStarterCollection());
+}
+
 // ═══ MATCHMAKING ═══════════════════════════════════════════════════════════════════════
 // Phase lifecycle: waiting → found → accepted → entering
+//                 waiting → ghost_entering (fallback AI after 15s)
 //                 waiting → timeout | error
 //                 found / accepted → declined
-function MatchmakingScreen({ user, ranked, onMatch, onCancel, onRetry }) {
+function MatchmakingScreen({ user, ranked, onMatch, onCancel, onRetry, onFallbackAI }) {
   const [phase, setPhase] = useState('waiting');
   const [dots, setDots] = useState(0);
   const [oppName, setOppName] = useState('');
   const [countdown, setCountdown] = useState(20);
+  const [queueCountdown, setQueueCountdown] = useState(15);
 
   // Stable refs so closures in effects/callbacks always see the latest values
   const activeRef       = useRef(true);
@@ -3609,6 +3644,33 @@ function MatchmakingScreen({ user, ranked, onMatch, onCancel, onRetry }) {
     setCountdown(20);
     const id = setInterval(() => {
       setCountdown(c => { if (c <= 1) { clearInterval(id); doDecline(); return 0; } return c - 1; });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [phase]); // eslint-disable-line
+
+  // 15-second queue countdown — fall back to ghost AI if no real opponent found
+  useEffect(() => {
+    if (phase !== 'waiting') return;
+    setQueueCountdown(15);
+    const id = setInterval(() => {
+      setQueueCountdown(c => {
+        if (c <= 1) {
+          clearInterval(id);
+          if (!activeRef.current) return 0;
+          // Clean up queue row + channels
+          activeRef.current = false;
+          clearTimeout(pollTimerRef.current);
+          if (rowIdRef.current) supabase.from('matchmaking').delete().eq('id', rowIdRef.current).then(() => {});
+          if (mmChannelRef.current) supabase.removeChannel(mmChannelRef.current);
+          if (matchChRef.current) supabase.removeChannel(matchChRef.current);
+          // Brief "entering" transition before handing off
+          phaseRef.current = 'ghost_entering';
+          setPhase('ghost_entering');
+          setTimeout(() => { if (onFallbackAI) onFallbackAI(); }, 1800);
+          return 0;
+        }
+        return c - 1;
+      });
     }, 1000);
     return () => clearInterval(id);
   }, [phase]); // eslint-disable-line
@@ -3790,6 +3852,15 @@ function MatchmakingScreen({ user, ranked, onMatch, onCancel, onRetry }) {
     </div>
   );
 
+  if (phase === 'ghost_entering') return (
+    <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center', animation:'fadeIn 0.4s ease-out' }}>
+      <div style={{ fontSize:60, marginBottom:16, animation:'pulse 0.6s ease-in-out infinite' }}>⚔</div>
+      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:22, color:'#e8c060', margin:'0 0 8px', letterSpacing:3 }}>OPPONENT FOUND</h2>
+      <p style={{ fontSize:13, color:'#a09070', marginBottom:6 }}>Summoning a challenger from the realm…</p>
+      <div style={{ display:'flex', gap:4, justifyContent:'center', marginTop:20 }}>{pulseDots}</div>
+    </div>
+  );
+
   if (phase === 'declined') return (
     <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
       <div style={{ fontSize:48, marginBottom:16 }}>🚫</div>
@@ -3820,13 +3891,38 @@ function MatchmakingScreen({ user, ranked, onMatch, onCancel, onRetry }) {
     </div>
   );
 
+  const nearFallback = queueCountdown <= 5;
   return (
-    <div style={{ maxWidth:480, margin:'0 auto', padding:'80px 24px', textAlign:'center' }}>
-      <div style={{ width:72, height:72, borderRadius:'50%', background:'linear-gradient(135deg,#1a1610,#0e0c08)', border:'2px solid #e8c06044', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 24px', fontSize:28 }}>🔍</div>
-      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:24, color:'#e8c060', margin:'0 0 8px' }}>{'Searching' + '.'.repeat(dots)}</h2>
-      <p style={{ fontSize:13, color:'#a09070', marginBottom:28 }}>Waiting in the queue — this may take a moment.</p>
-      <div style={{ display:'flex', gap:4, justifyContent:'center', marginBottom:24 }}>{pulseDots}</div>
-      <button onClick={() => { doDecline(); setTimeout(onCancel, 200); }} style={{ padding:'10px 28px', background:'transparent', border:'1px solid #3a2010', borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:'#806040', cursor:'pointer' }}>CANCEL</button>
+    <div style={{ maxWidth:480, margin:'0 auto', padding:'60px 24px', textAlign:'center' }}>
+      {/* Countdown ring */}
+      <div style={{ width:88, height:88, borderRadius:'50%', background:`conic-gradient(#e8c060 ${(queueCountdown/15)*360}deg, #2a2010 0deg)`, margin:'0 auto 24px', display:'flex', alignItems:'center', justifyContent:'center', transition:'background 0.9s linear' }}>
+        <div style={{ width:70, height:70, borderRadius:'50%', background:'#0e0c08', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:1 }}>
+          <span style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:700, color: nearFallback ? '#c08030' : '#e8c060', lineHeight:1 }}>{queueCountdown}</span>
+          <span style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:'#504030', letterSpacing:1 }}>SEC</span>
+        </div>
+      </div>
+      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:22, color:'#e8c060', margin:'0 0 8px' }}>
+        {nearFallback ? 'No opponents nearby…' : ('Searching' + '.'.repeat(dots))}
+      </h2>
+      <p style={{ fontSize:12, color:'#a09070', marginBottom:20 }}>
+        {nearFallback
+          ? 'Summoning a skilled AI challenger instead…'
+          : 'Waiting in the queue — this may take a moment.'}
+      </p>
+      <div style={{ display:'flex', gap:4, justifyContent:'center', marginBottom:28 }}>{pulseDots}</div>
+      <div style={{ display:'flex', gap:10, justifyContent:'center' }}>
+        <button onClick={() => { doDecline(); setTimeout(onCancel, 200); }} style={{ padding:'9px 22px', background:'transparent', border:'1px solid #3a2010', borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:'#806040', cursor:'pointer' }}>CANCEL</button>
+        {onFallbackAI && <button onClick={() => {
+          if (!activeRef.current) return;
+          activeRef.current = false;
+          clearTimeout(pollTimerRef.current);
+          if (rowIdRef.current) supabase.from('matchmaking').delete().eq('id', rowIdRef.current).then(()=>{});
+          if (mmChannelRef.current) supabase.removeChannel(mmChannelRef.current);
+          phaseRef.current = 'ghost_entering';
+          setPhase('ghost_entering');
+          setTimeout(() => onFallbackAI(), 1800);
+        }} style={{ padding:'9px 22px', background:'linear-gradient(135deg,#1a1208,#2a1e0c)', border:'1px solid #6a5020', borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:'#c8a040', cursor:'pointer' }}>SKIP TO AI</button>}
+      </div>
     </div>
   );
 }
@@ -4016,7 +4112,15 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDue
   const [showLadder, setShowLadder] = useState(false);
   const userRank = getRank(user?.rankedRating);
   if (showLadder) return <LeaderboardScreen user={user} onBack={() => setShowLadder(false)} />;
-  if (matchmaking) return (<MatchmakingScreen key={matchmaking} user={user} ranked={ranked} onMatch={(cfg) => { setMatchmaking(false); const cfg2 = { mode:"pvp", ranked, playerDeck: pvpDeck?.cards || null, ...cfg }; setMatchConfig(cfg2); setMatchActive?.(true); }} onCancel={() => setMatchmaking(false)} onRetry={() => { setMatchmaking(false); setTimeout(() => setMatchmaking(true), 80); }} />);
+  if (matchmaking) return (<MatchmakingScreen key={matchmaking} user={user} ranked={ranked}
+    onMatch={(cfg) => { setMatchmaking(false); const cfg2 = { mode:"pvp", ranked, playerDeck: pvpDeck?.cards || null, ...cfg }; setMatchConfig(cfg2); setMatchActive?.(true); }}
+    onCancel={() => setMatchmaking(false)}
+    onRetry={() => { setMatchmaking(false); setTimeout(() => setMatchmaking(true), 80); }}
+    onFallbackAI={() => {
+      setMatchmaking(false);
+      setMatchConfig({ mode:"ai", ghostAI: true, opponentName: makeGhostName(), ghostEnemyDeck: makeGhostDeck(), playerDeck: pvpDeck?.cards || null, ranked: false });
+      setMatchActive?.(true);
+    }} />);
   // Friend duel — deck selection before entering
   if (pendingDuel && !matchConfig) return (
     <div style={{ maxWidth:480, margin:"0 auto", padding:"60px 24px", textAlign:"center" }}>
