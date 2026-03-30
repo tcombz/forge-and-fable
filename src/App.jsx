@@ -3835,6 +3835,10 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDue
           No custom decks yet — open <strong style={{ color:"#c8a040" }}>Cards</strong> to build your first deck
         </div>
       )}
+      {/* Tutorial link */}
+      <div style={{ textAlign:"center" }}>
+        <button onClick={() => window.dispatchEvent(new CustomEvent("openTutorial"))} style={{ background:"transparent", border:"none", fontFamily:"'Cinzel',serif", fontSize:10, color:"#605040", cursor:"pointer", letterSpacing:1, textDecoration:"underline" }}>New here? Play the Tutorial</button>
+      </div>
     </div>
   );}
   if (matchConfig?.mode === "pvp") return (<PvpBattleScreen user={user} matchConfig={matchConfig} onExit={() => { setMatchConfig(null); setInPvpMatch?.(false); setMatchActive?.(false); }} onUpdateUser={onUpdateUser} setInPvpMatch={setInPvpMatch} />);
@@ -4575,6 +4579,7 @@ function HomeScreen({ setTab, user }) {
             <button onClick={() => setTab("play")} style={{ padding: "14px 32px", background: "linear-gradient(135deg,#7a0808,#c82020)", border: "1px solid #e84040aa", borderRadius: 8, color: "#ffe0e0", fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, letterSpacing: 3, cursor: "pointer", boxShadow: "0 6px 28px rgba(200,30,30,0.5), 0 0 40px rgba(200,30,30,0.2)", animation: "battleGlow 2.4s ease-in-out infinite", transition: "transform .2s" }} onMouseEnter={(e) => { e.currentTarget.style.transform="translateY(-3px) scale(1.03)"; }} onMouseLeave={(e) => { e.currentTarget.style.transform="none"; }}>BATTLE</button>
             <button onClick={() => setTab("store")} style={{ padding: "14px 28px", background: "linear-gradient(135deg,#503006,#8a5010)", border: "1px solid #d8901055", borderRadius: 8, color: "#f0d880", fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, letterSpacing: 3, cursor: "pointer", boxShadow: "0 6px 24px rgba(180,120,0,0.3)", transition: "all .2s" }} onMouseEnter={(e) => { e.currentTarget.style.transform="translateY(-3px)"; }} onMouseLeave={(e) => { e.currentTarget.style.transform="none"; }}>STORE</button>
             <button onClick={() => setTab("collection")} style={{ padding: "14px 28px", background: "rgba(232,192,96,0.06)", border: "1px solid #e8c06066", borderRadius: 8, color: "#e8c060", fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: 3, cursor: "pointer", fontWeight: 600, backdropFilter:"blur(4px)", transition: "all .2s" }} onMouseEnter={(e) => { e.currentTarget.style.transform="translateY(-3px)"; e.currentTarget.style.background="rgba(232,192,96,0.12)"; }} onMouseLeave={(e) => { e.currentTarget.style.transform="none"; e.currentTarget.style.background="rgba(232,192,96,0.06)"; }}>COLLECTION</button>
+            <button onClick={() => window.dispatchEvent(new CustomEvent("openTutorial"))} style={{ padding: "14px 28px", background: "rgba(232,192,96,0.06)", border: "1px solid #e8c06044", borderRadius: 8, color: "#c0a060", fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: 3, cursor: "pointer", fontWeight: 600, backdropFilter:"blur(4px)", transition: "all .2s" }} onMouseEnter={(e) => { e.currentTarget.style.transform="translateY(-3px)"; e.currentTarget.style.background="rgba(232,192,96,0.12)"; }} onMouseLeave={(e) => { e.currentTarget.style.transform="none"; e.currentTarget.style.background="rgba(232,192,96,0.06)"; }}>TUTORIAL</button>
 
           </div>)}
           {!user && (<div style={{ padding:"16px 22px", background:"rgba(232,192,96,0.06)", border:"1px solid #e8c06033", borderRadius:10, fontSize:12, color:"#a09060", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>Sign in to start your journey ⚔</div>)}
@@ -4714,12 +4719,293 @@ function HomeScreen({ setTab, user }) {
   </>);
 }
 
+// ═══ TUTORIAL ════════════════════════════════════════════════════════════════
+const TUT_STEPS = [
+  { id:"welcome",    text:"Welcome, adventurer. I am the Chronicler — keeper of all lore in Forge & Fable. Let me guide your first steps onto the battlefield. Follow my words carefully, and victory shall be yours.", highlight:null, action:"continue" },
+  { id:"heroes",     text:"This is the arena. Your hero rests below, your enemy stands above. Each begins with 30 Life. Reduce your foe to zero and the battle ends in your favour. Let your own fall to zero — and it ends in ruin.", highlight:"heroes", action:"continue" },
+  { id:"mana",       text:"Each turn you are granted Mana — the fuel of all spells and creatures. You begin with 1 Mana and gain one more each turn, reaching a maximum of 7. The blue gems show how much you currently have.", highlight:"mana", action:"continue" },
+  { id:"coin",       text:"Who strikes first is decided by fate — a coin flip! Win the flip and the first move is yours to seize. Lose it, and you must weather the opening storm.", highlight:null, action:"coinflip" },
+  { id:"hand",       text:"Behold your opening hand — three cards drawn at the start of battle. Each card shows its Mana cost in the upper corner. Creatures show their Attack on the left and HP on the right.", highlight:"hand", action:"continue" },
+  { id:"playcard",   text:"The Forest Squire costs 1 Mana — exactly what you have. Click the card, then click your side of the battlefield to summon it to the field.", highlight:"card0", action:"playCard" },
+  { id:"summoning",  text:"Your creature enters the field! Notice it cannot yet attack. Most creatures must rest one full turn before they can strike. This is Summoning Sickness — a fundamental rule of the battlefield.", highlight:"playerboard", action:"continue" },
+  { id:"endturn",    text:"You have played your card and your options are spent. Click 'End Turn' to pass the initiative to your opponent.", highlight:"endturn", action:"endTurn" },
+  { id:"enemymove",  text:"Your opponent stirs. Watch the field carefully...", highlight:null, action:"watch" },
+  { id:"newturn",    text:"A new turn dawns! You now hold 2 Mana. More importantly — your Forest Squire has rested through the night. The grey veil is gone. It is ready to fight.", highlight:"playerboard", action:"continue" },
+  { id:"attack",     text:"Click your Forest Squire to select it, then click the Shadow Imp to attack. Both creatures deal their Attack to one another at the same moment.", highlight:"attack", action:"attack" },
+  { id:"combatover", text:"Combat resolved! Both creatures strike simultaneously. A creature that falls to 0 HP is destroyed. With the enemy field now clear, you may strike the enemy hero directly.", highlight:null, action:"continue" },
+  { id:"faceattack", text:"The enemy field is clear. Click your Squire, then click the enemy hero portrait to deal damage directly to their Life!", highlight:"faceattack", action:"faceAttack" },
+  { id:"complete",   text:"Magnificent. You have grasped the fundamentals of Forge & Fable. Play creatures, manage your Mana, reduce your foe to zero. Now go — build your deck, claim your rank, and forge your legend. The arenas await.", highlight:null, action:"finish" },
+];
+const TUT_SQUIRE = { id:"tut_sq", name:"Forest Squire", type:"creature", cost:1, atk:2, hp:3, keywords:[], border:"#4a9020", imageUrl:"/cards/guard.jpg", imageScale:1.1, ability:"A loyal companion to new adventurers.", region:"Thornwood", rarity:"Common", uid:"tut_sq1", currentHp:3, maxHp:3, currentAtk:2, canAttack:false, hasAttacked:false, bleed:0 };
+const TUT_FILLER1 = { id:"tut_f1", name:"Rootcaller Druid", type:"creature", cost:3, atk:2, hp:3, keywords:[], border:"#4a9020", imageUrl:"/cards/druid.jpg", imageScale:1.1, ability:"On Play: Heal hero for 3.", region:"Thornwood", rarity:"Uncommon", uid:"tut_f1", currentHp:3, maxHp:3, currentAtk:2, canAttack:false, hasAttacked:false, bleed:0 };
+const TUT_FILLER2 = { id:"tut_f2", name:"Tanglewood Trap", type:"spell", cost:2, atk:null, hp:null, keywords:[], border:"#4a9020", imageUrl:"/cards/tangle.jpg", imageScale:1.1, ability:"Deal 2 damage to all enemies.", region:"Thornwood", rarity:"Rare", uid:"tut_f2" };
+const TUT_ENEMY_CARD = { id:"tut_en", name:"Shadow Imp", type:"creature", cost:2, atk:2, hp:2, keywords:[], border:"#9050d8", imageUrl:"/cards/wisp.jpg", imageScale:1.1, ability:"Lurks in the shadows.", region:"Shattered Expanse", rarity:"Common", uid:"tut_en1", currentHp:2, maxHp:2, currentAtk:2, canAttack:false, hasAttacked:false, bleed:0 };
+
+function TutorialScreen({ onExit }) {
+  const [step, setStep] = useState(0);
+  const [typed, setTyped] = useState("");
+  const [typeIdx, setTypeIdx] = useState(0);
+  const [textDone, setTextDone] = useState(false);
+  const [playerBoard, setPlayerBoard] = useState([]);
+  const [enemyBoard, setEnemyBoard] = useState([]);
+  const [enemyHPDisplay, setEnemyHPDisplay] = useState(30);
+  const [turnMana, setTurnMana] = useState(1);
+  const [spentMana, setSpentMana] = useState(0);
+  const [playerHand, setPlayerHand] = useState([TUT_SQUIRE, TUT_FILLER2, TUT_FILLER1]);
+  const [attacker, setAttacker] = useState(null);
+  const [coinPhase, setCoinPhase] = useState("waiting");
+  const [enemyThinking, setEnemyThinking] = useState(false);
+  const [highlight, setHighlight] = useState(null);
+  const [animUids, setAnimUids] = useState({});
+
+  const cur = TUT_STEPS[step];
+  const availMana = turnMana - spentMana;
+
+  useEffect(() => {
+    setTyped(""); setTypeIdx(0); setTextDone(false);
+    if (cur) setHighlight(cur.highlight);
+  }, [step]); // eslint-disable-line
+
+  useEffect(() => {
+    if (!cur || typeIdx >= cur.text.length) { if (cur && typeIdx >= cur.text.length) setTextDone(true); return; }
+    const t = setTimeout(() => { setTyped(p => p + cur.text[typeIdx]); setTypeIdx(i => i + 1); }, 22);
+    return () => clearTimeout(t);
+  }, [typeIdx, cur, step]); // eslint-disable-line
+
+  const advance = () => setStep(s => Math.min(s + 1, TUT_STEPS.length - 1));
+  const skipType = () => { if (!textDone && cur) { setTyped(cur.text); setTypeIdx(cur.text.length); setTextDone(true); } };
+
+  useEffect(() => {
+    if (cur?.action !== "watch") return;
+    setEnemyThinking(true);
+    const t1 = setTimeout(() => {
+      setEnemyBoard([{ ...TUT_ENEMY_CARD, animType:"summoning" }]);
+      const t2 = setTimeout(() => {
+        setEnemyBoard([TUT_ENEMY_CARD]);
+        setEnemyThinking(false);
+        setTurnMana(2); setSpentMana(0);
+        setPlayerBoard(prev => prev.map(c => ({ ...c, canAttack:true })));
+        advance();
+      }, 1000);
+      return () => clearTimeout(t2);
+    }, 1400);
+    return () => clearTimeout(t1);
+  }, [step]); // eslint-disable-line
+
+  const handlePlayCard = (card, idx) => {
+    if (cur?.action !== "playCard" || !textDone) return;
+    if (card.uid !== TUT_SQUIRE.uid) return;
+    setPlayerHand(h => h.filter((_, i) => i !== idx));
+    setSpentMana(s => s + card.cost);
+    setPlayerBoard([{ ...TUT_SQUIRE, animType:"summoning" }]);
+    setTimeout(() => { setPlayerBoard([TUT_SQUIRE]); advance(); }, 700);
+  };
+
+  const handleEndTurn = () => { if (cur?.action !== "endTurn" || !textDone) return; advance(); };
+
+  const handleTokenClick = (card) => {
+    if (cur?.action === "attack") {
+      if (!attacker && card.uid === TUT_SQUIRE.uid && card.canAttack) { setAttacker(card); return; }
+      if (attacker && card.uid === TUT_ENEMY_CARD.uid) {
+        setAnimUids({ [TUT_SQUIRE.uid]:"attacking", [TUT_ENEMY_CARD.uid]:"hit" });
+        setTimeout(() => {
+          setAnimUids({ [TUT_ENEMY_CARD.uid]:"dying" });
+          setTimeout(() => {
+            setAnimUids({});
+            setPlayerBoard([{ ...TUT_SQUIRE, currentHp:1, maxHp:3, canAttack:true, hasAttacked:false }]);
+            setEnemyBoard([]);
+            setAttacker(null);
+            advance();
+          }, 700);
+        }, 500);
+      }
+    } else if (cur?.action === "faceAttack") {
+      if (!attacker && card.uid === TUT_SQUIRE.uid && !card.hasAttacked) { setAttacker(card); }
+    }
+  };
+
+  const handleEnemyHeroClick = () => {
+    if (cur?.action !== "faceAttack" || !attacker || !textDone) return;
+    const dmg = attacker.currentAtk;
+    setAnimUids({ [attacker.uid]:"attacking-face" });
+    setTimeout(() => {
+      setAnimUids({});
+      setEnemyHPDisplay(h => Math.max(0, h - dmg));
+      setPlayerBoard(prev => prev.map(c => c.uid === attacker.uid ? { ...c, hasAttacked:true } : c));
+      setAttacker(null);
+      advance();
+    }, 650);
+  };
+
+  const hpCol = (hp) => hp <= 10 ? "#e04040" : hp <= 18 ? "#e8a020" : "#50c060";
+  const glow = { boxShadow:"0 0 0 2px #e8c060aa, 0 0 22px #e8c06055", borderRadius:10, animation:"pulse 1.2s ease-in-out infinite" };
+  const isHL = (k) => highlight === k;
+
+  const actionHint = !textDone ? null :
+    cur?.action === "playCard" ? "Click the Forest Squire card, then click your side of the board" :
+    cur?.action === "endTurn" ? "Click the END TURN button →" :
+    cur?.action === "attack" ? (attacker ? "Now click the Shadow Imp to strike!" : "Click your Forest Squire to select it") :
+    cur?.action === "faceAttack" ? (attacker ? "Now click the enemy hero!" : "Click your Forest Squire to select it") :
+    null;
+
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:200, background:"linear-gradient(160deg,#0a0806,#060402)", display:"flex", flexDirection:"column", overflow:"hidden" }}>
+      {/* Top progress bar */}
+      <div style={{ height:44, background:"rgba(6,4,2,0.96)", borderBottom:"1px solid rgba(232,192,96,0.1)", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 20px", flexShrink:0, gap:16 }}>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#e8c060", letterSpacing:4, fontWeight:700, flexShrink:0 }}>⚔ TUTORIAL</div>
+        <div style={{ display:"flex", gap:5, alignItems:"center", flex:1, justifyContent:"center" }}>
+          {TUT_STEPS.map((_,i) => (<div key={i} style={{ width:i===step?18:6, height:6, borderRadius:3, background:i<step?"#78cc45":i===step?"#e8c060":"#2a2010", transition:"all .3s" }} />))}
+        </div>
+        <button onClick={onExit} style={{ padding:"4px 14px", background:"transparent", border:"1px solid #3a2010", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", cursor:"pointer", letterSpacing:1, flexShrink:0 }}>SKIP ✕</button>
+      </div>
+
+      {/* Battle area */}
+      <div style={{ flex:1, display:"flex", flexDirection:"column", position:"relative", overflow:"hidden" }}>
+
+        {/* Coin flip overlay */}
+        {cur?.action === "coinflip" && coinPhase !== "waiting" && (
+          <div style={{ position:"absolute", inset:0, zIndex:60, background:"rgba(4,2,0,0.92)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:20 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#c89030", letterSpacing:5 }}>COIN FLIP</div>
+            <div style={{ width:100, height:100, borderRadius:"50%", background:"radial-gradient(circle at 35% 35%,#ffe060,#c89010,#7a5000)", boxShadow:coinPhase==="result"?"0 0 40px #f0c04088,0 8px 24px rgba(0,0,0,0.8)":"0 0 24px #c8901044", animation:coinPhase==="flipping"?"coinSpin 1.2s ease-out forwards":"pulse 2s infinite", display:"flex", alignItems:"center", justifyContent:"center", fontSize:38 }}>⚔</div>
+            {coinPhase==="result" && <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:"#f0c040", textShadow:"0 0 30px #f0c04088", letterSpacing:2, animation:"fadeIn 0.4s ease-out" }}>YOU GO FIRST!</div>}
+          </div>
+        )}
+
+        {/* Enemy zone */}
+        <div style={{ flex:"0 0 220px", background:"linear-gradient(180deg,rgba(160,20,10,0.16),rgba(60,8,4,0.1))", borderBottom:"1px solid rgba(180,40,20,0.2)", display:"flex", flexDirection:"column", padding:"12px 20px", gap:10 }}>
+          {/* Enemy hero row */}
+          <div onClick={handleEnemyHeroClick} style={{ display:"flex", alignItems:"center", gap:12, cursor:(cur?.action==="faceAttack"&&attacker&&textDone)?"crosshair":"default", padding:"6px 8px", borderRadius:10, ...(isHL("heroes")?glow:{}), ...(isHL("faceattack")&&attacker?{ boxShadow:"0 0 0 3px #e84040aa, 0 0 24px #e8404066", borderRadius:10, animation:"pulse 1.2s infinite" }:{}) }}>
+            <div style={{ width:46, height:46, borderRadius:9, background:"linear-gradient(135deg,#3a1010,#6a2010)", border:`2px solid ${(cur?.action==="faceAttack"&&attacker&&textDone)?"#e84040bb":"#4a2010"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, transition:"all .25s", boxShadow:(cur?.action==="faceAttack"&&attacker&&textDone)?"0 0 20px #e8404088":"none" }}>👹</div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#c07060", letterSpacing:1, marginBottom:3 }}>Enemy · Level 1</div>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <div style={{ width:100, height:8, background:"#1a0808", borderRadius:4, overflow:"hidden" }}>
+                  <div style={{ height:"100%", width:`${(enemyHPDisplay/30)*100}%`, background:`linear-gradient(90deg,${hpCol(enemyHPDisplay)}99,${hpCol(enemyHPDisplay)})`, borderRadius:4, transition:"width .4s" }} />
+                </div>
+                <span style={{ fontFamily:"'Cinzel',serif", fontSize:12, color:hpCol(enemyHPDisplay), fontWeight:700 }}>{enemyHPDisplay}</span>
+              </div>
+            </div>
+            <div style={{ display:"flex", gap:3, alignItems:"center" }}>
+              {Array.from({length:2}).map((_,i)=>(<div key={i} style={{ width:11, height:11, borderRadius:"50%", background:"#2090e0", border:"1px solid #40a0ff", boxShadow:"0 0 6px #2090e066" }}/>))}
+            </div>
+          </div>
+          {/* Enemy board */}
+          <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:12 }}>
+            {enemyBoard.map(c => (
+              <div key={c.uid} style={{ ...(isHL("attack")&&attacker&&c.uid===TUT_ENEMY_CARD.uid?{ boxShadow:"0 0 0 2px #e8404088, 0 0 18px #e8404055", borderRadius:10, animation:"pulse 1.2s infinite" }:{}) }}>
+                <Token c={{ ...c, animType:animUids[c.uid]||c.animType }} selected={false} isTarget={!!(attacker&&cur?.action==="attack"&&textDone)} canSelect={false} onClick={()=>handleTokenClick(c)} />
+              </div>
+            ))}
+            {enemyBoard.length===0&&!enemyThinking&&step>=8&&(<div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"rgba(180,80,60,0.18)", letterSpacing:2 }}>EMPTY FIELD</div>)}
+            {enemyThinking&&(<div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#8a6040", letterSpacing:2, animation:"pulse 0.8s infinite" }}>THINKING…</div>)}
+          </div>
+        </div>
+
+        {/* Center divider */}
+        <div style={{ height:2, background:"linear-gradient(90deg,transparent,rgba(232,192,96,0.12),transparent)", flexShrink:0 }} />
+
+        {/* Player zone */}
+        <div style={{ flex:1, background:"linear-gradient(0deg,rgba(10,40,6,0.16),rgba(4,20,2,0.1))", display:"flex", flexDirection:"column", padding:"10px 20px 6px", gap:8, position:"relative" }}>
+          {/* Player board */}
+          <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:12, ...(isHL("playerboard")?{ ...glow, padding:"8px" }:{}) }}>
+            {playerBoard.map(c => {
+              const ready = c.canAttack && !c.hasAttacked && (cur?.action==="attack"||cur?.action==="faceAttack");
+              const sel = attacker?.uid===c.uid;
+              return (
+                <div key={c.uid} style={{ ...(ready&&!sel?{ boxShadow:"0 0 0 2px #78cc45aa, 0 0 16px #78cc4566", borderRadius:10 }:{}), ...(sel?{ boxShadow:"0 0 0 2px #f0d840aa, 0 0 20px #f0d84066", borderRadius:10 }:{}) }}>
+                  <Token c={{ ...c, animType:animUids[c.uid]||c.animType }} selected={sel} isTarget={false} canSelect={ready||sel} onClick={()=>handleTokenClick(c)} />
+                </div>
+              );
+            })}
+            {playerBoard.length===0&&(<div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"rgba(80,160,60,0.18)", letterSpacing:2 }}>YOUR FIELD</div>)}
+          </div>
+
+          {/* Player hero bar */}
+          <div style={{ display:"flex", alignItems:"center", gap:12, padding:"6px 8px", borderRadius:10, ...(isHL("heroes")||isHL("mana")?glow:{}) }}>
+            <div style={{ width:46, height:46, borderRadius:9, background:"linear-gradient(135deg,#203810,#3a6018)", border:"2px solid #4a8020", display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>🧙</div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#80c060", letterSpacing:1, marginBottom:3 }}>You · 30 HP</div>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <div style={{ width:100, height:8, background:"#060c04", borderRadius:4, overflow:"hidden" }}>
+                  <div style={{ height:"100%", width:"100%", background:"#50c060", borderRadius:4 }} />
+                </div>
+                <span style={{ fontFamily:"'Cinzel',serif", fontSize:12, color:"#50c060", fontWeight:700 }}>30</span>
+              </div>
+            </div>
+            {/* Mana gems */}
+            <div style={{ display:"flex", gap:5, alignItems:"center", padding:"6px 12px", background:"rgba(16,50,140,0.14)", border:"1px solid rgba(50,100,220,0.22)", borderRadius:8, ...(isHL("mana")?glow:{}) }}>
+              {Array.from({length:turnMana}).map((_,i)=>(<div key={i} style={{ width:13, height:13, borderRadius:"50%", background:i<availMana?"#1880d8":"#101c30", border:`1px solid ${i<availMana?"#30a0ff":"#182038"}`, boxShadow:i<availMana?"0 0 8px #1880d866":"none", transition:"all .35s" }}/>))}
+              <span style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#60a8e8", marginLeft:4, fontWeight:700 }}>{availMana}/{turnMana}</span>
+            </div>
+            {/* End Turn */}
+            <button onClick={handleEndTurn} disabled={cur?.action!=="endTurn"||!textDone} style={{ padding:"8px 18px", background:cur?.action==="endTurn"&&textDone?"linear-gradient(135deg,#3a7010,#68b020)":"rgba(20,20,14,0.8)", border:cur?.action==="endTurn"&&textDone?"1px solid #70c03088":"1px solid #2a2010", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:cur?.action==="endTurn"&&textDone?"#d8f0b8":"#504030", cursor:cur?.action==="endTurn"&&textDone?"pointer":"default", letterSpacing:1, transition:"all .2s", boxShadow:cur?.action==="endTurn"&&textDone?"0 0 14px #68b02055":"none", animation:cur?.action==="endTurn"&&textDone?"pulse 1.5s infinite":"none", ...(isHL("endturn")&&cur?.action==="endTurn"?glow:{}) }}>END TURN</button>
+          </div>
+
+          {/* Player hand */}
+          <div style={{ display:"flex", gap:8, justifyContent:"center", alignItems:"flex-end", minHeight:148, ...(isHL("hand")||isHL("card0")?{ ...glow, padding:"6px 8px 0" }:{}) }}>
+            {playerHand.map((card, idx) => {
+              const isSquire = card.uid===TUT_SQUIRE.uid;
+              const canPlay = cur?.action==="playCard"&&isSquire&&textDone;
+              return (
+                <div key={card.uid} style={{ ...(canPlay?{ boxShadow:"0 0 0 2px #e8c060bb, 0 0 22px #e8c06077", borderRadius:10, animation:"pulse 1.2s infinite" }:{}) }}>
+                  <HandCard card={card} playable={canPlay} onClick={()=>handlePlayCard(card,idx)} />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Chronicler narrator panel */}
+        <div style={{ position:"absolute", bottom:168, left:20, zIndex:80, background:"linear-gradient(160deg,rgba(10,7,3,0.97),rgba(16,11,5,0.97))", border:"1px solid rgba(232,192,96,0.32)", borderRadius:16, padding:"16px 18px", maxWidth:400, minWidth:320, boxShadow:"0 8px 40px rgba(0,0,0,0.92), 0 0 0 1px rgba(232,192,96,0.08)", backdropFilter:"blur(12px)" }}>
+          <div style={{ display:"flex", alignItems:"flex-start", gap:12 }}>
+            {/* Chronicler SVG avatar */}
+            <div style={{ flexShrink:0, filter:"drop-shadow(0 0 8px #e8c06044)" }}>
+              <svg width="54" height="54" viewBox="0 0 54 54">
+                <ellipse cx="27" cy="44" rx="17" ry="10" fill="#12100a"/>
+                <path d="M13 30 Q15 13 27 11 Q39 13 41 30 Q37 27 27 26 Q17 27 13 30Z" fill="#2a2010"/>
+                <ellipse cx="27" cy="25" rx="8" ry="9" fill="#0a0804"/>
+                <ellipse cx="23.5" cy="24" rx="1.6" ry="2" fill="#e8c060" opacity="0.95"/>
+                <ellipse cx="30.5" cy="24" rx="1.6" ry="2" fill="#e8c060" opacity="0.95"/>
+                <ellipse cx="23.5" cy="24" rx="2.8" ry="3.2" fill="#e8c06028"/>
+                <ellipse cx="30.5" cy="24" rx="2.8" ry="3.2" fill="#e8c06028"/>
+                <path d="M13 30 Q15 28 27 26 Q39 28 41 30" stroke="#3e2e14" strokeWidth="1.5" fill="none"/>
+                <rect x="36" y="34" width="11" height="15" rx="2" fill="#c8a060" opacity="0.85"/>
+                <rect x="35" y="33" width="13" height="3" rx="1.5" fill="#e8c080"/>
+                <rect x="35" y="45" width="13" height="3" rx="1.5" fill="#e8c080"/>
+                <line x1="38" y1="38.5" x2="44" y2="38.5" stroke="#7a5820" strokeWidth="0.9" opacity="0.7"/>
+                <line x1="38" y1="42" x2="44" y2="42" stroke="#7a5820" strokeWidth="0.9" opacity="0.7"/>
+                <text x="27" y="19" textAnchor="middle" fontSize="5.5" fill="#e8c060" opacity="0.75">✦</text>
+              </svg>
+            </div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#e8c060", letterSpacing:2.5, marginBottom:7, fontWeight:700 }}>THE CHRONICLER</div>
+              <div onClick={skipType} style={{ fontFamily:"'Lora',Georgia,serif", fontSize:12.5, color:"#cfc8a8", lineHeight:1.82, minHeight:54, cursor:textDone?"default":"pointer" }}>
+                {typed}{!textDone&&<span style={{ opacity:0.55, animation:"pulse 0.7s infinite" }}>▌</span>}
+              </div>
+              {textDone&&(
+                <div style={{ marginTop:10, display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
+                  {cur?.action==="continue"&&(<button onClick={advance} style={{ padding:"6px 18px", background:"linear-gradient(135deg,#7a5010,#c89020)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:9, fontWeight:700, color:"#1a0e00", cursor:"pointer", letterSpacing:2 }}>CONTINUE →</button>)}
+                  {cur?.action==="coinflip"&&coinPhase==="waiting"&&(<button onClick={()=>{ setCoinPhase("flipping"); setTimeout(()=>{ setCoinPhase("result"); setTimeout(()=>advance(),1600); },1200); }} style={{ padding:"6px 18px", background:"linear-gradient(135deg,#7a5010,#c89020)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:9, fontWeight:700, color:"#1a0e00", cursor:"pointer", letterSpacing:2, animation:"pulse 1.5s infinite" }}>FLIP THE COIN</button>)}
+                  {cur?.action==="coinflip"&&coinPhase==="result"&&(<div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#e8c060", letterSpacing:1 }}>⚔ The coin lands — you go first!</div>)}
+                  {cur?.action==="finish"&&(<button onClick={onExit} style={{ padding:"6px 18px", background:"linear-gradient(135deg,#7a1010,#c83020)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:9, fontWeight:700, color:"#fff", cursor:"pointer", letterSpacing:2 }}>ENTER BATTLE ⚔</button>)}
+                  {actionHint&&(<div style={{ fontSize:9.5, color:"#907050", fontFamily:"'Cinzel',serif", letterSpacing:0.5, display:"flex", alignItems:"center", gap:5 }}><span style={{ animation:"pulse 1s infinite", color:"#e8c06099" }}>◆</span>{actionHint}</div>)}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
 // ═══ GUIDE ═══════════════════════════════════════════════════════════════════
 function GuideScreen() {
   return (<div style={{ maxWidth: 860, margin: "0 auto", padding: "44px 24px 60px" }}>
     <h2 style={{ fontFamily: "'Cinzel',serif", fontSize: 26, fontWeight: 700, color: "#e8c060", textAlign: "center", margin: "0 0 30px" }}>How to Play</h2>
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 26 }}>
-      {[{ n: "1", t: "Opening Draw", d: "Each player draws 3 cards. One card is revealed from each hand — whoever drew the higher-cost card goes first. Ties are redrawn automatically.", c: "#e8c060" }, { n: "2", t: "Your Turn", d: "Gain 1 Mana each turn (starts at 2, max 7). Play creatures onto the board, cast spells for instant effects, or drop an Environment card to reshape the field.", c: "#28a0cc" }, { n: "3", t: "Combat", d: "Tap a creature to select it, then click an enemy creature or the enemy hero directly. Creatures with Swift can attack the same turn they're played.", c: "#9050d8" }, { n: "4", t: "Win Condition", d: "Both heroes start at 30 HP. Reduce the enemy hero to 0 to win. You have 45 seconds per turn — a warning fires at 10s. End your turn or it ends automatically!", c: "#c04810" }].map((s, i) => (<div key={s.t} style={{ background: "#1a1610", border: `1px solid ${s.c}44`, borderRadius: 13, padding: 22, animation: `cardReveal 0.4s ease-out ${i * 0.1}s both` }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 24, fontWeight: 900, color: s.c, marginBottom: 8 }}>{s.n}</div><div style={{ fontFamily: "'Cinzel',serif", fontSize: 14, fontWeight: 700, color: s.c, marginBottom: 8 }}>{s.t}</div><p style={{ fontSize: 12, color: "#d8c898", lineHeight: 1.75, margin: 0 }}>{s.d}</p></div>))}
+      {[{ n: "1", t: "Opening Draw", d: "Each player draws 3 cards. A coin flip decides who strikes first — win the flip and the opening move is yours. The coin shows the sword for victory, the shield for defeat.", c: "#e8c060" }, { n: "2", t: "Your Turn", d: "Gain 1 Mana each turn (starts at 2, max 7). Play creatures onto the board, cast spells for instant effects, or drop an Environment card to reshape the field.", c: "#28a0cc" }, { n: "3", t: "Combat", d: "Tap a creature to select it, then click an enemy creature or the enemy hero directly. Creatures with Swift can attack the same turn they're played.", c: "#9050d8" }, { n: "4", t: "Win Condition", d: "Both heroes start at 30 HP. Reduce the enemy hero to 0 to win. You have 45 seconds per turn — a warning fires at 10s. End your turn or it ends automatically!", c: "#c04810" }].map((s, i) => (<div key={s.t} style={{ background: "#1a1610", border: `1px solid ${s.c}44`, borderRadius: 13, padding: 22, animation: `cardReveal 0.4s ease-out ${i * 0.1}s both` }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 24, fontWeight: 900, color: s.c, marginBottom: 8 }}>{s.n}</div><div style={{ fontFamily: "'Cinzel',serif", fontSize: 14, fontWeight: 700, color: s.c, marginBottom: 8 }}>{s.t}</div><p style={{ fontSize: 12, color: "#d8c898", lineHeight: 1.75, margin: 0 }}>{s.d}</p></div>))}
     </div>
     <div style={{ background: "#121008", border: "1px solid #242010", borderRadius: 14, padding: 24, marginBottom: 16 }}>
       <h3 style={{ fontFamily: "'Cinzel',serif", fontSize: 15, color: "#e8c060", margin: "0 0 18px", fontWeight: 700 }}>Keywords</h3>
@@ -6721,6 +7007,7 @@ function PlayerSidebar({ user, onUpdateUser, onlineIds, onClose, onChallenge, on
 export default function App() {
   const [tab, setTab] = useState("home"); const { user, loading, login, logout, update, completeProfile } = useAuth(); const [showSidebar, setShowSidebar] = useState(false); const [onlineIds, setOnlineIds] = useState(new Set()); const [showPatchNotes, setShowPatchNotes] = useState(false); const [inPvpMatch, setInPvpMatch] = useState(false); const [navLeaveModal, setNavLeaveModal] = useState(null); const [avatarErr, setAvatarErr] = useState(""); const [navHovered, setNavHovered] = useState(false); const [matchActive, setMatchActive] = useState(false); const [histPopup, setHistPopup] = useState(null); const [deckBuilding, setDeckBuilding] = useState(false); // { targetTab }
   const [friendBadge, setFriendBadge] = useState(0);
+  const [showTutorial, setShowTutorial] = useState(false);
   const [globalChallenge, setGlobalChallenge] = useState(null); // { fromId, fromName, fromAvatar }
   const [pendingDuel, setPendingDuel] = useState(null); // { matchId, opponentName, opponentId }
   const [declinedToast, setDeclinedToast] = useState(null); // name of player who declined
@@ -6732,6 +7019,11 @@ export default function App() {
     document.addEventListener("fullscreenchange", update);
     window.addEventListener("resize", update);
     return () => { document.removeEventListener("fullscreenchange", update); window.removeEventListener("resize", update); };
+  }, []); // eslint-disable-line
+  useEffect(() => {
+    const handler = () => setShowTutorial(true);
+    window.addEventListener("openTutorial", handler);
+    return () => window.removeEventListener("openTutorial", handler);
   }, []); // eslint-disable-line
   const inBattle = matchActive;
   // Show patch notes once per account+device — triggers only when user logs in
@@ -6884,6 +7176,7 @@ export default function App() {
     {!user && !loading && <ForgeAndFableTeaser />}
     {(!user || user.__needsProfile) && <LoginModal needsProfile={!!user?.__needsProfile} userId={user?.id} userEmail={user?.email} onSignOut={logout} onProfileCreated={completeProfile} />}
     {user && showPatchNotes && <PatchNotesModal onDismiss={() => { localStorage.setItem(`patchSeen_${user.id}`, CURRENT_PATCH); update({ lastPatchSeen: CURRENT_PATCH }); setShowPatchNotes(false); }} />}
+    {showTutorial && <TutorialScreen onExit={() => setShowTutorial(false)} />}
     {globalChallenge && (
       <div style={{ position:"fixed", inset:0, zIndex:700, background:"rgba(0,0,0,0.88)", display:"flex", alignItems:"center", justifyContent:"center" }}>
         <div style={{ background:"linear-gradient(160deg,#1a1208,#0e0a04)", border:"2px solid #e8c060aa", borderRadius:18, padding:"36px 44px", textAlign:"center", maxWidth:340, animation:"fadeIn 0.3s" }}>
