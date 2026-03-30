@@ -2357,7 +2357,7 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
     </div>
 
     {/* Main content */}
-    <div style={{ display:"grid", gridTemplateColumns:"1fr 330px", flex:1, overflow:"hidden" }}>
+    <div className="deck-builder-grid" style={{ display:"grid", gridTemplateColumns:"1fr 330px", flex:1, overflow:"hidden" }}>
       {/* Card pool */}
       <div style={{ display:"flex", flexDirection:"column", overflow:"hidden", borderRight:"1px solid #2a2010" }}>
         {/* Filter bar */}
@@ -4311,7 +4311,7 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDue
       )}
 
       {/* Mode cards */}
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:14 }}>
+      <div className="mode-cards" style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:14 }}>
 
         {/* VS AI */}
         <div style={{ background:"linear-gradient(170deg,#140e04,#0c0902)", border:"1px solid rgba(200,144,16,0.22)", borderRadius:14, padding:"22px 18px", display:"flex", flexDirection:"column", gap:16 }}>
@@ -7646,7 +7646,7 @@ export default function App() {
   const [pendingDuel, setPendingDuel] = useState(null); // { matchId, opponentName, opponentId }
   const [declinedToast, setDeclinedToast] = useState(null); // name of player who declined
   const [rejoinMatch, setRejoinMatch] = useState(null); // { matchId, opponentName, opponentId, role }
-  const [isMobile] = useState(() => window.innerWidth < 900);
+  const [isMobile] = useState(() => window.innerWidth < 768);
   const checkFs = () => !!(document.fullscreenElement || window.innerHeight === screen.height);
   const [isFullscreen, setIsFullscreen] = useState(checkFs);
   useEffect(() => {
@@ -7753,8 +7753,12 @@ export default function App() {
     <style>{`
       @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Lora:ital,wght@0,400;0,500;1,400&display=swap');
       html{zoom:1.25}
-      @media(max-width:1280px){html{zoom:1}}
-      @media(max-width:768px){html{zoom:1}}
+      @media(max-width:1440px){html{zoom:1}}
+      @media(max-width:1024px){
+        .battle-grid{grid-template-columns:200px 1fr 220px!important}
+        .mode-cards{grid-template-columns:1fr 1fr!important}
+        .deck-builder-grid{grid-template-columns:1fr!important}
+      }
       *{box-sizing:border-box}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:#161210}::-webkit-scrollbar-thumb{background:#4a4022;border-radius:3px}select option{background:#1a1408}button{transition:all .18s}canvas{image-rendering:auto}
       @keyframes vfxShake{0%,100%{transform:translate(-50%,-50%)}25%{transform:translate(-55%,-45%)}75%{transform:translate(-45%,-55%)}}
       @keyframes vfxFloat{0%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(-50%,-120%)}}
@@ -7800,6 +7804,7 @@ export default function App() {
       @media(prefers-reduced-motion:reduce){*{animation-duration:0.01ms!important;transition-duration:0.01ms!important}}
       @supports(-webkit-backdrop-filter:blur(0px)){nav{-webkit-backdrop-filter:blur(10px)!important;backdrop-filter:blur(10px)!important}}
       @media(max-width:768px){
+        .mode-cards{grid-template-columns:1fr!important}
         nav{height:56px!important;padding:0 2px!important;overflow-x:auto!important;overflow-y:hidden!important;flex-wrap:nowrap!important;scrollbar-width:none!important}
         nav::-webkit-scrollbar{display:none!important}
         nav button{padding:4px 8px!important;min-width:40px!important;flex-shrink:0!important}
