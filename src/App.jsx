@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, Fragment } from "react";
+import { useState, useEffect, useRef, useCallback, Fragment, Component } from "react";
 import { supabase } from "./supabase";
 import ForgeAndFableTeaser from "./components/ForgeAndFableTeaser";
 
@@ -8,6 +8,35 @@ const store = {
   set: async (k, v) => { try { if (window.storage) { await window.storage.set(k, v); return true; } return false; } catch (e) { return false; } },
   del: async (k) => { try { if (window.storage) { await window.storage.delete(k); return true; } return false; } catch (e) { return false; } }
 };
+
+// ═══ TOAST SYSTEM ════════════════════════════════════════════════════════════
+// Module-level emitter — any component can call toast() without prop drilling
+const _toastListeners = new Set();
+function toast(msg, type = "error", duration = 4500) {
+  const id = Date.now() + Math.random();
+  _toastListeners.forEach(fn => fn({ id, msg, type, duration }));
+}
+
+// ═══ ERROR BOUNDARY ══════════════════════════════════════════════════════════
+class ErrorBoundary extends Component {
+  state = { hasError: false, error: null };
+  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  componentDidCatch(err, info) { console.error("[ErrorBoundary]", err, info?.componentStack?.split("\n")?.[1] || ""); }
+  render() {
+    if (!this.state.hasError) return this.props.children;
+    return (
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:320, padding:40, textAlign:"center" }}>
+        <div style={{ fontSize:40, marginBottom:16 }}>⚔</div>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, color:"#e8c060", marginBottom:8, letterSpacing:2 }}>SOMETHING WENT WRONG</div>
+        <div style={{ fontSize:12, color:"#806040", marginBottom:24, maxWidth:380 }}>{this.props.label || "An unexpected error occurred."} Please try again.</div>
+        <button onClick={() => this.setState({ hasError: false, error: null })}
+          style={{ padding:"10px 28px", background:"linear-gradient(135deg,#4a3010,#6a4818)", border:"1px solid #8a6030", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:"#e8c060", cursor:"pointer", letterSpacing:1 }}>
+          RETRY
+        </button>
+      </div>
+    );
+  }
+}
 
 // ═══ ALPHA KEYS ══════════════════════════════════════════════════════════════
 // Supabase: run once to create the used_keys tracking table —
@@ -2837,7 +2866,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         }, 1200);
       }
     };
-    setup();
+    setup().catch(err => { console.error("[PvP setup]", err); toast("Connection error — please try again."); onExit(); });
     return () => { if (channel) supabase.removeChannel(channel); if (pvpBcRef.current) supabase.removeChannel(pvpBcRef.current); if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } if (pendingTimerRef.current) { clearTimeout(pendingTimerRef.current); pendingTimerRef.current = null; } MusicCtx.play("home"); };
   }, [matchId]);
 
@@ -2888,6 +2917,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       await supabase.from("matches").update({ game_state: newGs }).eq("id", matchId);
     } catch (err) {
       console.error("PvP action failed:", err);
+      toast("Action failed — check your connection.", "warn");
     }
   };
   const isMyTurn = gs && myRole && gs.phase === myRole && !gs.winner;
@@ -3604,7 +3634,7 @@ function MatchmakingScreen({ user, ranked, onMatch, onCancel, onRetry }) {
         setTimeout(() => { if (activeRef.current) onMatch({ matchId: matchIdRef.current, opponentId: oppIdRef.current, opponentName: oppNameRef.current }); }, 700);
         return;
       }
-    } catch (_) { setPhase('error'); return; }
+    } catch (e) { console.error('[MM] accept_duel failed:', e); toast("Failed to accept duel — please try again."); setPhase('error'); return; }
     // Polling fallback: Realtime may miss the status→active update, so poll every 1s
     let aTries = 0;
     const checkActive = async () => {
@@ -3637,7 +3667,7 @@ function MatchmakingScreen({ user, ranked, onMatch, onCancel, onRetry }) {
       const { data, error } = await supabase.from('matchmaking')
         .insert({ user_id: user.id, display_name: user.name, status: 'waiting', ranked: !!ranked }).select().single();
       if (!activeRef.current) return;
-      if (error || !data) { console.error('[MM] matchmaking insert failed:', error); setPhase('error'); return; }
+      if (error || !data) { console.error('[MM] matchmaking insert failed:', error); toast("Failed to join queue — please try again."); setPhase('error'); return; }
       const rowId = data.id;
       rowIdRef.current = rowId;
       // Realtime on our own row — fires when the OTHER client's pair_players() updates us
@@ -4244,7 +4274,7 @@ function useAuth() {
       Object.entries(delta).forEach(([k, v]) => { if (dbMap[k]) dbDelta[dbMap[k]] = v; });
       if (Object.keys(dbDelta).length > 0) {
         const { error } = await supabase.from("profiles").update(dbDelta).eq("id", user.id);
-        if (error) console.error("Profile update failed:", error.message, dbDelta);
+        if (error) { console.error("Profile update failed:", error.message, dbDelta); toast("Failed to save progress — check your connection.", "warn"); }
       }
       setUser(updated);
     }
@@ -4289,14 +4319,16 @@ function LoginModal({ needsProfile = false, userId, userEmail, onSignOut, onProf
       const isAdmin = ["sncombz@gmail.com","tylercombz2@me.com"].includes(email.trim().toLowerCase());
       const founderAltOwned = isAdmin ? Object.fromEntries(Object.entries(ALT_ARTS).map(([id, alts]) => [id, alts.map(a => a.setId)])) : {};
       const starterDeckEntry = { name: "Starter Deck", cards: STARTER_DECK };
-      await supabase.from("profiles").upsert({
+      const { error: profErr } = await supabase.from("profiles").upsert({
         id: data.user.id, name: name.trim(), alpha_key: k, shards: 1000,
         last_shard_reset: new Date().toISOString(), battles_played: 0, battles_won: 0,
         cards_forged: 0, collection: starter, decks: [starterDeckEntry], joined: new Date().toLocaleDateString(),
         alt_owned: founderAltOwned,
       });
+      if (profErr) { setErr("Account created but profile setup failed. Please sign in and try again."); setBusy(false); return; }
       // Mark key as used
-      await supabase.from("used_alpha_keys").upsert({ key: k, used_by_name: name.trim(), used_at: new Date().toISOString() });
+      const { error: keyErr } = await supabase.from("used_alpha_keys").upsert({ key: k, used_by_name: name.trim(), used_at: new Date().toISOString() });
+      if (keyErr) console.error("Key mark failed:", keyErr); // non-fatal
       setSent(true);
     }
     setBusy(false);
@@ -6185,12 +6217,14 @@ function FriendsScreen({ user, onStartDuel, incomingChallenge, setIncomingChalle
   };
 
   const acceptRequest = async (row) => {
-    await supabase.from("friendships").update({ status: "accepted" }).eq("id", row.rowId);
+    const { error } = await supabase.from("friendships").update({ status: "accepted" }).eq("id", row.rowId);
+    if (error) { toast("Failed to accept request — please try again."); return; }
     await loadFriends();
   };
 
   const removeFriend = async (row) => {
-    await supabase.from("friendships").delete().eq("id", row.rowId);
+    const { error } = await supabase.from("friendships").delete().eq("id", row.rowId);
+    if (error) { toast("Failed to remove friend — please try again."); return; }
     await loadFriends();
   };
 
@@ -6208,9 +6242,15 @@ function FriendsScreen({ user, onStartDuel, incomingChallenge, setIncomingChalle
 
   const openProfile = async (id, name) => {
     setViewProfile({ id, name, loading: true });
-    const { data } = await supabase.from("profiles").select("id,name,avatar_url,ranked_wins,ranked_losses,ranked_rating,collection").eq("id", id).single();
-    if (data) setViewProfile({ ...data, loading: false });
-    else setViewProfile({ id, name, loading: false });
+    try {
+      const { data, error } = await supabase.from("profiles").select("id,name,avatar_url,ranked_wins,ranked_losses,ranked_rating,collection").eq("id", id).single();
+      if (error) throw error;
+      if (data) setViewProfile({ ...data, loading: false });
+      else setViewProfile({ id, name, loading: false });
+    } catch (e) {
+      console.error("openProfile failed:", e);
+      setViewProfile({ id, name, loading: false });
+    }
   };
 
   const STATUS = { online: "#78cc45", offline: "#504030" };
@@ -6960,15 +7000,18 @@ function PlayerSidebar({ user, onUpdateUser, onlineIds, onClose, onChallenge, on
   };
 
   const acceptFriend = async (row) => {
-    await supabase.from("friendships").update({ status: "accepted" }).eq("id", row.rowId);
+    const { error } = await supabase.from("friendships").update({ status: "accepted" }).eq("id", row.rowId);
+    if (error) { toast("Failed to accept request — please try again."); return; }
     await loadFriends();
   };
   const declineFriend = async (row) => {
-    await supabase.from("friendships").delete().eq("id", row.rowId);
+    const { error } = await supabase.from("friendships").delete().eq("id", row.rowId);
+    if (error) { toast("Failed to decline request — please try again."); return; }
     await loadFriends();
   };
   const removeFriend = async (f) => {
-    await supabase.from("friendships").delete().eq("id", f.rowId);
+    const { error } = await supabase.from("friendships").delete().eq("id", f.rowId);
+    if (error) { toast("Failed to remove friend — please try again."); return; }
     setRemoveConfirm(null);
     await loadFriends();
   };
@@ -6976,9 +7019,15 @@ function PlayerSidebar({ user, onUpdateUser, onlineIds, onClose, onChallenge, on
   const doSearch = async () => {
     if (!search.trim()) return;
     setSearching(true);
-    const { data } = await supabase.from("profiles").select("id,name,avatar_url").ilike("name", `%${search.trim()}%`).limit(8);
-    const results = (data || []).filter(p => p.id !== user?.id && !friends.some(f => f.id === p.id) && !pendingOut.some(f => f.id === p.id));
-    setSearchResults(results);
+    try {
+      const { data, error } = await supabase.from("profiles").select("id,name,avatar_url").ilike("name", `%${search.trim()}%`).limit(8);
+      if (error) throw error;
+      const results = (data || []).filter(p => p.id !== user?.id && !friends.some(f => f.id === p.id) && !pendingOut.some(f => f.id === p.id));
+      setSearchResults(results);
+    } catch (e) {
+      console.error("Player search failed:", e);
+      toast("Search failed — please try again.", "warn");
+    }
     setSearching(false);
   };
 
@@ -7256,6 +7305,33 @@ function PlayerSidebar({ user, onUpdateUser, onlineIds, onClose, onChallenge, on
         </div>
       </div>
     </>
+  );
+}
+
+function ToastContainer() {
+  const [toasts, setToasts] = useState([]);
+  useEffect(() => {
+    const fn = (evt) => {
+      setToasts(prev => [...prev, evt]);
+      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== evt.id)), evt.duration + 400);
+    };
+    _toastListeners.add(fn);
+    return () => _toastListeners.delete(fn);
+  }, []);
+  if (!toasts.length) return null;
+  const colors = { error: { bg:"#2a0808", border:"#a03030", text:"#f07070", icon:"✕" }, warn: { bg:"#1e1500", border:"#7a5010", text:"#e8b040", icon:"⚠" }, success: { bg:"#081a08", border:"#306a30", text:"#70c870", icon:"✓" }, info: { bg:"#080e1e", border:"#304070", text:"#80a8e8", icon:"ℹ" } };
+  return (
+    <div style={{ position:"fixed", bottom:24, right:24, zIndex:9999, display:"flex", flexDirection:"column", gap:8, pointerEvents:"none" }}>
+      {toasts.map(t => {
+        const c = colors[t.type] || colors.error;
+        return (
+          <div key={t.id} style={{ background:c.bg, border:`1px solid ${c.border}`, borderRadius:10, padding:"12px 18px", minWidth:260, maxWidth:380, display:"flex", alignItems:"flex-start", gap:10, boxShadow:"0 8px 32px rgba(0,0,0,0.7)", animation:"slideInRight 0.25s ease-out", pointerEvents:"all" }}>
+            <span style={{ fontSize:13, color:c.text, marginTop:1, flexShrink:0 }}>{c.icon}</span>
+            <span style={{ fontSize:12, color:c.text, fontFamily:"'Lora',serif", lineHeight:1.5 }}>{t.msg}</span>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -7559,13 +7635,24 @@ export default function App() {
       </div>
     </>)}
     <div key={tab} style={{ position: "relative", paddingTop: inBattle ? 4 : 0, animation: "fadeIn 0.2s ease-out" }} onClick={() => setShowSidebar(false)}>
-      {tab === "home" && <HomeScreen setTab={setTab} user={user} />}
-      {tab === "play" && <GameTab user={user} onUpdateUser={update} setInPvpMatch={setInPvpMatch} setMatchActive={setMatchActive} pendingDuel={pendingDuel} clearPendingDuel={() => setPendingDuel(null)} />}
-      {tab === "store" && <StoreScreen user={user} onUpdateUser={update} />}
-      {tab === "collection" && <CollectionScreen user={user} onUpdateUser={update} onDeckBuilding={setDeckBuilding} />}
-      {tab === "community" && <CommunityScreen user={user} />}
+      <ErrorBoundary label="The home screen encountered an error.">
+        {tab === "home" && <HomeScreen setTab={setTab} user={user} />}
+      </ErrorBoundary>
+      <ErrorBoundary label="The battle arena encountered an error.">
+        {tab === "play" && <GameTab user={user} onUpdateUser={update} setInPvpMatch={setInPvpMatch} setMatchActive={setMatchActive} pendingDuel={pendingDuel} clearPendingDuel={() => setPendingDuel(null)} />}
+      </ErrorBoundary>
+      <ErrorBoundary label="The store encountered an error.">
+        {tab === "store" && <StoreScreen user={user} onUpdateUser={update} />}
+      </ErrorBoundary>
+      <ErrorBoundary label="The collection encountered an error.">
+        {tab === "collection" && <CollectionScreen user={user} onUpdateUser={update} onDeckBuilding={setDeckBuilding} />}
+      </ErrorBoundary>
+      <ErrorBoundary label="The community screen encountered an error.">
+        {tab === "community" && <CommunityScreen user={user} />}
+      </ErrorBoundary>
       {!inBattle && <footer style={{ borderTop: "1px solid #1e1a0e", padding: 22, textAlign: "center" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, color: "#40301a" }}>Forge {"&"} Fable</div><p style={{ fontSize: 9, color: "#30280e", margin: "4px 0 0", letterSpacing: 1 }}>{CURRENT_PATCH}: FABLES CARDS LIVE · ZEUS LIGHTNING METER · HADES SOUL HARVEST · CERBERUS WHELP · MEDUSA'S GAZE</p></footer>}
     </div>
     <MusicPlayer />
+    <ToastContainer />
   </div>);
 }
