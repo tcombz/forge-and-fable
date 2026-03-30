@@ -4722,24 +4722,25 @@ function HomeScreen({ setTab, user }) {
 // ═══ TUTORIAL ════════════════════════════════════════════════════════════════
 const TUT_STEPS = [
   { id:"welcome",    text:"Welcome, adventurer. I am the Chronicler — keeper of all lore in Forge & Fable. Let me guide your first steps onto the battlefield. Follow my words carefully, and victory shall be yours.", highlight:null, action:"continue" },
-  { id:"heroes",     text:"This is the arena. Your hero rests below, your enemy stands above. Each begins with 30 Life. Reduce your foe to zero and the battle ends in your favour. Let your own fall to zero — and it ends in ruin.", highlight:"heroes", action:"continue" },
-  { id:"mana",       text:"Each turn you are granted Mana — the fuel of all spells and creatures. You begin with 1 Mana and gain one more each turn, reaching a maximum of 7. The blue gems show how much you currently have.", highlight:"mana", action:"continue" },
-  { id:"coin",       text:"Who strikes first is decided by fate — a coin flip! Win the flip and the first move is yours to seize. Lose it, and you must weather the opening storm.", highlight:null, action:"coinflip" },
-  { id:"hand",       text:"Behold your opening hand — three cards drawn at the start of battle. Each card shows its Mana cost in the upper corner. Creatures show their Attack on the left and HP on the right.", highlight:"hand", action:"continue" },
-  { id:"playcard",   text:"The Forest Squire costs 1 Mana — exactly what you have. Click the card, then click your side of the battlefield to summon it to the field.", highlight:"card0", action:"playCard" },
-  { id:"summoning",  text:"Your creature enters the field! Notice it cannot yet attack. Most creatures must rest one full turn before they can strike. This is Summoning Sickness — a fundamental rule of the battlefield.", highlight:"playerboard", action:"continue" },
-  { id:"endturn",    text:"You have played your card and your options are spent. Click 'End Turn' to pass the initiative to your opponent.", highlight:"endturn", action:"endTurn" },
-  { id:"enemymove",  text:"Your opponent stirs. Watch the field carefully...", highlight:null, action:"watch" },
-  { id:"newturn",    text:"A new turn dawns! You now hold 2 Mana. More importantly — your Forest Squire has rested through the night. The grey veil is gone. It is ready to fight.", highlight:"playerboard", action:"continue" },
-  { id:"attack",     text:"Click your Forest Squire to select it, then click the Shadow Imp to attack. Both creatures deal their Attack to one another at the same moment.", highlight:"attack", action:"attack" },
-  { id:"combatover", text:"Combat resolved! Both creatures strike simultaneously. A creature that falls to 0 HP is destroyed. With the enemy field now clear, you may strike the enemy hero directly.", highlight:null, action:"continue" },
-  { id:"faceattack", text:"The enemy field is clear. Click your Squire, then click the enemy hero portrait to deal damage directly to their Life!", highlight:"faceattack", action:"faceAttack" },
-  { id:"complete",   text:"Magnificent. You have grasped the fundamentals of Forge & Fable. Play creatures, manage your Mana, reduce your foe to zero. Now go — build your deck, claim your rank, and forge your legend. The arenas await.", highlight:null, action:"finish" },
+  { id:"heroes",     text:"This is the arena. Your hero rests below, your enemy looms above. Each begins with 30 Life. Reduce your foe to zero and the battle ends in your favour. Allow your own to reach zero — and it ends in ruin.", highlight:"heroes", action:"continue" },
+  { id:"mana",       text:"Each turn you are granted Mana — the fuel of all spells and creatures. In a real match you begin with 1 Mana and gain one more each turn up to 7. For this lesson, I have gifted you 2 Mana to begin. The blue gems above show your current supply.", highlight:"mana", action:"continue" },
+  { id:"coin",       text:"Who strikes first is decided by fate alone — a coin flip! Win the toss and the first move is yours to seize. Lose it, and you must weather the opening storm.", highlight:null, action:"coinflip" },
+  { id:"hand",       text:"Behold your opening hand — three cards drawn at the start of battle. Each card shows its Mana cost in the upper corner. Creatures show their Attack on the left and HP on the right. Hover any card to read its full ability.", highlight:"hand", action:"continue" },
+  { id:"spells",     text:"Notice the Tanglewood Trap — marked SPELL in the corner. Spells are cast for an instant effect and never occupy the battlefield. Unlike creatures, they vanish the moment they are used. Powerful and precise, but gone in a flash.", highlight:"spell", action:"continue" },
+  { id:"playcard",   text:"Now — the Thornwood Guard costs 2 Mana, exactly what you hold. Click it to select it, then click your side of the board to summon it. You may also drag the card directly onto the field.", highlight:"card0", action:"playCard" },
+  { id:"summoning",  text:"Your creature enters the field! Notice it cannot yet attack. Most creatures must rest one full turn before they can strike. This is Summoning Sickness — a fundamental law of the arena.", highlight:"playerboard", action:"continue" },
+  { id:"endturn",    text:"You have made your play. Click End Turn to pass the initiative to your opponent.", highlight:"endturn", action:"endTurn" },
+  { id:"enemymove",  text:"Your opponent stirs in the shadows. Watch the field carefully...", highlight:null, action:"watch" },
+  { id:"newturn",    text:"A new turn dawns! You now hold 3 Mana. More importantly — your Thornwood Guard has rested through the night. The grey veil is lifted. It is ready to fight.", highlight:"playerboard", action:"continue" },
+  { id:"attack",     text:"Click your Thornwood Guard to select it, then click the Echo Wisp to attack. Both creatures deal their Attack to one another at the very same moment.", highlight:"attack", action:"attack" },
+  { id:"combatover", text:"Combat resolved! Both creatures struck simultaneously. A creature that falls to 0 HP is destroyed. With the enemy field clear, you may now strike the enemy hero directly.", highlight:null, action:"continue" },
+  { id:"faceattack", text:"The field is yours. Click your Guard, then click the enemy hero portrait to deal damage directly to their Life!", highlight:"faceattack", action:"faceAttack" },
+  { id:"complete",   text:"Magnificent. You have grasped the fundamentals of Forge & Fable. Play creatures, manage your Mana, cast your spells, reduce your foe to zero. Now go — build your deck, claim your rank, and forge your legend.", highlight:null, action:"finish" },
 ];
-const TUT_SQUIRE = { id:"tut_sq", name:"Forest Squire", type:"creature", cost:1, atk:2, hp:3, keywords:[], border:"#4a9020", imageUrl:"/cards/guard.jpg", imageScale:1.1, ability:"A loyal companion to new adventurers.", region:"Thornwood", rarity:"Common", uid:"tut_sq1", currentHp:3, maxHp:3, currentAtk:2, canAttack:false, hasAttacked:false, bleed:0 };
+const TUT_SQUIRE = { id:"tut_sq", name:"Thornwood Guard", type:"creature", cost:2, atk:2, hp:4, keywords:[], border:"#4a9020", imageUrl:"/cards/guard.jpg", imageScale:1.1, ability:"On Play: Give +1 HP to all allies.", region:"Thornwood", rarity:"Common", uid:"tut_sq1", currentHp:4, maxHp:4, currentAtk:2, canAttack:false, hasAttacked:false, bleed:0 };
 const TUT_FILLER1 = { id:"tut_f1", name:"Rootcaller Druid", type:"creature", cost:3, atk:2, hp:3, keywords:[], border:"#4a9020", imageUrl:"/cards/druid.jpg", imageScale:1.1, ability:"On Play: Heal hero for 3.", region:"Thornwood", rarity:"Uncommon", uid:"tut_f1", currentHp:3, maxHp:3, currentAtk:2, canAttack:false, hasAttacked:false, bleed:0 };
 const TUT_FILLER2 = { id:"tut_f2", name:"Tanglewood Trap", type:"spell", cost:2, atk:null, hp:null, keywords:[], border:"#4a9020", imageUrl:"/cards/tangle.jpg", imageScale:1.1, ability:"Deal 2 damage to all enemies.", region:"Thornwood", rarity:"Rare", uid:"tut_f2" };
-const TUT_ENEMY_CARD = { id:"tut_en", name:"Shadow Imp", type:"creature", cost:2, atk:2, hp:2, keywords:[], border:"#9050d8", imageUrl:"/cards/wisp.jpg", imageScale:1.1, ability:"Lurks in the shadows.", region:"Shattered Expanse", rarity:"Common", uid:"tut_en1", currentHp:2, maxHp:2, currentAtk:2, canAttack:false, hasAttacked:false, bleed:0 };
+const TUT_ENEMY_CARD = { id:"tut_en", name:"Echo Wisp", type:"creature", cost:2, atk:2, hp:2, keywords:["Echo"], border:"#9050d8", imageUrl:"/cards/wisp.jpg", imageScale:1.1, ability:"Echo — a 1/1 ghost replays next turn.", region:"Shattered Expanse", rarity:"Uncommon", uid:"tut_en1", currentHp:2, maxHp:2, currentAtk:2, canAttack:false, hasAttacked:false, bleed:0 };
 
 function TutorialScreen({ onExit }) {
   const [step, setStep] = useState(0);
@@ -4749,7 +4750,7 @@ function TutorialScreen({ onExit }) {
   const [playerBoard, setPlayerBoard] = useState([]);
   const [enemyBoard, setEnemyBoard] = useState([]);
   const [enemyHPDisplay, setEnemyHPDisplay] = useState(30);
-  const [turnMana, setTurnMana] = useState(1);
+  const [turnMana, setTurnMana] = useState(2);
   const [spentMana, setSpentMana] = useState(0);
   const [playerHand, setPlayerHand] = useState([TUT_SQUIRE, TUT_FILLER2, TUT_FILLER1]);
   const [attacker, setAttacker] = useState(null);
@@ -4757,6 +4758,7 @@ function TutorialScreen({ onExit }) {
   const [enemyThinking, setEnemyThinking] = useState(false);
   const [highlight, setHighlight] = useState(null);
   const [animUids, setAnimUids] = useState({});
+  const [voiceOn, setVoiceOn] = useState(false);
 
   const cur = TUT_STEPS[step];
   const availMana = turnMana - spentMana;
@@ -4772,6 +4774,28 @@ function TutorialScreen({ onExit }) {
     return () => clearTimeout(t);
   }, [typeIdx, cur, step]); // eslint-disable-line
 
+  // Voice narration via Web Speech API
+  useEffect(() => {
+    if (!voiceOn || !cur || typeof window.speechSynthesis === "undefined") return;
+    const synth = window.speechSynthesis;
+    synth.cancel();
+    const speak = () => {
+      const utter = new SpeechSynthesisUtterance(cur.text);
+      utter.rate = 0.84; utter.pitch = 0.8; utter.volume = 1;
+      const voices = synth.getVoices();
+      const pick = voices.find(v => /UK English Male|Google UK|Daniel|James|Arthur/.test(v.name))
+        || voices.find(v => v.lang === "en-GB")
+        || voices.find(v => v.lang.startsWith("en") && /male|david|mark|alex/i.test(v.name))
+        || voices.find(v => v.lang.startsWith("en")) || null;
+      if (pick) utter.voice = pick;
+      synth.speak(utter);
+    };
+    // getVoices() may be empty on first load — wait for them
+    if (window.speechSynthesis.getVoices().length) speak();
+    else { window.speechSynthesis.onvoiceschanged = () => { speak(); window.speechSynthesis.onvoiceschanged = null; }; }
+    return () => synth.cancel();
+  }, [step, voiceOn]); // eslint-disable-line
+
   const advance = () => setStep(s => Math.min(s + 1, TUT_STEPS.length - 1));
   const skipType = () => { if (!textDone && cur) { setTyped(cur.text); setTypeIdx(cur.text.length); setTextDone(true); } };
 
@@ -4783,7 +4807,7 @@ function TutorialScreen({ onExit }) {
       const t2 = setTimeout(() => {
         setEnemyBoard([TUT_ENEMY_CARD]);
         setEnemyThinking(false);
-        setTurnMana(2); setSpentMana(0);
+        setTurnMana(3); setSpentMana(0);
         setPlayerBoard(prev => prev.map(c => ({ ...c, canAttack:true })));
         advance();
       }, 1000);
@@ -4812,7 +4836,8 @@ function TutorialScreen({ onExit }) {
           setAnimUids({ [TUT_ENEMY_CARD.uid]:"dying" });
           setTimeout(() => {
             setAnimUids({});
-            setPlayerBoard([{ ...TUT_SQUIRE, currentHp:1, maxHp:3, canAttack:true, hasAttacked:false }]);
+            setPlayerBoard([{ ...TUT_SQUIRE, currentHp:2, maxHp:4, canAttack:true, hasAttacked:false }]);
+            setEnemyBoard([]);
             setEnemyBoard([]);
             setAttacker(null);
             advance();
@@ -4842,21 +4867,24 @@ function TutorialScreen({ onExit }) {
   const isHL = (k) => highlight === k;
 
   const actionHint = !textDone ? null :
-    cur?.action === "playCard" ? "Click the Forest Squire card, then click your side of the board" :
-    cur?.action === "endTurn" ? "Click the END TURN button →" :
-    cur?.action === "attack" ? (attacker ? "Now click the Shadow Imp to strike!" : "Click your Forest Squire to select it") :
-    cur?.action === "faceAttack" ? (attacker ? "Now click the enemy hero!" : "Click your Forest Squire to select it") :
+    cur?.action === "playCard" ? "Click or drag the Thornwood Guard onto your side of the board" :
+    cur?.action === "endTurn" ? "Click the END TURN button on the right" :
+    cur?.action === "attack" ? (attacker ? "Now click the Echo Wisp to strike!" : "Click your Thornwood Guard to select it") :
+    cur?.action === "faceAttack" ? (attacker ? "Now click the enemy hero portrait!" : "Click your Thornwood Guard to select it") :
     null;
 
   return (
     <div style={{ position:"fixed", inset:0, zIndex:200, background:"linear-gradient(160deg,#0a0806,#060402)", display:"flex", flexDirection:"column", overflow:"hidden" }}>
       {/* Top progress bar */}
-      <div style={{ height:44, background:"rgba(6,4,2,0.96)", borderBottom:"1px solid rgba(232,192,96,0.1)", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 20px", flexShrink:0, gap:16 }}>
-        <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#e8c060", letterSpacing:4, fontWeight:700, flexShrink:0 }}>⚔ TUTORIAL</div>
+      <div style={{ height:50, background:"rgba(6,4,2,0.96)", borderBottom:"1px solid rgba(232,192,96,0.1)", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 20px", flexShrink:0, gap:16 }}>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#e8c060", letterSpacing:4, fontWeight:700, flexShrink:0 }}>⚔ TUTORIAL</div>
         <div style={{ display:"flex", gap:5, alignItems:"center", flex:1, justifyContent:"center" }}>
-          {TUT_STEPS.map((_,i) => (<div key={i} style={{ width:i===step?18:6, height:6, borderRadius:3, background:i<step?"#78cc45":i===step?"#e8c060":"#2a2010", transition:"all .3s" }} />))}
+          {TUT_STEPS.map((_,i) => (<div key={i} style={{ width:i===step?20:7, height:7, borderRadius:4, background:i<step?"#78cc45":i===step?"#e8c060":"#2a2010", transition:"all .3s" }} />))}
         </div>
-        <button onClick={onExit} style={{ padding:"4px 14px", background:"transparent", border:"1px solid #3a2010", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", cursor:"pointer", letterSpacing:1, flexShrink:0 }}>SKIP ✕</button>
+        <div style={{ display:"flex", gap:8, alignItems:"center", flexShrink:0 }}>
+          <button onClick={() => { setVoiceOn(v => { const next = !v; if (!next && window.speechSynthesis) window.speechSynthesis.cancel(); return next; }); }} title={voiceOn ? "Mute narrator" : "Enable voice narration"} style={{ width:32, height:32, background:voiceOn?"rgba(232,192,96,0.15)":"transparent", border:`1px solid ${voiceOn?"#e8c06066":"#3a2010"}`, borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, cursor:"pointer", transition:"all .2s" }}>{voiceOn ? "🔊" : "🔇"}</button>
+          <button onClick={onExit} style={{ padding:"5px 16px", background:"transparent", border:"1px solid #3a2010", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:11, color:"#604030", cursor:"pointer", letterSpacing:1 }}>SKIP ✕</button>
+        </div>
       </div>
 
       {/* Battle area */}
@@ -4877,7 +4905,7 @@ function TutorialScreen({ onExit }) {
           <div onClick={handleEnemyHeroClick} style={{ display:"flex", alignItems:"center", gap:12, cursor:(cur?.action==="faceAttack"&&attacker&&textDone)?"crosshair":"default", padding:"6px 8px", borderRadius:10, ...(isHL("heroes")?glow:{}), ...(isHL("faceattack")&&attacker?{ boxShadow:"0 0 0 3px #e84040aa, 0 0 24px #e8404066", borderRadius:10, animation:"pulse 1.2s infinite" }:{}) }}>
             <div style={{ width:46, height:46, borderRadius:9, background:"linear-gradient(135deg,#3a1010,#6a2010)", border:`2px solid ${(cur?.action==="faceAttack"&&attacker&&textDone)?"#e84040bb":"#4a2010"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, transition:"all .25s", boxShadow:(cur?.action==="faceAttack"&&attacker&&textDone)?"0 0 20px #e8404088":"none" }}>👹</div>
             <div style={{ flex:1 }}>
-              <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#c07060", letterSpacing:1, marginBottom:3 }}>Enemy · Level 1</div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#c07060", letterSpacing:1, marginBottom:3 }}>Enemy · Level 1</div>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                 <div style={{ width:100, height:8, background:"#1a0808", borderRadius:4, overflow:"hidden" }}>
                   <div style={{ height:"100%", width:`${(enemyHPDisplay/30)*100}%`, background:`linear-gradient(90deg,${hpCol(enemyHPDisplay)}99,${hpCol(enemyHPDisplay)})`, borderRadius:4, transition:"width .4s" }} />
@@ -4897,7 +4925,7 @@ function TutorialScreen({ onExit }) {
               </div>
             ))}
             {enemyBoard.length===0&&!enemyThinking&&step>=8&&(<div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"rgba(180,80,60,0.18)", letterSpacing:2 }}>EMPTY FIELD</div>)}
-            {enemyThinking&&(<div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#8a6040", letterSpacing:2, animation:"pulse 0.8s infinite" }}>THINKING…</div>)}
+            {enemyThinking&&(<div style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#8a6040", letterSpacing:2, animation:"pulse 0.8s infinite" }}>THINKING…</div>)}
           </div>
         </div>
 
@@ -4924,7 +4952,7 @@ function TutorialScreen({ onExit }) {
           <div style={{ display:"flex", alignItems:"center", gap:12, padding:"6px 8px", borderRadius:10, ...(isHL("heroes")||isHL("mana")?glow:{}) }}>
             <div style={{ width:46, height:46, borderRadius:9, background:"linear-gradient(135deg,#203810,#3a6018)", border:"2px solid #4a8020", display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>🧙</div>
             <div style={{ flex:1 }}>
-              <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#80c060", letterSpacing:1, marginBottom:3 }}>You · 30 HP</div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#80c060", letterSpacing:1, marginBottom:3 }}>You · 30 HP</div>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                 <div style={{ width:100, height:8, background:"#060c04", borderRadius:4, overflow:"hidden" }}>
                   <div style={{ height:"100%", width:"100%", background:"#50c060", borderRadius:4 }} />
@@ -4935,19 +4963,21 @@ function TutorialScreen({ onExit }) {
             {/* Mana gems */}
             <div style={{ display:"flex", gap:5, alignItems:"center", padding:"6px 12px", background:"rgba(16,50,140,0.14)", border:"1px solid rgba(50,100,220,0.22)", borderRadius:8, ...(isHL("mana")?glow:{}) }}>
               {Array.from({length:turnMana}).map((_,i)=>(<div key={i} style={{ width:13, height:13, borderRadius:"50%", background:i<availMana?"#1880d8":"#101c30", border:`1px solid ${i<availMana?"#30a0ff":"#182038"}`, boxShadow:i<availMana?"0 0 8px #1880d866":"none", transition:"all .35s" }}/>))}
-              <span style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#60a8e8", marginLeft:4, fontWeight:700 }}>{availMana}/{turnMana}</span>
+              <span style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#60a8e8", marginLeft:4, fontWeight:700 }}>{availMana}/{turnMana}</span>
             </div>
             {/* End Turn */}
-            <button onClick={handleEndTurn} disabled={cur?.action!=="endTurn"||!textDone} style={{ padding:"8px 18px", background:cur?.action==="endTurn"&&textDone?"linear-gradient(135deg,#3a7010,#68b020)":"rgba(20,20,14,0.8)", border:cur?.action==="endTurn"&&textDone?"1px solid #70c03088":"1px solid #2a2010", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:cur?.action==="endTurn"&&textDone?"#d8f0b8":"#504030", cursor:cur?.action==="endTurn"&&textDone?"pointer":"default", letterSpacing:1, transition:"all .2s", boxShadow:cur?.action==="endTurn"&&textDone?"0 0 14px #68b02055":"none", animation:cur?.action==="endTurn"&&textDone?"pulse 1.5s infinite":"none", ...(isHL("endturn")&&cur?.action==="endTurn"?glow:{}) }}>END TURN</button>
+            <button onClick={handleEndTurn} disabled={cur?.action!=="endTurn"||!textDone} style={{ padding:"10px 20px", background:cur?.action==="endTurn"&&textDone?"linear-gradient(135deg,#3a7010,#68b020)":"rgba(20,20,14,0.8)", border:cur?.action==="endTurn"&&textDone?"1px solid #70c03088":"1px solid #2a2010", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, color:cur?.action==="endTurn"&&textDone?"#d8f0b8":"#504030", cursor:cur?.action==="endTurn"&&textDone?"pointer":"default", letterSpacing:1, transition:"all .2s", boxShadow:cur?.action==="endTurn"&&textDone?"0 0 14px #68b02055":"none", animation:cur?.action==="endTurn"&&textDone?"pulse 1.5s infinite":"none", ...(isHL("endturn")&&cur?.action==="endTurn"?glow:{}) }}>END TURN</button>
           </div>
 
           {/* Player hand */}
-          <div style={{ display:"flex", gap:8, justifyContent:"center", alignItems:"flex-end", minHeight:148, ...(isHL("hand")||isHL("card0")?{ ...glow, padding:"6px 8px 0" }:{}) }}>
+          <div style={{ display:"flex", gap:8, justifyContent:"center", alignItems:"flex-end", minHeight:148, ...(isHL("hand")||isHL("card0")||isHL("spell")?{ ...glow, padding:"6px 8px 0" }:{}) }}>
             {playerHand.map((card, idx) => {
               const isSquire = card.uid===TUT_SQUIRE.uid;
+              const isSpell = card.type==="spell";
               const canPlay = cur?.action==="playCard"&&isSquire&&textDone;
+              const spellHL = isHL("spell")&&isSpell;
               return (
-                <div key={card.uid} style={{ ...(canPlay?{ boxShadow:"0 0 0 2px #e8c060bb, 0 0 22px #e8c06077", borderRadius:10, animation:"pulse 1.2s infinite" }:{}) }}>
+                <div key={card.uid} style={{ ...(canPlay?{ boxShadow:"0 0 0 2px #e8c060bb, 0 0 22px #e8c06077", borderRadius:10, animation:"pulse 1.2s infinite" }:{}), ...(spellHL?{ boxShadow:"0 0 0 2px #d090ffbb, 0 0 22px #a060ff77", borderRadius:10, animation:"pulse 1.2s infinite" }:{}) }}>
                   <HandCard card={card} playable={canPlay} onClick={()=>handlePlayCard(card,idx)} />
                 </div>
               );
@@ -4978,17 +5008,17 @@ function TutorialScreen({ onExit }) {
               </svg>
             </div>
             <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#e8c060", letterSpacing:2.5, marginBottom:7, fontWeight:700 }}>THE CHRONICLER</div>
-              <div onClick={skipType} style={{ fontFamily:"'Lora',Georgia,serif", fontSize:12.5, color:"#cfc8a8", lineHeight:1.82, minHeight:54, cursor:textDone?"default":"pointer" }}>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:12, color:"#e8c060", letterSpacing:2.5, marginBottom:8, fontWeight:700 }}>THE CHRONICLER</div>
+              <div onClick={skipType} style={{ fontFamily:"'Lora',Georgia,serif", fontSize:15, color:"#d8d0b0", lineHeight:1.78, minHeight:60, cursor:textDone?"default":"pointer" }}>
                 {typed}{!textDone&&<span style={{ opacity:0.55, animation:"pulse 0.7s infinite" }}>▌</span>}
               </div>
               {textDone&&(
-                <div style={{ marginTop:10, display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
-                  {cur?.action==="continue"&&(<button onClick={advance} style={{ padding:"6px 18px", background:"linear-gradient(135deg,#7a5010,#c89020)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:9, fontWeight:700, color:"#1a0e00", cursor:"pointer", letterSpacing:2 }}>CONTINUE →</button>)}
-                  {cur?.action==="coinflip"&&coinPhase==="waiting"&&(<button onClick={()=>{ setCoinPhase("flipping"); setTimeout(()=>{ setCoinPhase("result"); setTimeout(()=>advance(),1600); },1200); }} style={{ padding:"6px 18px", background:"linear-gradient(135deg,#7a5010,#c89020)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:9, fontWeight:700, color:"#1a0e00", cursor:"pointer", letterSpacing:2, animation:"pulse 1.5s infinite" }}>FLIP THE COIN</button>)}
-                  {cur?.action==="coinflip"&&coinPhase==="result"&&(<div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#e8c060", letterSpacing:1 }}>⚔ The coin lands — you go first!</div>)}
-                  {cur?.action==="finish"&&(<button onClick={onExit} style={{ padding:"6px 18px", background:"linear-gradient(135deg,#7a1010,#c83020)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:9, fontWeight:700, color:"#fff", cursor:"pointer", letterSpacing:2 }}>ENTER BATTLE ⚔</button>)}
-                  {actionHint&&(<div style={{ fontSize:9.5, color:"#907050", fontFamily:"'Cinzel',serif", letterSpacing:0.5, display:"flex", alignItems:"center", gap:5 }}><span style={{ animation:"pulse 1s infinite", color:"#e8c06099" }}>◆</span>{actionHint}</div>)}
+                <div style={{ marginTop:12, display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
+                  {cur?.action==="continue"&&(<button onClick={advance} style={{ padding:"8px 22px", background:"linear-gradient(135deg,#7a5010,#c89020)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:"#1a0e00", cursor:"pointer", letterSpacing:2 }}>CONTINUE →</button>)}
+                  {cur?.action==="coinflip"&&coinPhase==="waiting"&&(<button onClick={()=>{ setCoinPhase("flipping"); setTimeout(()=>{ setCoinPhase("result"); setTimeout(()=>advance(),1600); },1200); }} style={{ padding:"8px 22px", background:"linear-gradient(135deg,#7a5010,#c89020)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:"#1a0e00", cursor:"pointer", letterSpacing:2, animation:"pulse 1.5s infinite" }}>FLIP THE COIN</button>)}
+                  {cur?.action==="coinflip"&&coinPhase==="result"&&(<div style={{ fontFamily:"'Cinzel',serif", fontSize:12, color:"#e8c060", letterSpacing:1 }}>⚔ The coin lands — you go first!</div>)}
+                  {cur?.action==="finish"&&(<button onClick={onExit} style={{ padding:"8px 22px", background:"linear-gradient(135deg,#7a1010,#c83020)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:"#fff", cursor:"pointer", letterSpacing:2 }}>ENTER BATTLE ⚔</button>)}
+                  {actionHint&&(<div style={{ fontSize:12, color:"#a08060", fontFamily:"'Cinzel',serif", letterSpacing:0.5, display:"flex", alignItems:"center", gap:6 }}><span style={{ animation:"pulse 1s infinite", color:"#e8c060bb", fontSize:10 }}>◆</span>{actionHint}</div>)}
                 </div>
               )}
             </div>
