@@ -2190,7 +2190,6 @@ const STARTER_DECK = (() => {
 })();
 
 function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
-  const col = user?.collection || {};
   const selectedArts = user?.selectedArts || {};
   const deckPool = GAMEPLAY_POOL;
   const owned = deckPool;
@@ -2206,12 +2205,23 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
   const [deckName, setDeckName] = useState(editDeck ? editDeck.name : "Starter Deck");
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [regionFilter, setRegionFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("cost");
   const [shakeId, setShakeId] = useState(null);
-  const filtered = owned.filter((c) => {
-    if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false;
-    if (typeFilter !== "all" && c.type !== typeFilter) return false;
-    return true;
-  });
+
+  const filtered = owned
+    .filter((c) => {
+      if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false;
+      if (typeFilter !== "all" && c.type !== typeFilter) return false;
+      if (regionFilter !== "all" && c.region !== regionFilter) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortBy === "cost") return (a.cost || 0) - (b.cost || 0) || a.name.localeCompare(b.name);
+      if (sortBy === "name") return a.name.localeCompare(b.name);
+      if (sortBy === "type") return (a.type || "").localeCompare(b.type || "") || (a.cost || 0) - (b.cost || 0);
+      return 0;
+    });
 
   // Deck counts
   const countInDeck = (card) => deck.filter((c) => c.id === card.id).length;
@@ -2220,9 +2230,21 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
   const total = deck.length;
   const canSave = total === CFG.deck.size;
 
+  // Quick stats
+  const avgMana = deck.length ? (deck.reduce((s, c) => s + (c.cost || 0), 0) / deck.length).toFixed(1) : "—";
+  const creatureCount = deck.filter(c => c.type === "creature").length;
+  const spellCount = deck.filter(c => c.type === "spell").length;
+
+  // Mana curve (0–7+)
+  const CURVE_MAX = 7;
+  const manaCurve = Array.from({ length: CURVE_MAX + 1 }, (_, i) => ({
+    label: i === CURVE_MAX ? `${i}+` : `${i}`,
+    count: deck.filter(c => i === CURVE_MAX ? (c.cost || 0) >= i : (c.cost || 0) === i).length,
+  }));
+  const maxCurveCount = Math.max(1, ...manaCurve.map(m => m.count));
+
   const addCard = (card) => {
     if (total >= CFG.deck.size) { setErrMsg(`Deck full (${CFG.deck.size}/${CFG.deck.size})`); return; }
-    // Champions: max 1 copy of any specific champion, max 4 champions total
     if (card.type === "champion") {
       if (countInDeck(card) >= 1) { setErrMsg(`Champions are unique — only 1 copy of "${card.name}" allowed`); return; }
       if (champCount >= CFG.deck.maxChamp) { setErrMsg(`Champion cap reached (${champCount}/${CFG.deck.maxChamp})`); return; }
@@ -2247,47 +2269,62 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
 
   const need = CFG.deck.size - total;
   const pct = (total / CFG.deck.size) * 100;
+  const selSty = { padding:"8px 10px", background:"#100e08", border:"1px solid #2a2010", borderRadius:8, color:"#f0e8d8", fontSize:12, outline:"none", fontFamily:"'Cinzel',serif" };
+  const sortBtnSty = (active) => ({ padding:"5px 12px", background: active ? "rgba(232,192,96,0.2)" : "transparent", border:`1px solid ${active ? "#e8c060" : "#3a2810"}`, borderRadius:6, color: active ? "#e8c060" : "#806040", fontFamily:"'Cinzel',serif", fontSize:11, cursor:"pointer", letterSpacing:0.5, transition:"all .15s" });
 
   return (<div style={{ position:"fixed", inset:0, zIndex:600, background:"rgba(2,1,0,0.97)", display:"flex", flexDirection:"column" }}>
     {dbPreview && <CardPreview card={dbPreview} onClose={() => setDbPreview(null)} />}
     {/* Header bar */}
     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 20px", borderBottom:"2px solid #3a2c10", background:"linear-gradient(180deg,#1a1608,#0e0c06)", flexShrink:0, gap:12, flexWrap:"wrap" }}>
       <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
-        <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:18, color:"#e8c060", margin:0, letterSpacing:2 }}>⚒ {isNew ? "NEW DECK" : `EDIT: ${editDeck.name}`}</h3>
-        <div style={{ display:"flex", gap:6, fontSize:10 }}>
-          <span style={{ fontFamily:"'Cinzel',serif", padding:"5px 12px", fontSize:11, fontWeight:700, background:champCount>=CFG.deck.maxChamp?"rgba(240,192,64,0.25)":"rgba(232,160,20,0.12)", border:`2px solid ${champCount>=CFG.deck.maxChamp?"#f0c040":"#8a6020"}`, borderRadius:8, color:champCount>=CFG.deck.maxChamp?"#f0e060":"#c09040", letterSpacing:1, boxShadow:champCount>=CFG.deck.maxChamp?"0 0 12px #f0c04044":"none" }}>👑 {champCount}/{CFG.deck.maxChamp} CHAMPS · max 1 each</span>
-          <span style={{ fontFamily:"'Cinzel',serif", padding:"3px 8px", background:auraEnvCount>=CFG.deck.maxAuraEnv?"rgba(40,180,120,0.22)":"rgba(40,180,120,0.12)", border:`1px solid ${auraEnvCount>=CFG.deck.maxAuraEnv?"#40c090":"#406050"}`, borderRadius:6, color:auraEnvCount>=CFG.deck.maxAuraEnv?"#40e0a0":"#70b090" }}>🌿 {auraEnvCount}/{CFG.deck.maxAuraEnv} Aura/Env</span>
-          <span style={{ fontFamily:"'Cinzel',serif", padding:"3px 8px", background:canSave?"rgba(232,192,96,0.22)":"rgba(232,192,96,0.10)", border:`1px solid ${canSave?"#e8c060":"#806040"}`, borderRadius:6, color:canSave?"#e8c060":"#c09050" }}>📚 {total}/{CFG.deck.size}</span>
+        <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:20, color:"#e8c060", margin:0, letterSpacing:2 }}>⚒ {isNew ? "NEW DECK" : `EDIT: ${editDeck.name}`}</h3>
+        <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+          <span style={{ fontFamily:"'Cinzel',serif", padding:"5px 12px", fontSize:12, fontWeight:700, background:champCount>=CFG.deck.maxChamp?"rgba(240,192,64,0.25)":"rgba(232,160,20,0.12)", border:`2px solid ${champCount>=CFG.deck.maxChamp?"#f0c040":"#8a6020"}`, borderRadius:8, color:champCount>=CFG.deck.maxChamp?"#f0e060":"#c09040", letterSpacing:1, boxShadow:champCount>=CFG.deck.maxChamp?"0 0 12px #f0c04044":"none" }}>👑 {champCount}/{CFG.deck.maxChamp} CHAMPS</span>
+          <span style={{ fontFamily:"'Cinzel',serif", padding:"5px 10px", fontSize:12, background:auraEnvCount>=CFG.deck.maxAuraEnv?"rgba(40,180,120,0.22)":"rgba(40,180,120,0.12)", border:`1px solid ${auraEnvCount>=CFG.deck.maxAuraEnv?"#40c090":"#406050"}`, borderRadius:6, color:auraEnvCount>=CFG.deck.maxAuraEnv?"#40e0a0":"#70b090" }}>🌿 {auraEnvCount}/{CFG.deck.maxAuraEnv} Aura/Env</span>
+          <span style={{ fontFamily:"'Cinzel',serif", padding:"5px 10px", fontSize:13, fontWeight:700, background:canSave?"rgba(232,192,96,0.22)":"rgba(232,192,96,0.10)", border:`1px solid ${canSave?"#e8c060":"#806040"}`, borderRadius:6, color:canSave?"#e8c060":"#c09050" }}>📚 {total}/{CFG.deck.size}</span>
         </div>
       </div>
       <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-        <input value={deckName} onChange={(e) => setDeckName(e.target.value)} placeholder="Deck name..." style={{ padding:"8px 12px", background:"#100e08", border:"1px solid #3a2810", borderRadius:8, color:"#f0e8d8", fontSize:12, outline:"none", fontFamily:"'Cinzel',serif", width:160 }} />
-        <button onClick={save} disabled={!canSave} style={{ padding:"8px 20px", background:canSave?"linear-gradient(135deg,#c89010,#f0c040)":"rgba(255,255,255,0.06)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, letterSpacing:1, color:canSave?"#1a1000":"#403020", cursor:canSave?"pointer":"not-allowed" }}>
+        <input value={deckName} onChange={(e) => setDeckName(e.target.value)} placeholder="Deck name..." style={{ padding:"9px 12px", background:"#100e08", border:"1px solid #3a2810", borderRadius:8, color:"#f0e8d8", fontSize:13, outline:"none", fontFamily:"'Cinzel',serif", width:170 }} />
+        <button onClick={save} disabled={!canSave} style={{ padding:"9px 22px", background:canSave?"linear-gradient(135deg,#c89010,#f0c040)":"rgba(255,255,255,0.06)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:13, fontWeight:700, letterSpacing:1, color:canSave?"#1a1000":"#403020", cursor:canSave?"pointer":"not-allowed" }}>
           SAVE ({total}/{CFG.deck.size})
         </button>
-        <button onClick={onClose} style={{ padding:"8px 16px", background:"transparent", border:"1px solid #4a2010", borderRadius:8, color:"#806040", fontFamily:"'Cinzel',serif", fontSize:11, cursor:"pointer" }}>✕ CLOSE</button>
+        <button onClick={onClose} style={{ padding:"9px 16px", background:"transparent", border:"1px solid #4a2010", borderRadius:8, color:"#806040", fontFamily:"'Cinzel',serif", fontSize:12, cursor:"pointer" }}>✕ CLOSE</button>
       </div>
     </div>
 
     {/* Main content */}
-    <div style={{ display:"grid", gridTemplateColumns:"1fr 300px", flex:1, overflow:"hidden" }}>
+    <div style={{ display:"grid", gridTemplateColumns:"1fr 330px", flex:1, overflow:"hidden" }}>
       {/* Card pool */}
       <div style={{ display:"flex", flexDirection:"column", overflow:"hidden", borderRight:"1px solid #2a2010" }}>
-        <div style={{ padding:"10px 16px", borderBottom:"1px solid #2a1808", flexShrink:0, display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search cards..." style={{ flex:1, minWidth:120, padding:"8px 12px", background:"#100e08", border:"1px solid #2a2010", borderRadius:8, color:"#f0e8d8", fontSize:12, outline:"none" }} />
-          <select value={typeFilter} onChange={e=>setTypeFilter(e.target.value)} style={{ padding:"8px 10px", background:"#100e08", border:"1px solid #2a2010", borderRadius:8, color:"#f0e8d8", fontSize:10, outline:"none", fontFamily:"'Cinzel',serif" }}>
-            <option value="all">All Types</option>
-            <option value="creature">Creatures</option>
-            <option value="champion">Champions</option>
-            <option value="spell">Spells</option>
-            <option value="environment">Environments</option>
-            <option value="aura">Auras</option>
-          </select>
-          <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#605030" }}>{filtered.length}</span>
+        {/* Filter bar */}
+        <div style={{ padding:"10px 16px", borderBottom:"1px solid #2a1808", flexShrink:0 }}>
+          <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap", marginBottom:8 }}>
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search cards..." style={{ flex:1, minWidth:120, ...selSty }} />
+            <select value={typeFilter} onChange={e=>setTypeFilter(e.target.value)} style={selSty}>
+              <option value="all">All Types</option>
+              <option value="creature">Creatures</option>
+              <option value="champion">Champions</option>
+              <option value="spell">Spells</option>
+              <option value="environment">Environments</option>
+              <option value="aura">Auras</option>
+            </select>
+            <select value={regionFilter} onChange={e=>setRegionFilter(e.target.value)} style={selSty}>
+              <option value="all">All Factions</option>
+              {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+          <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#60504a", letterSpacing:1 }}>SORT:</span>
+            <button onClick={() => setSortBy("cost")} style={sortBtnSty(sortBy==="cost")}>⚡ Cost</button>
+            <button onClick={() => setSortBy("name")} style={sortBtnSty(sortBy==="name")}>A–Z</button>
+            <button onClick={() => setSortBy("type")} style={sortBtnSty(sortBy==="type")}>◈ Type</button>
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#504038", marginLeft:"auto" }}>{filtered.length} cards</span>
+          </div>
         </div>
         <div style={{ overflowY:"auto", padding:"16px 20px", flex:1 }}>
           {filtered.length === 0
-            ? <p style={{ color:"#604028", fontSize:13, textAlign:"center", marginTop:40 }}>Open packs and win battles to grow your collection!</p>
+            ? <p style={{ color:"#604028", fontSize:14, textAlign:"center", marginTop:40 }}>No cards match your filters.</p>
             : <div style={{ display:"flex", flexWrap:"wrap", gap:12 }}>
               {filtered.map((c, i) => {
                 const inDeck = countInDeck(c);
@@ -2297,7 +2334,7 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
                     onMouseEnter={e => { if (!blocked) e.currentTarget.style.transform="translateY(-4px)"; }}
                     onMouseLeave={e => { e.currentTarget.style.transform="none"; }}>
                     <div style={{ animation: shakeId === c.id ? "deckCardShake 0.35s ease-out" : undefined, position:"relative" }}>
-                      {(() => { const maxC = c.type==="champion" ? 1 : CFG.deck.copies; const left = maxC - inDeck; return left > 0 && left < maxC ? (<div style={{ position:"absolute", bottom:6, right:5, zIndex:10, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:900, color:"#e8c060", textShadow:"0 0 8px #e8c06088, 0 1px 3px rgba(0,0,0,0.95)", lineHeight:1 }}>{left}</div>) : null; })()}
+                      {(() => { const maxC = c.type==="champion" ? 1 : CFG.deck.copies; const used = inDeck; return used > 0 ? (<div style={{ position:"absolute", bottom:5, right:4, zIndex:10, background:"rgba(10,8,4,0.88)", border:"1px solid #e8c06088", borderRadius:5, padding:"1px 5px", fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:900, color:"#e8c060", lineHeight:1.4, backdropFilter:"blur(2px)" }}>×{used}</div>) : null; })()}
                       <Card card={resolveCardArt(c, selectedArts)} size="sm" onClick={() => {}} />
                     </div>
                   </div>
@@ -2308,35 +2345,65 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
         </div>
       </div>
 
-      {/* Deck list */}
+      {/* Deck list panel */}
       <div style={{ display:"flex", flexDirection:"column", overflow:"hidden", background:"linear-gradient(180deg,#0e0c06,#0a0806)" }}>
+        {/* Deck panel header */}
         <div style={{ padding:"14px 18px", borderBottom:"1px solid #2a2010", flexShrink:0 }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#c09848", letterSpacing:2, fontWeight:700 }}>YOUR DECK — {total}/{CFG.deck.size} · <span style={{ color:"#60c0ff", fontWeight:700 }}>⚡{deck.reduce((s,c)=>s+(c.cost||0),0)} mana</span></div>
-            {deck.length > 0 && <button onClick={() => { setErrMsg(""); setDeck([]); }} style={{ padding:"3px 10px", background:"rgba(180,40,20,0.12)", border:"1px solid #5a1810", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:8, color:"#a06040", cursor:"pointer", letterSpacing:1 }}>CLEAR ALL</button>}
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#c09848", letterSpacing:1.5, fontWeight:700 }}>YOUR DECK</div>
+            {deck.length > 0 && <button onClick={() => { setErrMsg(""); setDeck([]); }} style={{ padding:"3px 10px", background:"rgba(180,40,20,0.12)", border:"1px solid #5a1810", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:10, color:"#a06040", cursor:"pointer", letterSpacing:1 }}>CLEAR ALL</button>}
           </div>
-          {errMsg && <div style={{ fontSize:9, color:"#e06050", fontFamily:"'Cinzel',serif", marginBottom:4, letterSpacing:0.5 }}>⚠ {errMsg}</div>}
-          {!canSave && <div style={{ fontSize:10, color:"#604028", marginBottom:4 }}>{need > 0 ? `Need ${need} more` : "At limit — remove a card"}</div>}
-          <div style={{ height:4, background:"#1a1408", borderRadius:2, overflow:"hidden" }}>
-            <div style={{ height:"100%", width:`${pct}%`, background: canSave ? "linear-gradient(90deg,#40c070,#80e0a0)" : "linear-gradient(90deg,#c89010,#f0c040)", transition:"width .3s", borderRadius:2 }} />
+          {/* Quick stats */}
+          <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginBottom:8 }}>
+            <span style={{ padding:"3px 9px", background:"rgba(96,192,255,0.12)", border:"1px solid #2060a0", borderRadius:5, fontFamily:"'Cinzel',serif", fontSize:11, color:"#60c0ff" }}>⚡ avg {avgMana}</span>
+            <span style={{ padding:"3px 9px", background:"rgba(180,120,60,0.12)", border:"1px solid #6a4020", borderRadius:5, fontFamily:"'Cinzel',serif", fontSize:11, color:"#c09060" }}>⚔ {creatureCount}</span>
+            <span style={{ padding:"3px 9px", background:"rgba(180,80,220,0.12)", border:"1px solid #603080", borderRadius:5, fontFamily:"'Cinzel',serif", fontSize:11, color:"#c070e0" }}>✦ {spellCount}</span>
+            {auraEnvCount > 0 && <span style={{ padding:"3px 9px", background:"rgba(40,180,120,0.10)", border:"1px solid #305040", borderRadius:5, fontFamily:"'Cinzel',serif", fontSize:11, color:"#50c090" }}>🌿 {auraEnvCount}</span>}
+            <span style={{ padding:"3px 9px", background:"rgba(232,192,96,0.10)", border:`1px solid ${canSave?"#e8c060":"#806040"}`, borderRadius:5, fontFamily:"'Cinzel',serif", fontSize:11, color:canSave?"#e8c060":"#a07040", marginLeft:"auto" }}>{total}/{CFG.deck.size}</span>
           </div>
+          {/* Progress bar */}
+          <div style={{ height:5, background:"#1a1408", borderRadius:3, overflow:"hidden", marginBottom:6 }}>
+            <div style={{ height:"100%", width:`${pct}%`, background: canSave ? "linear-gradient(90deg,#40c070,#80e0a0)" : "linear-gradient(90deg,#c89010,#f0c040)", transition:"width .3s", borderRadius:3 }} />
+          </div>
+          {errMsg && <div style={{ fontSize:11, color:"#e06050", fontFamily:"'Cinzel',serif", marginBottom:6, letterSpacing:0.5 }}>⚠ {errMsg}</div>}
+          {!canSave && !errMsg && <div style={{ fontSize:11, color:"#604028", marginBottom:6, fontFamily:"'Cinzel',serif" }}>{need > 0 ? `Need ${need} more card${need!==1?"s":""}` : "At limit — remove a card"}</div>}
+          {/* Mana curve */}
+          {deck.length > 0 && (
+            <div style={{ marginTop:4 }}>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#504030", letterSpacing:1.5, marginBottom:5 }}>MANA CURVE</div>
+              <div style={{ display:"flex", gap:3, alignItems:"flex-end", height:46 }}>
+                {manaCurve.map(({ label, count }) => (
+                  <div key={label} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+                    {count > 0 && <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#c09840", lineHeight:1 }}>{count}</span>}
+                    <div style={{ width:"100%", background: count > 0 ? "linear-gradient(180deg,#f0c040,#b07010)" : "#1e1a0e", borderRadius:"3px 3px 0 0", height: count > 0 ? `${Math.max(6, (count / maxCurveCount) * 28)}px` : 5, transition:"height .3s", boxShadow: count > 0 ? "0 0 8px #f0c04044" : "none" }} />
+                    <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#4090b0", lineHeight:1 }}>{label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-        <div style={{ overflowY:"auto", flex:1, padding:"10px 14px", display:"flex", flexDirection:"column", gap:4 }}>
-          {deck.length === 0 && <p style={{ color:"#504030", fontSize:11, textAlign:"center", marginTop:30, fontStyle:"italic" }}>Click cards on the left to add them</p>}
+        {/* Deck card list */}
+        <div style={{ overflowY:"auto", flex:1, padding:"10px 12px", display:"flex", flexDirection:"column", gap:4 }}>
+          {deck.length === 0 && <p style={{ color:"#504030", fontSize:13, textAlign:"center", marginTop:30, fontStyle:"italic" }}>Click cards on the left to add them</p>}
           {deck.map((c, i) => {
             const dc = resolveCardArt(c, selectedArts);
-            const typeColor = c.type==="champion"?"#f0c040":c.type==="environment"||c.type==="aura"?"#40c090":c.type==="spell"?"#c090d0":"#806040";
+            const typeColor = c.type==="champion"?"#f0c040":c.type==="environment"||c.type==="aura"?"#40c090":c.type==="spell"?"#c090d0":"#9a7050";
+            const isCreature = c.type === "creature" || c.type === "champion";
             return (
-              <div key={i} onContextMenu={(e) => { e.preventDefault(); setDbPreview(dc); }} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", background:"rgba(0,0,0,0.3)", borderRadius:7, padding:"4px 8px", border:`1px solid ${c.border}22`, gap:8, cursor:"context-menu" }}>
-                <div style={{ width:30, height:42, borderRadius:4, overflow:"hidden", flexShrink:0, border:`1px solid ${c.border}44` }}>
+              <div key={i} onContextMenu={(e) => { e.preventDefault(); setDbPreview(dc); }} style={{ display:"flex", alignItems:"center", background:"rgba(0,0,0,0.32)", borderRadius:8, padding:"5px 8px", border:`1px solid ${c.border}28`, gap:8, cursor:"context-menu" }}>
+                <div style={{ width:34, height:48, borderRadius:5, overflow:"hidden", flexShrink:0, border:`1px solid ${c.border}50` }}>
                   <CardArt card={dc} />
                 </div>
-                <div style={{ width:18, height:18, borderRadius:"50%", background:"linear-gradient(160deg,#90e0ff,#1870a0)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontWeight:900, fontSize:9, color:"#fff", flexShrink:0, boxShadow:"0 0 6px #2090ff88" }}>{c.cost||0}</div>
+                <div style={{ width:22, height:22, borderRadius:"50%", background:"linear-gradient(160deg,#90e0ff,#1870a0)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontWeight:900, fontSize:11, color:"#fff", flexShrink:0, boxShadow:"0 0 6px #2090ff88" }}>{c.cost||0}</div>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#f0e0c8", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.name}</div>
-                  <div style={{ fontSize:7, color:typeColor, fontFamily:"'Cinzel',serif", letterSpacing:0.5 }}>{(c.type||"creature").toUpperCase()}</div>
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:12, color:"#f0e0c8", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.name}</div>
+                  <div style={{ display:"flex", gap:6, alignItems:"center", marginTop:2 }}>
+                    <span style={{ fontSize:10, color:typeColor, fontFamily:"'Cinzel',serif", letterSpacing:0.5 }}>{(c.type||"creature").toUpperCase()}</span>
+                    {isCreature && c.atk != null && <span style={{ fontSize:10, color:"#b08060", fontFamily:"'Cinzel',serif" }}>{c.atk}/{c.hp}</span>}
+                  </div>
                 </div>
-                <button onClick={() => removeCard(i)} style={{ background:"rgba(180,60,40,0.15)", border:"1px solid #c0706055", borderRadius:5, color:"#e08060", fontSize:16, fontWeight:700, cursor:"pointer", lineHeight:1, flexShrink:0, width:28, height:28, display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
+                <button onClick={() => removeCard(i)} style={{ background:"rgba(180,60,40,0.15)", border:"1px solid #c0706050", borderRadius:5, color:"#e08060", fontSize:18, fontWeight:700, cursor:"pointer", lineHeight:1, flexShrink:0, width:30, height:30, display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
               </div>
             );
           })}
@@ -3701,6 +3768,148 @@ function MatchmakingScreen({ user, ranked, onMatch, onCancel, onRetry }) {
   );
 }
 // ═══ MATCH SETUP ═════════════════════════════════════════════
+// ═══ LEADERBOARD ═════════════════════════════════════════════════════════════
+const RANK_TIER_MMR = { Iron:0, Bronze:1000, Silver:1200, Gold:1400, Platinum:1600, Diamond:1800, Grandmaster:2000 };
+function LeaderboardScreen({ user, onBack }) {
+  const [players, setPlayers] = useState(null);
+  const [tierFilter, setTierFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, name, avatar_url, ranked_rating, ranked_wins, ranked_losses")
+        .order("ranked_rating", { ascending: false })
+        .limit(100);
+      if (!cancelled) setPlayers(data || []);
+    })();
+    return () => { cancelled = true; };
+  }, [refreshKey]);
+
+  const allTiers = Object.keys(RANK_TIER_MMR);
+  const indexed = (players || []).map((p, i) => ({ ...p, position: i + 1 }));
+  const filtered = indexed.filter(p => {
+    if (search && !p.name?.toLowerCase().includes(search.toLowerCase())) return false;
+    if (tierFilter !== "all" && getRank(p.ranked_rating ?? 1000).name !== tierFilter) return false;
+    return true;
+  });
+
+  const me = players?.find(p => p.id === user?.id);
+  const myPos = me ? (players.findIndex(p => p.id === user?.id) + 1) : 0;
+  const myRank = me ? getRank(me.ranked_rating ?? 1000) : null;
+  const podiumColors = ["#f0c840", "#b8c0c8", "#c08040"];
+  const podiumIcons = ["🥇", "🥈", "🥉"];
+
+  const statPill = (v, l, c) => (
+    <div style={{ textAlign:"center" }}>
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize:16, fontWeight:700, color:c, lineHeight:1 }}>{v}</div>
+      <div style={{ fontSize:8, color:"#504030", letterSpacing:1.5, marginTop:3, fontFamily:"'Cinzel',serif" }}>{l}</div>
+    </div>
+  );
+
+  return (
+    <div style={{ maxWidth:860, margin:"0 auto", padding:"24px 24px 60px", display:"flex", flexDirection:"column", gap:16, animation:"fadeIn 0.22s ease-out" }}>
+      {/* Header */}
+      <div style={{ display:"flex", alignItems:"center", gap:14, flexWrap:"wrap" }}>
+        <button onClick={onBack} style={{ background:"transparent", border:"1px solid #3a2810", borderRadius:8, padding:"8px 14px", fontFamily:"'Cinzel',serif", fontSize:11, color:"#806040", cursor:"pointer", transition:"all .15s" }} onMouseEnter={e=>e.currentTarget.style.borderColor="#e8c06066"} onMouseLeave={e=>e.currentTarget.style.borderColor="#3a2810"}>← BACK</button>
+        <div style={{ flex:1 }}>
+          <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:"#e8c060", margin:0, letterSpacing:2 }}>🏆 RANKED LADDER</h2>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#504030", letterSpacing:2.5, marginTop:3 }}>SEASON 1 · TOP 100 PLAYERS</div>
+        </div>
+        <button onClick={() => { setPlayers(null); setRefreshKey(k => k+1); }} style={{ background:"transparent", border:"1px solid #2a2010", borderRadius:7, padding:"7px 14px", fontFamily:"'Cinzel',serif", fontSize:10, color:"#604828", cursor:"pointer", letterSpacing:1, transition:"all .15s" }} onMouseEnter={e=>e.currentTarget.style.color="#c09040"} onMouseLeave={e=>e.currentTarget.style.color="#604828"}>↻ REFRESH</button>
+      </div>
+
+      {/* My position banner */}
+      {me && myPos > 0 && (
+        <div style={{ background:`linear-gradient(135deg,${myRank.color}18,transparent)`, border:`1px solid ${myRank.color}44`, borderRadius:14, padding:"14px 20px", display:"flex", alignItems:"center", gap:16, flexWrap:"wrap" }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:myPos<=3?22:18, fontWeight:900, color:myPos<=3?podiumColors[myPos-1]:"#807060", minWidth:44, textAlign:"center" }}>
+            {myPos <= 3 ? podiumIcons[myPos-1] : `#${myPos}`}
+          </div>
+          <div style={{ width:44, height:44, borderRadius:"50%", overflow:"hidden", border:`2px solid ${myRank.color}66`, background:"#1a1408", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:15, color:"#e8c060", flexShrink:0 }}>
+            {me.avatar_url ? <img src={me.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (me.name||"?").slice(0,2).toUpperCase()}
+          </div>
+          <div style={{ flex:1, minWidth:120 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:15, color:"#f0e8d0", fontWeight:700 }}>{me.name} <span style={{ fontSize:10, color:"#e8c060", opacity:.8 }}>· You</span></div>
+            <div style={{ fontSize:11, color:myRank.color, fontFamily:"'Cinzel',serif", marginTop:2 }}>{myRank.icon} {myRank.name} · {me.ranked_rating??1000} MMR</div>
+          </div>
+          <div style={{ display:"flex", gap:24 }}>
+            {statPill(me.ranked_wins??0, "WINS", "#78cc45")}
+            {statPill(me.ranked_losses??0, "LOSSES", "#e05050")}
+            {statPill((me.ranked_wins||me.ranked_losses) ? Math.round((me.ranked_wins??0)/Math.max((me.ranked_wins??0)+(me.ranked_losses??0),1)*100)+"%":"—", "WIN%", "#80b8ff")}
+          </div>
+        </div>
+      )}
+
+      {/* Filters */}
+      <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search player..." style={{ flex:1, minWidth:140, padding:"8px 12px", background:"#100e08", border:"1px solid #2a2010", borderRadius:8, color:"#f0e8d8", fontSize:12, outline:"none", fontFamily:"'Cinzel',serif" }} />
+        {["all", ...allTiers].map(tier => {
+          const r = tier === "all" ? null : getRank(RANK_TIER_MMR[tier]);
+          const active = tierFilter === tier;
+          return (
+            <button key={tier} onClick={() => setTierFilter(tier)} style={{ padding:"6px 11px", background: active ? (r?`${r.color}22`:"rgba(232,192,96,0.18)") : "transparent", border:`1px solid ${active?(r?r.color:"#e8c060"):"#2a2010"}`, borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:10, color: active?(r?r.color:"#e8c060"):"#504030", cursor:"pointer", letterSpacing:0.5, transition:"all .12s" }}>
+              {tier === "all" ? "ALL" : `${r.icon} ${tier}`}
+            </button>
+          );
+        })}
+        <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#403020", marginLeft:4 }}>{filtered.length} shown</span>
+      </div>
+
+      {/* Table */}
+      <div style={{ background:"linear-gradient(180deg,#0e0c06,#0a0806)", border:"1px solid #2a1a08", borderRadius:14, overflow:"hidden" }}>
+        {/* Column headers */}
+        <div style={{ display:"grid", gridTemplateColumns:"52px 1fr 96px 60px 60px 64px", padding:"10px 18px", borderBottom:"1px solid #1a1608", background:"rgba(232,192,96,0.04)" }}>
+          {[["#","left"],["PLAYER","left"],["MMR","center"],["W","center"],["L","center"],["WIN%","center"]].map(([h,a]) => (
+            <div key={h} style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#504028", letterSpacing:2, textAlign:a }}>{h}</div>
+          ))}
+        </div>
+        {players === null ? (
+          <div style={{ padding:48, textAlign:"center", fontFamily:"'Cinzel',serif", fontSize:13, color:"#503020", letterSpacing:3, animation:"pulse 1.5s ease-in-out infinite" }}>LOADING LADDER…</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding:48, textAlign:"center", fontFamily:"'Cinzel',serif", fontSize:13, color:"#503020" }}>No players match.</div>
+        ) : (
+          <div style={{ maxHeight:520, overflowY:"auto" }}>
+            {filtered.map((p) => {
+              const rank = getRank(p.ranked_rating ?? 1000);
+              const wins = p.ranked_wins ?? 0, losses = p.ranked_losses ?? 0;
+              const winPct = (wins || losses) ? Math.round(wins / Math.max(wins + losses, 1) * 100) : null;
+              const isMe = p.id === user?.id;
+              const isTop3 = p.position <= 3;
+              return (
+                <div key={p.id} style={{ display:"grid", gridTemplateColumns:"52px 1fr 96px 60px 60px 64px", padding:"10px 18px", borderBottom:"1px solid #14120a", background: isMe ? `${rank.color}12` : isTop3 ? "rgba(232,192,96,0.03)" : "transparent", transition:"background .15s" }}
+                  onMouseEnter={e => { if (!isMe) e.currentTarget.style.background="rgba(255,255,255,0.025)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = isMe ? `${rank.color}12` : isTop3 ? "rgba(232,192,96,0.03)" : "transparent"; }}>
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:isTop3?16:12, fontWeight:900, color:isTop3?podiumColors[p.position-1]:"#40352a", display:"flex", alignItems:"center" }}>
+                    {isTop3 ? podiumIcons[p.position-1] : p.position}
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                    <div style={{ width:32, height:32, borderRadius:"50%", overflow:"hidden", border:`1.5px solid ${rank.color}55`, background:"#1a1408", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:10, color:"#c09040", flexShrink:0 }}>
+                      {p.avatar_url ? <img src={p.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (p.name||"?").slice(0,2).toUpperCase()}
+                    </div>
+                    <div>
+                      <div style={{ fontFamily:"'Cinzel',serif", fontSize:12, color: isMe ? "#f0e060" : "#e0d0b0", fontWeight: isMe ? 700 : 400 }}>
+                        {p.name}{isMe && <span style={{ fontSize:9, color:"#e8c060", marginLeft:6, opacity:.8 }}>YOU</span>}
+                      </div>
+                      <div style={{ fontSize:9, color:rank.color, fontFamily:"'Cinzel',serif" }}>{rank.icon} {rank.name}</div>
+                    </div>
+                  </div>
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, fontWeight:700, color:rank.color, display:"flex", alignItems:"center", justifyContent:"center" }}>{p.ranked_rating ?? 1000}</div>
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:12, color:"#78cc45", display:"flex", alignItems:"center", justifyContent:"center" }}>{wins}</div>
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:12, color:"#e05050", display:"flex", alignItems:"center", justifyContent:"center" }}>{losses}</div>
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:12, color:"#80b8ff", display:"flex", alignItems:"center", justifyContent:"center" }}>{winPct !== null ? `${winPct}%` : "—"}</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDuel, clearPendingDuel }) {
   const [matchConfig, setMatchConfig] = useState(null);
   const [matchmaking, setMatchmaking] = useState(false);
@@ -3712,7 +3921,9 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDue
   const resolveDeck = (val) => val === "starter" ? { name:"Starter Deck", cards: STARTER_DECK } : val ? decks[parseInt(val)] || null : null;
   const selectedDeck = resolveDeck(aiDeckVal);
   const pvpDeck      = resolveDeck(pvpDeckVal);
+  const [showLadder, setShowLadder] = useState(false);
   const userRank = getRank(user?.rankedRating);
+  if (showLadder) return <LeaderboardScreen user={user} onBack={() => setShowLadder(false)} />;
   if (matchmaking) return (<MatchmakingScreen key={matchmaking} user={user} ranked={ranked} onMatch={(cfg) => { setMatchmaking(false); const cfg2 = { mode:"pvp", ranked, playerDeck: pvpDeck?.cards || null, ...cfg }; setMatchConfig(cfg2); setMatchActive?.(true); }} onCancel={() => setMatchmaking(false)} onRetry={() => { setMatchmaking(false); setTimeout(() => setMatchmaking(true), 80); }} />);
   // Friend duel — deck selection before entering
   if (pendingDuel && !matchConfig) return (
@@ -3835,6 +4046,20 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDue
           No custom decks yet — open <strong style={{ color:"#c8a040" }}>Cards</strong> to build your first deck
         </div>
       )}
+      {/* Ranked Ladder teaser */}
+      <div onClick={() => setShowLadder(true)} style={{ display:"flex", alignItems:"center", gap:14, padding:"14px 20px", background:"linear-gradient(135deg,rgba(18,12,4,0.9),rgba(10,8,4,0.9))", border:`1px solid ${userRank.color}30`, borderRadius:14, cursor:"pointer", transition:"all .18s" }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor=`${userRank.color}80`; e.currentTarget.style.background="linear-gradient(135deg,rgba(24,16,6,0.95),rgba(14,10,4,0.95))"; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor=`${userRank.color}30`; e.currentTarget.style.background="linear-gradient(135deg,rgba(18,12,4,0.9),rgba(10,8,4,0.9))"; }}>
+        <div style={{ fontSize:28, filter:`drop-shadow(0 0 10px ${userRank.color}66)` }}>🏆</div>
+        <div style={{ flex:1 }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, fontWeight:700, color:"#e8c060", letterSpacing:1 }}>RANKED LADDER</div>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#504030", letterSpacing:1.5, marginTop:2 }}>Season 1 · See where you stand</div>
+        </div>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:userRank.color, display:"flex", alignItems:"center", gap:8 }}>
+          <span>{userRank.icon} {userRank.name}</span>
+          <span style={{ color:"#403020" }}>›</span>
+        </div>
+      </div>
       {/* Tutorial link */}
       <div style={{ textAlign:"center" }}>
         <button onClick={() => window.dispatchEvent(new CustomEvent("openTutorial"))} style={{ background:"transparent", border:"none", fontFamily:"'Cinzel',serif", fontSize:10, color:"#605040", cursor:"pointer", letterSpacing:1, textDecoration:"underline" }}>New here? Play the Tutorial</button>
@@ -7333,7 +7558,7 @@ export default function App() {
         <button onClick={()=>setHistPopup(null)} style={{ padding:"6px 22px", background:"transparent", border:"1px solid #3a2810", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:9, color:"#806040", cursor:"pointer", letterSpacing:1 }}>CLOSE</button>
       </div>
     </>)}
-    <div style={{ position: "relative", paddingTop: inBattle ? 4 : 0 }} onClick={() => setShowSidebar(false)}>
+    <div key={tab} style={{ position: "relative", paddingTop: inBattle ? 4 : 0, animation: "fadeIn 0.2s ease-out" }} onClick={() => setShowSidebar(false)}>
       {tab === "home" && <HomeScreen setTab={setTab} user={user} />}
       {tab === "play" && <GameTab user={user} onUpdateUser={update} setInPvpMatch={setInPvpMatch} setMatchActive={setMatchActive} pendingDuel={pendingDuel} clearPendingDuel={() => setPendingDuel(null)} />}
       {tab === "store" && <StoreScreen user={user} onUpdateUser={update} />}
