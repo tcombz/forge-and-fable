@@ -2529,6 +2529,11 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   const lastAcceptedSeqRef = useRef(-1);
   const lastOpMoveRef = useRef(Date.now());
   const [disconnectWarn, setDisconnectWarn] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);   // own connection lost
+  const [reconnectSecs, setReconnectSecs] = useState(120);   // countdown while offline
+  const [oppDisconnectSecs, setOppDisconnectSecs] = useState(null); // opponent's 2-min countdown
+  const reconnectIntervalRef = useRef(null);
+  const oppDisconnectIntervalRef = useRef(null);
   const vfx = useVFX();
   const logRef = useRef(null);
   const prevBoardUidsRef = useRef({ player: new Set(), enemy: new Set() });
@@ -2558,13 +2563,22 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     return () => { setInPvpMatch?.(false); pvpForfeitRef.current = null; };
   }, []); // eslint-disable-line
   useEffect(() => { pvpForfeitRef.current = forfeit; }, [gs]); // keep closure fresh
-  // Warn on browser refresh/close during active match
+  // On browser close/refresh: stamp disconnect_at so opponent sees countdown and we can rejoin
   useEffect(() => {
-    if (gs?.winner) return; // match already over, no need to warn
-    const handler = (e) => { e.preventDefault(); e.returnValue = "You have an active match. Leaving will forfeit."; return e.returnValue; };
+    if (gs?.winner) return;
+    const handler = () => {
+      if (!matchId || !myRoleRef.current) return;
+      const col = myRoleRef.current === "p1" ? "p1_disconnect_at" : "p2_disconnect_at";
+      // sendBeacon is fire-and-forget, safe in beforeunload
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`;
+      const body = JSON.stringify({ [col]: new Date().toISOString() });
+      navigator.sendBeacon(url, new Blob([body], { type: "application/json" }));
+      // Also try async update (works if tab stays open briefly)
+      supabase.from("matches").update({ [col]: new Date().toISOString() }).eq("id", matchId).then(() => {});
+    };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, [gs?.winner]);
+  }, [gs?.winner, matchId]); // eslint-disable-line
 
   // Save match history and stats when PvP ends (covers win, loss, and forfeit)
   useEffect(() => {
@@ -2820,6 +2834,11 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       if (!match) { onExit(); return; }
       const role = match.player1_id === user.id ? "p1" : "p2";
       setMyRole(role);
+      // Clear our own disconnect stamp — we're back
+      const myDisCol = role === "p1" ? "p1_disconnect_at" : "p2_disconnect_at";
+      if (match[myDisCol]) {
+        await supabase.from("matches").update({ [myDisCol]: null }).eq("id", matchId);
+      }
       const applyIncoming = (incoming) => {
         const currentGs = gsRef.current;
         const role = myRoleRef.current;
@@ -2915,6 +2934,77 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   }, [matchId]);
 
   useEffect(() => { if (logRef.current) logRef.current.scrollTo({ top: 99999, behavior: "smooth" }); }, [gs?.log]);
+
+  // ── Own reconnect overlay: watch Supabase Realtime channel status ────────────
+  useEffect(() => {
+    if (!matchId) return;
+    const ch = supabase.channel("pvp_presence_" + matchId);
+    ch.subscribe((status) => {
+      if (status === "CLOSED" || status === "CHANNEL_ERROR") {
+        if (gs?.winner) return;
+        setReconnecting(true);
+        setReconnectSecs(120);
+        clearInterval(reconnectIntervalRef.current);
+        reconnectIntervalRef.current = setInterval(() => {
+          setReconnectSecs(s => {
+            if (s <= 1) {
+              clearInterval(reconnectIntervalRef.current);
+              return 0;
+            }
+            return s - 1;
+          });
+        }, 1000);
+      } else if (status === "SUBSCRIBED") {
+        setReconnecting(false);
+        clearInterval(reconnectIntervalRef.current);
+        // Clear own disconnect stamp
+        if (myRoleRef.current && matchId) {
+          const col = myRoleRef.current === "p1" ? "p1_disconnect_at" : "p2_disconnect_at";
+          supabase.from("matches").update({ [col]: null }).eq("id", matchId).then(() => {});
+        }
+      }
+    });
+    return () => { supabase.removeChannel(ch); clearInterval(reconnectIntervalRef.current); };
+  }, [matchId]); // eslint-disable-line
+
+  // ── Opponent disconnect watcher: poll match row for opponent's disconnect_at ─
+  useEffect(() => {
+    if (!gs || !myRole || gs.winner) return;
+    const oppCol = myRole === "p1" ? "p2_disconnect_at" : "p1_disconnect_at";
+    const check = async () => {
+      const { data } = await supabase.from("matches").select(`${oppCol}`).eq("id", matchId).single();
+      const disconnectedAt = data?.[oppCol];
+      if (disconnectedAt && !oppDisconnectIntervalRef.current) {
+        const elapsed = Math.floor((Date.now() - new Date(disconnectedAt).getTime()) / 1000);
+        const remaining = Math.max(0, 120 - elapsed);
+        setOppDisconnectSecs(remaining);
+        oppDisconnectIntervalRef.current = setInterval(() => {
+          setOppDisconnectSecs(s => {
+            if (s <= 1) {
+              clearInterval(oppDisconnectIntervalRef.current);
+              oppDisconnectIntervalRef.current = null;
+              // Time expired — write winner to DB
+              if (!gs?.winner && myRole) {
+                const newGs = { ...gsRef.current, winner: myRole, seq: (gsRef.current?.seq||0)+1, log: [...(gsRef.current?.log||[]).slice(-20), "Opponent disconnected — you win!"] };
+                supabase.from("matches").update({ game_state: newGs }).eq("id", matchId).then(() => {});
+                setGs(newGs);
+              }
+              return 0;
+            }
+            return s - 1;
+          });
+        }, 1000);
+      } else if (!disconnectedAt && oppDisconnectIntervalRef.current) {
+        // Opponent reconnected — clear countdown
+        clearInterval(oppDisconnectIntervalRef.current);
+        oppDisconnectIntervalRef.current = null;
+        setOppDisconnectSecs(null);
+      }
+    };
+    const pollId = setInterval(check, 5000);
+    check(); // immediate check on mount
+    return () => { clearInterval(pollId); clearInterval(oppDisconnectIntervalRef.current); oppDisconnectIntervalRef.current = null; };
+  }, [myRole, gs?.winner]); // eslint-disable-line
 
   // Track opponent's last move for disconnect detection
   useEffect(() => {
@@ -3214,6 +3304,34 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         </div>
       </div>
     </div>)}
+    {/* Own reconnect overlay */}
+    {reconnecting && !gs?.winner && (
+      <div style={{ position:"fixed", inset:0, zIndex:600, background:"rgba(0,0,0,0.92)", display:"flex", alignItems:"center", justifyContent:"center", animation:"fadeIn 0.3s" }}>
+        <div style={{ background:"#0e0c08", border:"1px solid #e8c06055", borderRadius:16, padding:"36px 44px", textAlign:"center", maxWidth:360 }}>
+          <div style={{ width:80, height:80, borderRadius:"50%", background:`conic-gradient(#e8c060 ${(reconnectSecs/120)*360}deg, #2a2010 0deg)`, margin:"0 auto 20px", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <div style={{ width:64, height:64, borderRadius:"50%", background:"#0e0c08", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:1 }}>
+              <span style={{ fontFamily:"'Cinzel',serif", fontSize:20, fontWeight:700, color: reconnectSecs < 30 ? "#e05050" : "#e8c060", lineHeight:1 }}>{reconnectSecs}</span>
+              <span style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:"#504030", letterSpacing:1 }}>SEC</span>
+            </div>
+          </div>
+          <div style={{ fontSize:32, marginBottom:12, animation:"pulse 0.8s ease-in-out infinite" }}>📡</div>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:17, color:"#e8c060", fontWeight:700, marginBottom:8, letterSpacing:2 }}>RECONNECTING…</div>
+          <p style={{ fontSize:11, color:"#907060", marginBottom:6, lineHeight:1.7 }}>Connection lost. Your match is held for <strong style={{ color:"#e8c060" }}>{reconnectSecs}s</strong>. Return before the timer expires or your opponent wins by default.</p>
+          {reconnectSecs === 0 && <p style={{ fontSize:11, color:"#e05050", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>TIME EXPIRED</p>}
+        </div>
+      </div>
+    )}
+    {/* Opponent disconnect countdown */}
+    {oppDisconnectSecs !== null && oppDisconnectSecs > 0 && !gs?.winner && (
+      <div style={{ position:"fixed", top:20, left:"50%", transform:"translateX(-50%)", zIndex:520, background:"rgba(12,8,4,0.95)", border:"1px solid #e8c06044", borderRadius:12, padding:"12px 24px", display:"flex", alignItems:"center", gap:12, boxShadow:"0 8px 32px rgba(0,0,0,0.8)", animation:"slideDown 0.3s ease-out" }}>
+        <div style={{ fontSize:20 }}>📡</div>
+        <div>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#e8c060", fontWeight:700, letterSpacing:1 }}>{opponentName || "OPPONENT"} DISCONNECTED</div>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#906040", letterSpacing:1, marginTop:2 }}>Auto-win in {oppDisconnectSecs}s if they don't return</div>
+        </div>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color: oppDisconnectSecs < 30 ? "#e05050" : "#e8c060", minWidth:36, textAlign:"center" }}>{oppDisconnectSecs}</div>
+      </div>
+    )}
     {/* Disconnect warning */}
     {disconnectWarn && !gs.winner && (
       <div style={{ position:"fixed", inset:0, zIndex:550, background:"rgba(0,0,0,0.88)", display:"flex", alignItems:"center", justifyContent:"center", animation:"fadeIn 0.3s" }}>
@@ -4121,6 +4239,14 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDue
       setMatchConfig({ mode:"ai", ghostAI: true, opponentName: makeGhostName(), ghostEnemyDeck: makeGhostDeck(), playerDeck: pvpDeck?.cards || null, ranked: false });
       setMatchActive?.(true);
     }} />);
+  // Rejoin — skip deck selection, go straight into existing match
+  if (pendingDuel?.rejoin && !matchConfig) {
+    const cfg = { mode:"pvp", ranked: false, matchId: pendingDuel.matchId, opponentName: pendingDuel.opponentName, opponentId: pendingDuel.opponentId, playerDeck: null };
+    clearPendingDuel();
+    setMatchConfig(cfg);
+    setMatchActive?.(true);
+    return null;
+  }
   // Friend duel — deck selection before entering
   if (pendingDuel && !matchConfig) return (
     <div style={{ maxWidth:480, margin:"0 auto", padding:"60px 24px", textAlign:"center" }}>
@@ -7519,6 +7645,7 @@ export default function App() {
   const [globalChallenge, setGlobalChallenge] = useState(null); // { fromId, fromName, fromAvatar }
   const [pendingDuel, setPendingDuel] = useState(null); // { matchId, opponentName, opponentId }
   const [declinedToast, setDeclinedToast] = useState(null); // name of player who declined
+  const [rejoinMatch, setRejoinMatch] = useState(null); // { matchId, opponentName, opponentId, role }
   const [isMobile] = useState(() => window.innerWidth < 900);
   const checkFs = () => !!(document.fullscreenElement || window.innerHeight === screen.height);
   const [isFullscreen, setIsFullscreen] = useState(checkFs);
@@ -7542,6 +7669,31 @@ export default function App() {
     if (localSeen === CURRENT_PATCH) return; // already dismissed this session/device
     if (user.lastPatchSeen !== CURRENT_PATCH) setShowPatchNotes(true);
   }, [user?.id]); // eslint-disable-line
+  // Check for an active match to rejoin (within 2 minutes of disconnect)
+  useEffect(() => {
+    if (!user?.id) return;
+    (async () => {
+      const cutoff = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+      const { data } = await supabase
+        .from("matches")
+        .select("id, player1_id, player2_id, game_state, p1_disconnect_at, p2_disconnect_at")
+        .eq("status", "active")
+        .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
+        .is("game_state->>winner", null)
+        .limit(1)
+        .maybeSingle();
+      if (!data) return;
+      const role = data.player1_id === user.id ? "p1" : "p2";
+      const myDisCol = role === "p1" ? "p1_disconnect_at" : "p2_disconnect_at";
+      const disconnectedAt = data[myDisCol];
+      // Only offer rejoin if we have a recent disconnect stamp
+      if (!disconnectedAt || new Date(disconnectedAt) < new Date(cutoff)) return;
+      const oppId = role === "p1" ? data.player2_id : data.player1_id;
+      const oppName = role === "p1" ? data.game_state?.p2Name : data.game_state?.p1Name;
+      setRejoinMatch({ matchId: data.id, opponentName: oppName || "Opponent", opponentId: oppId, role });
+    })();
+  }, [user?.id]); // eslint-disable-line
+
   // App-level notification subscriptions — active regardless of current tab
   useEffect(() => {
     if (!user?.id) return;
@@ -7715,6 +7867,35 @@ export default function App() {
         <span style={{ fontSize:32, lineHeight:1, filter:"drop-shadow(0 0 8px #e8c06066)" }}>⛶</span>
         <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:"#e8c060", letterSpacing:1, lineHeight:1.5 }}>FULL SCREEN<br/>RECOMMENDED</div>
         <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#806040", letterSpacing:1 }}>Press <strong style={{ color:"#c0a050" }}>F11</strong> for the best experience</div>
+      </div>
+    )}
+    {/* Rejoin match banner */}
+    {rejoinMatch && !matchActive && (
+      <div style={{ position:"fixed", top:20, left:"50%", transform:"translateX(-50%)", zIndex:820, background:"linear-gradient(135deg,#0e1a08,#0a1206)", border:"1px solid #78cc4566", borderRadius:14, padding:"16px 24px", display:"flex", alignItems:"center", gap:16, boxShadow:"0 8px 40px rgba(0,0,0,0.95), 0 0 0 1px #78cc4522", animation:"slideDown 0.3s ease-out", minWidth:340, maxWidth:500 }}>
+        <div style={{ fontSize:28, flexShrink:0 }}>⚔️</div>
+        <div style={{ flex:1 }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, fontWeight:700, color:"#78cc45", letterSpacing:1 }}>ACTIVE MATCH FOUND</div>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#606040", marginTop:2 }}>vs {rejoinMatch.opponentName} — still in progress</div>
+        </div>
+        <div style={{ display:"flex", gap:8 }}>
+          <button onClick={() => {
+            setRejoinMatch(null);
+            // Skip deck selection — go straight to the existing match
+            setPendingDuel({ matchId: rejoinMatch.matchId, opponentName: rejoinMatch.opponentName, opponentId: rejoinMatch.opponentId, rejoin: true });
+            setTab("play");
+          }} style={{ padding:"9px 18px", background:"linear-gradient(135deg,#1a4a08,#2a6a10)", border:"1px solid #78cc4566", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:"#a0e060", cursor:"pointer", letterSpacing:1, whiteSpace:"nowrap" }}>REJOIN</button>
+          <button onClick={async () => {
+            setRejoinMatch(null);
+            // Opponent wins by default when player dismisses
+            try {
+              const { data: m } = await supabase.from("matches").select("game_state, player1_id, player2_id").eq("id", rejoinMatch.matchId).single();
+              if (m && !m.game_state?.winner) {
+                const winner = m.player1_id === user.id ? "p2" : "p1";
+                await supabase.from("matches").update({ game_state: { ...m.game_state, winner, log: [...(m.game_state?.log||[]).slice(-20), "Player forfeited by disconnecting."] } }).eq("id", rejoinMatch.matchId);
+              }
+            } catch(_) {}
+          }} style={{ padding:"9px 14px", background:"transparent", border:"1px solid #3a2010", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, color:"#806040", cursor:"pointer" }}>FORFEIT</button>
+        </div>
       </div>
     )}
     {/* Match declined toast */}
