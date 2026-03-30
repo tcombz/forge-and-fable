@@ -38,6 +38,26 @@ class ErrorBoundary extends Component {
   }
 }
 
+// ═══ SKELETON / LOADING PRIMITIVES ══════════════════════════════════════════
+// Skel: single shimmer block. w/h accept any CSS value.
+const Skel = ({ w = "100%", h = 16, r = 6, style = {} }) => (
+  <div className="skel" style={{ width: w, height: h, borderRadius: r, flexShrink: 0, ...style }} />
+);
+
+// Full-screen branded loading used at app boot and anywhere that needs it
+function LoadingScreen({ label = "FORGING…" }) {
+  return (
+    <div style={{ minHeight: "100vh", background: "#161210", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 24 }}>
+      <div style={{ display: "flex", gap: 6 }}>
+        {[0, 1, 2, 3].map(i => (
+          <div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: "#e8c060", animation: `pulse 1.2s ${i * 0.18}s ease-in-out infinite` }} />
+        ))}
+      </div>
+      <div style={{ fontFamily: "'Cinzel',serif", color: "#e8c060", fontSize: 13, letterSpacing: 5, animation: "pulse 1.5s ease-in-out infinite" }}>{label}</div>
+    </div>
+  );
+}
+
 // ═══ ALPHA KEYS ══════════════════════════════════════════════════════════════
 // Supabase: run once to create the used_keys tracking table —
 //   CREATE TABLE used_alpha_keys (key TEXT PRIMARY KEY, used_by_name TEXT, used_at TIMESTAMPTZ DEFAULT NOW());
@@ -2223,6 +2243,9 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
   const deckPool = GAMEPLAY_POOL;
   const owned = deckPool;
   const isNew = !editDeck;
+  // Defer card pool render by one frame so the modal opens instantly
+  const [poolReady, setPoolReady] = useState(false);
+  useEffect(() => { const id = requestAnimationFrame(() => setPoolReady(true)); return () => cancelAnimationFrame(id); }, []);
   const [deck, setDeck] = useState(() => editDeck ? [...editDeck.cards] : []);
   const [dbPreview, setDbPreview] = useState(null);
   const [errMsg, setErrMsg] = useState("");
@@ -2352,7 +2375,17 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
           </div>
         </div>
         <div style={{ overflowY:"auto", padding:"16px 20px", flex:1 }}>
-          {filtered.length === 0
+          {!poolReady
+            ? <div style={{ display:"flex", flexWrap:"wrap", gap:12 }}>
+                {Array.from({ length: 18 }).map((_, i) => (
+                  <div key={i} style={{ display:"flex", flexDirection:"column", gap:5 }}>
+                    <Skel w={90} h={126} r={8} />
+                    <Skel w={90} h={11} />
+                    <Skel w={60} h={9} />
+                  </div>
+                ))}
+              </div>
+            : filtered.length === 0
             ? <p style={{ color:"#604028", fontSize:14, textAlign:"center", marginTop:40 }}>No cards match your filters.</p>
             : <div style={{ display:"flex", flexWrap:"wrap", gap:12 }}>
               {filtered.map((c, i) => {
@@ -3853,7 +3886,19 @@ function LeaderboardScreen({ user, onBack }) {
       </div>
 
       {/* My position banner */}
-      {me && myPos > 0 && (
+      {players === null && (
+        <div style={{ background:"rgba(232,192,96,0.04)", border:"1px solid #2a2010", borderRadius:14, padding:"14px 20px", display:"flex", alignItems:"center", gap:16 }}>
+          <Skel w={44} h={44} r={22} />
+          <div style={{ flex:1, display:"flex", flexDirection:"column", gap:7 }}>
+            <Skel w="28%" h={13} />
+            <Skel w="18%" h={10} />
+          </div>
+          <div style={{ display:"flex", gap:24 }}>
+            {[0,1,2].map(i => <div key={i} style={{ display:"flex", flexDirection:"column", gap:5, alignItems:"center" }}><Skel w={32} h={16} /><Skel w={28} h={8} /></div>)}
+          </div>
+        </div>
+      )}
+      {me && myPos > 0 && players !== null && (
         <div style={{ background:`linear-gradient(135deg,${myRank.color}18,transparent)`, border:`1px solid ${myRank.color}44`, borderRadius:14, padding:"14px 20px", display:"flex", alignItems:"center", gap:16, flexWrap:"wrap" }}>
           <div style={{ fontFamily:"'Cinzel',serif", fontSize:myPos<=3?22:18, fontWeight:900, color:myPos<=3?podiumColors[myPos-1]:"#807060", minWidth:44, textAlign:"center" }}>
             {myPos <= 3 ? podiumIcons[myPos-1] : `#${myPos}`}
@@ -3897,7 +3942,24 @@ function LeaderboardScreen({ user, onBack }) {
           ))}
         </div>
         {players === null ? (
-          <div style={{ padding:48, textAlign:"center", fontFamily:"'Cinzel',serif", fontSize:13, color:"#503020", letterSpacing:3, animation:"pulse 1.5s ease-in-out infinite" }}>LOADING LADDER…</div>
+          <div style={{ padding:"8px 0" }}>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} style={{ display:"grid", gridTemplateColumns:"52px 1fr 96px 60px 60px 64px", padding:"12px 18px", borderBottom:"1px solid #14120a", alignItems:"center", gap:8 }}>
+                <Skel w={28} h={13} />
+                <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                  <Skel w={32} h={32} r={16} />
+                  <div style={{ flex:1, display:"flex", flexDirection:"column", gap:5 }}>
+                    <Skel w="60%" h={11} />
+                    <Skel w="35%" h={9} />
+                  </div>
+                </div>
+                <Skel w={48} h={13} style={{ margin:"0 auto" }} />
+                <Skel w={24} h={13} style={{ margin:"0 auto" }} />
+                <Skel w={24} h={13} style={{ margin:"0 auto" }} />
+                <Skel w={36} h={13} style={{ margin:"0 auto" }} />
+              </div>
+            ))}
+          </div>
         ) : filtered.length === 0 ? (
           <div style={{ padding:48, textAlign:"center", fontFamily:"'Cinzel',serif", fontSize:13, color:"#503020" }}>No players match.</div>
         ) : (
@@ -3989,7 +4051,18 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDue
     return (
     <div style={{ maxWidth:860, margin:"0 auto", padding:"36px 24px 60px", display:"flex", flexDirection:"column", gap:20 }}>
       {/* Player stats header */}
-      {user && (
+      {!user ? (
+        <div style={{ background:"linear-gradient(135deg,rgba(18,14,6,0.95),rgba(10,8,4,0.95))", border:"1px solid rgba(232,192,96,0.08)", borderRadius:14, padding:"14px 22px", display:"flex", alignItems:"center", gap:18 }}>
+          <Skel w={50} h={50} r={25} />
+          <div style={{ flex:1, display:"flex", flexDirection:"column", gap:7 }}>
+            <Skel w="22%" h={13} />
+            <Skel w="14%" h={10} />
+          </div>
+          <div style={{ display:"flex", gap:20 }}>
+            {[0,1,2,3].map(i => <div key={i} style={{ display:"flex", flexDirection:"column", gap:5, alignItems:"center" }}><Skel w={34} h={17} /><Skel w={36} h={8} /></div>)}
+          </div>
+        </div>
+      ) : (
         <div style={{ background:"linear-gradient(135deg,rgba(18,14,6,0.95),rgba(10,8,4,0.95))", border:"1px solid rgba(232,192,96,0.14)", borderRadius:14, padding:"14px 22px", display:"flex", alignItems:"center", gap:18, backdropFilter:"blur(8px)" }}>
           <div style={{ width:50, height:50, borderRadius:"50%", background:`linear-gradient(135deg,${userRank.color}28,${userRank.color}0a)`, border:`2px solid ${userRank.color}55`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>{userRank.icon}</div>
           <div style={{ flex:1, minWidth:0 }}>
@@ -7419,7 +7492,7 @@ export default function App() {
       setTab("play");
     }
   };
-  if (loading) return (<div style={{ minHeight: "100vh", background: "#161210", display: "flex", alignItems: "center", justifyContent: "center" }}><div style={{ fontFamily: "'Cinzel',serif", color: "#e8c060", fontSize: 16, letterSpacing: 4, animation: "pulse 1.5s ease-in-out infinite" }}>FORGING...</div></div>);
+  if (loading) return <LoadingScreen />;
   return (<div style={{ minHeight: "100vh", background: "#161210", color: "#e8e0d0", fontFamily: "'Lora',Georgia,serif", overflowX: "hidden" }} onClick={() => setShowSidebar(false)}>
     <style>{`
       @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Lora:ital,wght@0,400;0,500;1,400&display=swap');
@@ -7466,6 +7539,8 @@ export default function App() {
       @keyframes cardLungeFaceDown{0%{transform:translateY(0) scale(1);filter:brightness(1)}15%{transform:translateY(90px) scale(1.18) rotate(4deg);filter:brightness(1.9)}45%{transform:translateY(76px) scale(1.14) rotate(2deg);filter:brightness(1.5)}75%{transform:translateY(12px) scale(1.03);filter:brightness(1.1)}100%{transform:translateY(0) scale(1);filter:brightness(1)}}
       @keyframes coinSpin{0%{transform:rotateY(0deg);opacity:1}40%{transform:rotateY(720deg)}70%{transform:rotateY(1260deg)}100%{transform:rotateY(1440deg)}}
       @keyframes cardHit{0%{transform:translate(0,0) rotate(0deg);filter:none}8%{transform:translate(-14px,6px) rotate(-4deg);filter:brightness(5) saturate(0) drop-shadow(0 0 18px #ff1010)}22%{transform:translate(12px,5px) rotate(3deg);filter:brightness(3.5) saturate(0.1) drop-shadow(0 0 12px #ff2020)}40%{transform:translate(-8px,3px) rotate(-2deg);filter:brightness(2.5) drop-shadow(0 0 8px #ff3030)}58%{transform:translate(6px,1px) rotate(1deg);filter:brightness(1.8)}75%{transform:translate(-4px,0) rotate(0deg);filter:brightness(1.2)}100%{transform:translate(0,0) rotate(0deg);filter:none}}
+      @keyframes shimmer{0%{background-position:-600px 0}100%{background-position:600px 0}}
+      .skel{background:linear-gradient(90deg,#1a1608 25%,#2a2210 50%,#1a1608 75%);background-size:600px 100%;animation:shimmer 1.6s infinite linear;border-radius:6px}
       @media(prefers-reduced-motion:reduce){*{animation-duration:0.01ms!important;transition-duration:0.01ms!important}}
       @supports(-webkit-backdrop-filter:blur(0px)){nav{-webkit-backdrop-filter:blur(10px)!important;backdrop-filter:blur(10px)!important}}
       @media(max-width:768px){
