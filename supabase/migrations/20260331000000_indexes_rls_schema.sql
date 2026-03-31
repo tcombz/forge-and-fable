@@ -205,18 +205,18 @@ CREATE POLICY "profiles_select_all" ON profiles
 -- Only the owning user can insert their profile row
 CREATE POLICY "profiles_insert_own" ON profiles
   FOR INSERT TO authenticated
-  WITH CHECK (id = auth.uid());
+  WITH CHECK (id::text = auth.uid()::text);
 
 -- Only the owning user can update their profile
 CREATE POLICY "profiles_update_own" ON profiles
   FOR UPDATE TO authenticated
-  USING (id = auth.uid())
-  WITH CHECK (id = auth.uid());
+  USING (id::text = auth.uid()::text)
+  WITH CHECK (id::text = auth.uid()::text);
 
 -- Only the owning user can delete their profile (account deletion)
 CREATE POLICY "profiles_delete_own" ON profiles
   FOR DELETE TO authenticated
-  USING (id = auth.uid());
+  USING (id::text = auth.uid()::text);
 
 
 -- ── matches ───────────────────────────────────────────────────────────────────
@@ -230,22 +230,22 @@ DROP POLICY IF EXISTS "matches_delete_players"  ON matches;
 -- Players can only read their own matches
 CREATE POLICY "matches_select_players" ON matches
   FOR SELECT TO authenticated
-  USING (player1_id = auth.uid() OR player2_id = auth.uid());
+  USING (player1_id::text = auth.uid()::text OR player2_id::text = auth.uid()::text);
 
 -- Any authenticated user can create a match (challenge accepted flow)
 CREATE POLICY "matches_insert_auth" ON matches
   FOR INSERT TO authenticated
-  WITH CHECK (player1_id = auth.uid() OR player2_id = auth.uid());
+  WITH CHECK (player1_id::text = auth.uid()::text OR player2_id::text = auth.uid()::text);
 
 -- Only players in the match can update the game state
 CREATE POLICY "matches_update_players" ON matches
   FOR UPDATE TO authenticated
-  USING (player1_id = auth.uid() OR player2_id = auth.uid());
+  USING (player1_id::text = auth.uid()::text OR player2_id::text = auth.uid()::text);
 
 -- Players can delete/cleanup their own finished matches
 CREATE POLICY "matches_delete_players" ON matches
   FOR DELETE TO authenticated
-  USING (player1_id = auth.uid() OR player2_id = auth.uid());
+  USING (player1_id::text = auth.uid()::text OR player2_id::text = auth.uid()::text);
 
 
 -- ── matchmaking ───────────────────────────────────────────────────────────────
@@ -260,19 +260,19 @@ DROP POLICY IF EXISTS "matchmaking_delete_own"  ON matchmaking;
 -- Client-side access is own-row only.
 CREATE POLICY "matchmaking_select_own" ON matchmaking
   FOR SELECT TO authenticated
-  USING (user_id = auth.uid());
+  USING (user_id::text = auth.uid()::text);
 
 CREATE POLICY "matchmaking_insert_own" ON matchmaking
   FOR INSERT TO authenticated
-  WITH CHECK (user_id = auth.uid());
+  WITH CHECK (user_id::text = auth.uid()::text);
 
 CREATE POLICY "matchmaking_update_own" ON matchmaking
   FOR UPDATE TO authenticated
-  USING (user_id = auth.uid());
+  USING (user_id::text = auth.uid()::text);
 
 CREATE POLICY "matchmaking_delete_own" ON matchmaking
   FOR DELETE TO authenticated
-  USING (user_id = auth.uid());
+  USING (user_id::text = auth.uid()::text);
 
 
 -- ── friendships ───────────────────────────────────────────────────────────────
@@ -286,22 +286,22 @@ DROP POLICY IF EXISTS "friendships_delete_participant"  ON friendships;
 -- See any friendship you are part of (both pending and accepted)
 CREATE POLICY "friendships_select_participant" ON friendships
   FOR SELECT TO authenticated
-  USING (requester = auth.uid() OR accepter = auth.uid());
+  USING (requester::text = auth.uid()::text OR accepter::text = auth.uid()::text);
 
 -- You can only create a friendship request where you are the requester
 CREATE POLICY "friendships_insert_requester" ON friendships
   FOR INSERT TO authenticated
-  WITH CHECK (requester = auth.uid());
+  WITH CHECK (requester::text = auth.uid()::text);
 
 -- Both parties can update (accepter accepts; requester could cancel pending)
 CREATE POLICY "friendships_update_accepter" ON friendships
   FOR UPDATE TO authenticated
-  USING (requester = auth.uid() OR accepter = auth.uid());
+  USING (requester::text = auth.uid()::text OR accepter::text = auth.uid()::text);
 
 -- Either party can remove the friendship
 CREATE POLICY "friendships_delete_participant" ON friendships
   FOR DELETE TO authenticated
-  USING (requester = auth.uid() OR accepter = auth.uid());
+  USING (requester::text = auth.uid()::text OR accepter::text = auth.uid()::text);
 
 
 -- ── used_alpha_keys ───────────────────────────────────────────────────────────
@@ -332,7 +332,7 @@ CREATE POLICY "feedback_select_all" ON community_feedback
 
 CREATE POLICY "feedback_insert_auth" ON community_feedback
   FOR INSERT TO authenticated
-  WITH CHECK (user_id = auth.uid());
+  WITH CHECK (user_id::text = auth.uid()::text);
 
 -- Allow updating only the upvotes column (enforced at app level; RLS allows row)
 CREATE POLICY "feedback_update_upvote" ON community_feedback
@@ -354,7 +354,7 @@ CREATE POLICY "cards_select_all" ON community_cards
 
 CREATE POLICY "cards_insert_auth" ON community_cards
   FOR INSERT TO authenticated
-  WITH CHECK (user_id = auth.uid());
+  WITH CHECK (user_id::text = auth.uid()::text);
 
 -- Any authenticated user can increment votes (app prevents double-voting)
 CREATE POLICY "cards_update_votes" ON community_cards
