@@ -7,8 +7,7 @@
 //   2. Combat damage exchange
 //   3. Bleed apply (attacker keyword → target gets bleed stack)
 //   4. Anchor: immune to spell targeting (freeze_target etc.)
-//   5. Level Up: check attacksMade thresholds after every attack
-//   6. onDeath: resolved for any creature that hits 0 HP
+//   5. onDeath: resolved for any creature that hits 0 HP
 //   7. Splat chain: attacker damages all other enemies; strip Splat before recursive onDeath
 //   8. Shield absorbs one hit (combat or Splat)
 //   9. Turn-start: bleed ticks, canAttack/hasAttacked reset, energy/draw
@@ -24,27 +23,6 @@ const corsHeaders = {
 
 function hasKw(card: any, kw: string): boolean {
   return (card.keywords || []).includes(kw);
-}
-
-/** Apply all Level Up tiers whose `at` threshold matches current attacksMade. */
-function applyLevelUp(creature: any, log: string[]): any {
-  const tiers = creature.levelUp || [];
-  if (!tiers.length) return creature;
-  let c = { ...creature };
-  for (const tier of tiers) {
-    if ((c.attacksMade || 0) === tier.at) {
-      c = {
-        ...c,
-        currentAtk: c.currentAtk + (tier.bonus?.atk || 0),
-        currentHp:  c.currentHp  + (tier.bonus?.hp  || 0),
-        maxHp:      c.maxHp      + (tier.bonus?.hp  || 0),
-        levelLabel: tier.label,
-        buffNote:   `✦ ${tier.label}`,
-      };
-      log.push(`✦ ${c.name} → ${tier.label}! (+${tier.bonus?.atk || 0}/+${tier.bonus?.hp || 0})`);
-    }
-  }
-  return c;
 }
 
 /**
@@ -170,11 +148,8 @@ Deno.serve(async (req) => {
         newGs[op + "HP"] = gs[op + "HP"] - dmg;
         log.push(`${att.name} deals ${dmg} direct!`);
 
-        // Track attacks + Level Up
-        let updated = { ...att, hasAttacked: true, attacksMade: (att.attacksMade || 0) + 1 };
-        updated = applyLevelUp(updated, log);
         newGs[role + "Board"] = gs[role + "Board"].map((c: any) =>
-          c.uid === attackerUid ? updated : c
+          c.uid === attackerUid ? { ...c, hasAttacked: true } : c
         );
 
         if (newGs[op + "HP"] <= 0) { newGs.winner = role; log.push("Victory!"); }
@@ -203,14 +178,11 @@ Deno.serve(async (req) => {
         }
         const nAHP = att.currentHp - (hasKw(tgt, "Thorns") ? tgt.currentAtk : tgt.currentAtk);
 
-        // Increment attacksMade on attacker
         let updatedAtt: any = {
           ...att,
           hasAttacked:  true,
           currentHp:    nAHP,
-          attacksMade:  (att.attacksMade || 0) + 1,
         };
-        updatedAtt = applyLevelUp(updatedAtt, log);
 
         // Update target
         let updatedTgt: any = { ...tgt, currentHp: nTHP, shielded: false };
@@ -273,7 +245,7 @@ Deno.serve(async (req) => {
             canAttack:    hasKw(card, "Swift"),
             hasAttacked:  false,
             bleed:        0,
-            attacksMade:  0,  // required for Level Up tracking
+
           };
           newGs[role + "Board"] = [...(gs[role + "Board"] || []), inst];
 
