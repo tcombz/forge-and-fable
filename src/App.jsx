@@ -292,7 +292,7 @@ function MusicPlayer() {
 }
 
 // ═══ CONFIG ══════════════════════════════════════════════════════════════════
-const CFG = { startHP: 30, startHand: 3, maxHand: 7, maxBoard: 6, startEnergy: 1, maxEnergy: 7, turnTimer: 45, deck: { size: 40, maxChamp: 4, maxAuraEnv: 4, copies: 3 } };
+const CFG = { startHP: 30, startHand: 3, maxHand: 7, maxBoard: 6, startEnergy: 1, maxEnergy: 7, turnTimer: 45, pvpTurnTimer: 60, aiTurnTimer: 90, deck: { size: 40, maxChamp: 4, maxAuraEnv: 4, copies: 3 } };
 
 // ═══ CONSTANTS ═══════════════════════════════════════════════════════════════
 const RC = { Common: "#8a8a7a", Uncommon: "#c0922a", Rare: "#5090ff", Epic: "#a860d8", Legendary: "#f0b818" };
@@ -1015,16 +1015,17 @@ function TurnTimer({ active, duration = CFG.turnTimer, onExpire, turnNum, childr
     const id = setInterval(() => {
       setTime((t) => {
         if (t <= 1) { clearInterval(id); onExpire(); return 0; }
-        if (t === 11 && !warned) { SFX.play("timer_warn"); setWarned(true); }
+        // Warn SFX at 25% time remaining
+        if (t === Math.ceil(duration * 0.25) && !warned) { SFX.play("timer_warn"); setWarned(true); }
         return t - 1;
       });
     }, 1000);
     return () => clearInterval(id);
-  }, [active, warned, onExpire]);
-  const elapsed = duration - time;
-  const pct = elapsed / duration; // grows 0→1 as time runs out
-  const urgent = time <= 10;
-  const col = urgent ? "#e04040" : time <= 20 ? "#e08830" : "#e8c060";
+  }, [active, warned, onExpire, duration]);
+  const pctLeft = time / duration; // 1→0 as time runs out
+  const pct = 1 - pctLeft;        // 0→1 fills the bar
+  const urgent = pctLeft <= 0.15;
+  const col = urgent ? "#e04040" : pctLeft <= 0.30 ? "#e08830" : pctLeft <= 0.55 ? "#e8c060" : "#44aa44";
   const blinkStyle = urgent ? { animation: "timerBlink 0.6s ease-in-out infinite alternate" } : {};
   return (
     <div style={{ display:"flex", alignItems:"center", gap:10, flex:1 }}>
@@ -2171,7 +2172,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         {/* Centre divider with timer */}
         <div style={{ padding: "5px 14px", background: envTheme ? "rgba(0,0,0,0.35)" : "#0e0c08", borderBottom: "2px solid #3a1a0a", borderTop: "2px solid #1a3a0a", display: "flex", alignItems: "center", gap: 10, position: "relative", zIndex: 2 }}>
           {g.phase === "player" && !aiThink ? (
-            <TurnTimer key={timerKey} active={true} onExpire={endTurn} turnNum={g.turn}>
+            <TurnTimer key={timerKey} active={true} onExpire={endTurn} duration={CFG.aiTurnTimer} turnNum={g.turn}>
               {attCard ? (
                 <button onClick={g.enemyBoard.length === 0 ? atkFace : undefined} style={{ padding: "3px 12px", background: g.enemyBoard.length === 0 ? "linear-gradient(135deg,#6a0808,#a01010)" : "rgba(255,255,255,0.04)", border: `1px solid ${g.enemyBoard.length === 0 ? "#e04040" : "#2a1a10"}`, borderRadius: 20, color: g.enemyBoard.length === 0 ? "#ffaaaa" : "#604030", fontFamily: "'Cinzel',serif", fontSize: 9, cursor: g.enemyBoard.length === 0 ? "pointer" : "default" }}>
                   {g.enemyBoard.length === 0 ? "STRIKE HERO" : "SELECT TARGET"}
@@ -2554,6 +2555,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   const [attacker, setAttacker] = useState(null);
   const [previewCard, setPreviewCard] = useState(null);
   const [timerKey, setTimerKey] = useState(0);
+  const afkCountRef = useRef(0); // consecutive turn timeouts; resets on any manual action
   const [dragOverField, setDragOverField] = useState(false);
   const dragCardRef = useRef(null);
   const [syncing, setSyncing] = useState(false);
@@ -3131,6 +3133,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     SFX.play(card.type === "environment" ? "env_play" : card.type === "spell" ? "ability" : "card");
     if (card.type === "environment") { vfx.add("envchange", { color: card.border || "#40a020" }); vfx.add("environment", { color: card.border, duration: 2000 }); }
     if (card.type === "spell") vfx.add("spell", { color: card.border || "#c090d0" });
+    afkCountRef.current = 0; // player is active
     flashAction(`${card.type === "spell" ? "Cast" : card.type === "environment" ? "Field:" : "Play"} ${card.name}!`);
     setTargetingSpell(null);
     invokeAction({ type: "play_card", cardUid: card.uid, targetUid });
@@ -3140,6 +3143,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
 
   const atkCreature = async (tgt) => {
     if (!attacker || !isMyTurn || syncingRef.current) return;
+    afkCountRef.current = 0; // player is active
     SFX.play("attack");
     const attUid = attacker;
     const attCard2 = toAI(gs, myRole).playerBoard.find(c => c.uid === attUid);
@@ -3170,6 +3174,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
 
   const atkFace = async () => {
     if (!attacker || !isMyTurn || syncingRef.current) return;
+    afkCountRef.current = 0; // player is active
     SFX.play("attack");
     const attUid = attacker;
     const attCard2 = toAI(gs, myRole).playerBoard.find(c => c.uid === attUid);
@@ -3183,9 +3188,26 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
 
   const endTurn = () => {
     if (!isMyTurn || syncingRef.current) return;
+    afkCountRef.current = 0; // manual end = player was present
     SFX.play("timer_end");
     setTimerKey((k) => k + 1);
     invokeAction({ type: "end_turn" });
+  };
+
+  // Called only when the PvP turn timer expires (not on manual end).
+  // Two consecutive timer expirations without any action → auto-forfeit.
+  const handleTimerExpire = () => {
+    if (!isMyTurn || syncingRef.current) return;
+    afkCountRef.current += 1;
+    if (afkCountRef.current >= 2) {
+      toast("Auto-forfeited: 2 consecutive turn timeouts.", "error", 6000);
+      forfeit();
+    } else {
+      toast("⚠ You'll be auto-forfeited if you miss another turn.", "warning", 6000);
+      SFX.play("timer_end");
+      setTimerKey((k) => k + 1);
+      invokeAction({ type: "end_turn" });
+    }
   };
 
   const forfeit = async () => {
@@ -3682,7 +3704,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         {/* Divider with timer */}
         <div style={{ padding:"5px 14px", background:envTheme?"rgba(0,0,0,0.35)":"#0e0c08", borderBottom:"2px solid #1a3a0a", borderTop:"2px solid #3a1a0a", display:"flex", alignItems:"center", gap:10, position:"relative", zIndex:2, flex:"0 0 auto" }}>
           {!gs.winner ? (
-            <TurnTimer key={timerKey} active={true} onExpire={isMyTurn ? endTurn : ()=>{}} turnNum={gs.turn}>
+            <TurnTimer key={timerKey} active={true} onExpire={isMyTurn ? handleTimerExpire : ()=>{}} duration={CFG.pvpTurnTimer} turnNum={gs.turn}>
               {isMyTurn && attCard ? (
                 <button onClick={ai.enemyBoard.length===0?atkFace:undefined} style={{ padding:"3px 12px", background:ai.enemyBoard.length===0?"linear-gradient(135deg,#6a0808,#a01010)":"rgba(255,255,255,0.04)", border:`1px solid ${ai.enemyBoard.length===0?"#e04040":"#2a1a10"}`, borderRadius:20, color:ai.enemyBoard.length===0?"#ffaaaa":"#604030", fontFamily:"'Cinzel',serif", fontSize:9, cursor:ai.enemyBoard.length===0?"pointer":"default" }}>
                   {ai.enemyBoard.length===0?"STRIKE HERO":"SELECT TARGET"}
