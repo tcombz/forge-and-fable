@@ -1647,6 +1647,187 @@ function BattleChat({ user, aiMode, matchId }) {
   );
 }
 
+// ═══ POST-MATCH RESULT OVERLAY ════════════════════════════════════════════════
+function MatchResultOverlay({ result, opponentName, isAI, onPlayAgain, onExit }) {
+  const { won, turns, cardsPlayed, hpLeft, shardsBase, firstWinBonus, questsGained, questShards, shardsEarned, ratingDelta, duration, damageDealt, opponentDamageDealt, playerBoard, enemyBoard } = result;
+  const totalQuests = questShards || 0;
+  // Duration display
+  const durMin = Math.floor((duration || 0) / 60);
+  const durSec = ((duration || 0) % 60).toString().padStart(2, "0");
+  const durStr = durMin > 0 ? `${durMin}m ${durSec}s` : `${durSec}s`;
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:400, display:"flex", alignItems:"center", justifyContent:"center", padding:"12px 16px", overflow:"auto",
+      background: won ? "rgba(1,8,1,0.97)" : "rgba(8,1,1,0.97)",
+      animation: "fadeIn 0.4s ease-out" }}>
+      {/* Win shimmer layer */}
+      {won && <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:0,
+        background:"linear-gradient(135deg,transparent 30%,rgba(232,192,96,0.04) 50%,transparent 70%)",
+        backgroundSize:"300% 300%", animation:"foilShimmer 3s linear infinite" }} />}
+      {/* Loss fade vignette */}
+      {!won && <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:0,
+        background:"radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,0.7) 100%)",
+        animation:"fadeIn 1.2s ease-out" }} />}
+
+      <div style={{ position:"relative", zIndex:1, width:"100%", maxWidth:500, display:"flex", flexDirection:"column", gap:10 }}>
+        {/* ── Header ── */}
+        <div style={{ textAlign:"center", marginBottom:4 }}>
+          {/* Result badge */}
+          <div style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"8px 24px",
+            background: won ? "linear-gradient(135deg,rgba(120,204,69,0.12),rgba(60,140,20,0.08))" : "rgba(200,80,80,0.08)",
+            border: `2px solid ${won ? "#78cc4555" : "#e0505044"}`, borderRadius:40, marginBottom:10,
+            boxShadow: won ? "0 0 40px rgba(120,204,69,0.18), inset 0 1px 0 rgba(255,255,255,0.06)" : "none",
+            animation: won ? "fadeIn 0.3s ease-out" : "fadeIn 0.6s ease-out" }}>
+            <span style={{ fontSize:26, lineHeight:1, filter: won ? "drop-shadow(0 0 8px #78cc45)" : "none" }}>{won ? "✨" : "💀"}</span>
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize:32, fontWeight:900, letterSpacing:8, lineHeight:1,
+              color: won ? "#78cc45" : "#e05050",
+              textShadow: won ? "0 0 40px #78cc4599, 0 2px 8px rgba(0,0,0,0.9)" : "0 2px 8px rgba(0,0,0,0.9)",
+              animation: won ? "pulse 2.4s ease-in-out infinite" : "none" }}>
+              {won ? "VICTORY" : "DEFEATED"}
+            </span>
+          </div>
+          {/* Opponent line */}
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#504038" }}>vs</span>
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#c0a868", fontWeight:700 }}>{opponentName || "Opponent"}</span>
+            {isAI && <span style={{ fontSize:8, color:"#503828", background:"rgba(255,255,255,0.04)", border:"1px solid #2a1a0a", borderRadius:4, padding:"1px 6px", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>AI</span>}
+          </div>
+          {/* Flavour line */}
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color: won ? "#50803a" : "#604040", letterSpacing:2, marginTop:6 }}>
+            {won ? "The forge remembers your victory." : "The fable continues — rise again."}
+          </div>
+        </div>
+
+        {/* ── Stats row ── */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6, background:"rgba(255,255,255,0.025)", border:"1px solid #2a2010", borderRadius:12, padding:"12px 10px" }}>
+          {[
+            ["TURNS", turns, "#e8c060"],
+            ["DURATION", durStr, "#80a8c8"],
+            ["CARDS PLAYED", cardsPlayed, "#c090ff"],
+            ["HP LEFT", won ? hpLeft : "—", won ? "#78cc45" : "#503030"],
+          ].map(([label, val, col]) => (
+            <div key={label} style={{ textAlign:"center" }}>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:20, fontWeight:900, color:col, lineHeight:1 }}>{val}</div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:"#403428", letterSpacing:2, marginTop:4 }}>{label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Damage dealt ── */}
+        <div style={{ background:"rgba(255,255,255,0.025)", border:"1px solid #2a2010", borderRadius:12, padding:"10px 14px" }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#503428", letterSpacing:3, marginBottom:8, textAlign:"center" }}>DAMAGE DEALT</div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr auto 1fr", gap:8, alignItems:"center" }}>
+            <div style={{ textAlign:"right" }}>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:"#78cc45", lineHeight:1 }}>{damageDealt ?? "—"}</div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#406030", letterSpacing:1 }}>YOU</div>
+            </div>
+            <div style={{ width:1, height:32, background:"#2a2010" }} />
+            <div style={{ textAlign:"left" }}>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:"#e05050", lineHeight:1 }}>{opponentDamageDealt ?? "—"}</div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#603030", letterSpacing:1 }}>{opponentName?.split("_")[0] || "ENEMY"}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Final board snapshot ── */}
+        {(playerBoard?.length > 0 || enemyBoard?.length > 0) && (
+          <div style={{ background:"rgba(255,255,255,0.025)", border:"1px solid #2a2010", borderRadius:12, padding:"10px 14px" }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#503428", letterSpacing:3, marginBottom:8, textAlign:"center" }}>FINAL BOARD</div>
+            {/* Enemy board */}
+            {enemyBoard?.length > 0 && (
+              <div style={{ marginBottom:6 }}>
+                <div style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:"#603030", letterSpacing:2, marginBottom:4 }}>ENEMY</div>
+                <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
+                  {enemyBoard.map(c => (
+                    <div key={c.uid} style={{ background:"rgba(200,60,60,0.08)", border:"1px solid #3a1010", borderRadius:6, padding:"3px 7px", display:"flex", gap:4, alignItems:"center" }}>
+                      <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#c07060", fontWeight:700 }}>{c.name}</span>
+                      <span style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#804040" }}>{c.currentAtk}/{c.currentHp}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Player board */}
+            {playerBoard?.length > 0 && (
+              <div>
+                <div style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:"#406030", letterSpacing:2, marginBottom:4 }}>YOU</div>
+                <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
+                  {playerBoard.map(c => (
+                    <div key={c.uid} style={{ background:"rgba(60,160,40,0.08)", border:"1px solid #1a3010", borderRadius:6, padding:"3px 7px", display:"flex", gap:4, alignItems:"center" }}>
+                      <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#70c060", fontWeight:700 }}>{c.name}</span>
+                      <span style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#408030" }}>{c.currentAtk}/{c.currentHp}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Rewards ── */}
+        <div style={{ background:"rgba(160,184,200,0.05)", border:"1px solid #1a2a3a", borderRadius:12, padding:"12px 14px" }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#304050", letterSpacing:3, marginBottom:10, textAlign:"center" }}>REWARDS</div>
+          {/* Shard breakdown rows */}
+          <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#60788a" }}>{won ? "Win bonus" : "Participation"}</span>
+              <span style={{ fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:"#8aafc8" }}>+{shardsBase} ⬙</span>
+            </div>
+            {firstWinBonus > 0 && (
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"3px 8px", background:"rgba(232,192,96,0.06)", border:"1px solid #3a2a0a", borderRadius:6 }}>
+                <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#b09040" }}>★ First win of the day</span>
+                <span style={{ fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:"#e8c060" }}>+{firstWinBonus} ⬙</span>
+              </div>
+            )}
+            {questsGained?.map(q => (
+              <div key={q.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"3px 8px", background:"rgba(120,200,69,0.05)", border:"1px solid #1a3010", borderRadius:6 }}>
+                <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#78cc45" }}>✓ {q.label}</span>
+                <span style={{ fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:"#78cc45" }}>+{q.reward} ⬙</span>
+              </div>
+            ))}
+            {/* Total */}
+            <div style={{ borderTop:"1px solid #1a2a3a", paddingTop:7, marginTop:2, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <span style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#506070", letterSpacing:2 }}>TOTAL</span>
+              <span style={{ fontFamily:"'Cinzel',serif", fontSize:20, fontWeight:900, color:"#a0c8e0", letterSpacing:1, textShadow:"0 0 16px #a0c8e055" }}>+{shardsEarned} ⬙</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Rating change (PvP ranked) ── */}
+        {ratingDelta != null && (
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:10, padding:"10px 16px",
+            background: ratingDelta >= 0 ? "rgba(120,200,69,0.06)" : "rgba(200,80,80,0.06)",
+            border:`1px solid ${ratingDelta >= 0 ? "#78cc4533" : "#e0505033"}`, borderRadius:12 }}>
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color: ratingDelta >= 0 ? "#78cc45" : "#e05050" }}>{ratingDelta >= 0 ? "+" : ""}{ratingDelta}</span>
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#506070", letterSpacing:2 }}>MMR</span>
+          </div>
+        )}
+
+        {/* ── Buttons ── */}
+        <div style={{ display:"grid", gridTemplateColumns: onPlayAgain ? "1fr 1fr" : "1fr", gap:10, marginTop:4 }}>
+          {onPlayAgain && (
+            <button onClick={onPlayAgain}
+              style={{ padding:"13px", background: won ? "linear-gradient(135deg,#c89010,#f0c040)" : "linear-gradient(135deg,#2a4a6a,#3a6a9a)",
+                border:"none", borderRadius:10, fontFamily:"'Cinzel',serif", fontWeight:700, fontSize:12, letterSpacing:2,
+                color: won ? "#1a1000" : "#c0d8f0", cursor:"pointer",
+                boxShadow: won ? "0 0 24px #e8c06055" : "0 0 16px rgba(60,100,160,0.3)",
+                transition:"opacity .15s" }}
+              onMouseEnter={e=>e.currentTarget.style.opacity=".85"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+              PLAY AGAIN
+            </button>
+          )}
+          <button onClick={onExit}
+            style={{ padding:"13px", background:"transparent", border:"2px solid #2a2010", borderRadius:10,
+              fontFamily:"'Cinzel',serif", fontSize:12, color:"#806848", cursor:"pointer", letterSpacing:1,
+              transition:"opacity .15s" }}
+            onMouseEnter={e=>e.currentTarget.style.opacity=".7"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+            EXIT
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   const isDevAccount = isFablesTester(user);
   const ACTIVE_POOL = GAMEPLAY_POOL;
@@ -1672,6 +1853,9 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   const dragCardRef = useRef(null);
   const cardsPlayedRef = useRef(0);
   const wonSavedRef = useRef(false);
+  const matchStartRef = useRef(Date.now());
+  const damageDealtRef = useRef(0);      // total damage YOU dealt to enemy
+  const oppDamageDealtRef = useRef(0);   // total damage enemy dealt to you
   const [matchResult, setMatchResult] = useState(null);
   const [expandedSynGroup, setExpandedSynGroup] = useState(null);
   const [turnBanner, setTurnBanner] = useState(null); // "YOUR TURN" | "ENEMY TURN"
@@ -1681,6 +1865,18 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   // Start battle music when component mounts, home music on unmount
   useEffect(() => { MusicCtx.play("battle"); return () => MusicCtx.play("home"); }, []);
   useEffect(() => { if (logRef.current) logRef.current.scrollTo({ top: 99999, behavior: "smooth" }); }, [game?.log]);
+  // Damage tracking: accumulate deltas from HP changes
+  const prevEnemyHPRef = useRef(CFG.startHP);
+  const prevPlayerHPRef = useRef(CFG.startHP);
+  useEffect(() => {
+    if (game.phase === "opening") return;
+    const eHPDelta = prevEnemyHPRef.current - game.enemyHP;
+    if (eHPDelta > 0) damageDealtRef.current += eHPDelta;
+    prevEnemyHPRef.current = game.enemyHP;
+    const pHPDelta = prevPlayerHPRef.current - game.playerHP;
+    if (pHPDelta > 0) oppDamageDealtRef.current += pHPDelta;
+    prevPlayerHPRef.current = game.playerHP;
+  }, [game.enemyHP, game.playerHP, game.phase]); // eslint-disable-line
 
   // Save stats + quests when AI match ends
   useEffect(() => {
@@ -1699,15 +1895,17 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     updatedQuests.quests.forEach((q, i) => { if (q.completed && !storedQuests.quests[i]?.completed) questShards += q.reward; });
     const questsGained = updatedQuests.quests.filter((q, i) => q.completed && !storedQuests.quests[i]?.completed);
     const histEntry = { opponent: "AI", result: won ? "W" : "L", date: new Date().toISOString(), turns: game.turn, ranked: false };
+    const firstWinBonus = won && (user?.battlesWon || 0) === 0 ? 50 : 0;
+    const totalShards = shardsBase + firstWinBonus + questShards;
     const update = {
       battlesPlayed: (user?.battlesPlayed || 0) + 1,
-      shards: (user?.shards || 0) + shardsBase + questShards,
+      shards: (user?.shards || 0) + totalShards,
       dailyQuests: updatedQuests,
       matchHistory: [histEntry, ...(user?.matchHistory || [])].slice(0, 50),
     };
     if (won) update.battlesWon = (user?.battlesWon || 0) + 1;
     if (onUpdateUser) onUpdateUser(update);
-    setMatchResult({ won, turns: game.turn, cardsPlayed: cardsPlayedRef.current, hpLeft: game.playerHP, shardsEarned: shardsBase + questShards, questsGained });
+    setMatchResult({ won, turns: game.turn, cardsPlayed: cardsPlayedRef.current, hpLeft: game.playerHP, shardsBase, firstWinBonus, questShards, shardsEarned: totalShards, questsGained, duration: Math.floor((Date.now() - matchStartRef.current) / 1000), damageDealt: damageDealtRef.current, opponentDamageDealt: oppDamageDealtRef.current, playerBoard: game.playerBoard, enemyBoard: game.enemyBoard });
   }, [game.phase, game.winner]); // eslint-disable-line
 
   const g = game;
@@ -2004,53 +2202,15 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         </div>
       </div>
     )}
-    {g.phase === "gameover" && matchResult && (<div style={{ position:"fixed", inset:0, zIndex:400, display:"flex", alignItems:"center", justifyContent:"center", background: matchResult.won ? "rgba(2,12,1,0.95)" : "rgba(12,2,2,0.95)", animation:"fadeIn 0.5s ease-out" }}>
-      <div style={{ textAlign:"center", maxWidth:460, width:"100%", padding:"0 20px" }}>
-        {/* Result header */}
-        <div style={{ fontSize:72, marginBottom:8, animation:"pulse 1.2s ease-in-out infinite" }}>{matchResult.won ? "✨" : "💀"}</div>
-        <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:52, fontWeight:900, color: matchResult.won ? "#78cc45" : "#e05050", margin:"0 0 4px", textShadow:`0 0 60px ${matchResult.won ? "#78cc45" : "#e05050"}, 0 4px 12px rgba(0,0,0,0.9)`, letterSpacing:8 }}>{matchResult.won ? "VICTORY" : "DEFEATED"}</h2>
-        {matchConfig?.ghostAI && g.enemyName && (
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginBottom:6 }}>
-            <span style={{ fontFamily:"'Cinzel',serif", fontSize:12, color:"#605848" }}>vs</span>
-            <span style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#c0a868", fontWeight:700 }}>{g.enemyName}</span>
-            <span style={{ fontSize:9, color:"#503828", background:"rgba(255,255,255,0.04)", border:"1px solid #3a2a10", borderRadius:4, padding:"1px 6px", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>AI MATCH</span>
-          </div>
-        )}
-        <p style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#807060", marginBottom:20, letterSpacing:2 }}>{matchResult.won ? "You crushed the enemy!" : "The enemy prevails..."}</p>
-        {/* Stats grid */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8, marginBottom:16, background:"rgba(255,255,255,0.03)", border:"1px solid #2a2010", borderRadius:12, padding:"14px 12px" }}>
-          {[["TURNS", matchResult.turns, "#e8c060"], ["CARDS PLAYED", matchResult.cardsPlayed, "#c090ff"], ["HP LEFT", matchResult.won ? matchResult.hpLeft : "—", matchResult.won ? "#78cc45" : "#604030"]].map(([l,v,c]) => (
-            <div key={l} style={{ textAlign:"center" }}>
-              <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:c, lineHeight:1 }}>{v}</div>
-              <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#504028", letterSpacing:2, marginTop:5 }}>{l}</div>
-            </div>
-          ))}
-        </div>
-        {/* Shards earned */}
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginBottom:16, background:"rgba(160,184,200,0.07)", border:"1px solid #2a3a4a", borderRadius:10, padding:"10px 20px" }}>
-          <span style={{ fontSize:20 }}>⬙</span>
-          <span style={{ fontFamily:"'Cinzel',serif", fontSize:20, fontWeight:900, color:"#a0b8c8" }}>+{matchResult.shardsEarned}</span>
-          <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#506070", letterSpacing:2 }}>SHARDS EARNED</span>
-        </div>
-        {/* Quest completions */}
-        {matchResult.questsGained.length > 0 && (
-          <div style={{ marginBottom:16, background:"rgba(120,200,69,0.06)", border:"1px solid #78cc4533", borderRadius:10, padding:"10px 16px" }}>
-            {matchResult.questsGained.map(q => (
-              <div key={q.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"4px 0" }}>
-                <span style={{ fontSize:14 }}>✓</span>
-                <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#78cc45", flex:1, textAlign:"left" }}>{q.label}</span>
-                <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#a0b8c8" }}>+{q.reward} shards</span>
-              </div>
-            ))}
-          </div>
-        )}
-        {/* Buttons */}
-        <div style={{ display:"flex", gap:12, justifyContent:"center" }}>
-          <button onClick={() => { wonSavedRef.current = false; cardsPlayedRef.current = 0; setMatchResult(null); setGame(initGame()); setAttacker(null); setAiThink(false); }} style={{ padding:"13px 32px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:10, fontFamily:"'Cinzel',serif", fontWeight:700, fontSize:13, letterSpacing:2, color:"#1a1000", cursor:"pointer", boxShadow:"0 0 24px #e8c06066" }}>REMATCH</button>
-          <button onClick={onExit} style={{ padding:"13px 26px", background:"transparent", border:"2px solid #3a2c10", borderRadius:10, fontFamily:"'Cinzel',serif", fontSize:12, color:"#a09058", cursor:"pointer" }}>EXIT</button>
-        </div>
-      </div>
-    </div>)}
+    {g.phase === "gameover" && matchResult && (
+      <MatchResultOverlay
+        result={matchResult}
+        opponentName={matchConfig?.ghostAI ? (g.enemyName || "AI Opponent") : "AI Opponent"}
+        isAI={true}
+        onPlayAgain={() => { wonSavedRef.current = false; cardsPlayedRef.current = 0; damageDealtRef.current = 0; oppDamageDealtRef.current = 0; prevEnemyHPRef.current = CFG.startHP; prevPlayerHPRef.current = CFG.startHP; matchStartRef.current = Date.now(); setMatchResult(null); setGame(initGame()); setAttacker(null); setAiThink(false); }}
+        onExit={onExit}
+      />
+    )}
     <div className="battle-grid" style={{ display:"grid", gridTemplateColumns:"280px 1fr 300px", gap:14, flex:1, minHeight:0 }}>
       {/* Left Panel — Synergy Tracker + Chat */}
       <div className="battle-side" style={{ display:"flex", flexDirection:"column", gap:4, height:"100%", overflowY:"auto", minHeight:0 }}>
@@ -2585,6 +2745,9 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   const showTurnBanner = (type) => { setTurnBanner(type); setTimeout(() => setTurnBanner(null), 1100); };
   const [animUids, setAnimUids] = useState({});
   const cardsPlayedRef = useRef(0);
+  const matchStartRef = useRef(Date.now());
+  const damageDealtRef = useRef(0);
+  const oppDamageDealtRef = useRef(0);
   const lastSentSeqRef = useRef(-1);
   const lastAcceptedSeqRef = useRef(-1);
   const lastOpMoveRef = useRef(Date.now());
@@ -2673,10 +2836,12 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     let questShards = 0;
     updatedQuests.quests.forEach((q, i) => { if (q.completed && !storedQuests.quests[i]?.completed) questShards += q.reward; });
     const questsGained = updatedQuests.quests.filter((q, i) => q.completed && !storedQuests.quests[i]?.completed);
+    const firstWinBonusPvp = won && (user?.battlesWon || 0) === 0 ? 50 : 0;
+    const totalShardsPvp = shardsBase + firstWinBonusPvp + questShards;
     const update = {
       matchHistory: newHistory,
       battlesPlayed: (user?.battlesPlayed || 0) + 1,
-      shards: (user?.shards || 0) + shardsBase + questShards,
+      shards: (user?.shards || 0) + totalShardsPvp,
       dailyQuests: updatedQuests,
     };
     if (won) update.battlesWon = (user?.battlesWon || 0) + 1;
@@ -2686,7 +2851,8 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       update.rankedLosses = !won ? (user?.rankedLosses||0)+1 : (user?.rankedLosses||0);
     }
     if (onUpdateUser) onUpdateUser(update);
-    setPvpMatchResult({ won, turns: gs.turn||0, cardsPlayed: cardsPlayedRef.current, hpLeft: myHPNow, shardsEarned: shardsBase + questShards, questsGained, ratingDelta: isRanked ? ratingDelta : null });
+    const ai = myRole ? toAI(gs, myRole) : null;
+    setPvpMatchResult({ won, turns: gs.turn||0, cardsPlayed: cardsPlayedRef.current, hpLeft: myHPNow, shardsBase, firstWinBonus: firstWinBonusPvp, questShards, shardsEarned: totalShardsPvp, questsGained, ratingDelta: isRanked ? ratingDelta : null, duration: Math.floor((Date.now() - matchStartRef.current) / 1000), damageDealt: damageDealtRef.current, opponentDamageDealt: oppDamageDealtRef.current, playerBoard: ai?.playerBoard || [], enemyBoard: ai?.enemyBoard || [] });
     // Clean up match row so stale data doesn't accumulate
     if (matchId) supabase.from("matches").delete().eq("id", matchId).then(() => {}).catch(() => {});
   }, [gs?.winner]); // eslint-disable-line
@@ -2996,6 +3162,23 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   }, [matchId]);
 
   useEffect(() => { if (logRef.current) logRef.current.scrollTo({ top: 99999, behavior: "smooth" }); }, [gs?.log]);
+
+  // Damage tracking for post-match stats (my HP vs opponent HP)
+  const prevMyHPRef = useRef(CFG.startHP);
+  const prevOppHPRef = useRef(CFG.startHP);
+  useEffect(() => {
+    if (!gs || !myRole || gs.winner) return;
+    const myHPKey = myRole === "p1" ? "p1HP" : "p2HP";
+    const oppHPKey = myRole === "p1" ? "p2HP" : "p1HP";
+    const myHP = gs[myHPKey] ?? CFG.startHP;
+    const oppHP = gs[oppHPKey] ?? CFG.startHP;
+    const oppDelta = prevOppHPRef.current - oppHP;
+    if (oppDelta > 0) damageDealtRef.current += oppDelta;
+    prevOppHPRef.current = oppHP;
+    const myDelta = prevMyHPRef.current - myHP;
+    if (myDelta > 0) oppDamageDealtRef.current += myDelta;
+    prevMyHPRef.current = myHP;
+  }, [gs?.p1HP, gs?.p2HP, myRole]); // eslint-disable-line
 
   // ── Own reconnect overlay: watch Supabase Realtime channel status ────────────
   useEffect(() => {
@@ -3469,49 +3652,15 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         {syncing && <span style={{ fontSize:8, color:"#806040", fontFamily:"'Cinzel',serif" }}>SYNC…</span>}
       </div>
     </div>)}
-    {gs.winner && pvpMatchResult && (<div style={{ position:"fixed", inset:0, zIndex:400, display:"flex", alignItems:"center", justifyContent:"center", background: myWon?"rgba(2,12,1,0.95)":"rgba(12,2,2,0.95)", animation:"fadeIn 0.5s" }}>
-      <div style={{ textAlign:"center", maxWidth:460, width:"100%", padding:"0 20px" }}>
-        <div style={{ fontSize:72, marginBottom:8, animation:"pulse 1.2s ease-in-out infinite" }}>{myWon?"✨":"💀"}</div>
-        <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:52, fontWeight:900, color:myWon?"#78cc45":"#e05050", margin:"0 0 4px", textShadow:`0 0 60px ${myWon?"#78cc45":"#e05050"}, 0 4px 12px rgba(0,0,0,0.9)`, letterSpacing:8 }}>{myWon?"VICTORY":"DEFEATED"}</h2>
-        <p style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#807060", marginBottom:20, letterSpacing:2 }}>{myWon?`You defeated ${opponentName}!`:`${opponentName} wins this round.`}</p>
-        {/* Stats grid */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8, marginBottom:16, background:"rgba(255,255,255,0.03)", border:"1px solid #2a2010", borderRadius:12, padding:"14px 12px" }}>
-          {[["TURNS", pvpMatchResult.turns, "#e8c060"], ["CARDS PLAYED", pvpMatchResult.cardsPlayed, "#c090ff"], ["HP LEFT", myWon ? pvpMatchResult.hpLeft : "—", myWon ? "#78cc45" : "#604030"]].map(([l,v,c]) => (
-            <div key={l} style={{ textAlign:"center" }}>
-              <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:c, lineHeight:1 }}>{v}</div>
-              <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#504028", letterSpacing:2, marginTop:5 }}>{l}</div>
-            </div>
-          ))}
-        </div>
-        {/* Shards + rating */}
-        <div style={{ display:"grid", gridTemplateColumns: pvpMatchResult.ratingDelta != null ? "1fr 1fr" : "1fr", gap:8, marginBottom:16 }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, background:"rgba(160,184,200,0.07)", border:"1px solid #2a3a4a", borderRadius:10, padding:"10px 16px" }}>
-            <span style={{ fontSize:18 }}>⬙</span>
-            <span style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:900, color:"#a0b8c8" }}>+{pvpMatchResult.shardsEarned}</span>
-            <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#506070", letterSpacing:1 }}>SHARDS</span>
-          </div>
-          {pvpMatchResult.ratingDelta != null && (
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, background: pvpMatchResult.ratingDelta >= 0 ? "rgba(120,200,69,0.07)" : "rgba(200,80,80,0.07)", border:`1px solid ${pvpMatchResult.ratingDelta >= 0 ? "#78cc4533" : "#e0505033"}`, borderRadius:10, padding:"10px 16px" }}>
-              <span style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:900, color: pvpMatchResult.ratingDelta >= 0 ? "#78cc45" : "#e05050" }}>{pvpMatchResult.ratingDelta >= 0 ? "+" : ""}{pvpMatchResult.ratingDelta}</span>
-              <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#506070", letterSpacing:1 }}>MMR</span>
-            </div>
-          )}
-        </div>
-        {/* Quest completions */}
-        {pvpMatchResult.questsGained.length > 0 && (
-          <div style={{ marginBottom:16, background:"rgba(120,200,69,0.06)", border:"1px solid #78cc4533", borderRadius:10, padding:"10px 16px" }}>
-            {pvpMatchResult.questsGained.map(q => (
-              <div key={q.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"4px 0" }}>
-                <span style={{ fontSize:14 }}>✓</span>
-                <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#78cc45", flex:1, textAlign:"left" }}>{q.label}</span>
-                <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#a0b8c8" }}>+{q.reward} shards</span>
-              </div>
-            ))}
-          </div>
-        )}
-        <button onClick={onExit} style={{ padding:"13px 48px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:10, fontFamily:"'Cinzel',serif", fontWeight:700, fontSize:13, letterSpacing:2, color:"#1a1000", cursor:"pointer", boxShadow:"0 0 24px #e8c06066" }}>EXIT</button>
-      </div>
-    </div>)}
+    {gs.winner && pvpMatchResult && (
+      <MatchResultOverlay
+        result={pvpMatchResult}
+        opponentName={opponentName}
+        isAI={false}
+        onPlayAgain={onExit}
+        onExit={onExit}
+      />
+    )}
     <div className="battle-grid" style={{ display:"grid", gridTemplateColumns:"300px 1fr 340px", gap:14, flex:1, minHeight:0 }}>
       {/* Left Panel — Synergy Tracker + Chat */}
       <div className="battle-side" style={{ display:"flex", flexDirection:"column", gap:6, height:"100%", overflowY:"auto", minHeight:0 }}>
