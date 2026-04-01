@@ -16,6 +16,8 @@ function toast(msg, type = "error", duration = 4500) {
   const id = Date.now() + Math.random();
   _toastListeners.forEach(fn => fn({ id, msg, type, duration }));
 }
+const _streakListeners = new Set();
+function fireStreakPopup(data) { _streakListeners.forEach(fn => fn(data)); }
 
 // ═══ ERROR BOUNDARY ══════════════════════════════════════════════════════════
 class ErrorBoundary extends Component {
@@ -84,6 +86,15 @@ const DAILY_QUEST_POOL = [
   { id:"play5",     label:"Play 5 matches",             goal:5, type:"played",  reward:60 },
 ];
 const getTodayStr = () => new Date().toISOString().slice(0, 10);
+const STREAK_REWARDS = [
+  { day: 1, shards: 20,  label: "20 ⬙" },
+  { day: 2, shards: 30,  label: "30 ⬙" },
+  { day: 3, shards: 40,  label: "40 ⬙" },
+  { day: 4, shards: 50,  label: "50 ⬙" },
+  { day: 5, shards: 75,  label: "75 ⬙" },
+  { day: 6, shards: 100, label: "100 ⬙" },
+  { day: 7, shards: 200, label: "200 ⬙ + Fragment" },
+];
 const initDailyQuests = (stored) => {
   const today = getTodayStr();
   if (stored?.date === today && stored?.quests?.length === 3) return stored;
@@ -4749,6 +4760,7 @@ const toAppUser = (p, email) => ({
   rankedRating: p.ranked_rating ?? 1000, rankedWins: p.ranked_wins ?? 0, rankedLosses: p.ranked_losses ?? 0,
   dailyQuests: p.daily_quests || null, freePackUsed: p.free_pack_used || null,
   lastFirstWinDate: p.last_first_win_date || null,
+  loginStreak: p.login_streak ?? 0, lastLoginDate: p.last_login_date || null,
   isFablesTesterFlag: p.is_fables_tester || false,
 });
 function useAuth() {
@@ -4765,6 +4777,31 @@ function useAuth() {
           p = { ...p, shards: 1000, last_shard_reset: new Date().toISOString() };
           await supabase.from("profiles").update({ shards: 1000, last_shard_reset: p.last_shard_reset }).eq("id", p.id);
         }
+        // Login streak check
+        try {
+          const todayStr = new Date().toISOString().slice(0, 10);
+          const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+          const lastLogin = p.last_login_date || null;
+          if (lastLogin !== todayStr) {
+            const newStreak = lastLogin === yesterday ? Math.min(7, (p.login_streak || 0) + 1) : 1;
+            const reward = STREAK_REWARDS[newStreak - 1];
+            const newShards = (p.shards || 0) + reward.shards;
+            const streakUpdates = { login_streak: newStreak, last_login_date: todayStr, shards: newShards };
+            // Day 7: also grant a cosmetic Fragment card copy
+            if (newStreak === 7) {
+              const col = { ...(p.collection || {}) };
+              const fragId = "fracture"; // Fragment card id
+              col[fragId] = (col[fragId] || 0) + 1;
+              streakUpdates.collection = col;
+              p = { ...p, collection: col };
+            }
+            await supabase.from("profiles").update(streakUpdates).eq("id", p.id);
+            p = { ...p, login_streak: newStreak, last_login_date: todayStr, shards: newShards };
+            // Fire popup after a short delay so the UI is mounted
+            setTimeout(() => fireStreakPopup({ day: newStreak, reward }), 1200);
+          }
+        } catch (_) { /* non-critical */ }
+
         // On every login: ensure all users have 3x every base card (never blocks login on failure)
         try {
           const updates = {};
@@ -4808,7 +4845,7 @@ function useAuth() {
     completeProfile: (row, email) => { setUser(toAppUser(row, email)); setLoading(false); },
     update: async (delta) => {
       const updated = { ...user, ...delta };
-      const dbMap = { battlesPlayed: "battles_played", battlesWon: "battles_won", shards: "shards", collection: "collection", decks: "decks", avatarUrl: "avatar_url", selectedArts: "selected_arts", matchHistory: "match_history", altOwned: "alt_owned", freePackUsed: "free_pack_used", lastPatchSeen: "last_patch_seen", rankedRating: "ranked_rating", rankedWins: "ranked_wins", rankedLosses: "ranked_losses", dailyQuests: "daily_quests", lastFirstWinDate: "last_first_win_date" };
+      const dbMap = { battlesPlayed: "battles_played", battlesWon: "battles_won", shards: "shards", collection: "collection", decks: "decks", avatarUrl: "avatar_url", selectedArts: "selected_arts", matchHistory: "match_history", altOwned: "alt_owned", freePackUsed: "free_pack_used", lastPatchSeen: "last_patch_seen", rankedRating: "ranked_rating", rankedWins: "ranked_wins", rankedLosses: "ranked_losses", dailyQuests: "daily_quests", lastFirstWinDate: "last_first_win_date", loginStreak: "login_streak", lastLoginDate: "last_login_date" };
       const dbDelta = {};
       Object.entries(delta).forEach(([k, v]) => { if (dbMap[k]) dbDelta[dbMap[k]] = v; });
       if (Object.keys(dbDelta).length > 0) {
@@ -5395,6 +5432,36 @@ function HomeScreen({ setTab, user }) {
               </div>
             );
           })()}
+          {user && (
+            <div style={{ marginTop:14, background:"rgba(255,255,255,0.025)", border:"1px solid #2a2010", borderRadius:14, padding:"14px 18px" }}>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#503828", letterSpacing:3, marginBottom:12, display:"flex", alignItems:"center", gap:8 }}>
+                🔥 LOGIN STREAK
+                <span style={{ color:"#e8c060", fontWeight:700 }}>DAY {Math.max(1, user.loginStreak || 1)}</span>
+              </div>
+              <div style={{ display:"flex", gap:8 }}>
+                {STREAK_REWARDS.map((r, i) => {
+                  const filled = i < (user.loginStreak || 0);
+                  const active = i === (user.loginStreak || 0);
+                  return (
+                    <div key={r.day} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:5 }}>
+                      <div style={{ width:34, height:34, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center",
+                        background: filled ? "linear-gradient(135deg,#c89010,#f0c040)" : active ? "rgba(232,192,96,0.12)" : "rgba(255,255,255,0.03)",
+                        border: filled ? "2px solid #f0d870" : active ? "2px solid #e8c06066" : "1px solid #2a2010",
+                        boxShadow: filled ? "0 0 12px rgba(232,192,96,0.5)" : active ? "0 0 8px rgba(232,192,96,0.2)" : "none",
+                        fontSize:12, color: filled ? "#1a1000" : active ? "#e8c060" : "#3a3020",
+                        fontWeight:900, fontFamily:"'Cinzel',serif",
+                        animation: active ? "pulse 2s ease-in-out infinite" : "none" }}>
+                        {filled ? "✓" : r.day}
+                      </div>
+                      <div style={{ fontFamily:"'Cinzel',serif", fontSize:7, color: filled ? "#c89020" : active ? "#a08030" : "#3a3020", letterSpacing:0.5, textAlign:"center", lineHeight:1.3 }}>
+                        {r.day === 7 ? "200+✦" : r.shards}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           {!user && (<div style={{ padding:"16px 22px", background:"rgba(232,192,96,0.06)", border:"1px solid #e8c06033", borderRadius:10, fontSize:12, color:"#a09060", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>Sign in to start your journey ⚔</div>)}
         </div>
         {/* RIGHT: Card of the Week — treasure chest */}
@@ -7864,6 +7931,54 @@ function PlayerSidebar({ user, onUpdateUser, onlineIds, onClose, onChallenge, on
   );
 }
 
+function StreakPopup() {
+  const [popup, setPopup] = useState(null);
+  useEffect(() => {
+    const fn = (data) => { setPopup(data); setTimeout(() => setPopup(null), 5000); };
+    _streakListeners.add(fn);
+    return () => _streakListeners.delete(fn);
+  }, []);
+  if (!popup) return null;
+  const isMax = popup.day === 7;
+  return (
+    <div style={{ position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)", zIndex:9998,
+      background:"linear-gradient(160deg,#0e0c04,#1a1608)", border:`2px solid ${isMax ? "#e8c060" : "#a08040"}`,
+      borderRadius:18, padding:"32px 44px", textAlign:"center", minWidth:320, maxWidth:420,
+      boxShadow:`0 0 60px ${isMax ? "rgba(232,192,96,0.4)" : "rgba(180,140,30,0.25)"}, 0 24px 80px rgba(0,0,0,0.9)`,
+      animation:"fadeIn 0.35s ease-out" }}>
+      {isMax && <div style={{ position:"absolute", inset:0, borderRadius:18, pointerEvents:"none",
+        background:"linear-gradient(135deg,transparent 30%,rgba(232,192,96,0.06) 50%,transparent 70%)",
+        backgroundSize:"300% 300%", animation:"foilShimmer 2s linear infinite" }} />}
+      <div style={{ fontSize:isMax ? 48 : 36, marginBottom:10, lineHeight:1 }}>{isMax ? "🏆" : "🔥"}</div>
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize:isMax ? 20 : 16, fontWeight:900, color:"#e8c060", letterSpacing:3, marginBottom:4, textShadow:"0 0 20px #e8c06088" }}>
+        {isMax ? "STREAK COMPLETE!" : `DAY ${popup.day} STREAK!`}
+      </div>
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#907040", letterSpacing:2, marginBottom:16 }}>
+        {isMax ? "You've logged in 7 days in a row!" : `${popup.day} day${popup.day > 1 ? "s" : ""} in a row`}
+      </div>
+      <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"10px 20px",
+        background:"rgba(232,192,96,0.10)", border:"1px solid #e8c06044", borderRadius:30,
+        marginBottom:16 }}>
+        <span style={{ fontSize:18 }}>⬙</span>
+        <span style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:900, color:"#f0d878" }}>+{popup.reward.shards} Shards</span>
+        {isMax && <span style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#c0a060" }}>+ Fragment</span>}
+      </div>
+      <div style={{ display:"flex", justifyContent:"center", gap:6, marginBottom:18 }}>
+        {STREAK_REWARDS.map((r, i) => (
+          <div key={r.day} style={{ width:28, height:28, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center",
+            background: i < popup.day ? "linear-gradient(135deg,#c89010,#f0c040)" : "rgba(255,255,255,0.04)",
+            border: i < popup.day ? "2px solid #f0d870" : "1px solid #2a2010",
+            boxShadow: i < popup.day ? "0 0 10px rgba(232,192,96,0.5)" : "none",
+            fontSize:10, color: i < popup.day ? "#1a1000" : "#3a3020", fontWeight:900, fontFamily:"'Cinzel',serif" }}>
+            {i < popup.day ? "✓" : r.day}
+          </div>
+        ))}
+      </div>
+      <button onClick={() => setPopup(null)} style={{ padding:"9px 28px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, letterSpacing:2, color:"#1a1000", cursor:"pointer" }}>CLAIM</button>
+    </div>
+  );
+}
+
 function ToastContainer() {
   const [toasts, setToasts] = useState([]);
   useEffect(() => {
@@ -8272,5 +8387,6 @@ export default function App() {
     </div>
     <MusicPlayer />
     <ToastContainer />
+    <StreakPopup />
   </div>);
 }
