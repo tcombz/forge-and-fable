@@ -1880,7 +1880,9 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     updatedQuests.quests.forEach((q, i) => { if (q.completed && !storedQuests.quests[i]?.completed) questShards += q.reward; });
     const questsGained = updatedQuests.quests.filter((q, i) => q.completed && !storedQuests.quests[i]?.completed);
     const histEntry = { opponent: "AI", result: won ? "W" : "L", date: new Date().toISOString(), turns: game.turn, ranked: false };
-    const firstWinBonus = won && (user?.battlesWon || 0) === 0 ? 50 : 0;
+    const today = getTodayStr();
+    const hasWonToday = (user?.matchHistory || []).some(h => h.result === "W" && h.date?.startsWith(today));
+    const firstWinBonus = won && !hasWonToday ? 50 : 0;
     const totalShards = shardsBase + firstWinBonus + questShards;
     const update = {
       battlesPlayed: (user?.battlesPlayed || 0) + 1,
@@ -2819,7 +2821,9 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     let questShards = 0;
     updatedQuests.quests.forEach((q, i) => { if (q.completed && !storedQuests.quests[i]?.completed) questShards += q.reward; });
     const questsGained = updatedQuests.quests.filter((q, i) => q.completed && !storedQuests.quests[i]?.completed);
-    const firstWinBonusPvp = won && (user?.battlesWon || 0) === 0 ? 50 : 0;
+    const today2 = getTodayStr();
+    const hasWonToday2 = (user?.matchHistory || []).some(h => h.result === "W" && h.date?.startsWith(today2));
+    const firstWinBonusPvp = won && !hasWonToday2 ? 50 : 0;
     const totalShardsPvp = shardsBase + firstWinBonusPvp + questShards;
     const update = {
       matchHistory: newHistory,
@@ -4725,6 +4729,7 @@ const toAppUser = (p, email) => ({
   selectedArts: p.selected_arts || {}, matchHistory: p.match_history || [], altOwned: p.alt_owned || {},
   joined: p.joined || new Date().toLocaleDateString(), lastPatchSeen: p.last_patch_seen || null,
   rankedRating: p.ranked_rating ?? 1000, rankedWins: p.ranked_wins ?? 0, rankedLosses: p.ranked_losses ?? 0,
+  dailyQuests: p.daily_quests || null, freePackUsed: p.free_pack_used || null,
   isFablesTesterFlag: p.is_fables_tester || false,
 });
 function useAuth() {
