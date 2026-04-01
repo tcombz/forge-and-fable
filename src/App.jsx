@@ -95,6 +95,76 @@ const STREAK_REWARDS = [
   { day: 6, shards: 100, label: "100 ⬙" },
   { day: 7, shards: 200, label: "200 ⬙ + Fragment" },
 ];
+
+// ─── Quest system helpers ─────────────────────────────────────────────────────
+
+function evaluateQuestProgress(quest, stats) {
+  const t = quest.target_value;
+  const p = quest.current_progress;
+  switch (quest.type) {
+    case "win_matches":        return stats.won ? Math.min(t, p + 1) : p;
+    case "win_ranked":         return (stats.won && stats.ranked) ? Math.min(t, p + 1) : p;
+    case "win_ai":             return (stats.won && stats.isAI) ? Math.min(t, p + 1) : p;
+    case "win_casual":         return (stats.won && !stats.ranked) ? Math.min(t, p + 1) : p;
+    case "play_matches":       return Math.min(t, p + 1);
+    case "win_fast":           return (stats.won && stats.turns <= t) ? t : p;
+    case "win_healthy":        return (stats.won && stats.hpLeft >= t) ? t : p;
+    case "play_faction_cards": return Math.min(t, p + (stats.factionCards[quest.faction] || 0));
+    case "deal_damage":        return Math.min(t, p + stats.damageDealt);
+    case "play_spells":        return Math.min(t, p + stats.spellsPlayed);
+    case "play_environments":  return Math.min(t, p + stats.envsPlayed);
+    case "play_champions":     return Math.min(t, p + stats.champsPlayed);
+    case "trigger_keyword":    return Math.min(t, p + (stats.keywordTriggers[quest.keyword] || 0));
+    case "win_no_losses":      return (stats.won && stats.noCreatureDeaths) ? t : p;
+    default: return p;
+  }
+}
+
+async function updateQuestProgressForMatch(userId, matchStats) {
+  try {
+    const [dailyRes, othersRes] = await Promise.all([
+      supabase.rpc("assign_daily_quests", { p_player_id: userId }),
+      supabase.from("player_quests")
+        .select("id, current_progress, is_completed, is_claimed, quest_definitions(type, target_value, faction, keyword, reward_shards, title, is_weekly, is_epic)")
+        .eq("player_id", userId)
+        .eq("is_claimed", false)
+        .gt("expires_at", new Date().toISOString()),
+    ]);
+
+    const dailies = (dailyRes.data || []);
+    const weekliesEpics = (othersRes.data || [])
+      .filter(q => q.quest_definitions && (q.quest_definitions.is_weekly || q.quest_definitions.is_epic))
+      .map(q => ({
+        id: q.id,
+        current_progress: q.current_progress,
+        is_completed: q.is_completed,
+        type: q.quest_definitions.type,
+        target_value: q.quest_definitions.target_value,
+        faction: q.quest_definitions.faction,
+        keyword: q.quest_definitions.keyword,
+        reward_shards: q.quest_definitions.reward_shards,
+        title: q.quest_definitions.title,
+      }));
+
+    const allQuests = [...dailies, ...weekliesEpics];
+
+    for (const quest of allQuests) {
+      if (quest.current_progress >= quest.target_value) continue;
+      const newProg = evaluateQuestProgress(quest, matchStats);
+      if (newProg <= quest.current_progress) continue;
+      await supabase.rpc("update_quest_progress", { p_player_id: userId, p_quest_id: quest.id, p_progress: newProg });
+      if (newProg >= quest.target_value) {
+        toast(`✦ Quest Complete: ${quest.title}! Claim ${quest.reward_shards} ⬙ in your quest panel.`, "success", 6000);
+      } else {
+        toast(`Quest: ${quest.title} (${newProg}/${quest.target_value})`, "info", 3500);
+      }
+    }
+    window.dispatchEvent(new CustomEvent("questsUpdated"));
+  } catch (e) {
+    console.error("[quests]", e);
+  }
+}
+
 const initDailyQuests = (stored) => {
   const today = getTodayStr();
   if (stored?.date === today && stored?.quests?.length === 3) return stored;
@@ -1866,8 +1936,14 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   const cardsPlayedRef = useRef(0);
   const wonSavedRef = useRef(false);
   const matchStartRef = useRef(Date.now());
-  const damageDealtRef = useRef(0);      // total damage YOU dealt to enemy
-  const oppDamageDealtRef = useRef(0);   // total damage enemy dealt to you
+  const damageDealtRef = useRef(0);
+  const oppDamageDealtRef = useRef(0);
+  const factionCardsRef = useRef({});
+  const spellsPlayedRef = useRef(0);
+  const envsPlayedRef = useRef(0);
+  const champsPlayedRef = useRef(0);
+  const keywordTriggersRef = useRef({});
+  const creaturesPlayedRef = useRef(0);
   const [matchResult, setMatchResult] = useState(null);
   const [expandedSynGroup, setExpandedSynGroup] = useState(null);
   const [turnBanner, setTurnBanner] = useState(null); // "YOUR TURN" | "ENEMY TURN"
@@ -1921,6 +1997,9 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     if (isFirstWin) update.lastFirstWinDate = todayUtc;
     if (onUpdateUser) onUpdateUser(update);
     setMatchResult({ won, turns: game.turn, cardsPlayed: cardsPlayedRef.current, hpLeft: game.playerHP, shardsBase, firstWinBonus, questShards, shardsEarned: totalShards, questsGained, duration: Math.floor((Date.now() - matchStartRef.current) / 1000), damageDealt: damageDealtRef.current, opponentDamageDealt: oppDamageDealtRef.current, playerBoard: game.playerBoard, enemyBoard: game.enemyBoard });
+    if (user?.id) {
+      updateQuestProgressForMatch(user.id, { won, ranked: false, isAI: true, turns: game.turn, hpLeft: game.playerHP, factionCards: { ...factionCardsRef.current }, damageDealt: damageDealtRef.current, spellsPlayed: spellsPlayedRef.current, envsPlayed: envsPlayedRef.current, champsPlayed: champsPlayedRef.current, keywordTriggers: { ...keywordTriggersRef.current }, noCreatureDeaths: creaturesPlayedRef.current === 0 });
+    }
   }, [game.phase, game.winner]); // eslint-disable-line
 
   const g = game;
@@ -1980,6 +2059,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         const dyingUids={};if(nTHP<=0){dyingUids[tgt.uid]="dying";SFX.play("kill");}if(nAHP<=0)dyingUids[att.uid]="dying";
         if(Object.keys(dyingUids).length>0){setAnimUids(p=>({...p,...dyingUids}));vfx.add("creatureDie",{color:"#e06040",duration:700});await wait(680);}
         s.enemyBoard=s.enemyBoard.map(c=>c.uid===att.uid?{...c,hasAttacked:true,currentHp:nAHP,shielded:false}:c).filter(c=>c.currentHp>0);
+        if(nTHP<=0) creaturesPlayedRef.current += 1;
         s.playerBoard=s.playerBoard.map(c=>c.uid===tgt.uid?{...c,currentHp:nTHP,shielded:false,bleed:(c.bleed||0)+((att.keywords||[]).includes("Bleed")?1:0)}:c).filter(c=>c.currentHp>0);
         s.log=[...s.log.slice(-20),`${att.name}(${av}) attacks ${tgt.name}`];
         if(nTHP<=0){s.log=[...s.log,`💀 ${tgt.name} slain!`];s=resolveEffects("onDeath",tgt,s,"player",vfx);}
@@ -2070,6 +2150,12 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   const playCard = (card, targetUid = null) => {
     if (g.phase !== "player" || aiThink) return;
     cardsPlayedRef.current += 1;
+    const _fc = card.region || card.faction;
+    if (_fc) factionCardsRef.current[_fc] = (factionCardsRef.current[_fc] || 0) + 1;
+    if (card.type === "environment") envsPlayedRef.current += 1;
+    else if (card.type === "spell") spellsPlayedRef.current += 1;
+    else if (card.type === "champion") champsPlayedRef.current += 1;
+    if ((card.keywords || []).includes("Echo")) keywordTriggersRef.current.Echo = (keywordTriggersRef.current.Echo || 0) + 1;
     if (card.type === "environment") {
       const ec = getEffectiveCost(card, g.environment, "player");
       if (card.bloodpact ? card.cost >= g.playerHP : ec > g.playerEnergy) return; SFX.play("env_play"); vfx.add("envchange", { color: card.border || "#40a020" }); setAttacker(null); setGame((prev) => { let s = { ...prev, playerHand: prev.playerHand.filter((c) => c.uid !== card.uid), log: [...prev.log.slice(-20)] }; if (card.bloodpact) { s.playerHP -= card.cost; s.log = [...s.log, `Pay ${card.cost} HP: ${card.name}!`]; } else { s.playerEnergy -= ec; s.log = [...s.log, `${card.name} reshapes the field! (2 rounds)`]; } s.environment = { ...card, owner: "player", turnsRemaining: 2 }; s = resolveEffects("onPlay", card, s, "player", vfx); vfx.add("environment", { color: card.border, duration: 2000 }); return s; }); return; }
@@ -2149,7 +2235,8 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     }
     const dyingUids = {};
     if (nTHP <= 0) { dyingUids[tgt.uid] = "dying"; SFX.play("kill"); }
-    if (nAHP <= 0) dyingUids[att.uid] = "dying";
+    if (nAHP <= 0) { dyingUids[att.uid] = "dying"; creaturesPlayedRef.current += 1; }
+    if ((att.keywords || []).includes("Bleed") && nTHP > 0) keywordTriggersRef.current.Bleed = (keywordTriggersRef.current.Bleed || 0) + 1;
     if (Object.keys(dyingUids).length > 0) { setAnimUids(p => ({ ...p, ...dyingUids })); vfx.add("creatureDie", { color:"#e06040", duration:700 }); await new Promise(r => setTimeout(r, 680)); }
     setGame((prev) => {
       let s = { ...prev, log: [...prev.log.slice(-20)] };
@@ -2220,7 +2307,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         result={matchResult}
         opponentName={matchConfig?.ghostAI ? (g.enemyName || "AI Opponent") : "AI Opponent"}
         isAI={true}
-        onPlayAgain={() => { wonSavedRef.current = false; cardsPlayedRef.current = 0; damageDealtRef.current = 0; oppDamageDealtRef.current = 0; prevEnemyHPRef.current = CFG.startHP; prevPlayerHPRef.current = CFG.startHP; matchStartRef.current = Date.now(); setMatchResult(null); setGame(initGame()); setAttacker(null); setAiThink(false); }}
+        onPlayAgain={() => { wonSavedRef.current = false; cardsPlayedRef.current = 0; damageDealtRef.current = 0; oppDamageDealtRef.current = 0; factionCardsRef.current = {}; spellsPlayedRef.current = 0; envsPlayedRef.current = 0; champsPlayedRef.current = 0; keywordTriggersRef.current = {}; creaturesPlayedRef.current = 0; prevEnemyHPRef.current = CFG.startHP; prevPlayerHPRef.current = CFG.startHP; matchStartRef.current = Date.now(); setMatchResult(null); setGame(initGame()); setAttacker(null); setAiThink(false); }}
         onExit={onExit}
       />
     )}
@@ -2761,6 +2848,12 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   const matchStartRef = useRef(Date.now());
   const damageDealtRef = useRef(0);
   const oppDamageDealtRef = useRef(0);
+  const factionCardsRef = useRef({});
+  const spellsPlayedRef = useRef(0);
+  const envsPlayedRef = useRef(0);
+  const champsPlayedRef = useRef(0);
+  const keywordTriggersRef = useRef({});
+  const playerDeathsRef = useRef(0);
   const lastSentSeqRef = useRef(-1);
   const lastAcceptedSeqRef = useRef(-1);
   const lastOpMoveRef = useRef(Date.now());
@@ -2789,6 +2882,11 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     if (Object.keys(newUids).length > 0) {
       setAnimUids(p => ({ ...p, ...newUids }));
       setTimeout(() => setAnimUids(p => { const n = {...p}; Object.keys(newUids).forEach(u => delete n[u]); return n; }), 600);
+    }
+    // Track player creature deaths from any source (own attacks, opponent attacks, bleed)
+    if (prev.player.size > 0) {
+      const newPlayerUids = new Set(ai.playerBoard.map(c => c.uid));
+      prev.player.forEach(uid => { if (!newPlayerUids.has(uid)) playerDeathsRef.current += 1; });
     }
     prevBoardUidsRef.current = { player: new Set(ai.playerBoard.map(c=>c.uid)), enemy: new Set(ai.enemyBoard.map(c=>c.uid)) };
   }, [gs, myRole]); // eslint-disable-line
@@ -2869,6 +2967,9 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     if (onUpdateUser) onUpdateUser(update);
     const ai = myRole ? toAI(gs, myRole) : null;
     setPvpMatchResult({ won, turns: gs.turn||0, cardsPlayed: cardsPlayedRef.current, hpLeft: myHPNow, shardsBase, firstWinBonus: firstWinBonusPvp, questShards, shardsEarned: totalShardsPvp, questsGained, ratingDelta: isRanked ? ratingDelta : null, duration: Math.floor((Date.now() - matchStartRef.current) / 1000), damageDealt: damageDealtRef.current, opponentDamageDealt: oppDamageDealtRef.current, playerBoard: ai?.playerBoard || [], enemyBoard: ai?.enemyBoard || [] });
+    if (user?.id) {
+      updateQuestProgressForMatch(user.id, { won, ranked: isRanked, isAI: false, turns: gs.turn||0, hpLeft: myHPNow, factionCards: { ...factionCardsRef.current }, damageDealt: damageDealtRef.current, spellsPlayed: spellsPlayedRef.current, envsPlayed: envsPlayedRef.current, champsPlayed: champsPlayedRef.current, keywordTriggers: { ...keywordTriggersRef.current }, noCreatureDeaths: playerDeathsRef.current === 0 });
+    }
     // Clean up match row so stale data doesn't accumulate
     if (matchId) supabase.from("matches").delete().eq("id", matchId).then(() => {}).catch(() => {});
   }, [gs?.winner]); // eslint-disable-line
@@ -3318,6 +3419,12 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
   const playCard = (card, targetUid = null) => {
     if (!isMyTurn || syncingRef.current) return;
     cardsPlayedRef.current += 1;
+    const _fc2 = card.region || card.faction;
+    if (_fc2) factionCardsRef.current[_fc2] = (factionCardsRef.current[_fc2] || 0) + 1;
+    if (card.type === "environment") envsPlayedRef.current += 1;
+    else if (card.type === "spell") spellsPlayedRef.current += 1;
+    else if (card.type === "champion") champsPlayedRef.current += 1;
+    if ((card.keywords || []).includes("Echo")) keywordTriggersRef.current.Echo = (keywordTriggersRef.current.Echo || 0) + 1;
     const ai = toAI(gs, myRole);
     const canAfford = card.bloodpact ? card.cost < ai.playerHP : getEffectiveCost(card, ai.environment) <= ai.playerEnergy;
     if (!canAfford) return;
@@ -3358,6 +3465,13 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     const dyingUids = {};
     aiOld.playerBoard.forEach(c => { if (!aiNew.playerBoard.find(n => n.uid === c.uid)) dyingUids[c.uid] = "dying"; });
     aiOld.enemyBoard.forEach(c => { if (!aiNew.enemyBoard.find(n => n.uid === c.uid)) dyingUids[c.uid] = "dying"; });
+    // Bleed tracking: check if attacker applied bleed to enemy
+    const attCardPvp = aiOld.playerBoard.find(c => c.uid === attUid);
+    if (attCardPvp && (attCardPvp.keywords || []).includes("Bleed")) {
+      const oldTgtPvp = aiOld.enemyBoard.find(c => c.uid === tgt.uid);
+      const newTgtPvp = aiNew.enemyBoard.find(c => c.uid === tgt.uid);
+      if (newTgtPvp && (newTgtPvp.bleed || 0) > (oldTgtPvp?.bleed || 0)) keywordTriggersRef.current.Bleed = (keywordTriggersRef.current.Bleed || 0) + 1;
+    }
     if (Object.keys(dyingUids).length > 0) { SFX.play("kill"); setAnimUids(p => ({ ...p, ...dyingUids })); await new Promise(r => setTimeout(r, 500)); }
     syncingRef.current = true; setSyncing(true); setAttacker(null);
     setGs(newGs); // optimistic
@@ -4819,6 +4933,8 @@ function useAuth() {
           if (Object.keys(updates).length > 0) await supabase.from("profiles").update(updates).eq("id", p.id);
         } catch (_) { /* non-critical — login continues regardless */ }
         setUser(toAppUser(p, session.user.email));
+        // Assign weekly + epic quests in background (idempotent)
+        supabase.rpc("assign_weekly_quests", { p_player_id: session.user.id }).catch(() => {});
       } else {
         // Authenticated but no profile row — upsert during signup may have failed.
         // Flag so LoginModal can show "complete profile" step.
@@ -7510,6 +7626,7 @@ const NAV = [
   { id: "store",      label: "Store",   icon: "◈" },
   { id: "play",       label: "Battle",  icon: "⚔" },
   { id: "collection", label: "Cards",   icon: "❖" },
+  { id: "quests",     label: "Quests",  icon: "⬟" },
   { id: "community",  label: "Hub",     icon: "✦" },
 ];
 
@@ -7931,6 +8048,129 @@ function PlayerSidebar({ user, onUpdateUser, onlineIds, onClose, onChallenge, on
   );
 }
 
+// ═══ QUEST PANEL ══════════════════════════════════════════════════════════════
+function QuestPanel({ user, onUpdateUser }) {
+  const [dailies, setDailies] = useState([]);
+  const [weeklies, setWeeklies] = useState([]);
+  const [epics, setEpics] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [rerollUsed, setRerollUsed] = useState(() => localStorage.getItem("rerollDate") === getTodayStr());
+  const [timeToReset, setTimeToReset] = useState("");
+
+  const loadQuests = useCallback(async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    try {
+      const [dRes, wRes] = await Promise.all([
+        supabase.rpc("assign_daily_quests", { p_player_id: user.id }),
+        supabase.rpc("assign_weekly_quests", { p_player_id: user.id }),
+      ]);
+      setDailies(dRes.data || []);
+      setWeeklies((wRes.data || []).filter(q => q.is_weekly));
+      setEpics((wRes.data || []).filter(q => q.is_epic));
+    } catch (e) { console.error("[QuestPanel]", e); }
+    setLoading(false);
+  }, [user?.id]); // eslint-disable-line
+
+  useEffect(() => {
+    loadQuests();
+    const h = () => loadQuests();
+    window.addEventListener("questsUpdated", h);
+    return () => window.removeEventListener("questsUpdated", h);
+  }, [loadQuests]);
+
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      const tomorrow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+      const diff = tomorrow - now;
+      const h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000), s = Math.floor((diff % 60000) / 1000);
+      setTimeToReset(`${h}h ${m}m ${s}s`);
+    };
+    tick();
+    const t = setInterval(tick, 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const claim = async (q) => {
+    try {
+      await supabase.from("player_quests").update({ is_claimed: true }).eq("id", q.id);
+      if (onUpdateUser) onUpdateUser({ shards: (user?.shards || 0) + q.reward_shards });
+      toast(`Claimed ${q.reward_shards} ⬙ from "${q.title}"!`, "success", 5000);
+      window.dispatchEvent(new CustomEvent("questBadgeUpdate"));
+      await loadQuests();
+    } catch (e) { toast("Failed to claim quest.", "error"); }
+  };
+
+  const reroll = async (q) => {
+    if (rerollUsed) return;
+    try {
+      await supabase.rpc("reroll_daily_quest", { p_player_id: user.id, p_quest_id: q.id });
+      localStorage.setItem("rerollDate", getTodayStr());
+      setRerollUsed(true);
+      await loadQuests();
+    } catch (e) { toast("Reroll failed.", "error"); }
+  };
+
+  const QuestCard = ({ q, isDaily }) => {
+    const pct = Math.min(100, q.target_value > 0 ? (q.current_progress / q.target_value) * 100 : 0);
+    const done = q.is_completed, claimed = q.is_claimed;
+    return (
+      <div style={{ background: done && !claimed ? "rgba(120,204,69,0.06)" : "rgba(14,10,5,0.7)", border: `1px solid ${done && !claimed ? "#78cc4555" : "#2a1f0e"}`, borderRadius: 9, padding: "10px 12px", marginBottom: 8, transition: "border .2s" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6, gap:8 }}>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color: done ? "#78cc45" : "#c8a060", fontWeight:700, letterSpacing:1, marginBottom:2 }}>{q.title}</div>
+            <div style={{ fontSize:9, color:"#705030", lineHeight:1.5 }}>{q.description}</div>
+          </div>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#e8c060", whiteSpace:"nowrap", flexShrink:0 }}>+{q.reward_shards} ⬙</div>
+        </div>
+        <div style={{ height:3, background:"#140e06", borderRadius:2, marginBottom:6, overflow:"hidden" }}>
+          <div style={{ height:"100%", width:`${pct}%`, background: done ? "linear-gradient(90deg,#4a9a18,#78cc45)" : "linear-gradient(90deg,#8a3010,#d07020)", borderRadius:2, transition:"width .5s ease" }} />
+        </div>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <span style={{ fontSize:9, color: done ? "#78cc4588" : "#504030", fontFamily:"'Cinzel',serif" }}>{q.current_progress}/{q.target_value}</span>
+          {claimed ? (
+            <span style={{ fontSize:8, color:"#3a2810", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>✓ CLAIMED</span>
+          ) : done ? (
+            <button onClick={() => claim(q)} style={{ padding:"4px 16px", background:"linear-gradient(135deg,#1a3808,#2a5010)", border:"1px solid #78cc45", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:9, color:"#78cc45", cursor:"pointer", letterSpacing:1, fontWeight:700 }}>CLAIM</button>
+          ) : isDaily && !rerollUsed ? (
+            <button onClick={() => reroll(q)} style={{ padding:"3px 10px", background:"transparent", border:"1px solid #2a1f0e", borderRadius:5, fontFamily:"'Cinzel',serif", fontSize:8, color:"#604030", cursor:"pointer", letterSpacing:1 }}>REROLL</button>
+          ) : null}
+        </div>
+      </div>
+    );
+  };
+
+  const Section = ({ title, badge, quests, isDaily, resetLabel }) => (
+    <div style={{ marginBottom:24 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#e8c060", letterSpacing:3, fontWeight:700 }}>{title}</div>
+          {badge > 0 && <span style={{ minWidth:16, height:16, borderRadius:8, background:"#78cc45", display:"inline-flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:8, fontWeight:900, color:"#0a1804", padding:"0 4px" }}>{badge}</span>}
+        </div>
+        <div style={{ fontSize:9, color:"#3a2810", fontFamily:"'Cinzel',serif" }}>{resetLabel}</div>
+      </div>
+      {quests.length === 0
+        ? <div style={{ fontSize:9, color:"#3a2810", textAlign:"center", padding:"14px 0", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>NONE AVAILABLE</div>
+        : quests.map(q => <QuestCard key={q.id} q={q} isDaily={isDaily} />)}
+    </div>
+  );
+
+  const claimable = q => q.is_completed && !q.is_claimed;
+
+  if (loading) return <LoadingScreen label="LOADING QUESTS…" />;
+
+  return (
+    <div style={{ maxWidth:600, margin:"0 auto", padding:"24px 16px 40px" }}>
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize:20, color:"#e8c060", letterSpacing:4, fontWeight:700, textAlign:"center", marginBottom:4 }}>QUESTS</div>
+      <div style={{ fontSize:9, color:"#504030", textAlign:"center", letterSpacing:2, marginBottom:24 }}>Complete quests to earn Shards</div>
+      <Section title="DAILY" badge={dailies.filter(claimable).length} quests={dailies} isDaily={true} resetLabel={`Resets in ${timeToReset}`} />
+      <Section title="WEEKLY" badge={weeklies.filter(claimable).length} quests={weeklies} isDaily={false} resetLabel="Resets Monday UTC" />
+      <Section title="EPIC" badge={epics.filter(claimable).length} quests={epics} isDaily={false} resetLabel="Resets Monday UTC" />
+    </div>
+  );
+}
+
 function StreakPopup() {
   const [popup, setPopup] = useState(null);
   useEffect(() => {
@@ -8009,6 +8249,7 @@ function ToastContainer() {
 export default function App() {
   const [tab, setTab] = useState("home"); const { user, loading, login, logout, update, completeProfile } = useAuth(); const [showSidebar, setShowSidebar] = useState(false); const [onlineIds, setOnlineIds] = useState(new Set()); const [showPatchNotes, setShowPatchNotes] = useState(false); const [inPvpMatch, setInPvpMatch] = useState(false); const [navLeaveModal, setNavLeaveModal] = useState(null); const [avatarErr, setAvatarErr] = useState(""); const [navHovered, setNavHovered] = useState(false); const [matchActive, setMatchActive] = useState(false); const [histPopup, setHistPopup] = useState(null); const [deckBuilding, setDeckBuilding] = useState(false); // { targetTab }
   const [friendBadge, setFriendBadge] = useState(0);
+  const [questBadge, setQuestBadge] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
   const [globalChallenge, setGlobalChallenge] = useState(null); // { fromId, fromName, fromAvatar }
   const [pendingDuel, setPendingDuel] = useState(null); // { matchId, opponentName, opponentId }
@@ -8028,6 +8269,17 @@ export default function App() {
     window.addEventListener("openTutorial", handler);
     return () => window.removeEventListener("openTutorial", handler);
   }, []); // eslint-disable-line
+  // Quest badge: count unclaimed completed quests whenever quests update
+  useEffect(() => {
+    if (!user?.id) { setQuestBadge(0); return; }
+    const refresh = () => {
+      supabase.from("player_quests").select("id", { count: "exact" }).eq("player_id", user.id).eq("is_completed", true).eq("is_claimed", false).gt("expires_at", new Date().toISOString()).then(({ count }) => setQuestBadge(count || 0)).catch(() => {});
+    };
+    refresh();
+    window.addEventListener("questsUpdated", refresh);
+    window.addEventListener("questBadgeUpdate", refresh);
+    return () => { window.removeEventListener("questsUpdated", refresh); window.removeEventListener("questBadgeUpdate", refresh); };
+  }, [user?.id]); // eslint-disable-line
   const inBattle = matchActive;
   // Show patch notes once per account+device — triggers only when user logs in
   useEffect(() => {
@@ -8321,6 +8573,7 @@ export default function App() {
 >
               <span style={{ position: "relative", fontFamily: "'Cinzel',serif", fontSize: 18, fontWeight: 900, color: active ? "#e8c060" : "#b09458", lineHeight: 1, textShadow: active ? "0 0 20px #e8c06088" : "none", transition: "all .18s" }}>
                 {t.icon}
+                {t.id === "quests" && questBadge > 0 && <span style={{ position:"absolute", top:-6, right:-8, minWidth:14, height:14, borderRadius:7, background:"#78cc45", border:"2px solid #181408", fontFamily:"'Cinzel',serif", fontSize:7, fontWeight:900, color:"#0a1804", display:"inline-flex", alignItems:"center", justifyContent:"center", padding:"0 3px", lineHeight:1 }}>{questBadge > 9 ? "9+" : questBadge}</span>}
               </span>
               <span className="nav-labels" style={{ fontFamily: "'Cinzel',serif", fontSize: 10, fontWeight: 700, color: active ? "#e8c060" : "#a08858", letterSpacing: 1, lineHeight: 1, transition: "all .18s" }}>{t.label}</span>
             </button>
@@ -8379,6 +8632,9 @@ export default function App() {
       </ErrorBoundary>
       <ErrorBoundary label="The collection encountered an error.">
         {tab === "collection" && <CollectionScreen user={user} onUpdateUser={update} onDeckBuilding={setDeckBuilding} />}
+      </ErrorBoundary>
+      <ErrorBoundary label="The quests screen encountered an error.">
+        {tab === "quests" && <QuestPanel user={user} onUpdateUser={update} />}
       </ErrorBoundary>
       <ErrorBoundary label="The community screen encountered an error.">
         {tab === "community" && <CommunityScreen user={user} />}
