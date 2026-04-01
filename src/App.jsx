@@ -1777,6 +1777,22 @@ function MatchResultOverlay({ result, opponentName, isAI, onPlayAgain, onExit })
           </div>
         </div>
 
+        {/* ── First win of the day banner ── */}
+        {firstWinBonus > 0 && (
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:10, padding:"12px 16px",
+            background:"linear-gradient(135deg,rgba(232,192,96,0.12),rgba(200,140,10,0.08))",
+            border:"2px solid #e8c06055", borderRadius:12,
+            boxShadow:"0 0 32px rgba(232,192,96,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
+            animation:"pulse 2s ease-in-out infinite" }}>
+            <span style={{ fontSize:22 }}>⚡</span>
+            <div style={{ textAlign:"center" }}>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, fontWeight:900, color:"#e8c060", letterSpacing:3, textShadow:"0 0 20px #e8c06099" }}>FIRST WIN OF THE DAY!</div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#a08040", letterSpacing:1, marginTop:2 }}>3× shard reward · +{firstWinBonus} ⬙ bonus</div>
+            </div>
+            <span style={{ fontSize:22 }}>⚡</span>
+          </div>
+        )}
+
         {/* ── Rating change (PvP ranked) ── */}
         {ratingDelta != null && (
           <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:10, padding:"10px 16px",
@@ -1880,9 +1896,9 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     updatedQuests.quests.forEach((q, i) => { if (q.completed && !storedQuests.quests[i]?.completed) questShards += q.reward; });
     const questsGained = updatedQuests.quests.filter((q, i) => q.completed && !storedQuests.quests[i]?.completed);
     const histEntry = { opponent: "AI", result: won ? "W" : "L", date: new Date().toISOString(), turns: game.turn, ranked: false };
-    const today = getTodayStr();
-    const hasWonToday = (user?.matchHistory || []).some(h => h.result === "W" && h.date?.startsWith(today));
-    const firstWinBonus = won && !hasWonToday ? 50 : 0;
+    const todayUtc = new Date().toISOString().slice(0, 10);
+    const isFirstWin = won && (!user?.lastFirstWinDate || user.lastFirstWinDate < todayUtc);
+    const firstWinBonus = isFirstWin ? shardsBase * 2 : 0;
     const totalShards = shardsBase + firstWinBonus + questShards;
     const update = {
       battlesPlayed: (user?.battlesPlayed || 0) + 1,
@@ -1891,6 +1907,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
       matchHistory: [histEntry, ...(user?.matchHistory || [])].slice(0, 50),
     };
     if (won) update.battlesWon = (user?.battlesWon || 0) + 1;
+    if (isFirstWin) update.lastFirstWinDate = todayUtc;
     if (onUpdateUser) onUpdateUser(update);
     setMatchResult({ won, turns: game.turn, cardsPlayed: cardsPlayedRef.current, hpLeft: game.playerHP, shardsBase, firstWinBonus, questShards, shardsEarned: totalShards, questsGained, duration: Math.floor((Date.now() - matchStartRef.current) / 1000), damageDealt: damageDealtRef.current, opponentDamageDealt: oppDamageDealtRef.current, playerBoard: game.playerBoard, enemyBoard: game.enemyBoard });
   }, [game.phase, game.winner]); // eslint-disable-line
@@ -2821,9 +2838,9 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     let questShards = 0;
     updatedQuests.quests.forEach((q, i) => { if (q.completed && !storedQuests.quests[i]?.completed) questShards += q.reward; });
     const questsGained = updatedQuests.quests.filter((q, i) => q.completed && !storedQuests.quests[i]?.completed);
-    const today2 = getTodayStr();
-    const hasWonToday2 = (user?.matchHistory || []).some(h => h.result === "W" && h.date?.startsWith(today2));
-    const firstWinBonusPvp = won && !hasWonToday2 ? 50 : 0;
+    const todayUtcPvp = new Date().toISOString().slice(0, 10);
+    const isFirstWinPvp = won && (!user?.lastFirstWinDate || user.lastFirstWinDate < todayUtcPvp);
+    const firstWinBonusPvp = isFirstWinPvp ? shardsBase * 2 : 0;
     const totalShardsPvp = shardsBase + firstWinBonusPvp + questShards;
     const update = {
       matchHistory: newHistory,
@@ -2832,6 +2849,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       dailyQuests: updatedQuests,
     };
     if (won) update.battlesWon = (user?.battlesWon || 0) + 1;
+    if (isFirstWinPvp) update.lastFirstWinDate = todayUtcPvp;
     if (isRanked) {
       update.rankedRating = newRating;
       update.rankedWins = won ? (user?.rankedWins||0)+1 : (user?.rankedWins||0);
@@ -4730,6 +4748,7 @@ const toAppUser = (p, email) => ({
   joined: p.joined || new Date().toLocaleDateString(), lastPatchSeen: p.last_patch_seen || null,
   rankedRating: p.ranked_rating ?? 1000, rankedWins: p.ranked_wins ?? 0, rankedLosses: p.ranked_losses ?? 0,
   dailyQuests: p.daily_quests || null, freePackUsed: p.free_pack_used || null,
+  lastFirstWinDate: p.last_first_win_date || null,
   isFablesTesterFlag: p.is_fables_tester || false,
 });
 function useAuth() {
@@ -4789,7 +4808,7 @@ function useAuth() {
     completeProfile: (row, email) => { setUser(toAppUser(row, email)); setLoading(false); },
     update: async (delta) => {
       const updated = { ...user, ...delta };
-      const dbMap = { battlesPlayed: "battles_played", battlesWon: "battles_won", shards: "shards", collection: "collection", decks: "decks", avatarUrl: "avatar_url", selectedArts: "selected_arts", matchHistory: "match_history", altOwned: "alt_owned", freePackUsed: "free_pack_used", lastPatchSeen: "last_patch_seen", rankedRating: "ranked_rating", rankedWins: "ranked_wins", rankedLosses: "ranked_losses", dailyQuests: "daily_quests" };
+      const dbMap = { battlesPlayed: "battles_played", battlesWon: "battles_won", shards: "shards", collection: "collection", decks: "decks", avatarUrl: "avatar_url", selectedArts: "selected_arts", matchHistory: "match_history", altOwned: "alt_owned", freePackUsed: "free_pack_used", lastPatchSeen: "last_patch_seen", rankedRating: "ranked_rating", rankedWins: "ranked_wins", rankedLosses: "ranked_losses", dailyQuests: "daily_quests", lastFirstWinDate: "last_first_win_date" };
       const dbDelta = {};
       Object.entries(delta).forEach(([k, v]) => { if (dbMap[k]) dbDelta[dbMap[k]] = v; });
       if (Object.keys(dbDelta).length > 0) {
@@ -5357,8 +5376,25 @@ function HomeScreen({ setTab, user }) {
             <button onClick={() => setTab("store")} style={{ padding: "14px 28px", background: "linear-gradient(135deg,#503006,#8a5010)", border: "1px solid #d8901055", borderRadius: 8, color: "#f0d880", fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, letterSpacing: 3, cursor: "pointer", boxShadow: "0 6px 24px rgba(180,120,0,0.3)", transition: "all .2s" }} onMouseEnter={(e) => { e.currentTarget.style.transform="translateY(-3px)"; }} onMouseLeave={(e) => { e.currentTarget.style.transform="none"; }}>STORE</button>
             <button onClick={() => setTab("collection")} style={{ padding: "14px 28px", background: "rgba(232,192,96,0.06)", border: "1px solid #e8c06066", borderRadius: 8, color: "#e8c060", fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: 3, cursor: "pointer", fontWeight: 600, backdropFilter:"blur(4px)", transition: "all .2s" }} onMouseEnter={(e) => { e.currentTarget.style.transform="translateY(-3px)"; e.currentTarget.style.background="rgba(232,192,96,0.12)"; }} onMouseLeave={(e) => { e.currentTarget.style.transform="none"; e.currentTarget.style.background="rgba(232,192,96,0.06)"; }}>COLLECTION</button>
             <button onClick={() => window.dispatchEvent(new CustomEvent("openTutorial"))} style={{ padding: "14px 28px", background: "rgba(232,192,96,0.06)", border: "1px solid #e8c06044", borderRadius: 8, color: "#c0a060", fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: 3, cursor: "pointer", fontWeight: 600, backdropFilter:"blur(4px)", transition: "all .2s" }} onMouseEnter={(e) => { e.currentTarget.style.transform="translateY(-3px)"; e.currentTarget.style.background="rgba(232,192,96,0.12)"; }} onMouseLeave={(e) => { e.currentTarget.style.transform="none"; e.currentTarget.style.background="rgba(232,192,96,0.06)"; }}>TUTORIAL</button>
-
           </div>)}
+          {user && (() => {
+            const todayUtcHome = new Date().toISOString().slice(0, 10);
+            const claimed = user.lastFirstWinDate >= todayUtcHome;
+            return (
+              <div style={{ marginTop:10, display:"inline-flex", alignItems:"center", gap:8, padding:"7px 16px",
+                background: claimed ? "rgba(255,255,255,0.02)" : "rgba(232,192,96,0.10)",
+                border: `1px solid ${claimed ? "#2a2010" : "#e8c06055"}`,
+                borderRadius:30,
+                boxShadow: claimed ? "none" : "0 0 18px rgba(232,192,96,0.15)",
+                animation: claimed ? "none" : "pulse 2.4s ease-in-out infinite" }}>
+                <span style={{ fontSize:14 }}>{claimed ? "✓" : "⚡"}</span>
+                <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, letterSpacing:2,
+                  color: claimed ? "#503828" : "#e8c060" }}>
+                  {claimed ? "FIRST WIN CLAIMED · COME BACK TOMORROW" : "FIRST WIN BONUS AVAILABLE · 3× SHARDS"}
+                </span>
+              </div>
+            );
+          })()}
           {!user && (<div style={{ padding:"16px 22px", background:"rgba(232,192,96,0.06)", border:"1px solid #e8c06033", borderRadius:10, fontSize:12, color:"#a09060", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>Sign in to start your journey ⚔</div>)}
         </div>
         {/* RIGHT: Card of the Week — treasure chest */}
