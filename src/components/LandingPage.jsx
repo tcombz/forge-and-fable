@@ -349,7 +349,7 @@ export default function LandingPage({ onPlayNow, onSignIn }) {
           }}>
             FORGE {"&"} FABLE
           </div>
-          <div style={{ fontFamily: "'Lora',serif", fontStyle: "italic", fontSize: "clamp(12px, 2vw, 16px)", color: "#b09050", letterSpacing: 2, marginBottom: 0 }}>
+          <div style={{ fontFamily: "'Lora',serif", fontStyle: "italic", fontSize: "clamp(12px, 2vw, 16px)", color: "#b09050", letterSpacing: 2 }}>
             A free competitive card game — all cards unlocked, no paywalls.
           </div>
         </div>
@@ -363,7 +363,6 @@ export default function LandingPage({ onPlayNow, onSignIn }) {
               fontFamily: "'Cinzel',serif", fontSize: 9, letterSpacing: 1,
               color: f.color, fontWeight: 600,
               animation: `badgePulse ${2.5 + (i % 4) * 0.5}s ease-in-out ${i * 0.12}s infinite`,
-              transition: "background .2s, border-color .2s",
               cursor: "default",
             }}>{f.name}</span>
           ))}
@@ -376,16 +375,13 @@ export default function LandingPage({ onPlayNow, onSignIn }) {
           ))}
         </div>
 
-        {/* CTA buttons */}
-        <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap", justifyContent: "center", animation: "landingFadeUp .7s .38s ease-out both", position: "relative", zIndex: 1 }}>
-          <button className="landing-cta" onClick={onPlayNow}>PLAY NOW — FREE</button>
-          <button className="landing-signin-link" onClick={onSignIn}>Already have an account</button>
-        </div>
-
-        {/* Scroll hint */}
-        <div style={{ position: "absolute", bottom: 28, left: "50%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, opacity: 0.25, animation: "landingFloat 2s ease-in-out infinite" }}>
-          <div style={{ fontSize: 9, letterSpacing: 3, color: "#e8c060" }}>SCROLL</div>
-          <div style={{ width: 1, height: 28, background: "linear-gradient(180deg,#e8c060,transparent)" }} />
+        {/* Scroll hint — replaces CTAs in the hero */}
+        <div style={{ animation: "landingFadeUp .7s .42s ease-out both", position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+          <div style={{ fontFamily: "'Lora',serif", fontStyle: "italic", fontSize: 13, color: "#6a4e2e", letterSpacing: 1 }}>Discover what awaits below</div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, opacity: 0.4, animation: "landingFloat 2s ease-in-out infinite" }}>
+            <div style={{ width: 1, height: 32, background: "linear-gradient(180deg,#e8c060,transparent)" }} />
+            <div style={{ fontSize: 9, letterSpacing: 4, color: "#e8c060" }}>SCROLL</div>
+          </div>
         </div>
       </section>
 
@@ -489,51 +485,76 @@ export default function LandingPage({ onPlayNow, onSignIn }) {
         </FadeSection>
       </section>
 
-      {/* ── INTEREST FORM ─────────────────────────────────────────────────────── */}
-      <section style={{ padding: "60px 24px 80px", maxWidth: 560, margin: "0 auto" }}>
-        <FadeSection>
-          {divider}
-          <div style={{ textAlign: "center", margin: "32px 0 36px" }}>
-            <div style={{ fontSize: "clamp(16px,2.5vw,22px)", fontWeight: 700, color: "#e8c060", letterSpacing: 3, marginBottom: 10 }}>DON'T HAVE A KEY?</div>
-            <div style={{ fontSize: 12, color: "#6a5040", fontFamily: "'Lora',serif", lineHeight: 1.8 }}>Drop your name and email. We'll send you access when a spot opens up.</div>
-          </div>
-          <div style={{
-            background: "rgba(10,7,3,0.9)", border: "1px solid #2a1a08",
-            borderRadius: 16, padding: "32px 28px",
-            boxShadow: "0 0 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03)",
-          }}>
-            <InterestForm />
-          </div>
-        </FadeSection>
-      </section>
-
-      {/* ── BOTTOM CTA ────────────────────────────────────────────────────────── */}
+      {/* ── GET ACCESS ────────────────────────────────────────────────────────── */}
       <section style={{
-        padding: "80px 24px 100px", textAlign: "center",
+        padding: "80px 24px 110px",
         borderTop: "1px solid #1a1208",
         background: "linear-gradient(180deg, transparent 0%, rgba(8,5,2,0.97) 100%)",
         position: "relative", overflow: "hidden",
       }}>
         <Particles count={18} color="#c89010" />
-        <FadeSection style={{ position: "relative", zIndex: 1 }}>
-          <div style={{
-            fontFamily: "'Cinzel',serif", fontSize: "clamp(22px,4vw,40px)",
-            fontWeight: 900, letterSpacing: "clamp(2px,0.5vw,6px)", marginBottom: 12,
-            background: "linear-gradient(135deg, #e8c060 0%, #f0d880 30%, #c89010 60%, #e8c060 100%)",
-            backgroundSize: "300% 100%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-            animation: "shimmerGold 4s linear infinite",
-          }}>
-            READY TO FORGE YOUR LEGEND?
-          </div>
-          <div style={{ fontSize: 13, color: "#7a6050", fontFamily: "'Lora',serif", marginBottom: 40, maxWidth: 480, margin: "0 auto 40px" }}>
-            Free forever. All cards unlocked. Ranked PvP and AI training from day one.
-          </div>
-          <div style={{ display: "flex", gap: 14, alignItems: "center", justifyContent: "center", flexWrap: "wrap" }}>
-            <button className="landing-cta" onClick={onPlayNow}>CREATE FREE ACCOUNT</button>
-            <button className="landing-signin-link" onClick={onSignIn}>Sign In</button>
-          </div>
-          <div style={{ marginTop: 24, fontSize: 9, color: "#2a1c0a", letterSpacing: 2 }}>ALPHA · INVITE KEY REQUIRED · v19</div>
-        </FadeSection>
+        <div style={{ position: "relative", zIndex: 1, maxWidth: 620, margin: "0 auto" }}>
+
+          <FadeSection>
+            {divider}
+            <div style={{ textAlign: "center", margin: "32px 0 48px" }}>
+              <div style={{
+                fontFamily: "'Cinzel',serif", fontSize: "clamp(22px,4vw,40px)",
+                fontWeight: 900, letterSpacing: "clamp(2px,0.5vw,6px)", marginBottom: 14,
+                background: "linear-gradient(135deg, #e8c060 0%, #f0d880 30%, #c89010 60%, #e8c060 100%)",
+                backgroundSize: "300% 100%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+                animation: "shimmerGold 4s linear infinite",
+              }}>
+                READY TO PLAY?
+              </div>
+              <div style={{ fontSize: 13, color: "#7a6050", fontFamily: "'Lora',serif", lineHeight: 1.85, maxWidth: 460, margin: "0 auto" }}>
+                Free forever. All cards unlocked from day one. If you have an alpha key, create your account now. No key? Leave your details and we'll reach out when a spot opens.
+              </div>
+            </div>
+          </FadeSection>
+
+          {/* ── Have a key → sign up / sign in ── */}
+          <FadeSection delay={0.1}>
+            <div style={{
+              background: "rgba(10,7,3,0.95)", border: "1px solid #3a2810",
+              borderRadius: 16, padding: "32px 28px", marginBottom: 20,
+              boxShadow: "0 0 60px rgba(200,144,16,0.06), inset 0 1px 0 rgba(255,255,255,0.03)",
+            }}>
+              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, color: "#c89010", letterSpacing: 3, marginBottom: 20, textAlign: "center" }}>I HAVE AN ALPHA KEY</div>
+              <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+                <button className="landing-cta" style={{ padding: "14px 44px", fontSize: 13 }} onClick={onPlayNow}>CREATE ACCOUNT</button>
+                <button className="landing-signin-link" onClick={onSignIn}>Sign In</button>
+              </div>
+            </div>
+          </FadeSection>
+
+          {/* ── Divider ── */}
+          <FadeSection delay={0.15}>
+            <div style={{ display: "flex", alignItems: "center", gap: 16, margin: "4px 0 20px" }}>
+              <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg,transparent,#2a1a0a)" }} />
+              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 9, color: "#3a2510", letterSpacing: 3 }}>OR</div>
+              <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg,#2a1a0a,transparent)" }} />
+            </div>
+          </FadeSection>
+
+          {/* ── No key → interest form ── */}
+          <FadeSection delay={0.2}>
+            <div style={{
+              background: "rgba(10,7,3,0.9)", border: "1px solid #2a1a08",
+              borderRadius: 16, padding: "32px 28px",
+              boxShadow: "0 0 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03)",
+            }}>
+              <div style={{ fontFamily: "'Cinzel',serif", fontSize: 11, color: "#806040", letterSpacing: 3, marginBottom: 6, textAlign: "center" }}>I DON'T HAVE A KEY YET</div>
+              <div style={{ fontFamily: "'Lora',serif", fontSize: 12, color: "#5a3a20", textAlign: "center", marginBottom: 24, lineHeight: 1.7 }}>Drop your info and we'll send you access when a spot opens.</div>
+              <InterestForm />
+            </div>
+          </FadeSection>
+
+          <FadeSection delay={0.25}>
+            <div style={{ textAlign: "center", marginTop: 28, fontSize: 9, color: "#2a1c0a", letterSpacing: 2 }}>ALPHA · INVITE KEY REQUIRED · v19</div>
+          </FadeSection>
+
+        </div>
       </section>
     </div>
   );
