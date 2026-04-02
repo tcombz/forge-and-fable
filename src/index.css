@@ -1,1 +1,72 @@
 @import "tailwindcss";
+
+/* ═══ FORGE & FABLE — DESIGN TOKENS ════════════════════════════════════════
+   Single source of truth for the colour palette, typography, and spacing.
+   These CSS custom properties can be used anywhere — including React inline
+   styles via the var() function.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Brand colours (derived from logo) ─────────────────────────────────── */
+  --fnf-logo-charcoal: #2e3848;   /* hammer/quill icon fill                  */
+  --fnf-logo-gold:     #a08830;   /* logo ring & icon outline                */
+
+  /* ── Background scale ───────────────────────────────────────────────────── */
+  --fnf-bg:           #161210;    /* page background                         */
+  --fnf-bg-elevated:  #1e1a0e;    /* cards, panels, modals                   */
+  --fnf-bg-sunken:    #0e0c08;    /* inputs, inner wells                     */
+  --fnf-bg-nav:       #1e1a0e;    /* nav bar                                 */
+
+  /* ── Gold / accent scale ────────────────────────────────────────────────── */
+  --fnf-gold:         #e8c060;    /* primary text highlight, active states   */
+  --fnf-gold-bright:  #f0d050;    /* CTA button highlight edge               */
+  --fnf-gold-base:    #c89010;    /* CTA button base                         */
+  --fnf-gold-dim:     #a08040;    /* secondary / inactive labels             */
+  --fnf-gold-mute:    #7a6030;    /* very muted / placeholder                */
+  --fnf-gold-border:  #4a3c18;    /* gold-tinted section borders             */
+  --fnf-gold-border2: #3a2c14;    /* dimmer borders                          */
+
+  /* ── Text scale ─────────────────────────────────────────────────────────── */
+  --fnf-text:         #e8e0d0;    /* primary body text                       */
+  --fnf-text-secondary: #c0b898;  /* secondary body text                     */
+  --fnf-text-muted:   #a09070;    /* muted labels                            */
+  --fnf-text-dim:     #706040;    /* dim / disabled                          */
+
+  /* ── Semantic colours ───────────────────────────────────────────────────── */
+  --fnf-atk:          #ff7050;    /* attack stat                             */
+  --fnf-hp:           #50c060;    /* HP stat                                 */
+  --fnf-spell:        #d090d0;    /* spell card accent                       */
+  --fnf-env:          #28c0cc;    /* environment card accent                 */
+  --fnf-champion:     #e8c060;    /* champion card accent (same as gold)     */
+  --fnf-success:      #78cc45;    /* success / win / confirm                 */
+  --fnf-danger:       #e05050;    /* danger / loss / error                   */
+  --fnf-warning:      #e8a020;    /* warning / alpha notice                  */
+  --fnf-blood:        #c03040;    /* Bloodpact region accent                 */
+
+  /* ── Button gradients ───────────────────────────────────────────────────── */
+  --fnf-btn-primary:  linear-gradient(135deg, #c89010, #f0c040);
+  --fnf-btn-primary-hover: linear-gradient(135deg, #d4a020, #f0d050);
+  --fnf-btn-danger:   linear-gradient(135deg, #3a0808, #5a1010);
+  --fnf-btn-success:  linear-gradient(135deg, #143a06, #1e560c);
+
+  /* ── Typography ─────────────────────────────────────────────────────────── */
+  --font-display: 'Cinzel', serif;   /* headers, labels, all UI chrome       */
+  --font-body:    'Lora', Georgia, serif; /* narrative text, flavor           */
+
+  /* ── Spacing scale ──────────────────────────────────────────────────────── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* ── Radii ──────────────────────────────────────────────────────────────── */
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  14px;
+  --radius-xl:  18px;
+  --radius-pill: 999px;
+}

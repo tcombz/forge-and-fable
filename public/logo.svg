@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <!-- Outer gold rings -->
+  <circle cx="100" cy="100" r="90" stroke="#a08830" stroke-width="5.5"/>
+  <circle cx="100" cy="100" r="84" stroke="#c8a840" stroke-width="1" opacity="0.35"/>
+
+  <!-- HAMMER: head upper-left, handle lower-right, rotated -42deg -->
+  <g transform="rotate(-42 100 100)">
+    <!-- Handle -->
+    <rect x="93" y="56" width="14" height="68" rx="5" fill="#2e3848" stroke="#9a8840" stroke-width="2.2"/>
+    <!-- Head body -->
+    <rect x="57" y="36" width="56" height="28" rx="7" fill="#2e3848" stroke="#9a8840" stroke-width="2.5"/>
+    <!-- Face highlight (left face of head) -->
+    <rect x="59" y="38" width="16" height="24" rx="5" fill="#3d4f60" opacity="0.55"/>
+    <!-- Gold edge highlight on top of head -->
+    <rect x="59" y="38" width="54" height="4" rx="3" fill="#b09040" opacity="0.45"/>
+    <!-- Impact sparks -->
+    <polygon points="44,28 38,20 48,22" fill="#c8a840" opacity="0.95"/>
+    <polygon points="36,38 28,34 34,28" fill="#c8a840" opacity="0.75"/>
+    <polygon points="46,18 42,10 52,16" fill="#c8a840" opacity="0.5"/>
+  </g>
+
+  <!-- QUILL: tip lower-center, feather upper-right, rotated 42deg -->
+  <g transform="rotate(42 100 100)">
+    <!-- Rachis (spine) -->
+    <line x1="100" y1="148" x2="100" y2="52" stroke="#2e3848" stroke-width="3.5" stroke-linecap="round"/>
+    <!-- Left vane -->
+    <path d="M100 52 C88 68 80 92 76 120 C82 104 90 84 98 68 Z" fill="#2e3848" stroke="#9a8840" stroke-width="1.8"/>
+    <!-- Right vane -->
+    <path d="M100 52 C112 68 118 88 122 114 C114 96 106 76 102 60 Z" fill="#3d4f60" stroke="#9a8840" stroke-width="1.8"/>
+    <!-- Vane highlight/sheen -->
+    <path d="M100 56 C104 72 106 90 104 108" stroke="#dce8f0" stroke-width="1.8" stroke-linecap="round" opacity="0.2"/>
+    <!-- Calamus (quill tip) -->
+    <path d="M100 148 C98 155 96 161 97 168 C100 161 103 155 102 148 Z" fill="#2e3848" stroke="#9a8840" stroke-width="1.5"/>
+  </g>
+</svg>

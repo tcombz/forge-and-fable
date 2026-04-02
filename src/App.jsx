@@ -33,7 +33,7 @@ class ErrorBoundary extends Component {
         <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, color:"#e8c060", marginBottom:8, letterSpacing:2 }}>SOMETHING WENT WRONG</div>
         <div style={{ fontSize:12, color:"#806040", marginBottom:24, maxWidth:380 }}>{this.props.label || "An unexpected error occurred."} Please try again.</div>
         <button onClick={() => this.setState({ hasError: false, error: null })}
-          style={{ padding:"10px 28px", background:"linear-gradient(135deg,#4a3010,#6a4818)", border:"1px solid #8a6030", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:"#e8c060", cursor:"pointer", letterSpacing:1 }}>
+          style={{ padding:"10px 28px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:10, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:"#1a1000", cursor:"pointer", letterSpacing:1 }}>
           RETRY
         </button>
       </div>
@@ -85,6 +85,71 @@ function ChroniclerToast({ message, onDismiss }) {
   );
 }
 
+// ═══ BTN — SHARED BUTTON COMPONENT ══════════════════════════════════════════
+// variant: "primary" | "ghost" | "danger" | "success" | "warn"
+// size:    "sm" | "md" | "lg"
+function Btn({ children, onClick, variant = "ghost", size = "md", disabled = false, style = {}, ...rest }) {
+  const [hov, setHov] = useState(false);
+  const base = {
+    fontFamily: "var(--font-display, 'Cinzel',serif)",
+    cursor: disabled ? "not-allowed" : "pointer",
+    opacity: disabled ? 0.5 : 1,
+    transition: "all .18s",
+    border: "none",
+    borderRadius: "var(--radius-md, 10px)",
+    letterSpacing: 1,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    whiteSpace: "nowrap",
+  };
+  const VARIANTS = {
+    primary: {
+      background: hov ? "var(--fnf-btn-primary-hover, linear-gradient(135deg,#d4a020,#f0d050))" : "var(--fnf-btn-primary, linear-gradient(135deg,#c89010,#f0c040))",
+      color: "#1a1000",
+      fontWeight: 700,
+      boxShadow: hov ? "0 6px 24px rgba(200,144,0,0.45)" : "0 4px 16px rgba(200,144,0,0.25)",
+      transform: hov ? "translateY(-1px)" : "none",
+    },
+    ghost: {
+      background: "transparent",
+      border: "1px solid var(--fnf-gold-border2, #3a2c14)",
+      color: "var(--fnf-text-muted, #a09070)",
+    },
+    danger: {
+      background: hov ? "linear-gradient(135deg,#5a1010,#7a2020)" : "var(--fnf-btn-danger, linear-gradient(135deg,#3a0808,#5a1010))",
+      border: "1px solid rgba(192,32,32,0.35)",
+      color: "#e06060",
+      fontWeight: 700,
+    },
+    success: {
+      background: hov ? "linear-gradient(135deg,#1a4a08,#2a6a10)" : "var(--fnf-btn-success, linear-gradient(135deg,#143a06,#1e560c))",
+      border: "1px solid rgba(120,204,69,0.4)",
+      color: "#a0e060",
+      fontWeight: 700,
+    },
+    warn: {
+      background: hov ? "rgba(232,160,32,0.22)" : "rgba(232,160,32,0.12)",
+      border: "1px solid rgba(232,160,32,0.4)",
+      color: "var(--fnf-warning, #e8a020)",
+      fontWeight: 700,
+    },
+  };
+  const SIZES = {
+    sm: { padding: "5px 14px", fontSize: 9 },
+    md: { padding: "10px 24px", fontSize: 11 },
+    lg: { padding: "14px 40px", fontSize: 13 },
+  };
+  return (
+    <button {...rest} onClick={disabled ? undefined : onClick} disabled={disabled}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{ ...base, ...(VARIANTS[variant] || VARIANTS.ghost), ...(SIZES[size] || SIZES.md), ...style }}>
+      {children}
+    </button>
+  );
+}
+
 // ═══ SKELETON / LOADING PRIMITIVES ══════════════════════════════════════════
 // Skel: single shimmer block. w/h accept any CSS value.
 const Skel = ({ w = "100%", h = 16, r = 6, style = {} }) => (
@@ -94,13 +159,14 @@ const Skel = ({ w = "100%", h = 16, r = 6, style = {} }) => (
 // Full-screen branded loading used at app boot and anywhere that needs it
 function LoadingScreen({ label = "FORGING…" }) {
   return (
-    <div style={{ minHeight: "100vh", background: "#161210", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 24 }}>
+    <div style={{ minHeight: "100vh", background: "var(--fnf-bg,#161210)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 20 }}>
+      <img src="/logo.svg" alt="Forge &amp; Fable" style={{ width: 64, height: 64, animation: "pulse 2s ease-in-out infinite", filter: "drop-shadow(0 0 18px rgba(160,136,48,0.6))" }} />
       <div style={{ display: "flex", gap: 6 }}>
         {[0, 1, 2, 3].map(i => (
-          <div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: "#e8c060", animation: `pulse 1.2s ${i * 0.18}s ease-in-out infinite` }} />
+          <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--fnf-gold,#e8c060)", animation: `pulse 1.2s ${i * 0.18}s ease-in-out infinite` }} />
         ))}
       </div>
-      <div style={{ fontFamily: "'Cinzel',serif", color: "#e8c060", fontSize: 13, letterSpacing: 5, animation: "pulse 1.5s ease-in-out infinite" }}>{label}</div>
+      <div style={{ fontFamily: "var(--font-display,'Cinzel',serif)", color: "var(--fnf-gold,#e8c060)", fontSize: 12, letterSpacing: 5, animation: "pulse 1.5s ease-in-out infinite" }}>{label}</div>
     </div>
   );
 }
@@ -693,7 +759,7 @@ function PatchNotesModal({ onDismiss }) {
         </div>
         {/* CTA */}
         <div style={{ padding:"0 18px 18px" }}>
-          <button onClick={onDismiss} style={{ width:"100%", padding:"13px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:10, fontFamily:"'Cinzel',serif", fontSize:13, fontWeight:700, letterSpacing:3, color:"#1a1000", cursor:"pointer", boxShadow:"0 4px 20px rgba(200,144,0,0.35)", transition:"all .2s" }} onMouseEnter={e=>e.currentTarget.style.transform="translateY(-1px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>ENTER THE ARENA</button>
+          <Btn variant="primary" size="lg" onClick={onDismiss} style={{ width:"100%", letterSpacing:3 }}>ENTER THE ARENA</Btn>
         </div>
       </div>
     </div>
@@ -1624,7 +1690,7 @@ function OpeningDraw({ onResult }) {
         </div>
         {phase==="flipping" && <div style={{ position:"absolute", inset:-16, borderRadius:"50%", border:"2px solid #e8c06033", animation:"vfxRingBurst 1.5s ease-out forwards" }} />}
       </div>
-      {phase==="waiting" && <button onClick={flip} style={{ padding:"14px 40px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:14, fontWeight:700, letterSpacing:3, color:"#1a1000", cursor:"pointer", animation:"pulse 2s ease-in-out infinite", boxShadow:"0 4px 20px rgba(200,144,0,0.4)" }}>FLIP THE COIN</button>}
+      {phase==="waiting" && <Btn variant="primary" size="lg" onClick={flip} style={{ letterSpacing:3, animation:"pulse 2s ease-in-out infinite", boxShadow:"0 4px 20px rgba(200,144,0,0.4)" }}>FLIP THE COIN</Btn>}
       {phase==="flipping" && <div style={{ fontFamily:"'Cinzel',serif", fontSize:12, color:"#806040", animation:"pulse 0.4s infinite", letterSpacing:3 }}>DECIDING FATE…</div>}
       {phase==="result" && winner && (
         <div style={{ textAlign:"center", animation:"cardReveal 0.5s ease-out" }}>
@@ -2110,32 +2176,20 @@ function MatchResultOverlay({ result, opponentName, isAI, onPlayAgain, onExit, p
         {/* ── Buttons ── */}
         <div style={{ display:"grid", gridTemplateColumns: (onPlayAgain && !isFirstBattle) ? "1fr 1fr" : isFirstBattle ? "1fr 1fr" : "1fr", gap:10, marginTop:4 }}>
           {onPlayAgain && !isFirstBattle && (
-            <button onClick={onPlayAgain}
-              style={{ padding:"13px", background: won ? "linear-gradient(135deg,#c89010,#f0c040)" : "linear-gradient(135deg,#2a4a6a,#3a6a9a)",
-                border:"none", borderRadius:10, fontFamily:"'Cinzel',serif", fontWeight:700, fontSize:12, letterSpacing:2,
-                color: won ? "#1a1000" : "#c0d8f0", cursor:"pointer",
-                boxShadow: won ? "0 0 24px #e8c06055" : "0 0 16px rgba(60,100,160,0.3)",
-                transition:"opacity .15s" }}
-              onMouseEnter={e=>e.currentTarget.style.opacity=".85"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+            <Btn variant={won ? "primary" : "ghost"} onClick={onPlayAgain}
+              style={{ padding:"13px", fontSize:12, letterSpacing:2, width:"100%",
+                ...(won ? {} : { background:"linear-gradient(135deg,#2a4a6a,#3a6a9a)", color:"#c0d8f0", border:"none" }) }}>
               PLAY AGAIN
-            </button>
+            </Btn>
           )}
           {isFirstBattle && onViewQuests && (
-            <button onClick={onViewQuests}
-              style={{ padding:"13px", background:"linear-gradient(135deg,#1a3a10,#2a6018)", border:"1px solid #78cc4555", borderRadius:10,
-                fontFamily:"'Cinzel',serif", fontWeight:700, fontSize:11, letterSpacing:1.5,
-                color:"#78cc45", cursor:"pointer", transition:"opacity .15s" }}
-              onMouseEnter={e=>e.currentTarget.style.opacity=".85"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+            <Btn variant="success" onClick={onViewQuests} style={{ padding:"13px", fontSize:11, letterSpacing:1.5, width:"100%" }}>
               VIEW QUESTS →
-            </button>
+            </Btn>
           )}
-          <button onClick={onExit}
-            style={{ padding:"13px", background:"transparent", border:"2px solid #2a2010", borderRadius:10,
-              fontFamily:"'Cinzel',serif", fontSize:12, color:"#806848", cursor:"pointer", letterSpacing:1,
-              transition:"opacity .15s" }}
-            onMouseEnter={e=>e.currentTarget.style.opacity=".7"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+          <Btn variant="ghost" onClick={onExit} style={{ padding:"13px", fontSize:12, letterSpacing:1, width:"100%", border:"2px solid #2a2010" }}>
             EXIT
-          </button>
+          </Btn>
         </div>
         <ShareResultButtons result={result} playerName={playerName} opponentName={opponentName} />
       </div>
@@ -2514,7 +2568,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
           <div style={{ fontFamily:"'Lora',Georgia,serif", fontSize:15, color:"#d8cca8", lineHeight:1.85, marginBottom:32 }}>
             "Your first true contest begins. You stand against a worthy initiation — one I have prepared to test what I taught you. Trust your mana, read the board, and strike when the moment is right. You are ready."
           </div>
-          <button onClick={() => setShowFirstMatchIntro(false)} style={{ padding:"13px 44px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:10, fontFamily:"'Cinzel',serif", fontSize:13, fontWeight:700, letterSpacing:2, color:"#1a1000", cursor:"pointer", boxShadow:"0 0 24px #c8901055" }}>BEGIN ⚔</button>
+          <Btn variant="primary" size="lg" onClick={() => setShowFirstMatchIntro(false)} style={{ letterSpacing:2 }}>BEGIN ⚔</Btn>
         </div>
       </div>
     )}
@@ -3859,7 +3913,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       {connectError ? (<>
         <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, color:"#e05050", marginBottom:12 }}>CONNECTION FAILED</div>
         <p style={{ fontSize:12, color:"#a09070", marginBottom:24, lineHeight:1.7 }}>Could not connect to Player 1's match. The match may have expired or there was a network issue.</p>
-        <button onClick={onExit} style={{ padding:"10px 28px", background:"linear-gradient(135deg,#3a1010,#5a1818)", border:"1px solid #c0202055", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:"#e08080", cursor:"pointer" }}>BACK TO LOBBY</button>
+        <Btn variant="danger" onClick={onExit}>BACK TO LOBBY</Btn>
       </>) : (<>
         <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, color:"#e8c060", animation:"pulse 1.5s infinite" }}>CONNECTING...</div>
         <p style={{ fontSize:12, color:"#a09070", marginTop:12, lineHeight:1.7 }}>
@@ -4983,11 +5037,8 @@ function ChallengeJoinScreen({ user, lobby, onEnterMatch, onDecline }) {
             </div>
           </div>
           <div style={{ display:"flex", gap:12, justifyContent:"center" }}>
-            <button onClick={join} disabled={joining}
-              style={{ padding:"14px 36px", background: joining ? "rgba(200,144,16,0.3)" : "linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:10, fontFamily:"'Cinzel',serif", fontSize:14, fontWeight:700, color: joining ? "#906030" : "#1a1000", cursor: joining ? "default" : "pointer", letterSpacing:1, transition:"opacity .15s" }}>
-              {joining ? "JOINING…" : "⚔ ACCEPT"}
-            </button>
-            <button onClick={onDecline} style={{ padding:"14px 20px", background:"transparent", border:"1px solid #3a1010", borderRadius:10, fontFamily:"'Cinzel',serif", fontSize:12, color:"#806040", cursor:"pointer" }}>DECLINE</button>
+            <Btn variant="primary" size="lg" onClick={join} disabled={joining}>{joining ? "JOINING…" : "⚔ ACCEPT"}</Btn>
+            <Btn variant="ghost" size="lg" onClick={onDecline}>DECLINE</Btn>
           </div>
         </>
       )}
@@ -5021,7 +5072,7 @@ function ChallengeRouteHandler({ user, lobbyId, pvpDeck, isHost, onEnterMatch, o
         <div style={{ fontSize:42, marginBottom:12 }}>⚔️</div>
         <div style={{ fontFamily:"'Cinzel',serif", fontSize:20, color:"#c07040", marginBottom:8, letterSpacing:1 }}>LOBBY UNAVAILABLE</div>
         <div style={{ fontSize:13, color:"#806040", marginBottom:28 }}>This challenge link has expired or has already been used.</div>
-        <button onClick={onCancel} style={{ padding:"12px 32px", background:"transparent", border:"1px solid #3a1a0a", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:11, color:"#806040", cursor:"pointer", letterSpacing:1 }}>BACK</button>
+        <Btn variant="ghost" onClick={onCancel}>BACK</Btn>
       </div>
     );
   }
@@ -6139,12 +6190,14 @@ function HomeScreen({ setTab, user }) {
             <span style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#d8a838", letterSpacing: 3, fontWeight: 700 }}>{CURRENT_PATCH} · MULTIPLAYER ALPHA LIVE</span>
           </div>
           {/* Title */}
-          <h1 style={{ fontFamily: "'Cinzel',serif", fontSize: "clamp(48px,6.5vw,80px)", fontWeight: 900, lineHeight: 0.95, color: "#f0d878", margin: "0 0 6px", textShadow: "0 0 80px #c89020bb, 0 0 140px #c8902055, 0 4px 8px rgba(0,0,0,0.9), 0 2px 2px rgba(0,0,0,1)" }}>
-            Forge
-          </h1>
-          <h1 style={{ fontFamily: "'Cinzel',serif", fontSize: "clamp(48px,6.5vw,80px)", fontWeight: 900, lineHeight: 0.95, color: "#f0d878", margin: "0 0 22px", textShadow: "0 0 80px #c89020bb, 0 0 140px #c8902055, 0 4px 8px rgba(0,0,0,0.9)" }}>
-            {"&"} Fable
-          </h1>
+          <div style={{ display:"flex", alignItems:"center", gap:16, marginBottom:6 }}>
+            <img src="/logo.svg" alt="" style={{ width:"clamp(52px,6.5vw,80px)", height:"clamp(52px,6.5vw,80px)", filter:"drop-shadow(0 0 24px rgba(160,136,48,0.55))", flexShrink:0 }} />
+            <div>
+              <h1 style={{ fontFamily: "var(--font-display,'Cinzel',serif)", fontSize: "clamp(48px,6.5vw,80px)", fontWeight: 900, lineHeight: 0.95, color: "#f0d878", margin: 0, textShadow: "0 0 80px #c89020bb, 0 0 140px #c8902055, 0 4px 8px rgba(0,0,0,0.9), 0 2px 2px rgba(0,0,0,1)" }}>Forge</h1>
+              <h1 style={{ fontFamily: "var(--font-display,'Cinzel',serif)", fontSize: "clamp(48px,6.5vw,80px)", fontWeight: 900, lineHeight: 0.95, color: "#f0d878", margin: 0, textShadow: "0 0 80px #c89020bb, 0 0 140px #c8902055, 0 4px 8px rgba(0,0,0,0.9)" }}>{"&"} Fable</h1>
+            </div>
+          </div>
+          <div style={{ marginBottom: 22 }} />
           <p style={{ fontSize: 15, lineHeight: 1.9, color: "#b8aad0", margin: "0 0 24px", maxWidth: 420, textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>{POOL.length}+ cards across {REGIONS.length} factions. Real abilities, the Lightning Meter, and environments that reshape the battlefield. Creatures that level up, bleed, echo, and strike.</p>
           {/* Stat boxes */}
           <div ref={statsRef} style={{ display: "flex", gap: 10, marginBottom: 28 }}>
@@ -6152,10 +6205,10 @@ function HomeScreen({ setTab, user }) {
           </div>
           {/* CTA Buttons */}
           {user && (<div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <button onClick={() => setTab("play")} style={{ padding: "14px 32px", background: "linear-gradient(135deg,#7a0808,#c82020)", border: "1px solid #e84040aa", borderRadius: 8, color: "#ffe0e0", fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, letterSpacing: 3, cursor: "pointer", boxShadow: "0 6px 28px rgba(200,30,30,0.5), 0 0 40px rgba(200,30,30,0.2)", animation: "battleGlow 2.4s ease-in-out infinite", transition: "transform .2s" }} onMouseEnter={(e) => { e.currentTarget.style.transform="translateY(-3px) scale(1.03)"; }} onMouseLeave={(e) => { e.currentTarget.style.transform="none"; }}>BATTLE</button>
-            <button onClick={() => setTab("store")} style={{ padding: "14px 28px", background: "linear-gradient(135deg,#503006,#8a5010)", border: "1px solid #d8901055", borderRadius: 8, color: "#f0d880", fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, letterSpacing: 3, cursor: "pointer", boxShadow: "0 6px 24px rgba(180,120,0,0.3)", transition: "all .2s" }} onMouseEnter={(e) => { e.currentTarget.style.transform="translateY(-3px)"; }} onMouseLeave={(e) => { e.currentTarget.style.transform="none"; }}>STORE</button>
-            <button onClick={() => setTab("collection")} style={{ padding: "14px 28px", background: "rgba(232,192,96,0.06)", border: "1px solid #e8c06066", borderRadius: 8, color: "#e8c060", fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: 3, cursor: "pointer", fontWeight: 600, backdropFilter:"blur(4px)", transition: "all .2s" }} onMouseEnter={(e) => { e.currentTarget.style.transform="translateY(-3px)"; e.currentTarget.style.background="rgba(232,192,96,0.12)"; }} onMouseLeave={(e) => { e.currentTarget.style.transform="none"; e.currentTarget.style.background="rgba(232,192,96,0.06)"; }}>COLLECTION</button>
-            <button onClick={() => window.dispatchEvent(new CustomEvent("openTutorial"))} style={{ padding: "14px 28px", background: "rgba(232,192,96,0.06)", border: "1px solid #e8c06044", borderRadius: 8, color: "#c0a060", fontFamily: "'Cinzel',serif", fontSize: 13, letterSpacing: 3, cursor: "pointer", fontWeight: 600, backdropFilter:"blur(4px)", transition: "all .2s" }} onMouseEnter={(e) => { e.currentTarget.style.transform="translateY(-3px)"; e.currentTarget.style.background="rgba(232,192,96,0.12)"; }} onMouseLeave={(e) => { e.currentTarget.style.transform="none"; e.currentTarget.style.background="rgba(232,192,96,0.06)"; }}>TUTORIAL</button>
+            <button onClick={() => setTab("play")} style={{ padding: "14px 32px", background: "linear-gradient(135deg,#7a0808,#c82020)", border: "1px solid #e84040aa", borderRadius: 10, color: "#ffe0e0", fontFamily: "var(--font-display,'Cinzel',serif)", fontSize: 13, fontWeight: 700, letterSpacing: 3, cursor: "pointer", boxShadow: "0 6px 28px rgba(200,30,30,0.5), 0 0 40px rgba(200,30,30,0.2)", animation: "battleGlow 2.4s ease-in-out infinite", transition: "transform .2s" }} onMouseEnter={(e) => { e.currentTarget.style.transform="translateY(-3px) scale(1.03)"; }} onMouseLeave={(e) => { e.currentTarget.style.transform="none"; }}>BATTLE</button>
+            <Btn variant="primary" size="lg" onClick={() => setTab("store")} style={{ letterSpacing:3 }}>STORE</Btn>
+            <Btn variant="ghost" size="lg" onClick={() => setTab("collection")} style={{ letterSpacing:3, border:"1px solid #e8c06066", color:"#e8c060" }}>COLLECTION</Btn>
+            <Btn variant="ghost" size="lg" onClick={() => window.dispatchEvent(new CustomEvent("openTutorial"))} style={{ letterSpacing:3, color:"#c0a060" }}>TUTORIAL</Btn>
           </div>)}
           {user && (() => {
             const todayUtcHome = new Date().toISOString().slice(0, 10);
@@ -6637,10 +6690,10 @@ function TutorialScreen({ onExit, onComplete }) {
               </div>
               {textDone&&(
                 <div style={{ marginTop:12, display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
-                  {cur?.action==="continue"&&(<button onClick={advance} style={{ padding:"8px 22px", background:"linear-gradient(135deg,#7a5010,#c89020)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:"#1a0e00", cursor:"pointer", letterSpacing:2 }}>CONTINUE →</button>)}
-                  {cur?.action==="coinflip"&&coinPhase==="waiting"&&(<button onClick={()=>{ setCoinPhase("flipping"); setTimeout(()=>{ setCoinPhase("result"); setTimeout(()=>advance(),1600); },1200); }} style={{ padding:"8px 22px", background:"linear-gradient(135deg,#7a5010,#c89020)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:"#1a0e00", cursor:"pointer", letterSpacing:2, animation:"pulse 1.5s infinite" }}>FLIP THE COIN</button>)}
+                  {cur?.action==="continue"&&(<Btn variant="primary" size="sm" onClick={advance} style={{ letterSpacing:2 }}>CONTINUE →</Btn>)}
+                  {cur?.action==="coinflip"&&coinPhase==="waiting"&&(<Btn variant="primary" size="sm" onClick={()=>{ setCoinPhase("flipping"); setTimeout(()=>{ setCoinPhase("result"); setTimeout(()=>advance(),1600); },1200); }} style={{ letterSpacing:2, animation:"pulse 1.5s infinite" }}>FLIP THE COIN</Btn>)}
                   {cur?.action==="coinflip"&&coinPhase==="result"&&(<div style={{ fontFamily:"'Cinzel',serif", fontSize:12, color:"#e8c060", letterSpacing:1 }}>⚔ The coin lands — you go first!</div>)}
-                  {cur?.action==="finish"&&(<button onClick={onComplete || onExit} style={{ padding:"8px 22px", background:"linear-gradient(135deg,#7a5010,#c89020)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:"#1a0e00", cursor:"pointer", letterSpacing:2 }}>{onComplete ? "BUILD YOUR DECK →" : "ENTER BATTLE ⚔"}</button>)}
+                  {cur?.action==="finish"&&(<Btn variant="primary" size="sm" onClick={onComplete || onExit} style={{ letterSpacing:2 }}>{onComplete ? "BUILD YOUR DECK →" : "ENTER BATTLE ⚔"}</Btn>)}
                   {actionHint&&(<div style={{ fontSize:12, color:"#a08060", fontFamily:"'Cinzel',serif", letterSpacing:0.5, display:"flex", alignItems:"center", gap:6 }}><span style={{ animation:"pulse 1s infinite", color:"#e8c060bb", fontSize:10 }}>◆</span>{actionHint}</div>)}
                 </div>
               )}
@@ -9045,7 +9098,6 @@ export default function App() {
   if (loading) return <LoadingScreen />;
   return (<div style={{ minHeight: "100vh", background: "#161210", color: "#e8e0d0", fontFamily: "'Lora',Georgia,serif", overflowX: "hidden" }} onClick={() => setShowSidebar(false)}>
     <style>{`
-      @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Lora:ital,wght@0,400;0,500;1,400&display=swap');
       html{zoom:1.25}
       @media(max-width:1440px){html{zoom:1}}
       @media(max-width:1024px){
@@ -9124,8 +9176,8 @@ export default function App() {
     `}</style>
     {isMobile && (
       <div style={{ position:"fixed", inset:0, zIndex:9999, background:"linear-gradient(160deg,#0a0806,#0e0c08)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:32, textAlign:"center" }}>
-        <div style={{ fontSize:64, marginBottom:20, lineHeight:1 }}>⚔</div>
-        <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:"#e8c060", letterSpacing:4, marginBottom:12 }}>FORGE & FABLE</div>
+        <img src="/logo.svg" alt="Forge &amp; Fable" style={{ width:80, height:80, marginBottom:16, filter:"drop-shadow(0 4px 16px rgba(160,136,48,0.55))" }} />
+        <div style={{ fontFamily:"var(--font-display,'Cinzel',serif)", fontSize:22, fontWeight:900, color:"var(--fnf-gold,#e8c060)", letterSpacing:4, marginBottom:12 }}>FORGE & FABLE</div>
         <div style={{ fontFamily:"'Cinzel',serif", fontSize:12, color:"#c08040", letterSpacing:2, marginBottom:20 }}>BEST EXPERIENCED ON DESKTOP</div>
         <div style={{ maxWidth:320, fontFamily:"'Lora',serif", fontSize:13, color:"#907060", lineHeight:1.8, marginBottom:28 }}>
           The battle board requires a wider screen for the full experience. Open this page on a laptop or desktop to play.
@@ -9165,8 +9217,8 @@ export default function App() {
           <div style={{ fontFamily:"'Cinzel',serif", fontSize:20, fontWeight:900, color:"#e8c060", marginBottom:6, letterSpacing:1 }}>CHALLENGE!</div>
           <div style={{ fontSize:14, color:"#d0c098", marginBottom:24 }}><span style={{ color:"#f0e0a0", fontWeight:700 }}>{globalChallenge.fromName}</span> challenges you to a duel!</div>
           <div style={{ display:"flex", gap:12, justifyContent:"center" }}>
-            <button onClick={acceptGlobalChallenge} style={{ padding:"12px 28px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:10, fontFamily:"'Cinzel',serif", fontSize:13, fontWeight:700, color:"#1a1000", cursor:"pointer", letterSpacing:1 }}>ACCEPT</button>
-            <button onClick={() => {
+            <Btn variant="primary" size="lg" onClick={acceptGlobalChallenge}>ACCEPT</Btn>
+            <Btn variant="ghost" size="lg" onClick={() => {
               const ch = supabase.channel(`challenge:${globalChallenge.fromId}`);
               ch.subscribe((status) => {
                 if (status === "SUBSCRIBED") {
@@ -9175,7 +9227,7 @@ export default function App() {
                 }
               });
               setGlobalChallenge(null);
-            }} style={{ padding:"12px 20px", background:"transparent", border:"1px solid #4a2010", borderRadius:10, fontFamily:"'Cinzel',serif", fontSize:12, color:"#806040", cursor:"pointer" }}>DECLINE</button>
+            }}>DECLINE</Btn>
           </div>
         </div>
       </div>
@@ -9197,15 +9249,13 @@ export default function App() {
           <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#606040", marginTop:2 }}>vs {rejoinMatch.opponentName} — still in progress</div>
         </div>
         <div style={{ display:"flex", gap:8 }}>
-          <button onClick={() => {
+          <Btn variant="success" size="sm" style={{ whiteSpace:"nowrap", fontSize:11 }} onClick={() => {
             setRejoinMatch(null);
-            // Skip deck selection — go straight to the existing match
             setPendingDuel({ matchId: rejoinMatch.matchId, opponentName: rejoinMatch.opponentName, opponentId: rejoinMatch.opponentId, rejoin: true });
             setTab("play");
-          }} style={{ padding:"9px 18px", background:"linear-gradient(135deg,#1a4a08,#2a6a10)", border:"1px solid #78cc4566", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:"#a0e060", cursor:"pointer", letterSpacing:1, whiteSpace:"nowrap" }}>REJOIN</button>
-          <button onClick={async () => {
+          }}>REJOIN</Btn>
+          <Btn variant="ghost" size="sm" onClick={async () => {
             setRejoinMatch(null);
-            // Opponent wins by default when player dismisses
             try {
               const { data: m } = await supabase.from("matches").select("game_state, player1_id, player2_id").eq("id", rejoinMatch.matchId).single();
               if (m && !m.game_state?.winner) {
@@ -9213,7 +9263,7 @@ export default function App() {
                 await supabase.from("matches").update({ game_state: { ...m.game_state, winner, log: [...(m.game_state?.log||[]).slice(-20), "Player forfeited by disconnecting."] } }).eq("id", rejoinMatch.matchId);
               }
             } catch(_) {}
-          }} style={{ padding:"9px 14px", background:"transparent", border:"1px solid #3a2010", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, color:"#806040", cursor:"pointer" }}>FORFEIT</button>
+          }}>FORFEIT</Btn>
         </div>
       </div>
     )}
@@ -9239,8 +9289,8 @@ export default function App() {
         <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:700, color:"#e8c060", marginBottom:8, letterSpacing:1 }}>LEAVE BATTLE?</div>
         <p style={{ fontSize:12, color:"#a09070", lineHeight:1.6, marginBottom:24 }}>You have an active PvP match. Leaving now counts as a <span style={{ color:"#e84040", fontWeight:700 }}>forfeit</span>. Your opponent wins.</p>
         <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
-          <button onClick={()=>setNavLeaveModal(null)} style={{ padding:"10px 22px", background:"linear-gradient(135deg,#1a3010,#2a4a18)", border:"1px solid #78cc4566", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:"#78cc45", cursor:"pointer", fontWeight:700, letterSpacing:1 }}>STAY & FIGHT</button>
-          <button onClick={()=>{ pvpForfeitRef.current?.(); setInPvpMatch(false); setTab(navLeaveModal.targetTab); setNavLeaveModal(null); }} style={{ padding:"10px 22px", background:"linear-gradient(135deg,#3a0808,#5a1010)", border:"1px solid #c0202055", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:"#e06060", cursor:"pointer", fontWeight:700, letterSpacing:1 }}>FORFEIT & LEAVE</button>
+          <Btn variant="success" onClick={()=>setNavLeaveModal(null)}>STAY & FIGHT</Btn>
+          <Btn variant="danger" onClick={()=>{ pvpForfeitRef.current?.(); setInPvpMatch(false); setTab(navLeaveModal.targetTab); setNavLeaveModal(null); }}>FORFEIT & LEAVE</Btn>
         </div>
       </div>
     </div>)}
@@ -9248,10 +9298,10 @@ export default function App() {
 
     <nav style={{ position: "sticky", width: "100%", top: 0, zIndex: 100, background: "linear-gradient(180deg,#221e12 0%,#181408 100%)", borderBottom: "2px solid #4a3c18", padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 72, boxShadow: "0 4px 24px rgba(0,0,0,0.5)", overflow: "hidden", WebkitFontSmoothing: "antialiased" }} onClick={(e) => { e.stopPropagation(); }}>
       <button onClick={() => { if (inPvpMatch) { setNavLeaveModal({ targetTab:"home" }); return; } setTab("home"); }} style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}>
-        <div style={{ width: 36, height: 36, borderRadius: 8, background: "linear-gradient(135deg,#e8c060,#a07820)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontSize: 16, fontWeight: 900, color: "#1a1000", boxShadow: "0 2px 12px #e8c06044" }}>F</div>
+        <img src="/logo.svg" alt="Forge &amp; Fable" style={{ width: 38, height: 38, flexShrink: 0, filter: "drop-shadow(0 2px 8px rgba(160,136,48,0.5))" }} />
         <div>
-          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 16, fontWeight: 900, color: "#e8c060", lineHeight: 1, letterSpacing: 1 }}>Forge {"&"} Fable</div>
-          <div style={{ fontSize: 8, color: "#6a5028", letterSpacing: 3, fontFamily: "'Cinzel',serif", marginTop: 3 }}>{CURRENT_PATCH} · ALPHA</div>
+          <div style={{ fontFamily: "var(--font-display,'Cinzel',serif)", fontSize: 16, fontWeight: 900, color: "var(--fnf-gold,#e8c060)", lineHeight: 1, letterSpacing: 1 }}>Forge {"&"} Fable</div>
+          <div style={{ fontSize: 8, color: "var(--fnf-gold-mute,#6a5028)", letterSpacing: 3, fontFamily: "var(--font-display,'Cinzel',serif)", marginTop: 3 }}>{CURRENT_PATCH} · ALPHA</div>
         </div>
       </button>
       <div style={{ display: "flex", gap: 2, alignItems: "center" }}>
@@ -9333,7 +9383,13 @@ export default function App() {
       <ErrorBoundary label="The community screen encountered an error.">
         {tab === "community" && <CommunityScreen user={user} />}
       </ErrorBoundary>
-      {!inBattle && <footer style={{ borderTop: "1px solid #1e1a0e", padding: 22, textAlign: "center" }}><div style={{ fontFamily: "'Cinzel',serif", fontSize: 13, fontWeight: 700, color: "#40301a" }}>Forge {"&"} Fable</div><p style={{ fontSize: 9, color: "#30280e", margin: "4px 0 0", letterSpacing: 1 }}>{CURRENT_PATCH}: FABLES CARDS LIVE · ZEUS LIGHTNING METER · HADES SOUL HARVEST · CERBERUS WHELP · MEDUSA'S GAZE</p></footer>}
+      {!inBattle && <footer style={{ borderTop: "1px solid var(--fnf-bg-elevated,#1e1a0e)", padding: 22, textAlign: "center", display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <img src="/logo.svg" alt="" style={{ width:22, height:22, opacity:0.4 }} />
+          <div style={{ fontFamily:"var(--font-display,'Cinzel',serif)", fontSize:13, fontWeight:700, color:"#40301a" }}>Forge {"&"} Fable</div>
+        </div>
+        <p style={{ fontSize: 9, color: "#30280e", margin: 0, letterSpacing: 1 }}>{CURRENT_PATCH}: FABLES CARDS LIVE · ZEUS LIGHTNING METER · HADES SOUL HARVEST · CERBERUS WHELP · MEDUSA'S GAZE</p>
+      </footer>}
     </div>
     <MusicPlayer />
     <ToastContainer />

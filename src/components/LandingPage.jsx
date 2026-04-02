@@ -337,20 +337,23 @@ export default function LandingPage({ onPlayNow, onSignIn }) {
         <div style={{ position: "absolute", top: "40%", left: "60%",  width: 250, height: 250, borderRadius: "50%", background: "radial-gradient(circle,#30c0ff08 0%,transparent 65%)", pointerEvents: "none", animation: "landingFloat 5s ease-in-out 1s infinite alternate" }} />
 
         {/* Logo */}
-        <div style={{ animation: "landingFadeUp .7s ease-out both", position: "relative", zIndex: 1, marginBottom: 24 }}>
-          <div style={{
-            fontFamily: "'Cinzel',serif", fontSize: "clamp(44px, 7.5vw, 78px)",
-            fontWeight: 900, letterSpacing: "clamp(4px, 1vw, 12px)",
-            lineHeight: 1, marginBottom: 6,
-            background: "linear-gradient(135deg, #e8c060 0%, #f0d880 25%, #c89010 50%, #f0d880 75%, #e8c060 100%)",
-            backgroundSize: "300% 100%",
-            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-            animation: "shimmerGold 4s linear infinite",
-          }}>
-            FORGE {"&"} FABLE
-          </div>
-          <div style={{ fontFamily: "'Lora',serif", fontStyle: "italic", fontSize: "clamp(12px, 2vw, 16px)", color: "#b09050", letterSpacing: 2 }}>
-            A free competitive card game — all cards unlocked, no paywalls.
+        <div style={{ animation: "landingFadeUp .7s ease-out both", position: "relative", zIndex: 1, marginBottom: 24, display:"flex", flexDirection:"column", alignItems:"center", gap:16 }}>
+          <img src="/logo.svg" alt="Forge &amp; Fable" style={{ width: "clamp(72px,9vw,108px)", height: "clamp(72px,9vw,108px)", filter: "drop-shadow(0 0 32px rgba(160,136,48,0.65))", animation: "logoGlow 3s ease-in-out infinite" }} />
+          <div>
+            <div style={{
+              fontFamily: "'Cinzel',serif", fontSize: "clamp(44px, 7.5vw, 78px)",
+              fontWeight: 900, letterSpacing: "clamp(4px, 1vw, 12px)",
+              lineHeight: 1, marginBottom: 6,
+              background: "linear-gradient(135deg, #e8c060 0%, #f0d880 25%, #c89010 50%, #f0d880 75%, #e8c060 100%)",
+              backgroundSize: "300% 100%",
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+              animation: "shimmerGold 4s linear infinite",
+            }}>
+              FORGE {"&"} FABLE
+            </div>
+            <div style={{ fontFamily: "'Lora',serif", fontStyle: "italic", fontSize: "clamp(12px, 2vw, 16px)", color: "#b09050", letterSpacing: 2 }}>
+              A free competitive card game — all cards unlocked, no paywalls.
+            </div>
           </div>
         </div>
 
