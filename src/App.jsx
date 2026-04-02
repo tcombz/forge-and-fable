@@ -3698,7 +3698,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     if (pvpBcRef.current) pvpBcRef.current.send({ type:"broadcast", event:"updated", payload:{ gs: newGs } });
     try {
       await supabase.from("matches").update({ game_state: newGs }).eq("id", matchId);
-      setTimeout(() => { if (matchId) supabase.from("matches").delete().eq("id", matchId).catch(() => {}); }, 5000);
+      setTimeout(() => { if (matchId) supabase.from("matches").delete().eq("id", matchId).then(null, () => {}); }, 5000);
     } catch (err) { console.error("Forfeit failed:", err); }
     // History/stats are saved by the gs?.winner useEffect which fires when gs updates
   };
@@ -5431,7 +5431,7 @@ function useAuth() {
         } catch (_) { /* non-critical — login continues regardless */ }
         setUser(toAppUser(p, session.user.email));
         // Assign weekly + epic quests in background (idempotent)
-        supabase.rpc("assign_weekly_quests", { p_player_id: session.user.id }).catch(() => {});
+        supabase.rpc("assign_weekly_quests", { p_player_id: session.user.id }).then(null, () => {});
       } else {
         // Authenticated but no profile row — upsert during signup may have failed.
         // Flag so LoginModal can show "complete profile" step.
@@ -7977,7 +7977,7 @@ CREATE POLICY "vote" ON community_cards FOR UPDATE USING (true);`;
     setMyVotes(p => { const n = { ...p, [cardId]: true }; try { localStorage.setItem("community_votes", JSON.stringify(n)); } catch(_) {} return n; });
     SFX.play("card");
     try {
-      await supabase.rpc("increment_votes", { card_id: cardId }).catch(() =>
+      await supabase.rpc("increment_votes", { card_id: cardId }).then(null, () =>
         supabase.from("community_cards").update({ votes: (communityCards.find(c=>c.id===cardId)?.votes||0)+1 }).eq("id", cardId)
       );
       setCommunityCards(p => p.map(c => c.id===cardId ? { ...c, votes: (c.votes||0)+1 } : c));
