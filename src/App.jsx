@@ -5374,16 +5374,19 @@ function useAuth() {
   const [user, setUser] = useState(null); const [loading, setLoading] = useState(true);
   const loadProfile = async (session) => {
     if (!session?.user) { setUser(null); setLoading(false); return; }
+    setLoading(true);
     try {
       const { data } = await supabase.from("profiles").select("*").eq("id", session.user.id).single();
       if (data) {
         let p = { ...data };
-        const lastFri = getLastFriday();
-        const lastReset = p.last_shard_reset ? new Date(p.last_shard_reset) : new Date(0);
-        if (lastFri > lastReset) {
-          p = { ...p, shards: 1000, last_shard_reset: new Date().toISOString() };
-          await supabase.from("profiles").update({ shards: 1000, last_shard_reset: p.last_shard_reset }).eq("id", p.id);
-        }
+        try {
+          const lastFri = getLastFriday();
+          const lastReset = p.last_shard_reset ? new Date(p.last_shard_reset) : new Date(0);
+          if (lastFri > lastReset) {
+            p = { ...p, shards: 1000, last_shard_reset: new Date().toISOString() };
+            await supabase.from("profiles").update({ shards: 1000, last_shard_reset: p.last_shard_reset }).eq("id", p.id);
+          }
+        } catch (_) { /* non-critical */ }
         // Login streak check
         try {
           const todayStr = new Date().toISOString().slice(0, 10);
