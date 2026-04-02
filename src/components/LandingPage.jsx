@@ -195,8 +195,8 @@ export default function LandingPage({ onPlayNow, onSignIn }) {
             { rot: -18, y: 18, color: "#70e830", src: "/cards/druid.jpg",  label: "Rootcaller Druid",  sub: "Thornwood" },
             { rot:  -6, y:  5, color: "#9070ff", src: "/cards/zeus_storm_father.jpg", label: "Zeus, Storm Father", sub: "Fables" },
             { rot:   0, y:  0, color: "#c89010", src: "/cards/guard.jpg",  label: "Thornwood Guard",   sub: "Thornwood" },
-            { rot:   6, y:  5, color: "#ff6820", src: "/cards/ember.jpg",  label: "Ember Warden",      sub: "Ashfen" },
-            { rot:  18, y: 18, color: "#30c0ff", src: "/cards/tideweave.jpg", label: "Tideweave Siren", sub: "Azure Deep" },
+            { rot:   6, y:  5, color: "#ff6820", src: "/cards/pyro.jpg",   label: "Ashfen Pyromancer", sub: "Ashfen" },
+            { rot:  18, y: 18, color: "#30c0ff", src: "/cards/tide.jpg",   label: "Tideweave Siren",  sub: "Azure Deep" },
           ].map((c, i) => (
             <div key={i} style={{
               width: 90, height: 126, flexShrink: 0, position: "relative",

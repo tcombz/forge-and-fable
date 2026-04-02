@@ -1881,7 +1881,7 @@ function ShareResultButtons({ result, playerName, opponentName }) {
   );
 }
 
-function MatchResultOverlay({ result, opponentName, isAI, onPlayAgain, onExit, playerName }) {
+function MatchResultOverlay({ result, opponentName, isAI, onPlayAgain, onExit, playerName, isFirstBattle, onViewQuests }) {
   const { won, turns, cardsPlayed, hpLeft, shardsBase, firstWinBonus, questsGained, questShards, shardsEarned, ratingDelta, duration, damageDealt, opponentDamageDealt, playerBoard, enemyBoard } = result;
   const totalQuests = questShards || 0;
   // Duration display
@@ -2051,9 +2051,21 @@ function MatchResultOverlay({ result, opponentName, isAI, onPlayAgain, onExit, p
           </div>
         )}
 
+        {/* ── First battle banner ── */}
+        {isFirstBattle && (
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:10, padding:"12px 16px",
+            background:"linear-gradient(135deg,rgba(232,192,96,0.10),rgba(200,140,10,0.06))",
+            border:"1px solid #e8c06044", borderRadius:12, animation:"fadeIn 0.5s ease-out" }}>
+            <span style={{ fontSize:20 }}>📜</span>
+            <div style={{ textAlign:"center" }}>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:900, color:"#e8c060", letterSpacing:2 }}>FIRST BATTLE COMPLETE</div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#906840", letterSpacing:1, marginTop:2 }}>Your legend has begun. Check your quests for more rewards.</div>
+            </div>
+          </div>
+        )}
         {/* ── Buttons ── */}
-        <div style={{ display:"grid", gridTemplateColumns: onPlayAgain ? "1fr 1fr" : "1fr", gap:10, marginTop:4 }}>
-          {onPlayAgain && (
+        <div style={{ display:"grid", gridTemplateColumns: (onPlayAgain && !isFirstBattle) ? "1fr 1fr" : isFirstBattle ? "1fr 1fr" : "1fr", gap:10, marginTop:4 }}>
+          {onPlayAgain && !isFirstBattle && (
             <button onClick={onPlayAgain}
               style={{ padding:"13px", background: won ? "linear-gradient(135deg,#c89010,#f0c040)" : "linear-gradient(135deg,#2a4a6a,#3a6a9a)",
                 border:"none", borderRadius:10, fontFamily:"'Cinzel',serif", fontWeight:700, fontSize:12, letterSpacing:2,
@@ -2062,6 +2074,15 @@ function MatchResultOverlay({ result, opponentName, isAI, onPlayAgain, onExit, p
                 transition:"opacity .15s" }}
               onMouseEnter={e=>e.currentTarget.style.opacity=".85"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
               PLAY AGAIN
+            </button>
+          )}
+          {isFirstBattle && onViewQuests && (
+            <button onClick={onViewQuests}
+              style={{ padding:"13px", background:"linear-gradient(135deg,#1a3a10,#2a6018)", border:"1px solid #78cc4555", borderRadius:10,
+                fontFamily:"'Cinzel',serif", fontWeight:700, fontSize:11, letterSpacing:1.5,
+                color:"#78cc45", cursor:"pointer", transition:"opacity .15s" }}
+              onMouseEnter={e=>e.currentTarget.style.opacity=".85"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+              VIEW QUESTS →
             </button>
           )}
           <button onClick={onExit}
@@ -2474,8 +2495,10 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
       <MatchResultOverlay
         result={matchResult}
         playerName={user?.name}
-        opponentName={matchConfig?.ghostAI ? (g.enemyName || "AI Opponent") : "AI Opponent"}
+        opponentName={matchConfig?.ghostAI ? (g.enemyName || "AI Opponent") : matchConfig?.opponentName || "AI Opponent"}
         isAI={true}
+        isFirstBattle={!!matchConfig?.isFirstMatch}
+        onViewQuests={matchConfig?.isFirstMatch ? () => { onExit(); window.dispatchEvent(new CustomEvent("openQuestsTab")); } : undefined}
         onPlayAgain={() => { wonSavedRef.current = false; cardsPlayedRef.current = 0; damageDealtRef.current = 0; oppDamageDealtRef.current = 0; factionCardsRef.current = {}; spellsPlayedRef.current = 0; envsPlayedRef.current = 0; champsPlayedRef.current = 0; keywordTriggersRef.current = {}; creaturesPlayedRef.current = 0; prevEnemyHPRef.current = CFG.startHP; prevPlayerHPRef.current = CFG.startHP; matchStartRef.current = Date.now(); setMatchResult(null); setGame(initGame()); setAttacker(null); setAiThink(false); }}
         onExit={onExit}
       />
@@ -5048,6 +5071,7 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDue
   const pvpDeck      = resolveDeck(pvpDeckVal);
   const [showLadder, setShowLadder] = useState(false);
   const userRank = getRank(user?.rankedRating);
+  const isFirstMatch = localStorage.getItem("fnf_onboarding") === "first_match";
   if (showLadder) return <LeaderboardScreen user={user} onBack={() => setShowLadder(false)} />;
   if (matchmaking) return (<MatchmakingScreen key={matchmaking} user={user} ranked={ranked}
     onMatch={(cfg) => { setMatchmaking(false); const cfg2 = { mode:"pvp", ranked, playerDeck: pvpDeck?.cards || null, ...cfg }; setMatchConfig(cfg2); setMatchActive?.(true); }}
@@ -5146,11 +5170,13 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDue
       <div className="mode-cards" style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:14 }}>
 
         {/* VS AI */}
-        <div style={{ background:"linear-gradient(170deg,#140e04,#0c0902)", border:"1px solid rgba(200,144,16,0.22)", borderRadius:14, padding:"22px 18px", display:"flex", flexDirection:"column", gap:16 }}>
+        <div style={{ background:"linear-gradient(170deg,#140e04,#0c0902)", border:`1px solid ${isFirstMatch ? "#e8c060aa" : "rgba(200,144,16,0.22)"}`, borderRadius:14, padding:"22px 18px", display:"flex", flexDirection:"column", gap:16, position:"relative", boxShadow: isFirstMatch ? "0 0 32px rgba(232,192,96,0.18)" : "none" }}>
+          {isFirstMatch && <div style={{ position:"absolute", top:-1, left:0, right:0, height:2, background:"linear-gradient(90deg,transparent,#e8c060,transparent)", borderRadius:"14px 14px 0 0" }} />}
+          {isFirstMatch && <div style={{ position:"absolute", top:8, right:10, fontFamily:"'Cinzel',serif", fontSize:7, color:"#e8c060", background:"rgba(232,192,96,0.12)", border:"1px solid #e8c06044", borderRadius:4, padding:"2px 7px", letterSpacing:1.5 }}>START HERE</div>}
           <div style={{ textAlign:"center" }}>
-            <div style={{ fontSize:40, marginBottom:10, filter:"drop-shadow(0 0 12px rgba(200,144,16,0.5))" }}>🤖</div>
+            <div style={{ fontSize:40, marginBottom:10, filter:`drop-shadow(0 0 12px rgba(200,144,16,${isFirstMatch ? "0.9" : "0.5"}))` }}>🤖</div>
             <div style={{ fontFamily:"'Cinzel',serif", fontSize:17, fontWeight:700, color:"#e8c060", marginBottom:6 }}>VS AI</div>
-            <div style={{ fontSize:10, color:"#806040", lineHeight:1.7 }}>Practice mode<br/>No rating at stake</div>
+            <div style={{ fontSize:10, color:"#806040", lineHeight:1.7 }}>{isFirstMatch ? "Your first battle awaits" : "Practice mode"}<br/>No rating at stake</div>
           </div>
           <div style={{ flex:1 }}>
             <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#604828", letterSpacing:2, marginBottom:6 }}>DECK</div>
@@ -5160,7 +5186,7 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDue
               {decks.map((d, i) => (<option key={i} value={i}>{d.name}</option>))}
             </select>
           </div>
-          <button onClick={() => { SFX.play("card"); setMatchConfig({ mode:"ai", playerDeck: selectedDeck?.cards || null }); setMatchActive?.(true); }} style={{ width:"100%", padding:"13px", background:"linear-gradient(135deg,#b07808,#e8b820)", border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, letterSpacing:2.5, color:"#1a0e00", cursor:"pointer", transition:"opacity .15s" }} onMouseEnter={e=>e.currentTarget.style.opacity=".85"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>START BATTLE</button>
+          <button onClick={() => { SFX.play("card"); const cfg = { mode:"ai", playerDeck: selectedDeck?.cards || null }; if (isFirstMatch) { cfg.isFirstMatch = true; cfg.opponentName = "The Chronicler"; localStorage.setItem("fnf_onboarding", "done"); } setMatchConfig(cfg); setMatchActive?.(true); }} style={{ width:"100%", padding:"13px", background: isFirstMatch ? "linear-gradient(135deg,#c89010,#f0c040)" : "linear-gradient(135deg,#b07808,#e8b820)", border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, letterSpacing:2.5, color:"#1a0e00", cursor:"pointer", transition:"opacity .15s", boxShadow: isFirstMatch ? "0 0 20px rgba(232,192,96,0.4)" : "none", animation: isFirstMatch ? "pulse 2s ease-in-out infinite" : "none" }} onMouseEnter={e=>e.currentTarget.style.opacity=".85"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>{isFirstMatch ? "PLAY FIRST MATCH ⚔" : "START BATTLE"}</button>
         </div>
 
         {/* CASUAL PvP */}
@@ -5518,6 +5544,7 @@ function LoginModal({ needsProfile = false, userId, userEmail, onSignOut, onProf
       // Mark key as used
       const { error: keyErr } = await supabase.from("used_alpha_keys").upsert({ key: k, used_by_name: name.trim(), used_at: new Date().toISOString() });
       if (keyErr) console.error("Key mark failed:", keyErr); // non-fatal
+      localStorage.setItem("fnf_onboarding", "tutorial");
       setSent(true);
     }
     setBusy(false);
@@ -6236,7 +6263,7 @@ const TUT_FILLER1 = { id:"tut_f1", name:"Rootcaller Druid", type:"creature", cos
 const TUT_FILLER2 = { id:"tut_f2", name:"Tanglewood Trap", type:"spell", cost:2, atk:null, hp:null, keywords:[], border:"#4a9020", imageUrl:"/cards/tangle.jpg", imageScale:1.1, ability:"Deal 2 damage to all enemies.", region:"Thornwood", rarity:"Rare", uid:"tut_f2" };
 const TUT_ENEMY_CARD = { id:"tut_en", name:"Echo Wisp", type:"creature", cost:2, atk:2, hp:2, keywords:["Echo"], border:"#9050d8", imageUrl:"/cards/wisp.jpg", imageScale:1.1, ability:"Echo — a 1/1 ghost replays next turn.", region:"Shattered Expanse", rarity:"Uncommon", uid:"tut_en1", currentHp:2, maxHp:2, currentAtk:2, canAttack:false, hasAttacked:false, bleed:0 };
 
-function TutorialScreen({ onExit }) {
+function TutorialScreen({ onExit, onComplete }) {
   const [step, setStep] = useState(0);
   const [typed, setTyped] = useState("");
   const [typeIdx, setTypeIdx] = useState(0);
@@ -6511,7 +6538,7 @@ function TutorialScreen({ onExit }) {
                   {cur?.action==="continue"&&(<button onClick={advance} style={{ padding:"8px 22px", background:"linear-gradient(135deg,#7a5010,#c89020)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:"#1a0e00", cursor:"pointer", letterSpacing:2 }}>CONTINUE →</button>)}
                   {cur?.action==="coinflip"&&coinPhase==="waiting"&&(<button onClick={()=>{ setCoinPhase("flipping"); setTimeout(()=>{ setCoinPhase("result"); setTimeout(()=>advance(),1600); },1200); }} style={{ padding:"8px 22px", background:"linear-gradient(135deg,#7a5010,#c89020)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:"#1a0e00", cursor:"pointer", letterSpacing:2, animation:"pulse 1.5s infinite" }}>FLIP THE COIN</button>)}
                   {cur?.action==="coinflip"&&coinPhase==="result"&&(<div style={{ fontFamily:"'Cinzel',serif", fontSize:12, color:"#e8c060", letterSpacing:1 }}>⚔ The coin lands — you go first!</div>)}
-                  {cur?.action==="finish"&&(<button onClick={onExit} style={{ padding:"8px 22px", background:"linear-gradient(135deg,#7a1010,#c83020)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:"#fff", cursor:"pointer", letterSpacing:2 }}>ENTER BATTLE ⚔</button>)}
+                  {cur?.action==="finish"&&(<button onClick={onComplete || onExit} style={{ padding:"8px 22px", background:"linear-gradient(135deg,#7a5010,#c89020)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:"#1a0e00", cursor:"pointer", letterSpacing:2 }}>{onComplete ? "BUILD YOUR DECK →" : "ENTER BATTLE ⚔"}</button>)}
                   {actionHint&&(<div style={{ fontSize:12, color:"#a08060", fontFamily:"'Cinzel',serif", letterSpacing:0.5, display:"flex", alignItems:"center", gap:6 }}><span style={{ animation:"pulse 1s infinite", color:"#e8c060bb", fontSize:10 }}>◆</span>{actionHint}</div>)}
                 </div>
               )}
@@ -8770,6 +8797,11 @@ export default function App() {
     window.addEventListener("openTutorial", handler);
     return () => window.removeEventListener("openTutorial", handler);
   }, []); // eslint-disable-line
+  useEffect(() => {
+    const handler = () => setTab("quests");
+    window.addEventListener("openQuestsTab", handler);
+    return () => window.removeEventListener("openQuestsTab", handler);
+  }, []); // eslint-disable-line
   // Hash-based challenge URL routing: /#/challenge/{uuid}
   useEffect(() => {
     const checkHash = () => {
@@ -8797,6 +8829,17 @@ export default function App() {
     return () => { window.removeEventListener("questsUpdated", refresh); window.removeEventListener("questBadgeUpdate", refresh); };
   }, [user?.id]); // eslint-disable-line
   const inBattle = matchActive;
+  // New player onboarding: auto-trigger tutorial after first signup
+  useEffect(() => {
+    if (!user || user.__needsProfile) return;
+    const step = localStorage.getItem("fnf_onboarding");
+    if (step === "tutorial") {
+      localStorage.removeItem("fnf_onboarding");
+      setShowTutorial(true);
+    } else if (step === "first_match") {
+      setTab("play");
+    }
+  }, [user?.id]); // eslint-disable-line
   // Show patch notes once per account+device — triggers only when user logs in
   useEffect(() => {
     if (!user) return;
@@ -8990,7 +9033,10 @@ export default function App() {
       onClose={!user?.__needsProfile ? () => setShowAuthModal(false) : undefined}
     />}
     {user && showPatchNotes && <PatchNotesModal onDismiss={() => { localStorage.setItem(`patchSeen_${user.id}`, CURRENT_PATCH); update({ lastPatchSeen: CURRENT_PATCH }); setShowPatchNotes(false); }} />}
-    {showTutorial && <TutorialScreen onExit={() => setShowTutorial(false)} />}
+    {showTutorial && <TutorialScreen
+      onExit={() => setShowTutorial(false)}
+      onComplete={() => { setShowTutorial(false); localStorage.setItem("fnf_onboarding", "first_match"); setTab("play"); }}
+    />}
     {globalChallenge && (
       <div style={{ position:"fixed", inset:0, zIndex:700, background:"rgba(0,0,0,0.88)", display:"flex", alignItems:"center", justifyContent:"center" }}>
         <div style={{ background:"linear-gradient(160deg,#1a1208,#0e0a04)", border:"2px solid #e8c060aa", borderRadius:18, padding:"36px 44px", textAlign:"center", maxWidth:340, animation:"fadeIn 0.3s" }}>
