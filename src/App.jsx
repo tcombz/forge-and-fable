@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, Fragment, Component } from "react";
 import { supabase } from "./supabase";
 import ForgeAndFableTeaser from "./components/ForgeAndFableTeaser";
+import LandingPage from "./components/LandingPage";
 
 // ═══ STORAGE ═════════════════════════════════════════════════════════════════
 const store = {
@@ -5469,8 +5470,8 @@ function useAuth() {
   };
 }
 
-function LoginModal({ needsProfile = false, userId, userEmail, onSignOut, onProfileCreated }) {
-  const [mode, setMode] = useState(needsProfile ? "complete" : "signin");
+function LoginModal({ needsProfile = false, userId, userEmail, onSignOut, onProfileCreated, onClose, defaultMode = "signin" }) {
+  const [mode, setMode] = useState(needsProfile ? "complete" : defaultMode);
   const [email, setEmail] = useState(userEmail || ""); const [password, setPassword] = useState("");
   const [name, setName] = useState(""); const [key, setKey] = useState("");
   const [err, setErr] = useState(""); const [busy, setBusy] = useState(false); const [sent, setSent] = useState(false);
@@ -5557,8 +5558,9 @@ function LoginModal({ needsProfile = false, userId, userEmail, onSignOut, onProf
     setBusy(false);
   };
 
-  return (<div style={{ position:"fixed", inset:0, zIndex:999, background:"rgba(4,2,0,0.75)", backdropFilter:"blur(8px)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+  return (<div onClick={onClose ? (e) => { if (e.target === e.currentTarget) onClose(); } : undefined} style={{ position:"fixed", inset:0, zIndex:999, background:"rgba(4,2,0,0.75)", backdropFilter:"blur(8px)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
     <div style={{ background:"linear-gradient(160deg,#1e1c10,#100e08)", border:"1px solid #3a3020", borderRadius:18, padding:42, maxWidth:420, width:"100%", textAlign:"center", boxShadow:"0 32px 80px rgba(0,0,0,0.9)", animation:"fadeIn 0.6s ease-out", position:"relative", overflow:"hidden" }}>
+      {onClose && <button onClick={onClose} style={{ position:"absolute", top:14, right:14, background:"transparent", border:"none", color:"#5a4020", fontSize:18, cursor:"pointer", lineHeight:1, zIndex:2, padding:4 }}>✕</button>}
       <div style={{ position:"absolute", inset:0, pointerEvents:"none" }}><FloatingParticles count={15} color="#e8c060" speed={0.3} /></div>
       <div style={{ position:"relative", zIndex:1 }}>
         <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:26, fontWeight:900, color:"#e8c060", margin:"0 0 4px", textShadow:"0 0 40px #c89020aa" }}>Forge {"&"} Fable</h2>
@@ -8748,6 +8750,8 @@ export default function App() {
   const [questBadge, setQuestBadge] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
   const [pendingChallengeId, setPendingChallengeId] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState("signup");
   const [globalChallenge, setGlobalChallenge] = useState(null); // { fromId, fromName, fromAvatar }
   const [pendingDuel, setPendingDuel] = useState(null); // { matchId, opponentName, opponentId }
   const [declinedToast, setDeclinedToast] = useState(null); // name of player who declined
@@ -8972,8 +8976,19 @@ export default function App() {
         <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#503020", letterSpacing:3 }}>MOBILE SUPPORT COMING SOON</div>
       </div>
     )}
-    {!user && !loading && <ForgeAndFableTeaser />}
-    {(!user || user.__needsProfile) && <LoginModal needsProfile={!!user?.__needsProfile} userId={user?.id} userEmail={user?.email} onSignOut={logout} onProfileCreated={completeProfile} />}
+    {!user && !loading && <LandingPage
+      onPlayNow={() => { setAuthModalMode("signup"); setShowAuthModal(true); }}
+      onSignIn={() => { setAuthModalMode("signin"); setShowAuthModal(true); }}
+    />}
+    {((!user && showAuthModal) || user?.__needsProfile) && <LoginModal
+      needsProfile={!!user?.__needsProfile}
+      userId={user?.id}
+      userEmail={user?.email}
+      onSignOut={logout}
+      onProfileCreated={(row, email) => { completeProfile(row, email); setShowAuthModal(false); }}
+      defaultMode={authModalMode}
+      onClose={!user?.__needsProfile ? () => setShowAuthModal(false) : undefined}
+    />}
     {user && showPatchNotes && <PatchNotesModal onDismiss={() => { localStorage.setItem(`patchSeen_${user.id}`, CURRENT_PATCH); update({ lastPatchSeen: CURRENT_PATCH }); setShowPatchNotes(false); }} />}
     {showTutorial && <TutorialScreen onExit={() => setShowTutorial(false)} />}
     {globalChallenge && (

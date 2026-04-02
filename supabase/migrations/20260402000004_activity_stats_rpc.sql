@@ -42,6 +42,8 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION get_activity_stats() TO authenticated;
+-- Also grant to anon so the landing page can show stats before login
+GRANT EXECUTE ON FUNCTION get_activity_stats() TO anon;
 
 -- =============================================================================
 -- DONE
