@@ -4923,8 +4923,20 @@ function ChallengeRouteHandler({ user, lobbyId, pvpDeck, onEnterMatch, onCancel 
 
   if (!user || lobby === undefined) return <LoadingScreen label="LOADING LOBBY…" />;
 
+  // Lobby doesn't exist or already used — show expired notice
+  if (!lobby) {
+    return (
+      <div style={{ maxWidth:480, margin:"0 auto", padding:"60px 24px", textAlign:"center" }}>
+        <div style={{ fontSize:42, marginBottom:12 }}>⚔️</div>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:20, color:"#c07040", marginBottom:8, letterSpacing:1 }}>LOBBY UNAVAILABLE</div>
+        <div style={{ fontSize:13, color:"#806040", marginBottom:28 }}>This challenge link has expired or has already been used.</div>
+        <button onClick={onCancel} style={{ padding:"12px 32px", background:"transparent", border:"1px solid #3a1a0a", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:11, color:"#806040", cursor:"pointer", letterSpacing:1 }}>BACK</button>
+      </div>
+    );
+  }
+
   // I am the host — show host lobby screen
-  if (!lobby || lobby.host_id === user.id) {
+  if (lobby.host_id === user.id) {
     return <ChallengeLobbyScreen user={user} lobbyId={lobbyId} pvpDeck={pvpDeck} onEnterMatch={onEnterMatch} onCancel={onCancel} />;
   }
 
@@ -4939,43 +4951,29 @@ function LiveActivityWidget({ onlineCount }) {
   const [todayMatches, setTodayMatches] = useState(null);
   const [recentMatches, setRecentMatches] = useState([]);
 
-  const fetchCounts = useCallback(async () => {
-    const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0);
-    const [{ count: active }, { count: today }] = await Promise.all([
-      supabase.from("matches").select("id", { count:"exact", head:true }).eq("status", "active"),
-      supabase.from("matches").select("id", { count:"exact", head:true }).gte("created_at", todayMidnight.toISOString()),
-    ]);
-    setActiveMatches(active ?? 0);
-    setTodayMatches(today ?? 0);
-  }, []);
-
-  const fetchRecent = useCallback(async () => {
-    const { data } = await supabase.from("matches")
-      .select("id, game_state, created_at")
-      .not("game_state->>winner", "is", null)
-      .order("created_at", { ascending: false })
-      .limit(5);
-    setRecentMatches((data || []).map(m => ({
+  const fetchStats = useCallback(async () => {
+    // Uses SECURITY DEFINER RPC to bypass RLS (matches are restricted to participants)
+    const { data } = await supabase.rpc("get_activity_stats");
+    if (!data) return;
+    setActiveMatches(data.active_matches ?? 0);
+    setTodayMatches(data.today_matches ?? 0);
+    setRecentMatches((data.recent_matches || []).map(m => ({
       id: m.id,
-      p1: m.game_state?.p1Name || "Adventurer",
-      p2: m.game_state?.p2Name || "Adventurer",
-      winner: m.game_state?.winner,
-      ranked: m.game_state?.ranked || false,
+      p1: m.p1_name || "Adventurer",
+      p2: m.p2_name || "Adventurer",
+      winner: m.winner,
+      ranked: m.ranked || false,
     })).filter(m => m.winner));
   }, []);
 
   useEffect(() => {
-    fetchCounts();
-    fetchRecent();
-    const countTimer = setInterval(fetchCounts, 30000);
+    fetchStats();
+    const countTimer = setInterval(fetchStats, 30000);
     const ch = supabase.channel("live_activity_widget")
-      .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, () => {
-        fetchCounts();
-        fetchRecent();
-      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, fetchStats)
       .subscribe();
     return () => { clearInterval(countTimer); supabase.removeChannel(ch); };
-  }, [fetchCounts, fetchRecent]);
+  }, [fetchStats]);
 
   const showToday = (activeMatches ?? 0) < 10;
   const onlineDisp = onlineCount ?? 0;
