@@ -1714,7 +1714,173 @@ function BattleChat({ user, aiMode, matchId }) {
 }
 
 // ═══ POST-MATCH RESULT OVERLAY ════════════════════════════════════════════════
-function MatchResultOverlay({ result, opponentName, isAI, onPlayAgain, onExit }) {
+// ─── Shareable match results card ────────────────────────────────────────────
+
+async function buildResultsBlob(result, playerName, opponentName) {
+  await document.fonts.ready;
+  const W = 600, H = 320, dpr = 2;
+  const canvas = document.createElement("canvas");
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(dpr, dpr);
+
+  const won = result.won;
+  const accentColor = won ? "#78cc45" : "#e05050";
+  const factionColor = won ? "#78cc45" : "#cc4444";
+
+  // Background
+  ctx.fillStyle = "#161210";
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle gradient overlay
+  const grad = ctx.createLinearGradient(0, 0, W, H);
+  grad.addColorStop(0, won ? "rgba(20,40,12,0.7)" : "rgba(40,10,10,0.7)");
+  grad.addColorStop(1, "rgba(10,8,6,0.3)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Left accent bar
+  ctx.fillStyle = accentColor;
+  ctx.fillRect(0, 0, 5, H);
+
+  // Top accent line
+  ctx.fillStyle = accentColor + "44";
+  ctx.fillRect(5, 0, W - 5, 1);
+
+  // Game logo
+  ctx.font = "bold 11px Georgia, serif";
+  ctx.fillStyle = "#e8c060";
+  ctx.letterSpacing = "4px";
+  ctx.fillText("FORGE & FABLE", 22, 28);
+  ctx.letterSpacing = "0px";
+
+  // Result badge
+  ctx.font = "bold 42px Georgia, serif";
+  ctx.fillStyle = accentColor;
+  ctx.shadowColor = accentColor;
+  ctx.shadowBlur = 18;
+  ctx.fillText(won ? "VICTORY" : "DEFEATED", 22, 80);
+  ctx.shadowBlur = 0;
+
+  // vs line
+  const vsY = 108;
+  ctx.font = "13px Georgia, serif";
+  ctx.fillStyle = "#c8a868";
+  ctx.fillText((playerName || "You") + "  vs  " + (opponentName || "Opponent"), 22, vsY);
+
+  // Divider
+  ctx.strokeStyle = "#2a2010";
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(22, vsY + 12); ctx.lineTo(W - 22, vsY + 12); ctx.stroke();
+
+  // Stats row
+  const stats = [
+    ["TURNS", String(result.turns ?? "—")],
+    ["DURATION", (() => { const d = result.duration || 0; const m = Math.floor(d/60); return m > 0 ? `${m}m ${(d%60).toString().padStart(2,"0")}s` : `${d}s`; })()],
+    ["DAMAGE", String(result.damageDealt ?? "—")],
+    ["HP LEFT", won ? String(result.hpLeft ?? "—") : "—"],
+  ];
+  const colW = (W - 44) / 4;
+  stats.forEach(([label, val], i) => {
+    const x = 22 + i * colW + colW / 2;
+    ctx.textAlign = "center";
+    ctx.font = "bold 22px Georgia, serif";
+    ctx.fillStyle = i === 0 ? "#e8c060" : i === 2 ? "#e07050" : i === 3 && won ? "#78cc45" : "#a0b8cc";
+    ctx.fillText(val, x, vsY + 46);
+    ctx.font = "9px Georgia, serif";
+    ctx.fillStyle = "#50402a";
+    ctx.letterSpacing = "1px";
+    ctx.fillText(label, x, vsY + 60);
+    ctx.letterSpacing = "0px";
+  });
+  ctx.textAlign = "left";
+
+  // Rewards section
+  const rewY = vsY + 82;
+  ctx.font = "bold 13px Georgia, serif";
+  ctx.fillStyle = "#a0c8e0";
+  ctx.fillText("+" + (result.shardsEarned ?? 0) + " ⬙  Shards Earned", 22, rewY);
+  if (result.firstWinBonus > 0) {
+    ctx.font = "11px Georgia, serif";
+    ctx.fillStyle = "#e8c060";
+    ctx.fillText("⚡ First Win of the Day bonus included", 22, rewY + 18);
+  }
+
+  // Bottom bar
+  ctx.fillStyle = "#1a1408";
+  ctx.fillRect(0, H - 34, W, 34);
+  ctx.font = "10px Georgia, serif";
+  ctx.fillStyle = "#504030";
+  ctx.fillText("forge-and-fable.com  ·  Play free at the link above", 22, H - 13);
+
+  // Top-right: win/loss icon
+  ctx.font = "32px serif";
+  ctx.textAlign = "right";
+  ctx.fillText(won ? "✨" : "💀", W - 18, 72);
+  ctx.textAlign = "left";
+
+  return new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+}
+
+function ShareResultButtons({ result, playerName, opponentName }) {
+  const [copying, setCopying] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const getBlob = () => buildResultsBlob(result, playerName, opponentName);
+
+  const handleCopy = async () => {
+    setCopying(true);
+    try {
+      const blob = await getBlob();
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch (e) {
+      toast("Copy failed — try Download instead.", "warn");
+    }
+    setCopying(false);
+  };
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      const blob = await getBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "forge-fable-result.png";
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      toast("Download failed.", "warn");
+    }
+    setDownloading(false);
+  };
+
+  return (
+    <div style={{ display:"flex", gap:8, marginTop:4 }}>
+      <button onClick={handleCopy} disabled={copying}
+        style={{ flex:1, padding:"10px", background:"rgba(255,255,255,0.04)", border:"1px solid #3a2a10", borderRadius:9,
+          fontFamily:"'Cinzel',serif", fontSize:10, color: copied ? "#78cc45" : "#c0a060", cursor:"pointer", letterSpacing:1,
+          transition:"opacity .15s", opacity: copying ? 0.6 : 1 }}
+        onMouseEnter={e=>{ if(!copying) e.currentTarget.style.opacity=".75"; }}
+        onMouseLeave={e=>{ e.currentTarget.style.opacity="1"; }}>
+        {copied ? "✓ COPIED" : copying ? "…" : "⎘ COPY IMAGE"}
+      </button>
+      <button onClick={handleDownload} disabled={downloading}
+        style={{ flex:1, padding:"10px", background:"rgba(255,255,255,0.04)", border:"1px solid #3a2a10", borderRadius:9,
+          fontFamily:"'Cinzel',serif", fontSize:10, color:"#c0a060", cursor:"pointer", letterSpacing:1,
+          transition:"opacity .15s", opacity: downloading ? 0.6 : 1 }}
+        onMouseEnter={e=>{ if(!downloading) e.currentTarget.style.opacity=".75"; }}
+        onMouseLeave={e=>{ e.currentTarget.style.opacity="1"; }}>
+        {downloading ? "…" : "↓ DOWNLOAD"}
+      </button>
+    </div>
+  );
+}
+
+function MatchResultOverlay({ result, opponentName, isAI, onPlayAgain, onExit, playerName }) {
   const { won, turns, cardsPlayed, hpLeft, shardsBase, firstWinBonus, questsGained, questShards, shardsEarned, ratingDelta, duration, damageDealt, opponentDamageDealt, playerBoard, enemyBoard } = result;
   const totalQuests = questShards || 0;
   // Duration display
@@ -1905,6 +2071,7 @@ function MatchResultOverlay({ result, opponentName, isAI, onPlayAgain, onExit })
             EXIT
           </button>
         </div>
+        <ShareResultButtons result={result} playerName={playerName} opponentName={opponentName} />
       </div>
     </div>
   );
@@ -2305,6 +2472,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     {g.phase === "gameover" && matchResult && (
       <MatchResultOverlay
         result={matchResult}
+        playerName={user?.name}
         opponentName={matchConfig?.ghostAI ? (g.enemyName || "AI Opponent") : "AI Opponent"}
         isAI={true}
         onPlayAgain={() => { wonSavedRef.current = false; cardsPlayedRef.current = 0; damageDealtRef.current = 0; oppDamageDealtRef.current = 0; factionCardsRef.current = {}; spellsPlayedRef.current = 0; envsPlayedRef.current = 0; champsPlayedRef.current = 0; keywordTriggersRef.current = {}; creaturesPlayedRef.current = 0; prevEnemyHPRef.current = CFG.startHP; prevPlayerHPRef.current = CFG.startHP; matchStartRef.current = Date.now(); setMatchResult(null); setGame(initGame()); setAttacker(null); setAiThink(false); }}
@@ -3783,6 +3951,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     {gs.winner && pvpMatchResult && (
       <MatchResultOverlay
         result={pvpMatchResult}
+        playerName={user?.name}
         opponentName={opponentName}
         isAI={false}
         onPlayAgain={onExit}
@@ -4575,7 +4744,299 @@ function LeaderboardScreen({ user, onBack }) {
   );
 }
 
-function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDuel, clearPendingDuel }) {
+// ═══ CHALLENGE LOBBY SYSTEM ══════════════════════════════════════════════════
+
+function ChallengeLobbyScreen({ user, lobbyId, pvpDeck, onEnterMatch, onCancel }) {
+  const [status, setStatus] = useState("creating"); // creating | waiting | error
+  const [shareUrl, setShareUrl] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [secsLeft, setSecsLeft] = useState(300);
+  const lobbyChRef = useRef(null);
+
+  useEffect(() => {
+    if (!user?.id || !lobbyId) return;
+    const url = window.location.origin + "/#/challenge/" + lobbyId;
+    setShareUrl(url);
+
+    const create = async () => {
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+      const { error } = await supabase.from("challenge_lobbies").upsert({
+        id: lobbyId,
+        host_id: user.id,
+        host_name: user.name || "Adventurer",
+        host_avatar: user.avatarUrl || "",
+        deck: pvpDeck ? JSON.stringify(pvpDeck) : null,
+        status: "waiting",
+        expires_at: expiresAt,
+      }, { onConflict: "id" });
+      if (error) { console.error("[lobby]", error); setStatus("error"); return; }
+      setStatus("waiting");
+    };
+    create();
+
+    // Subscribe for challenger joining
+    const ch = supabase.channel("challenge_lobby:" + lobbyId)
+      .on("broadcast", { event: "challenger_joined" }, ({ payload }) => {
+        onEnterMatch({ mode:"pvp", ranked:false, matchId: payload.matchId, opponentName: payload.challengerName, opponentId: payload.challengerId, playerDeck: pvpDeck || null });
+      })
+      .subscribe();
+    lobbyChRef.current = ch;
+
+    // Expiry countdown
+    const timer = setInterval(() => {
+      setSecsLeft(s => {
+        if (s <= 1) { clearInterval(timer); setStatus("expired"); return 0; }
+        return s - 1;
+      });
+    }, 1000);
+
+    return () => {
+      clearInterval(timer);
+      if (lobbyChRef.current) supabase.removeChannel(lobbyChRef.current);
+      supabase.from("challenge_lobbies").update({ status: "cancelled" }).eq("id", lobbyId).eq("host_id", user.id).then(() => {});
+    };
+  }, [lobbyId, user?.id]); // eslint-disable-line
+
+  const copyLink = () => {
+    navigator.clipboard?.writeText(shareUrl).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {});
+  };
+
+  const mins = Math.floor(secsLeft / 60);
+  const secs = (secsLeft % 60).toString().padStart(2, "0");
+
+  return (
+    <div style={{ maxWidth:520, margin:"0 auto", padding:"48px 24px 60px", textAlign:"center" }}>
+      <div style={{ fontSize:42, marginBottom:12 }}>⚔️</div>
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:"#e8c060", marginBottom:6, letterSpacing:1 }}>CHALLENGE A FRIEND</div>
+      {status === "creating" && <div style={{ fontSize:12, color:"#706040", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>Creating lobby…</div>}
+      {status === "error" && <div style={{ fontSize:12, color:"#e05050", fontFamily:"'Cinzel',serif" }}>Failed to create lobby. Check your connection.</div>}
+      {status === "expired" && <div style={{ fontSize:12, color:"#806040", fontFamily:"'Cinzel',serif" }}>Lobby expired — no one joined.</div>}
+      {status === "waiting" && (
+        <>
+          <div style={{ fontSize:12, color:"#907050", marginBottom:28, fontFamily:"'Cinzel',serif", letterSpacing:1 }}>
+            Share this link with your friend
+          </div>
+          {/* Share link box */}
+          <div style={{ background:"rgba(14,10,5,0.9)", border:"1px solid #3a2810", borderRadius:12, padding:"14px 16px", marginBottom:16, display:"flex", gap:10, alignItems:"center" }}>
+            <input readOnly value={shareUrl}
+              style={{ flex:1, background:"transparent", border:"none", outline:"none", fontFamily:"monospace", fontSize:11, color:"#c8a868", wordBreak:"break-all", cursor:"text" }}
+              onFocus={e => e.target.select()} />
+            <button onClick={copyLink}
+              style={{ padding:"8px 18px", background: copied ? "rgba(120,204,69,0.15)" : "linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color: copied ? "#78cc45" : "#1a1000", cursor:"pointer", flexShrink:0, letterSpacing:1, transition:"all .2s" }}>
+              {copied ? "✓ COPIED" : "COPY"}
+            </button>
+          </div>
+          {/* Waiting animation */}
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:10, padding:"16px", background:"rgba(255,255,255,0.02)", border:"1px solid #2a1f0e", borderRadius:12, marginBottom:16 }}>
+            <div style={{ display:"flex", gap:5 }}>
+              {[0,1,2].map(i => <div key={i} style={{ width:8, height:8, borderRadius:"50%", background:"#c89010", animation:`pulse 1.2s ${i*0.3}s ease-in-out infinite` }} />)}
+            </div>
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#906040", letterSpacing:2 }}>WAITING FOR OPPONENT…</span>
+          </div>
+          {/* Expiry */}
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#503828", letterSpacing:1, marginBottom:20 }}>
+            Lobby expires in {mins}:{secs}
+          </div>
+        </>
+      )}
+      <button onClick={onCancel}
+        style={{ padding:"12px 32px", background:"transparent", border:"1px solid #3a1a0a", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:11, color:"#806040", cursor:"pointer", letterSpacing:1 }}>
+        CANCEL
+      </button>
+    </div>
+  );
+}
+
+function ChallengeJoinScreen({ user, lobby, onEnterMatch, onDecline }) {
+  const [joining, setJoining] = useState(false);
+  const [expired, setExpired] = useState(!lobby || lobby.status !== "waiting" || new Date(lobby.expires_at) <= new Date());
+
+  const join = async () => {
+    if (!user?.id || joining) return;
+    setJoining(true);
+    try {
+      // Create the match
+      const { data: match, error: matchErr } = await supabase.from("matches").insert([{
+        player1_id: lobby.host_id, player2_id: user.id, status: "active",
+      }]).select().single();
+      if (matchErr || !match) { toast("Failed to create match.", "error"); setJoining(false); return; }
+
+      // Mark lobby as joined
+      await supabase.from("challenge_lobbies").update({ status: "joined", match_id: match.id }).eq("id", lobby.id);
+
+      // Notify host
+      const ch = supabase.channel("challenge_lobby:" + lobby.id);
+      await ch.subscribe();
+      await ch.send({ type:"broadcast", event:"challenger_joined", payload:{ matchId: match.id, challengerName: user.name || "Adventurer", challengerId: user.id } });
+      supabase.removeChannel(ch);
+
+      onEnterMatch({ mode:"pvp", ranked:false, matchId: match.id, opponentName: lobby.host_name, opponentId: lobby.host_id, playerDeck: null });
+    } catch (e) {
+      console.error("[join]", e);
+      toast("Failed to join. Try again.", "error");
+      setJoining(false);
+    }
+  };
+
+  return (
+    <div style={{ maxWidth:480, margin:"0 auto", padding:"60px 24px", textAlign:"center" }}>
+      <div style={{ fontSize:42, marginBottom:12 }}>⚔️</div>
+      <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:"#e8c060", marginBottom:6, letterSpacing:1 }}>YOU'VE BEEN CHALLENGED</div>
+      {expired ? (
+        <>
+          <div style={{ fontSize:13, color:"#805040", marginBottom:24, fontFamily:"'Cinzel',serif" }}>This lobby is no longer available.</div>
+          <button onClick={onDecline} style={{ padding:"12px 32px", background:"transparent", border:"1px solid #3a1a0a", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:11, color:"#806040", cursor:"pointer", letterSpacing:1 }}>BACK</button>
+        </>
+      ) : (
+        <>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:14, marginBottom:28, padding:"16px 24px", background:"rgba(14,10,5,0.9)", border:"1px solid #3a2810", borderRadius:14 }}>
+            <div style={{ width:48, height:48, borderRadius:"50%", background:"rgba(232,192,96,0.12)", border:"2px solid #c89010", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, overflow:"hidden", flexShrink:0 }}>
+              {lobby.host_avatar ? <img src={lobby.host_avatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (lobby.host_name||"?").slice(0,2).toUpperCase()}
+            </div>
+            <div style={{ textAlign:"left" }}>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:15, fontWeight:700, color:"#f0e8d0" }}>{lobby.host_name}</div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#605040", letterSpacing:2, marginTop:3 }}>CHALLENGES YOU TO A DUEL</div>
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:12, justifyContent:"center" }}>
+            <button onClick={join} disabled={joining}
+              style={{ padding:"14px 36px", background: joining ? "rgba(200,144,16,0.3)" : "linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:10, fontFamily:"'Cinzel',serif", fontSize:14, fontWeight:700, color: joining ? "#906030" : "#1a1000", cursor: joining ? "default" : "pointer", letterSpacing:1, transition:"opacity .15s" }}>
+              {joining ? "JOINING…" : "⚔ ACCEPT"}
+            </button>
+            <button onClick={onDecline} style={{ padding:"14px 20px", background:"transparent", border:"1px solid #3a1010", borderRadius:10, fontFamily:"'Cinzel',serif", fontSize:12, color:"#806040", cursor:"pointer" }}>DECLINE</button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function ChallengeRouteHandler({ user, lobbyId, pvpDeck, onEnterMatch, onCancel }) {
+  const [lobby, setLobby] = useState(undefined); // undefined = loading
+
+  useEffect(() => {
+    if (!user?.id || !lobbyId) return;
+    supabase.from("challenge_lobbies").select("*").eq("id", lobbyId).single()
+      .then(({ data }) => setLobby(data || null))
+      .catch(() => setLobby(null));
+  }, [user?.id, lobbyId]); // eslint-disable-line
+
+  if (!user || lobby === undefined) return <LoadingScreen label="LOADING LOBBY…" />;
+
+  // I am the host — show host lobby screen
+  if (!lobby || lobby.host_id === user.id) {
+    return <ChallengeLobbyScreen user={user} lobbyId={lobbyId} pvpDeck={pvpDeck} onEnterMatch={onEnterMatch} onCancel={onCancel} />;
+  }
+
+  // I am the challenger — show join screen
+  return <ChallengeJoinScreen user={user} lobby={lobby} onEnterMatch={onEnterMatch} onDecline={onCancel} />;
+}
+
+// ═══ LIVE ACTIVITY WIDGET ════════════════════════════════════════════════════
+
+function LiveActivityWidget({ onlineCount }) {
+  const [activeMatches, setActiveMatches] = useState(null);
+  const [todayMatches, setTodayMatches] = useState(null);
+  const [recentMatches, setRecentMatches] = useState([]);
+
+  const fetchCounts = useCallback(async () => {
+    const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0);
+    const [{ count: active }, { count: today }] = await Promise.all([
+      supabase.from("matches").select("id", { count:"exact", head:true }).eq("status", "active"),
+      supabase.from("matches").select("id", { count:"exact", head:true }).gte("created_at", todayMidnight.toISOString()),
+    ]);
+    setActiveMatches(active ?? 0);
+    setTodayMatches(today ?? 0);
+  }, []);
+
+  const fetchRecent = useCallback(async () => {
+    const { data } = await supabase.from("matches")
+      .select("id, game_state, created_at")
+      .not("game_state->>winner", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(5);
+    setRecentMatches((data || []).map(m => ({
+      id: m.id,
+      p1: m.game_state?.p1Name || "Adventurer",
+      p2: m.game_state?.p2Name || "Adventurer",
+      winner: m.game_state?.winner,
+      ranked: m.game_state?.ranked || false,
+    })).filter(m => m.winner));
+  }, []);
+
+  useEffect(() => {
+    fetchCounts();
+    fetchRecent();
+    const countTimer = setInterval(fetchCounts, 30000);
+    const ch = supabase.channel("live_activity_widget")
+      .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, () => {
+        fetchCounts();
+        fetchRecent();
+      })
+      .subscribe();
+    return () => { clearInterval(countTimer); supabase.removeChannel(ch); };
+  }, [fetchCounts, fetchRecent]);
+
+  const showToday = (activeMatches ?? 0) < 10;
+  const onlineDisp = onlineCount ?? 0;
+
+  return (
+    <div style={{ background:"rgba(255,255,255,0.02)", border:"1px solid #2a2010", borderRadius:12, padding:"12px 16px" }}>
+      {/* Stat pills row */}
+      <div style={{ display:"flex", gap:10, marginBottom: recentMatches.length > 0 ? 12 : 0 }}>
+        {/* Online */}
+        <div style={{ flex:1, display:"flex", alignItems:"center", gap:8, padding:"8px 12px", background:"rgba(120,204,69,0.06)", border:"1px solid rgba(120,204,69,0.12)", borderRadius:9 }}>
+          <div style={{ width:7, height:7, borderRadius:"50%", background:"#78cc45", boxShadow:"0 0 8px #78cc45", animation:"pulse 1.8s ease-in-out infinite", flexShrink:0 }} />
+          <div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:15, fontWeight:900, color:"#78cc45", lineHeight:1 }}>{onlineDisp}</div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:"#304020", letterSpacing:2, marginTop:2 }}>ONLINE</div>
+          </div>
+        </div>
+        {/* Active matches */}
+        {!showToday && (
+          <div style={{ flex:1, display:"flex", alignItems:"center", gap:8, padding:"8px 12px", background:"rgba(232,192,96,0.06)", border:"1px solid rgba(232,192,96,0.12)", borderRadius:9 }}>
+            <span style={{ fontSize:14, lineHeight:1, flexShrink:0 }}>⚔</span>
+            <div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:15, fontWeight:900, color:"#e8c060", lineHeight:1 }}>{activeMatches ?? "—"}</div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:"#503828", letterSpacing:2, marginTop:2 }}>BATTLES NOW</div>
+            </div>
+          </div>
+        )}
+        {/* Today matches (shows when low activity) */}
+        <div style={{ flex:1, display:"flex", alignItems:"center", gap:8, padding:"8px 12px", background:"rgba(128,176,255,0.06)", border:"1px solid rgba(128,176,255,0.12)", borderRadius:9 }}>
+          <span style={{ fontSize:14, lineHeight:1, flexShrink:0 }}>📅</span>
+          <div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:15, fontWeight:900, color:"#80b0ff", lineHeight:1 }}>{todayMatches ?? "—"}</div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:"#2a3050", letterSpacing:2, marginTop:2 }}>{showToday ? "TODAY" : "TODAY"}</div>
+          </div>
+        </div>
+      </div>
+      {/* Recent matches ticker */}
+      {recentMatches.length > 0 && (
+        <div style={{ borderTop:"1px solid #1a1408", paddingTop:8, overflow:"hidden" }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:"#403020", letterSpacing:3, marginBottom:6 }}>RECENT BATTLES</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+            {recentMatches.map((m, i) => {
+              const winnerName = m.winner === "p1" ? m.p1 : m.p2;
+              const loserName  = m.winner === "p1" ? m.p2 : m.p1;
+              return (
+                <div key={m.id} style={{ display:"flex", alignItems:"center", gap:6, animation:`fadeIn 0.3s ease-out ${i * 0.06}s both` }}>
+                  <div style={{ width:5, height:5, borderRadius:"50%", background:"#78cc4566", flexShrink:0 }} />
+                  <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#78cc45", fontWeight:700 }}>{winnerName}</span>
+                  <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#503828" }}>defeated</span>
+                  <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#806040" }}>{loserName}</span>
+                  {m.ranked && <span style={{ fontSize:7, color:"#8060c0", background:"rgba(128,96,192,0.12)", border:"1px solid #4030608", borderRadius:3, padding:"1px 4px", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>RANKED</span>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDuel, clearPendingDuel, pendingChallengeId, setPendingChallengeId, onlineIds }) {
   const [matchConfig, setMatchConfig] = useState(null);
   const [matchmaking, setMatchmaking] = useState(false);
   const [ranked, setRanked] = useState(() => localStorage.getItem("fnf_ranked") === "true");
@@ -4631,6 +5092,16 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDue
       </div>
     </div>
   );
+  // URL challenge lobby
+  if (pendingChallengeId && !matchConfig) {
+    return <ChallengeRouteHandler
+      user={user}
+      lobbyId={pendingChallengeId}
+      pvpDeck={pvpDeck?.cards || null}
+      onEnterMatch={(cfg) => { setPendingChallengeId?.(null); setMatchConfig(cfg); setMatchActive?.(true); }}
+      onCancel={() => setPendingChallengeId?.(null)}
+    />;
+  }
   if (!matchConfig) {
     const selStyle = { width:"100%", padding:"9px 10px", background:"#080606", border:"1px solid rgba(232,192,96,0.12)", borderRadius:8, color:"#d0c090", fontFamily:"'Cinzel',serif", fontSize:10, outline:"none", cursor:"pointer", appearance:"none", backgroundImage:"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23806040'/%3E%3C/svg%3E\")", backgroundRepeat:"no-repeat", backgroundPosition:"right 10px center" };
     const wins = user?.rankedWins || 0;
@@ -4668,6 +5139,9 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDue
           </div>
         </div>
       )}
+
+      {/* Live activity */}
+      <LiveActivityWidget onlineCount={onlineIds?.size ?? 0} />
 
       {/* Mode cards */}
       <div className="mode-cards" style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:14 }}>
@@ -4732,6 +5206,25 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDue
 
       </div>
 
+      {/* Challenge a Friend — full-width */}
+      {user && (
+        <div onClick={() => {
+          const lobbyId = crypto.randomUUID();
+          window.history.pushState(null, "", "/#/challenge/" + lobbyId);
+          setPendingChallengeId?.(lobbyId);
+        }}
+          style={{ display:"flex", alignItems:"center", gap:16, padding:"16px 22px", background:"linear-gradient(135deg,rgba(10,12,32,0.95),rgba(6,8,20,0.95))", border:"1px solid rgba(100,120,255,0.22)", borderRadius:14, cursor:"pointer", transition:"all .18s" }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor="rgba(100,120,255,0.55)"; e.currentTarget.style.background="linear-gradient(135deg,rgba(14,16,40,0.98),rgba(8,10,26,0.98))"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor="rgba(100,120,255,0.22)"; e.currentTarget.style.background="linear-gradient(135deg,rgba(10,12,32,0.95),rgba(6,8,20,0.95))"; }}>
+          <div style={{ fontSize:28, filter:"drop-shadow(0 0 12px rgba(100,120,255,0.6))", flexShrink:0 }}>🔗</div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:14, fontWeight:700, color:"#8090ff", letterSpacing:1, marginBottom:2 }}>CHALLENGE A FRIEND</div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#404060", letterSpacing:1.5 }}>Generate a shareable link · No matchmaking needed</div>
+          </div>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#4050c0", flexShrink:0 }}>›</div>
+        </div>
+      )}
+
       {/* No decks hint */}
       {decks.length === 0 && (
         <div style={{ textAlign:"center", padding:"11px 18px", background:"rgba(232,192,96,0.04)", border:"1px solid rgba(232,192,96,0.10)", borderRadius:10, fontSize:10, color:"#706040", fontFamily:"'Cinzel',serif", letterSpacing:1 }}>
@@ -4759,7 +5252,7 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDue
     </div>
   );}
   if (matchConfig?.mode === "pvp") return (<PvpBattleScreen user={user} matchConfig={matchConfig} onExit={() => { setMatchConfig(null); setInPvpMatch?.(false); setMatchActive?.(false); }} onUpdateUser={onUpdateUser} setInPvpMatch={setInPvpMatch} />);
-  return (<BattleScreen user={user} onUpdateUser={onUpdateUser} matchConfig={matchConfig} onExit={() => { setMatchConfig(null); setMatchActive?.(false); setSelectedDeck(null); }} />);
+  return (<BattleScreen user={user} onUpdateUser={onUpdateUser} matchConfig={matchConfig} onExit={() => { setMatchConfig(null); setMatchActive?.(false); }} />);
 }
 // ═══ PACK OPENING ════════════════════════════════════════════════════════════
 function PackOpening({ user, onUpdateUser }) {
@@ -8251,6 +8744,7 @@ export default function App() {
   const [friendBadge, setFriendBadge] = useState(0);
   const [questBadge, setQuestBadge] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [pendingChallengeId, setPendingChallengeId] = useState(null);
   const [globalChallenge, setGlobalChallenge] = useState(null); // { fromId, fromName, fromAvatar }
   const [pendingDuel, setPendingDuel] = useState(null); // { matchId, opponentName, opponentId }
   const [declinedToast, setDeclinedToast] = useState(null); // name of player who declined
@@ -8268,6 +8762,21 @@ export default function App() {
     const handler = () => setShowTutorial(true);
     window.addEventListener("openTutorial", handler);
     return () => window.removeEventListener("openTutorial", handler);
+  }, []); // eslint-disable-line
+  // Hash-based challenge URL routing: /#/challenge/{uuid}
+  useEffect(() => {
+    const checkHash = () => {
+      const hash = window.location.hash;
+      const m = hash.match(/^#\/challenge\/([0-9a-f-]{36})$/i);
+      if (m) {
+        setPendingChallengeId(m[1]);
+        window.history.replaceState(null, "", window.location.pathname);
+        setTab("play");
+      }
+    };
+    checkHash();
+    window.addEventListener("hashchange", checkHash);
+    return () => window.removeEventListener("hashchange", checkHash);
   }, []); // eslint-disable-line
   // Quest badge: count unclaimed completed quests whenever quests update
   useEffect(() => {
@@ -8625,7 +9134,7 @@ export default function App() {
         {tab === "home" && <HomeScreen setTab={setTab} user={user} />}
       </ErrorBoundary>
       <ErrorBoundary label="The battle arena encountered an error.">
-        {tab === "play" && <GameTab user={user} onUpdateUser={update} setInPvpMatch={setInPvpMatch} setMatchActive={setMatchActive} pendingDuel={pendingDuel} clearPendingDuel={() => setPendingDuel(null)} />}
+        {tab === "play" && <GameTab user={user} onUpdateUser={update} setInPvpMatch={setInPvpMatch} setMatchActive={setMatchActive} pendingDuel={pendingDuel} clearPendingDuel={() => setPendingDuel(null)} pendingChallengeId={pendingChallengeId} setPendingChallengeId={setPendingChallengeId} onlineIds={onlineIds} />}
       </ErrorBoundary>
       <ErrorBoundary label="The store encountered an error.">
         {tab === "store" && <StoreScreen user={user} onUpdateUser={update} />}
