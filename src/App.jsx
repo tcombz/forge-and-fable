@@ -2328,7 +2328,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     // Clear temp frozen/anchored from enemy units
     s.enemyBoard=s.enemyBoard.map(c=>(c.anchored||c.frozen)?{...c,anchored:false,frozen:false,canAttack:true}:c);
     s.playerBoard.forEach(c=>{if(c.effects&&c.effects.length)s=resolveEffects("onTurnStart",c,s,"player",vfx);});
-    s.playerBoard=s.playerBoard.map(c=>({...c,canAttack:true,hasAttacked:false}));
+    s.playerBoard=s.playerBoard.map(c=>c.frozen?c:{...c,canAttack:true,hasAttacked:false});
     // Food Fight synergy: start-of-turn effects
     {const jaxRed=s.playerBoard.some(c=>c.id==="master_jax")?1:0;const syn=getActiveSynergies(s.playerBoard,jaxRed);
       const addTag=(c,t)=>({...c,synTag:c.synTag?c.synTag+" · "+t:t});
@@ -4995,17 +4995,24 @@ function ChallengeJoinScreen({ user, lobby, onEnterMatch, onDecline }) {
   );
 }
 
-function ChallengeRouteHandler({ user, lobbyId, pvpDeck, onEnterMatch, onCancel }) {
+function ChallengeRouteHandler({ user, lobbyId, pvpDeck, isHost, onEnterMatch, onCancel }) {
   const [lobby, setLobby] = useState(undefined); // undefined = loading
 
   useEffect(() => {
     if (!user?.id || !lobbyId) return;
+    // If we already know we're the host creating a fresh lobby, skip the DB lookup
+    if (isHost) { setLobby(null); return; }
     supabase.from("challenge_lobbies").select("*").eq("id", lobbyId).single()
       .then(({ data }) => setLobby(data || null))
       .catch(() => setLobby(null));
   }, [user?.id, lobbyId]); // eslint-disable-line
 
   if (!user || lobby === undefined) return <LoadingScreen label="LOADING LOBBY…" />;
+
+  // I am the host creating (or re-creating) a lobby — go straight to host screen
+  if (isHost) {
+    return <ChallengeLobbyScreen user={user} lobbyId={lobbyId} pvpDeck={pvpDeck} onEnterMatch={onEnterMatch} onCancel={onCancel} />;
+  }
 
   // Lobby doesn't exist or already used — show expired notice
   if (!lobby) {
@@ -5019,7 +5026,7 @@ function ChallengeRouteHandler({ user, lobbyId, pvpDeck, onEnterMatch, onCancel 
     );
   }
 
-  // I am the host — show host lobby screen
+  // I am the host viewing an existing lobby row
   if (lobby.host_id === user.id) {
     return <ChallengeLobbyScreen user={user} lobbyId={lobbyId} pvpDeck={pvpDeck} onEnterMatch={onEnterMatch} onCancel={onCancel} />;
   }
@@ -5118,7 +5125,7 @@ function LiveActivityWidget({ onlineCount }) {
   );
 }
 
-function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDuel, clearPendingDuel, pendingChallengeId, setPendingChallengeId, onlineIds }) {
+function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDuel, clearPendingDuel, pendingChallengeId, setPendingChallengeId, pendingChallengeIsHost, setPendingChallengeIsHost, onlineIds }) {
   const [matchConfig, setMatchConfig] = useState(null);
   const [matchmaking, setMatchmaking] = useState(false);
   const [ranked, setRanked] = useState(() => localStorage.getItem("fnf_ranked") === "true");
@@ -5183,8 +5190,9 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDue
       user={user}
       lobbyId={pendingChallengeId}
       pvpDeck={pvpDeck?.cards || null}
-      onEnterMatch={(cfg) => { setPendingChallengeId?.(null); setMatchConfig(cfg); setMatchActive?.(true); }}
-      onCancel={() => setPendingChallengeId?.(null)}
+      isHost={!!pendingChallengeIsHost}
+      onEnterMatch={(cfg) => { setPendingChallengeId?.(null); setPendingChallengeIsHost?.(false); setMatchConfig(cfg); setMatchActive?.(true); }}
+      onCancel={() => { setPendingChallengeId?.(null); setPendingChallengeIsHost?.(false); }}
     />;
   }
   if (!matchConfig) {
@@ -5309,6 +5317,7 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDue
         <div onClick={() => {
           const lobbyId = crypto.randomUUID();
           window.history.pushState(null, "", "/#/challenge/" + lobbyId);
+          setPendingChallengeIsHost?.(true);
           setPendingChallengeId?.(lobbyId);
         }}
           style={{ display:"flex", alignItems:"center", gap:16, padding:"16px 22px", background:"linear-gradient(135deg,rgba(10,12,32,0.95),rgba(6,8,20,0.95))", border:"1px solid rgba(100,120,255,0.22)", borderRadius:14, cursor:"pointer", transition:"all .18s" }}
@@ -8870,6 +8879,7 @@ export default function App() {
   const [questBadge, setQuestBadge] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
   const [pendingChallengeId, setPendingChallengeId] = useState(null);
+  const [pendingChallengeIsHost, setPendingChallengeIsHost] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalMode, setAuthModalMode] = useState("signup");
   const [chroniclerToast, setChroniclerToast] = useState(null); // { text, key }
@@ -9309,7 +9319,7 @@ export default function App() {
         {tab === "home" && <HomeScreen setTab={setTab} user={user} />}
       </ErrorBoundary>
       <ErrorBoundary label="The battle arena encountered an error.">
-        {tab === "play" && <GameTab user={user} onUpdateUser={update} setInPvpMatch={setInPvpMatch} setMatchActive={setMatchActive} pendingDuel={pendingDuel} clearPendingDuel={() => setPendingDuel(null)} pendingChallengeId={pendingChallengeId} setPendingChallengeId={setPendingChallengeId} onlineIds={onlineIds} />}
+        {tab === "play" && <GameTab user={user} onUpdateUser={update} setInPvpMatch={setInPvpMatch} setMatchActive={setMatchActive} pendingDuel={pendingDuel} clearPendingDuel={() => setPendingDuel(null)} pendingChallengeId={pendingChallengeId} setPendingChallengeId={setPendingChallengeId} pendingChallengeIsHost={pendingChallengeIsHost} setPendingChallengeIsHost={setPendingChallengeIsHost} onlineIds={onlineIds} />}
       </ErrorBoundary>
       <ErrorBoundary label="The store encountered an error.">
         {tab === "store" && <StoreScreen user={user} onUpdateUser={update} />}
