@@ -6190,14 +6190,12 @@ function HomeScreen({ setTab, user }) {
             <span style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#d8a838", letterSpacing: 3, fontWeight: 700 }}>{CURRENT_PATCH} · MULTIPLAYER ALPHA LIVE</span>
           </div>
           {/* Title */}
-          <div style={{ display:"flex", alignItems:"center", gap:16, marginBottom:6 }}>
-            <img src="/logo.svg" alt="" style={{ width:"clamp(52px,6.5vw,80px)", height:"clamp(52px,6.5vw,80px)", filter:"drop-shadow(0 0 24px rgba(160,136,48,0.55))", flexShrink:0 }} />
-            <div>
-              <h1 style={{ fontFamily: "var(--font-display,'Cinzel',serif)", fontSize: "clamp(48px,6.5vw,80px)", fontWeight: 900, lineHeight: 0.95, color: "#f0d878", margin: 0, textShadow: "0 0 80px #c89020bb, 0 0 140px #c8902055, 0 4px 8px rgba(0,0,0,0.9), 0 2px 2px rgba(0,0,0,1)" }}>Forge</h1>
-              <h1 style={{ fontFamily: "var(--font-display,'Cinzel',serif)", fontSize: "clamp(48px,6.5vw,80px)", fontWeight: 900, lineHeight: 0.95, color: "#f0d878", margin: 0, textShadow: "0 0 80px #c89020bb, 0 0 140px #c8902055, 0 4px 8px rgba(0,0,0,0.9)" }}>{"&"} Fable</h1>
-            </div>
-          </div>
-          <div style={{ marginBottom: 22 }} />
+          <h1 style={{ fontFamily: "var(--font-display,'Cinzel',serif)", fontSize: "clamp(48px,6.5vw,80px)", fontWeight: 900, lineHeight: 0.95, color: "#f0d878", margin: "0 0 6px", textShadow: "0 0 80px #c89020bb, 0 0 140px #c8902055, 0 4px 8px rgba(0,0,0,0.9), 0 2px 2px rgba(0,0,0,1)" }}>
+            Forge
+          </h1>
+          <h1 style={{ fontFamily: "var(--font-display,'Cinzel',serif)", fontSize: "clamp(48px,6.5vw,80px)", fontWeight: 900, lineHeight: 0.95, color: "#f0d878", margin: "0 0 22px", textShadow: "0 0 80px #c89020bb, 0 0 140px #c8902055, 0 4px 8px rgba(0,0,0,0.9)" }}>
+            {"&"} Fable
+          </h1>
           <p style={{ fontSize: 15, lineHeight: 1.9, color: "#b8aad0", margin: "0 0 24px", maxWidth: 420, textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>{POOL.length}+ cards across {REGIONS.length} factions. Real abilities, the Lightning Meter, and environments that reshape the battlefield. Creatures that level up, bleed, echo, and strike.</p>
           {/* Stat boxes */}
           <div ref={statsRef} style={{ display: "flex", gap: 10, marginBottom: 28 }}>
