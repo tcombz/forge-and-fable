@@ -279,11 +279,11 @@ export default function LandingPage({ onPlayNow, onSignIn }) {
   );
 
   const FAN_CARDS = [
-    { rot: -20, y: 22, color: "#70e830", src: "/cards/druid.jpg",             label: "Rootcaller Druid",   sub: "Thornwood",    zIdx: 3, delay: 0 },
-    { rot:  -7, y:  7, color: "#9070ff", src: "/cards/zeus_storm_father.jpg", label: "Zeus, Storm Father", sub: "Fables",       zIdx: 4, delay: 1 },
-    { rot:   0, y:  0, color: "#c89010", src: "/cards/guard.jpg",             label: "Thornwood Guard",    sub: "Thornwood",    zIdx: 5, delay: 2 },
-    { rot:   7, y:  7, color: "#ff6820", src: "/cards/pyro.jpg",              label: "Ashfen Pyromancer",  sub: "Ashfen",       zIdx: 4, delay: 3 },
-    { rot:  20, y: 22, color: "#30c0ff", src: "/cards/tide.jpg",              label: "Tideweave Siren",    sub: "Azure Deep",   zIdx: 3, delay: 4 },
+    { rot: -20, y: 22, color: "#70e830", src: "/cards/druid.webp",             label: "Rootcaller Druid",   sub: "Thornwood",    zIdx: 3, delay: 0 },
+    { rot:  -7, y:  7, color: "#9070ff", src: "/cards/zeus_storm_father.webp", label: "Zeus, Storm Father", sub: "Fables",       zIdx: 4, delay: 1 },
+    { rot:   0, y:  0, color: "#c89010", src: "/cards/guard.webp",             label: "Thornwood Guard",    sub: "Thornwood",    zIdx: 5, delay: 2 },
+    { rot:   7, y:  7, color: "#ff6820", src: "/cards/pyro.webp",              label: "Ashfen Pyromancer",  sub: "Ashfen",       zIdx: 4, delay: 3 },
+    { rot:  20, y: 22, color: "#30c0ff", src: "/cards/tide.webp",              label: "Tideweave Siren",    sub: "Azure Deep",   zIdx: 3, delay: 4 },
   ];
 
   return (
