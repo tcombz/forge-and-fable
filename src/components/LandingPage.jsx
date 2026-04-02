@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "../supabase";
 
 // ─── Paste your Discord webhook URL here ─────────────────────────────────────
-const DISCORD_WEBHOOK_URL = "";
+const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1489252076415353014/trkBnUYcYDB8FPxE5d0IYrYXpDpou1zpJ617nJy1hJslMa-f6lnHd0nRLhawnr3-hvJ1";
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─── Animated background particles ───────────────────────────────────────────
