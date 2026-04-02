@@ -41,6 +41,50 @@ class ErrorBoundary extends Component {
   }
 }
 
+// ═══ CHRONICLER TOAST ════════════════════════════════════════════════════════
+// Floating Chronicler bubble for onboarding transition narration
+function ChroniclerToast({ message, onDismiss }) {
+  const [typed, setTyped] = useState("");
+  const [typeIdx, setTypeIdx] = useState(0);
+  const [textDone, setTextDone] = useState(false);
+
+  useEffect(() => {
+    if (typeIdx >= message.length) { setTextDone(true); return; }
+    const t = setTimeout(() => { setTyped(p => p + message[typeIdx]); setTypeIdx(i => i + 1); }, 20);
+    return () => clearTimeout(t);
+  }, [typeIdx, message]); // eslint-disable-line
+
+  useEffect(() => {
+    if (!textDone) return;
+    const t = setTimeout(onDismiss, 7000);
+    return () => clearTimeout(t);
+  }, [textDone]); // eslint-disable-line
+
+  const skip = () => { if (!textDone) { setTyped(message); setTypeIdx(message.length); setTextDone(true); } };
+
+  return (
+    <div style={{ position:"fixed", bottom:28, right:28, zIndex:600, maxWidth:340, animation:"slideInRight 0.4s cubic-bezier(.34,1.56,.64,1)" }}>
+      <div style={{ background:"linear-gradient(160deg,rgba(20,14,6,0.97),rgba(12,8,3,0.97))", border:"1px solid #c89010aa", borderRadius:14, padding:"16px 18px", boxShadow:"0 8px 40px rgba(0,0,0,0.9), 0 0 0 1px #c8901022", backdropFilter:"blur(12px)" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <div style={{ width:8, height:8, borderRadius:"50%", background:"#c89010", boxShadow:"0 0 8px #c89010", animation:"pulse 1.5s infinite" }} />
+            <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#c89010", letterSpacing:3, fontWeight:700 }}>THE CHRONICLER</span>
+          </div>
+          <button onClick={onDismiss} style={{ background:"transparent", border:"none", color:"#5a3a18", fontSize:15, cursor:"pointer", lineHeight:1, padding:"0 2px" }}>✕</button>
+        </div>
+        <div onClick={skip} style={{ fontFamily:"'Lora',Georgia,serif", fontSize:13, color:"#d8cca8", lineHeight:1.75, cursor:textDone?"default":"pointer", minHeight:40 }}>
+          {typed}{!textDone && <span style={{ opacity:0.5, animation:"pulse 0.7s infinite" }}>▌</span>}
+        </div>
+        {textDone && (
+          <div style={{ marginTop:10, display:"flex", justifyContent:"flex-end" }}>
+            <button onClick={onDismiss} style={{ padding:"4px 14px", background:"transparent", border:"1px solid #3a2010", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:9, color:"#7a5020", cursor:"pointer", letterSpacing:1 }}>CONTINUE</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ═══ SKELETON / LOADING PRIMITIVES ══════════════════════════════════════════
 // Skel: single shimmer block. w/h accept any CSS value.
 const Skel = ({ w = "100%", h = 16, r = 6, style = {} }) => (
@@ -2106,7 +2150,9 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     const resolveFromPool = (c) => { const fresh = ACTIVE_POOL.find(p => p.id === c.id); return fresh ? { ...c, atk: fresh.atk, hp: fresh.hp, keywords: fresh.keywords, effects: fresh.effects, ability: fresh.ability } : c; };
     const playerCards = matchConfig?.playerDeck?.length > 0 ? [...matchConfig.playerDeck] : buildRandomDeck(ACTIVE_POOL, user?.collection);
     const pd = shuf(playerCards.slice(0, CFG.deck.size).map(resolveFromPool));
-    const rawEd = matchConfig?.ghostEnemyDeck?.length > 0 ? [...matchConfig.ghostEnemyDeck] : buildRandomDeck(GAMEPLAY_POOL, getStarterCollection());
+    const rawEd = matchConfig?.isFirstMatch
+      ? buildRandomDeck(GAMEPLAY_POOL.filter(c => (c.cost || 0) <= 3 && c.type !== "environment"), getStarterCollection())
+      : matchConfig?.ghostEnemyDeck?.length > 0 ? [...matchConfig.ghostEnemyDeck] : buildRandomDeck(GAMEPLAY_POOL, getStarterCollection());
     const ed = shuf(rawEd.slice(0, CFG.deck.size).map(resolveFromPool));
     const playerZeusInPlay = pd.some(c => c.id === "zeus_storm_father");
     const enemyZeusInPlay = ed.some(c => c.id === "zeus_storm_father");
@@ -2114,6 +2160,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     return { matchId: uid("m"), turn: 1, phase: "opening", winner: null, playerHP: CFG.startHP, playerEnergy: CFG.startEnergy, maxEnergy: CFG.startEnergy, playerHand: pd.slice(0, CFG.startHand).map((c) => makeInst(c, "p")), playerDeck: pd.slice(CFG.startHand), playerBoard: [], enemyHP: CFG.startHP, enemyHand: ed.slice(0, CFG.startHand).map((c) => makeInst(c, "e")), enemyDeck: ed.slice(CFG.startHand), enemyBoard: [], environment: null, envLastTurn: null, mapTheme: "default", log: ["Draw for priority!"], playerLightningMeter: 0, enemyLightningMeter: 0, firstCardPlayedThisTurn: false, spellsPlayedThisTurn: 0, playerZeusInPlay, enemyZeusInPlay, playerName: user?.name || "You", enemyName };
   };
   const [game, setGame] = useState(initGame);
+  const [showFirstMatchIntro, setShowFirstMatchIntro] = useState(!!matchConfig?.isFirstMatch);
   const [animUids, setAnimUids] = useState({});
   const [attacker, setAttacker] = useState(null);
   const [targetingSpell, setTargetingSpell] = useState(null);
@@ -2458,6 +2505,19 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   const attCard = attacker ? g.playerBoard.find((c) => c.uid === attacker) : null;
 
   return (<div className="battle-wrapper" style={{ width:"100%", height:"calc(100vh - 72px)", padding:"8px 14px 6px", background:"#0a0806", boxSizing:"border-box", overflow:"visible", display:"flex", flexDirection:"column" }} onClick={() => { SFX.init(); }}>
+    {/* First match — Chronicler intro overlay */}
+    {showFirstMatchIntro && (
+      <div style={{ position:"fixed", inset:0, zIndex:500, background:"rgba(2,1,0,0.95)", display:"flex", alignItems:"center", justifyContent:"center", animation:"fadeIn 0.4s ease-out" }}>
+        <div style={{ maxWidth:480, padding:"48px 44px", textAlign:"center", background:"linear-gradient(160deg,#140e04,#0a0804)", border:"1px solid #c89010aa", borderRadius:20, boxShadow:"0 0 80px rgba(200,144,16,0.12), 0 24px 80px rgba(0,0,0,0.95)", animation:"fadeIn 0.5s 0.1s ease-out both" }}>
+          <div style={{ fontSize:48, marginBottom:16, filter:"drop-shadow(0 0 20px #c8901066)", animation:"pulse 2s ease-in-out infinite" }}>📜</div>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#c89010", letterSpacing:4, marginBottom:16, fontWeight:700 }}>THE CHRONICLER</div>
+          <div style={{ fontFamily:"'Lora',Georgia,serif", fontSize:15, color:"#d8cca8", lineHeight:1.85, marginBottom:32 }}>
+            "Your first true contest begins. You stand against a worthy initiation — one I have prepared to test what I taught you. Trust your mana, read the board, and strike when the moment is right. You are ready."
+          </div>
+          <button onClick={() => setShowFirstMatchIntro(false)} style={{ padding:"13px 44px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:10, fontFamily:"'Cinzel',serif", fontSize:13, fontWeight:700, letterSpacing:2, color:"#1a1000", cursor:"pointer", boxShadow:"0 0 24px #c8901055" }}>BEGIN ⚔</button>
+        </div>
+      </div>
+    )}
     {previewCard && <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />}
     {/* Live Action Ticker */}
     {liveAction && (
@@ -5072,6 +5132,8 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDue
   const [showLadder, setShowLadder] = useState(false);
   const userRank = getRank(user?.rankedRating);
   const isFirstMatch = localStorage.getItem("fnf_onboarding") === "first_match";
+  const isOnboardingDone = localStorage.getItem("fnf_onboarding") === "done";
+  const [guidanceDismissed, setGuidanceDismissed] = useState(false);
   if (showLadder) return <LeaderboardScreen user={user} onBack={() => setShowLadder(false)} />;
   if (matchmaking) return (<MatchmakingScreen key={matchmaking} user={user} ranked={ranked}
     onMatch={(cfg) => { setMatchmaking(false); const cfg2 = { mode:"pvp", ranked, playerDeck: pvpDeck?.cards || null, ...cfg }; setMatchConfig(cfg2); setMatchActive?.(true); }}
@@ -5163,6 +5225,17 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDue
         </div>
       )}
 
+      {/* Post-onboarding guidance strip */}
+      {isOnboardingDone && !guidanceDismissed && (
+        <div style={{ display:"flex", alignItems:"center", gap:14, padding:"14px 20px", background:"linear-gradient(135deg,rgba(120,204,69,0.06),rgba(60,140,20,0.04))", border:"1px solid #78cc4544", borderRadius:12, marginBottom:4, animation:"fadeIn 0.5s ease-out" }}>
+          <div style={{ fontSize:20, flexShrink:0 }}>📜</div>
+          <div style={{ flex:1 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#78cc45", letterSpacing:2, fontWeight:700, marginBottom:2 }}>INITIATION COMPLETE</div>
+            <div style={{ fontFamily:"'Lora',serif", fontSize:11, color:"#507040", lineHeight:1.6 }}>Tutorial ✓ &nbsp;·&nbsp; First Match ✓ &nbsp;·&nbsp; The Forge is yours. Try Ranked play, challenge a friend, or build a new deck.</div>
+          </div>
+          <button onClick={() => { setGuidanceDismissed(true); localStorage.setItem("fnf_onboarding", "complete"); }} style={{ background:"transparent", border:"none", color:"#3a5028", fontSize:16, cursor:"pointer", flexShrink:0, padding:4 }}>✕</button>
+        </div>
+      )}
       {/* Live activity */}
       <LiveActivityWidget onlineCount={onlineIds?.size ?? 0} />
 
@@ -5626,7 +5699,7 @@ function LoginModal({ needsProfile = false, userId, userEmail, onSignOut, onProf
 }
 
 // ═══ COLLECTION ══════════════════════════════════════════════════════════════
-function CollectionScreen({ user, onUpdateUser, onDeckBuilding }) {
+function CollectionScreen({ user, onUpdateUser, onDeckBuilding, newPlayerMode }) {
   const col = user?.collection || {};
   const selectedArts = user?.selectedArts || {};
   const fablesTester = isFablesTester(user);
@@ -5643,7 +5716,17 @@ function CollectionScreen({ user, onUpdateUser, onDeckBuilding }) {
   // Deck builder: null=closed, "select"=deck picker, { index, name, cards }=editing
   const [deckBuilderState, setDeckBuilderState] = useState(null);
   const openDeckBuilder = (state) => { setDeckBuilderState(state); if (onDeckBuilding) onDeckBuilding(state && state !== "select"); };
-  const closeDeckBuilder = () => { setDeckBuilderState(null); if (onDeckBuilding) onDeckBuilding(false); };
+  const closeDeckBuilder = () => {
+    setDeckBuilderState(null);
+    if (onDeckBuilding) onDeckBuilding(false);
+    if (newPlayerMode) window.dispatchEvent(new CustomEvent("onboardingDeckBuilt"));
+  };
+  // New player: auto-open starter deck builder on first visit
+  useEffect(() => {
+    if (!newPlayerMode) return;
+    const t = setTimeout(() => openDeckBuilder({ isNew:false, index:"starter", name:"Starter Deck", cards:STARTER_DECK }), 600);
+    return () => clearTimeout(t);
+  }, []); // eslint-disable-line
   const decks = user?.decks || [];
   const saveDeck = async (deck, editIndex) => {
     let newDecks;
@@ -5789,6 +5872,16 @@ function CollectionScreen({ user, onUpdateUser, onDeckBuilding }) {
                   style={{ padding:"9px 14px", background:"transparent", border:"1px solid #5a1010", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:"#904040", cursor:"pointer" }}>DELETE</button>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+      {/* New player guidance banner */}
+      {newPlayerMode && (
+        <div style={{ display:"flex", alignItems:"center", gap:14, padding:"14px 20px", background:"linear-gradient(135deg,rgba(200,144,16,0.08),rgba(160,100,8,0.05))", border:"1px solid #c89010aa", borderRadius:12, marginBottom:16, animation:"fadeIn 0.5s ease-out" }}>
+          <div style={{ fontSize:22, flexShrink:0 }}>📜</div>
+          <div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#c89010", letterSpacing:3, fontWeight:700, marginBottom:3 }}>THE CHRONICLER</div>
+            <div style={{ fontFamily:"'Lora',serif", fontSize:12, color:"#b09060", lineHeight:1.7 }}>Your Starter Deck is opening now. Review it, adjust it to your liking, then save — your first battle awaits.</div>
           </div>
         </div>
       )}
@@ -8779,6 +8872,7 @@ export default function App() {
   const [pendingChallengeId, setPendingChallengeId] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalMode, setAuthModalMode] = useState("signup");
+  const [chroniclerToast, setChroniclerToast] = useState(null); // { text, key }
   const [globalChallenge, setGlobalChallenge] = useState(null); // { fromId, fromName, fromAvatar }
   const [pendingDuel, setPendingDuel] = useState(null); // { matchId, opponentName, opponentId }
   const [declinedToast, setDeclinedToast] = useState(null); // name of player who declined
@@ -8801,6 +8895,15 @@ export default function App() {
     const handler = () => setTab("quests");
     window.addEventListener("openQuestsTab", handler);
     return () => window.removeEventListener("openQuestsTab", handler);
+  }, []); // eslint-disable-line
+  useEffect(() => {
+    const handler = () => {
+      localStorage.setItem("fnf_onboarding", "first_match");
+      setTab("play");
+      setChroniclerToast({ text: "Well chosen. Your deck stands ready. Make for the Battle tab — The Chronicler awaits your initiation trial. Face them with what I have taught you.", key: Date.now() });
+    };
+    window.addEventListener("onboardingDeckBuilt", handler);
+    return () => window.removeEventListener("onboardingDeckBuilt", handler);
   }, []); // eslint-disable-line
   // Hash-based challenge URL routing: /#/challenge/{uuid}
   useEffect(() => {
@@ -8836,6 +8939,8 @@ export default function App() {
     if (step === "tutorial") {
       localStorage.removeItem("fnf_onboarding");
       setShowTutorial(true);
+    } else if (step === "deck_builder") {
+      setTab("collection");
     } else if (step === "first_match") {
       setTab("play");
     }
@@ -9035,8 +9140,14 @@ export default function App() {
     {user && showPatchNotes && <PatchNotesModal onDismiss={() => { localStorage.setItem(`patchSeen_${user.id}`, CURRENT_PATCH); update({ lastPatchSeen: CURRENT_PATCH }); setShowPatchNotes(false); }} />}
     {showTutorial && <TutorialScreen
       onExit={() => setShowTutorial(false)}
-      onComplete={() => { setShowTutorial(false); localStorage.setItem("fnf_onboarding", "first_match"); setTab("play"); }}
+      onComplete={() => {
+        setShowTutorial(false);
+        localStorage.setItem("fnf_onboarding", "deck_builder");
+        setTab("collection");
+        setTimeout(() => setChroniclerToast({ text: "Magnificent. Your first lesson is complete. Head to your collection and forge a deck worthy of battle. Your Starter Deck awaits — accept it as written, or bend it to your will.", key: Date.now() }), 500);
+      }}
     />}
+    {chroniclerToast && <ChroniclerToast key={chroniclerToast.key} message={chroniclerToast.text} onDismiss={() => setChroniclerToast(null)} />}
     {globalChallenge && (
       <div style={{ position:"fixed", inset:0, zIndex:700, background:"rgba(0,0,0,0.88)", display:"flex", alignItems:"center", justifyContent:"center" }}>
         <div style={{ background:"linear-gradient(160deg,#1a1208,#0e0a04)", border:"2px solid #e8c060aa", borderRadius:18, padding:"36px 44px", textAlign:"center", maxWidth:340, animation:"fadeIn 0.3s" }}>
@@ -9204,7 +9315,7 @@ export default function App() {
         {tab === "store" && <StoreScreen user={user} onUpdateUser={update} />}
       </ErrorBoundary>
       <ErrorBoundary label="The collection encountered an error.">
-        {tab === "collection" && <CollectionScreen user={user} onUpdateUser={update} onDeckBuilding={setDeckBuilding} />}
+        {tab === "collection" && <CollectionScreen user={user} onUpdateUser={update} onDeckBuilding={setDeckBuilding} newPlayerMode={localStorage.getItem("fnf_onboarding") === "deck_builder"} />}
       </ErrorBoundary>
       <ErrorBoundary label="The quests screen encountered an error.">
         {tab === "quests" && <QuestPanel user={user} onUpdateUser={update} />}
