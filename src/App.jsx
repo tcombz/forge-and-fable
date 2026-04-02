@@ -5376,7 +5376,8 @@ function useAuth() {
     if (!session?.user) { setUser(null); setLoading(false); return; }
     setLoading(true);
     try {
-      const { data } = await supabase.from("profiles").select("*").eq("id", session.user.id).single();
+      const { data, error: _pErr } = await supabase.from("profiles").select("*").eq("id", session.user.id).single();
+      if (_pErr) console.error("[loadProfile] SELECT error:", _pErr);
       if (data) {
         let p = { ...data };
         try {
@@ -5437,6 +5438,7 @@ function useAuth() {
         setUser({ __needsProfile: true, id: session.user.id, email: session.user.email });
       }
     } catch (e) {
+      console.error("[loadProfile] caught error:", e);
       setUser({ __needsProfile: true, id: session.user?.id, email: session.user?.email });
     }
     setLoading(false);
