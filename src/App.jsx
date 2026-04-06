@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, Fragment, Component } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, Fragment, Component } from "react";
 import { supabase } from "./supabase";
 import ForgeAndFableTeaser from "./components/ForgeAndFableTeaser";
 import LandingPage from "./components/LandingPage";
@@ -730,7 +730,7 @@ function PatchNotesModal({ onDismiss }) {
     { icon:"⚡", label:"Zeus — Lightning Meter fires at 2 stacks · charges from Spells + Swift attacks" },
     { icon:"💀", label:"Hades — Soul Harvest triggers from hand · gains HP on every friendly death" },
     { icon:"🏆", label:"Ranked Season 1 live · ELO matchmaking · Iron → Bronze → Silver → Gold → Grandmaster" },
-    { icon:"⚗", label:"Coming next: Leaderboard · Draft Mode · Faction pack openings in store", dim:true },
+    { icon:"⚗", label:"Coming next: Draft Mode · Faction pack openings · Tournament Mode", dim:true },
   ];
   return (
     <div style={{ position:"fixed", inset:0, zIndex:300, background:"rgba(2,1,0,0.96)", backdropFilter:"blur(16px)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
@@ -4713,7 +4713,274 @@ function MatchmakingScreen({ user, ranked, onMatch, onCancel, onRetry, onFallbac
 // ═══ MATCH SETUP ═════════════════════════════════════════════
 // ═══ LEADERBOARD ═════════════════════════════════════════════════════════════
 const RANK_TIER_MMR = { Iron:0, Bronze:1000, Silver:1200, Gold:1400, Platinum:1600, Diamond:1800, Grandmaster:2000 };
-function LeaderboardScreen({ user, onBack }) {
+// ═══ PLAYER PROFILE PAGE ════════════════════════════════════════════════════
+function PlayerProfilePage({ user, playerId, onClose }) {
+  const isOwn = user?.id === playerId;
+  const [profile, setProfile] = useState(isOwn ? user : null);
+  const [loading, setLoading] = useState(!isOwn);
+
+  useEffect(() => {
+    if (isOwn) { setProfile(user); setLoading(false); return; }
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id,name,avatar_url,ranked_rating,ranked_wins,ranked_losses,battles_played,battles_won,match_history,decks,login_streak,collection,alt_owned,daily_quests")
+        .eq("id", playerId)
+        .single();
+      if (data) {
+        setProfile({
+          id: data.id, name: data.name, avatarUrl: data.avatar_url,
+          rankedRating: data.ranked_rating ?? 1000,
+          rankedWins: data.ranked_wins ?? 0, rankedLosses: data.ranked_losses ?? 0,
+          battlesPlayed: data.battles_played ?? 0, battlesWon: data.battles_won ?? 0,
+          matchHistory: data.match_history || [], decks: data.decks || [],
+          loginStreak: data.login_streak ?? 0, collection: data.collection || {},
+          altOwned: data.alt_owned || {}, dailyQuests: data.daily_quests || null,
+        });
+      }
+      setLoading(false);
+    })();
+  }, [playerId, isOwn]); // eslint-disable-line
+
+  // Sync own profile changes
+  useEffect(() => { if (isOwn) setProfile(user); }, [user, isOwn]);
+
+  const chartData = useMemo(() => {
+    const today = new Date();
+    return Array.from({ length: 14 }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(d.getDate() - (13 - i));
+      const dateStr = d.toISOString().slice(0, 10);
+      const matches = (profile?.matchHistory || []).filter(h => h.date?.startsWith(dateStr));
+      return { dateStr, label: d.getDate().toString(), wins: matches.filter(h => h.result === "W").length, losses: matches.filter(h => h.result !== "W").length, total: matches.length };
+    });
+  }, [profile?.matchHistory]);
+
+  const favFaction = useMemo(() => {
+    const counts = {};
+    (profile?.decks || []).forEach(deck => {
+      (deck.cards || []).forEach(cardId => {
+        const card = POOL.find(c => c.id === cardId);
+        if (card?.region) counts[card.region] = (counts[card.region] || 0) + 1;
+      });
+    });
+    const entries = Object.entries(counts);
+    return entries.length ? entries.sort((a, b) => b[1] - a[1])[0][0] : null;
+  }, [profile?.decks]);
+
+  if (loading) return (
+    <div style={{ position:"fixed", inset:0, zIndex:600, background:"rgba(0,0,0,0.95)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div style={{ textAlign:"center" }}>
+        <div style={{ fontSize:36, animation:"pulse 1.5s infinite" }}>⬡</div>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#604030", letterSpacing:3, marginTop:12 }}>LOADING PROFILE…</div>
+      </div>
+    </div>
+  );
+  if (!profile) return (
+    <div style={{ position:"fixed", inset:0, zIndex:600, background:"rgba(0,0,0,0.95)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div style={{ textAlign:"center" }}>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:14, color:"#e05050", marginBottom:16 }}>Profile not found.</div>
+        <button onClick={onClose} style={{ padding:"8px 24px", background:"transparent", border:"1px solid #3a2810", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, color:"#806040", cursor:"pointer" }}>CLOSE</button>
+      </div>
+    </div>
+  );
+
+  const rank = getRank(profile.rankedRating);
+  const totalWins = profile.battlesWon || 0;
+  const totalMatches = profile.battlesPlayed || 0;
+  const totalLosses = Math.max(0, totalMatches - totalWins);
+  const winRate = totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0;
+  const rankedWins = profile.rankedWins || 0;
+  const rankedLosses = profile.rankedLosses || 0;
+  const rankedWinRate = (rankedWins + rankedLosses) > 0 ? Math.round(rankedWins / (rankedWins + rankedLosses) * 100) : 0;
+  const streak = profile.loginStreak || 0;
+  const altCount = Object.values(profile.altOwned || {}).flat().length;
+  const maxBar = Math.max(1, ...chartData.map(d => d.total));
+  const localQuests = isOwn && profile.dailyQuests ? initDailyQuests(profile.dailyQuests) : null;
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:600, background:"rgba(6,4,2,0.97)", overflowY:"auto", animation:"fadeIn 0.2s ease-out" }}>
+      <div style={{ maxWidth:900, margin:"0 auto", padding:"28px 24px 80px" }}>
+        {/* Header */}
+        <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:24 }}>
+          <button onClick={onClose} style={{ background:"transparent", border:"1px solid #3a2810", borderRadius:8, padding:"8px 14px", fontFamily:"'Cinzel',serif", fontSize:11, color:"#806040", cursor:"pointer", transition:"border-color .15s" }} onMouseEnter={e=>e.currentTarget.style.borderColor="#e8c06066"} onMouseLeave={e=>e.currentTarget.style.borderColor="#3a2810"}>← BACK</button>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", letterSpacing:4, fontWeight:700 }}>{isOwn ? "MY PROFILE" : "PLAYER PROFILE"}</div>
+        </div>
+
+        {/* Identity card */}
+        <div style={{ background:"linear-gradient(135deg,#0e0c06 0%,#0a0806 100%)", border:`1px solid ${rank.color}33`, borderRadius:16, padding:"24px 28px", marginBottom:14, display:"flex", gap:24, alignItems:"center", flexWrap:"wrap", boxShadow:`0 0 40px ${rank.color}18` }}>
+          <div style={{ width:88, height:88, borderRadius:"50%", overflow:"hidden", border:`3px solid ${rank.color}88`, background:"#1a1408", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:24, color:"#e8c060", flexShrink:0, boxShadow:`0 0 28px ${rank.color}44` }}>
+            {profile.avatarUrl ? <img src={profile.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (profile.name||"?").slice(0,2).toUpperCase()}
+          </div>
+          <div style={{ flex:1, minWidth:180 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:24, fontWeight:900, color:"#f0d878", letterSpacing:1, marginBottom:8 }}>{profile.name}</div>
+            <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
+              <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"4px 14px", background:`${rank.color}18`, border:`1px solid ${rank.color}55`, borderRadius:10 }}>
+                <span style={{ fontSize:15 }}>{rank.icon}</span>
+                <span style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:rank.color, fontWeight:700, letterSpacing:1 }}>{rank.name}</span>
+                <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:`${rank.color}aa` }}>· {profile.rankedRating ?? 1000} MMR</span>
+              </div>
+              {favFaction && (
+                <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"4px 12px", background:"rgba(255,255,255,0.04)", border:"1px solid #2a2010", borderRadius:10 }}>
+                  <span style={{ width:7, height:7, borderRadius:"50%", background:GLOW[favFaction]||"#808080", display:"inline-block", boxShadow:`0 0 5px ${GLOW[favFaction]||"#808080"}` }} />
+                  <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#c0a868", letterSpacing:1 }}>{favFaction} main</span>
+                </div>
+              )}
+            </div>
+          </div>
+          {/* Login streak */}
+          <div style={{ textAlign:"center", flexShrink:0 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#604030", letterSpacing:3, marginBottom:10, fontWeight:700 }}>LOGIN STREAK</div>
+            <div style={{ display:"flex", gap:4, justifyContent:"center", marginBottom:8 }}>
+              {STREAK_REWARDS.map((r, i) => {
+                const active = i < streak;
+                const isCurrent = i === streak - 1;
+                return (
+                  <div key={i} title={`Day ${i+1}: ${r.label}`} style={{ width:22, height:22, borderRadius:5, background:active ? `linear-gradient(135deg,#c89010,#f0c040)` : "rgba(255,255,255,0.04)", border:`1px solid ${active?"#e8c06066":"#2a2010"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, boxShadow:isCurrent?"0 0 10px #e8c06066":"none", transition:"all .2s" }}>
+                    {active ? "✦" : ""}
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, color: streak >= 7 ? "#f0c040" : "#c0a060", fontWeight:700 }}>Day {streak}/7</div>
+          </div>
+        </div>
+
+        {/* Stats grid */}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:14 }}>
+          <div style={{ background:"linear-gradient(135deg,#0e0c06,#0a0806)", border:"1px solid #2a2010", borderRadius:14, padding:"18px 22px" }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", letterSpacing:3, marginBottom:14, fontWeight:700 }}>TOTAL RECORD</div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6 }}>
+              {[["PLAYED",totalMatches,"#e8c060"],["WINS",totalWins,"#78cc45"],["LOSSES",totalLosses,"#e05050"],["WIN%",winRate+"%",winRate>=50?"#78cc45":"#e8a020"]].map(([l,v,c])=>(
+                <div key={l} style={{ textAlign:"center" }}>
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:c, lineHeight:1 }}>{v}</div>
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:"#504028", letterSpacing:1.5, marginTop:5 }}>{l}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ background:"linear-gradient(135deg,#0e0c06,#0a0806)", border:"1px solid #2a2010", borderRadius:14, padding:"18px 22px" }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", letterSpacing:3, marginBottom:14, fontWeight:700 }}>RANKED RECORD</div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6 }}>
+              {[["MMR",profile.rankedRating??1000,rank.color],["WINS",rankedWins,"#78cc45"],["LOSSES",rankedLosses,"#e05050"],["WIN%",rankedWinRate+"%",rankedWinRate>=50?"#78cc45":"#e8a020"]].map(([l,v,c])=>(
+                <div key={l} style={{ textAlign:"center" }}>
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:c, lineHeight:1 }}>{v}</div>
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:"#504028", letterSpacing:1.5, marginTop:5 }}>{l}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Chart + Cosmetics row */}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 200px", gap:14, marginBottom:14 }}>
+          {/* 14-day chart */}
+          <div style={{ background:"linear-gradient(135deg,#0e0c06,#0a0806)", border:"1px solid #2a2010", borderRadius:14, padding:"18px 22px" }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", letterSpacing:3, marginBottom:14, fontWeight:700 }}>MATCHES PLAYED · LAST 14 DAYS</div>
+            <div style={{ display:"flex", alignItems:"flex-end", gap:3, height:76 }}>
+              {chartData.map((d) => {
+                const wh = d.wins   > 0 ? Math.max(4, Math.round((d.wins   / maxBar) * 68)) : 0;
+                const lh = d.losses > 0 ? Math.max(4, Math.round((d.losses / maxBar) * 68)) : 0;
+                const isToday = d.dateStr === todayStr;
+                return (
+                  <div key={d.dateStr} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center" }}>
+                    <div style={{ flex:1, width:"100%", display:"flex", flexDirection:"column", justifyContent:"flex-end" }}>
+                      {wh > 0 && <div style={{ height:wh, background:isToday?"#a0e060":"#78cc45", borderRadius:"2px 2px 0 0", opacity:.85 }} />}
+                      {lh > 0 && <div style={{ height:lh, background:isToday?"#ff8080":"#e05050", borderRadius:wh>0?"0":"2px 2px 0 0", opacity:.75 }} />}
+                      {d.total === 0 && <div style={{ height:2, background:"rgba(255,255,255,0.05)", borderRadius:1 }} />}
+                    </div>
+                    <div style={{ fontFamily:"'Cinzel',serif", fontSize:6, color:isToday?"#907050":"#3a2818", marginTop:3 }}>{d.label}</div>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ display:"flex", gap:14, marginTop:8 }}>
+              {[["#78cc45","WINS"],["#e05050","LOSSES"]].map(([c,l])=>(
+                <div key={l} style={{ display:"flex", alignItems:"center", gap:5 }}>
+                  <div style={{ width:8, height:8, background:c, borderRadius:2 }} />
+                  <span style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:"#504028" }}>{l}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Cosmetics */}
+          <div style={{ background:"linear-gradient(135deg,#0e0c06,#0a0806)", border:"1px solid #2a2010", borderRadius:14, padding:"18px 20px" }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", letterSpacing:3, marginBottom:14, fontWeight:700 }}>COSMETICS</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <div style={{ width:38, height:52, border:"1px solid #3a2810", borderRadius:6, background:"linear-gradient(160deg,#1a1408,#0e0c06)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>🎴</div>
+                <div><div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#807050", letterSpacing:1 }}>CARD BACK</div><div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#c0a060", marginTop:2 }}>Standard</div></div>
+              </div>
+              <div style={{ height:1, background:"#1a1408" }} />
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <div style={{ width:38, height:38, borderRadius:6, background:"linear-gradient(135deg,#e8c06022,#1a1408)", border:"1px solid #e8c06033", display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, flexShrink:0 }}>✦</div>
+                <div><div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#807050", letterSpacing:1 }}>ALT ARTS</div><div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#c0a060", marginTop:2 }}>{altCount} unlocked</div></div>
+              </div>
+              <div style={{ height:1, background:"#1a1408" }} />
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <div style={{ width:38, height:38, borderRadius:6, border:`2px solid ${rank.color}55`, background:`${rank.color}12`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:17, flexShrink:0 }}>{rank.icon}</div>
+                <div><div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#807050", letterSpacing:1 }}>BORDER</div><div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:rank.color, marginTop:2 }}>{rank.name}</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Quest progress — own profile only */}
+        {isOwn && localQuests && (
+          <div style={{ background:"linear-gradient(135deg,#0e0c06,#0a0806)", border:"1px solid #2a2010", borderRadius:14, padding:"18px 22px", marginBottom:14 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", letterSpacing:3, marginBottom:14, fontWeight:700, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <span>DAILY QUEST PROGRESS</span>
+              <span style={{ color:"#3a2010", fontSize:8 }}>RESETS DAILY</span>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              {localQuests.quests.map(q => {
+                const pct = Math.min(100, Math.round((q.progress / q.goal) * 100));
+                return (
+                  <div key={q.id}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                      <span style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:q.completed?"#78cc45":"#c0a060" }}>{q.completed?"✓ ":""}{q.label}</span>
+                      <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#a0b8c8" }}>⬙ {q.reward} · {q.progress}/{q.goal}</span>
+                    </div>
+                    <div style={{ height:6, background:"rgba(255,255,255,0.05)", borderRadius:3, overflow:"hidden", border:"1px solid #1e1408" }}>
+                      <div style={{ height:"100%", width:`${pct}%`, background:q.completed?"linear-gradient(90deg,#50a030,#78cc45)":"linear-gradient(90deg,#6a4010,#c89010)", borderRadius:3, transition:"width .5s" }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Recent matches */}
+        {(profile.matchHistory||[]).length > 0 && (
+          <div style={{ background:"linear-gradient(135deg,#0e0c06,#0a0806)", border:"1px solid #2a2010", borderRadius:14, padding:"18px 22px" }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", letterSpacing:3, marginBottom:14, fontWeight:700 }}>RECENT MATCHES</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:5, maxHeight:260, overflowY:"auto" }}>
+              {(profile.matchHistory||[]).slice(0,20).map((h,i)=>(
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", background:"rgba(255,255,255,0.02)", borderRadius:8, border:"1px solid #1a1408" }}>
+                  <div style={{ width:8, height:8, borderRadius:"50%", background:h.result==="W"?"#78cc45":"#e05050", flexShrink:0, boxShadow:h.result==="W"?"0 0 6px #78cc4566":"0 0 6px #e0505066" }} />
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:h.result==="W"?"#78cc45":"#e05050", flexShrink:0, minWidth:16 }}>{h.result==="W"?"W":"L"}</div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#d0b878", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>vs {h.opponent||"Unknown"}</div>
+                    <div style={{ fontSize:8, color:"#504028", fontFamily:"'Cinzel',serif" }}>{h.ranked?"Ranked":"Casual"}{h.turns?" · "+h.turns+" turns":""}</div>
+                  </div>
+                  <div style={{ display:"flex", gap:10, alignItems:"center", flexShrink:0 }}>
+                    {h.ratingDelta != null && <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:h.ratingDelta>=0?"#78cc45":"#e05050" }}>{h.ratingDelta>=0?"+":""}{h.ratingDelta}</div>}
+                    <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#403020" }}>{h.date?new Date(h.date).toLocaleDateString():""}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function LeaderboardScreen({ user, onBack, onViewProfile }) {
   const [players, setPlayers] = useState(null);
   const [tierFilter, setTierFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -4851,8 +5118,8 @@ function LeaderboardScreen({ user, onBack }) {
               const isMe = p.id === user?.id;
               const isTop3 = p.position <= 3;
               return (
-                <div key={p.id} style={{ display:"grid", gridTemplateColumns:"52px 1fr 96px 60px 60px 64px", padding:"10px 18px", borderBottom:"1px solid #14120a", background: isMe ? `${rank.color}12` : isTop3 ? "rgba(232,192,96,0.03)" : "transparent", transition:"background .15s" }}
-                  onMouseEnter={e => { if (!isMe) e.currentTarget.style.background="rgba(255,255,255,0.025)"; }}
+                <div key={p.id} onClick={() => onViewProfile?.(p.id)} style={{ display:"grid", gridTemplateColumns:"52px 1fr 96px 60px 60px 64px", padding:"10px 18px", borderBottom:"1px solid #14120a", background: isMe ? `${rank.color}12` : isTop3 ? "rgba(232,192,96,0.03)" : "transparent", transition:"background .15s", cursor:"pointer" }}
+                  onMouseEnter={e => { e.currentTarget.style.background= isMe ? `${rank.color}22` : "rgba(255,255,255,0.04)"; }}
                   onMouseLeave={e => { e.currentTarget.style.background = isMe ? `${rank.color}12` : isTop3 ? "rgba(232,192,96,0.03)" : "transparent"; }}>
                   <div style={{ fontFamily:"'Cinzel',serif", fontSize:isTop3?16:12, fontWeight:900, color:isTop3?podiumColors[p.position-1]:"#40352a", display:"flex", alignItems:"center" }}>
                     {isTop3 ? podiumIcons[p.position-1] : p.position}
@@ -5192,7 +5459,7 @@ function GameTab({ user, onUpdateUser, setInPvpMatch, setMatchActive, pendingDue
   const isFirstMatch = localStorage.getItem("fnf_onboarding") === "first_match";
   const isOnboardingDone = localStorage.getItem("fnf_onboarding") === "done";
   const [guidanceDismissed, setGuidanceDismissed] = useState(false);
-  if (showLadder) return <LeaderboardScreen user={user} onBack={() => setShowLadder(false)} />;
+  if (showLadder) return <LeaderboardScreen user={user} onBack={() => setShowLadder(false)} onViewProfile={(pid) => { window.location.hash = `/profile/${pid}`; }} />;
   if (matchmaking) return (<MatchmakingScreen key={matchmaking} user={user} ranked={ranked}
     onMatch={(cfg) => { setMatchmaking(false); const cfg2 = { mode:"pvp", ranked, playerDeck: pvpDeck?.cards || null, ...cfg }; setMatchConfig(cfg2); setMatchActive?.(true); }}
     onCancel={() => setMatchmaking(false)}
@@ -6360,7 +6627,7 @@ function HomeScreen({ setTab, user }) {
         { icon:"🃏", label:"Fracture fix — Fragment copy now inherits all keywords from original (except Fracture)" },
         { icon:"🌅", label:"Shifting Dunes fix — mana discount now correctly applies in PvP as well as AI mode" },
         { icon:"💊", label:"HP bars now color-coded: green (healthy) → orange (mid) → red (critical at 10 or below)" },
-        { icon:"⚗", label:"Coming next: Leaderboard · Food Fight launch · Draft Mode", dim:true },
+        { icon:"⚗", label:"Coming next: Player Profiles · Draft Mode · Tournament Mode", dim:true },
       ];
       return (
         <section style={{ background:"linear-gradient(180deg,#0c0a06,#080608)", borderTop:"1px solid #2a2010", padding:"32px 28px 36px" }}>
@@ -8380,7 +8647,7 @@ function AlphaKeyAdminPanel() {
   );
 }
 
-function PlayerSidebar({ user, onUpdateUser, onlineIds, onClose, onChallenge, onLogout, onShowPatchNotes }) {
+function PlayerSidebar({ user, onUpdateUser, onlineIds, onClose, onChallenge, onLogout, onShowPatchNotes, onViewProfile }) {
   const [friends, setFriends] = useState([]);
   const [pendingIn, setPendingIn] = useState([]);
   const [pendingOut, setPendingOut] = useState([]);
@@ -8719,6 +8986,7 @@ function PlayerSidebar({ user, onUpdateUser, onlineIds, onClose, onChallenge, on
 
         {/* Footer */}
         <div style={{ padding:"10px 16px 16px", borderTop:"1px solid #1a1408", marginTop:"auto", display:"flex", flexDirection:"column", gap:6, flexShrink:0 }}>
+          <button onClick={onViewProfile} style={{ width:"100%", padding:"9px", background:"rgba(232,192,96,0.06)", border:"1px solid #3a2810", borderRadius:8, color:"#c0a060", fontFamily:"'Cinzel',serif", fontSize:10, cursor:"pointer", letterSpacing:1, transition:"all .15s" }} onMouseEnter={e=>e.currentTarget.style.borderColor="#e8c06066"} onMouseLeave={e=>e.currentTarget.style.borderColor="#3a2810"}>⬡ VIEW MY PROFILE</button>
           <button onClick={onLogout} style={{ width:"100%", padding:"9px", background:"rgba(160,20,20,0.1)", border:"1px solid #4a1010", borderRadius:8, color:"#a05040", fontFamily:"'Cinzel',serif", fontSize:10, cursor:"pointer", letterSpacing:1 }}>SIGN OUT</button>
         </div>
       </div>
@@ -8924,11 +9192,105 @@ function ToastContainer() {
   );
 }
 
+// ═══ PWA INSTALL PROMPT ═════════════════════════════════════════════════════
+// Shows after the player's 3rd session (tracked in localStorage).
+// Desktop: triggers native beforeinstallprompt. Mobile Safari: shows manual instructions.
+function PwaInstallPrompt() {
+  const [show, setShow] = useState(false);
+  const [isSafariMobile, setIsSafariMobile] = useState(false);
+  const deferredPromptRef = useRef(null);
+
+  useEffect(() => {
+    // Already installed or dismissed
+    if (localStorage.getItem("fnf_pwa_dismissed") === "1") return;
+    // Already running as installed PWA
+    if (window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone) return;
+    // Session counting — increment once per mount
+    const key = "fnf_session_count";
+    const prev = parseInt(localStorage.getItem(key) || "0", 10);
+    const count = prev + 1;
+    localStorage.setItem(key, String(count));
+    if (count < 3) return;
+
+    const ua = navigator.userAgent;
+    const isSafari = /Safari/i.test(ua) && !/Chrome/i.test(ua);
+    const isMobileDevice = /iPhone|iPad|iPod/i.test(ua);
+    setIsSafariMobile(isSafari && isMobileDevice);
+
+    if (isSafari && isMobileDevice) {
+      // Safari mobile: show manual instructions
+      setTimeout(() => setShow(true), 2000);
+      return;
+    }
+
+    // Non-Safari: use prompt captured in main.jsx (beforeinstallprompt fires before React mounts)
+    const checkPrompt = () => {
+      if (window.__pwaInstallPrompt) {
+        deferredPromptRef.current = window.__pwaInstallPrompt;
+        setShow(true);
+        return;
+      }
+      // Also listen in case it fires after mount
+      const handler = (e) => {
+        e.preventDefault();
+        deferredPromptRef.current = e;
+        setShow(true);
+      };
+      window.addEventListener("beforeinstallprompt", handler);
+      return () => window.removeEventListener("beforeinstallprompt", handler);
+    };
+    return checkPrompt();
+  }, []);
+
+  const handleInstall = async () => {
+    if (deferredPromptRef.current) {
+      deferredPromptRef.current.prompt();
+      const { outcome } = await deferredPromptRef.current.userChoice;
+      if (outcome === "accepted") localStorage.setItem("fnf_pwa_dismissed", "1");
+      deferredPromptRef.current = null;
+    }
+    setShow(false);
+  };
+
+  const handleDismiss = () => {
+    localStorage.setItem("fnf_pwa_dismissed", "1");
+    setShow(false);
+  };
+
+  if (!show) return null;
+
+  return (
+    <div style={{ position:"fixed", bottom:84, left:"50%", transform:"translateX(-50%)", zIndex:850, animation:"slideDown 0.35s cubic-bezier(.34,1.56,.64,1)", pointerEvents:"all" }}>
+      <div style={{ background:"linear-gradient(160deg,#1c1408,#120e06)", border:"1px solid #e8c06055", borderRadius:14, padding:"16px 20px", display:"flex", alignItems:"flex-start", gap:14, boxShadow:"0 8px 40px rgba(0,0,0,0.9), 0 0 0 1px #e8c06022", maxWidth:360, backdropFilter:"blur(12px)" }}>
+        <img src="/logo.svg" alt="" style={{ width:36, height:36, flexShrink:0, filter:"drop-shadow(0 2px 6px rgba(160,136,48,0.4))" }} />
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, color:"#e8c060", letterSpacing:1, marginBottom:5 }}>Add Forge {"&"} Fable to your home screen for quick access</div>
+          {isSafariMobile ? (
+            <div style={{ fontFamily:"'Lora',serif", fontSize:11, color:"#a09070", lineHeight:1.6, marginBottom:10 }}>
+              Tap the <strong style={{ color:"#e8c060" }}>Share</strong> button below, then choose <strong style={{ color:"#e8c060" }}>Add to Home Screen</strong>.
+            </div>
+          ) : (
+            <div style={{ display:"flex", gap:8, marginTop:8 }}>
+              <button onClick={handleInstall} style={{ padding:"7px 18px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:"#1a1000", cursor:"pointer", letterSpacing:1 }}>INSTALL</button>
+              <button onClick={handleDismiss} style={{ padding:"7px 14px", background:"transparent", border:"1px solid #3a2810", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, color:"#806040", cursor:"pointer", letterSpacing:1 }}>Dismiss</button>
+            </div>
+          )}
+          {isSafariMobile && (
+            <button onClick={handleDismiss} style={{ padding:"5px 14px", background:"transparent", border:"1px solid #3a2810", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:9, color:"#806040", cursor:"pointer", letterSpacing:1 }}>Dismiss</button>
+          )}
+        </div>
+        <button onClick={handleDismiss} style={{ background:"transparent", border:"none", color:"#504030", fontSize:16, cursor:"pointer", lineHeight:1, flexShrink:0, padding:"0 2px" }}>✕</button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [tab, setTab] = useState("home"); const { user, loading, login, logout, update, completeProfile } = useAuth(); const [showSidebar, setShowSidebar] = useState(false); const [onlineIds, setOnlineIds] = useState(new Set()); const [showPatchNotes, setShowPatchNotes] = useState(false); const [inPvpMatch, setInPvpMatch] = useState(false); const [navLeaveModal, setNavLeaveModal] = useState(null); const [avatarErr, setAvatarErr] = useState(""); const [navHovered, setNavHovered] = useState(false); const [matchActive, setMatchActive] = useState(false); const [histPopup, setHistPopup] = useState(null); const [deckBuilding, setDeckBuilding] = useState(false); // { targetTab }
   const [friendBadge, setFriendBadge] = useState(0);
   const [questBadge, setQuestBadge] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [profilePlayerId, setProfilePlayerId] = useState(null); // null = hidden, string = show profile for that id
   const [pendingChallengeId, setPendingChallengeId] = useState(null);
   const [pendingChallengeIsHost, setPendingChallengeIsHost] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -8966,15 +9328,21 @@ export default function App() {
     window.addEventListener("onboardingDeckBuilt", handler);
     return () => window.removeEventListener("onboardingDeckBuilt", handler);
   }, []); // eslint-disable-line
-  // Hash-based challenge URL routing: /#/challenge/{uuid}
+  // Hash-based routing: /#/challenge/{uuid} and /#/profile/{uuid}
   useEffect(() => {
     const checkHash = () => {
       const hash = window.location.hash;
-      const m = hash.match(/^#\/challenge\/([0-9a-f-]{36})$/i);
-      if (m) {
-        setPendingChallengeId(m[1]);
+      const challengeM = hash.match(/^#\/challenge\/([0-9a-f-]{36})$/i);
+      if (challengeM) {
+        setPendingChallengeId(challengeM[1]);
         window.history.replaceState(null, "", window.location.pathname);
         setTab("play");
+        return;
+      }
+      const profileM = hash.match(/^#\/profile\/([0-9a-f-]{36})$/i);
+      if (profileM) {
+        setProfilePlayerId(profileM[1]);
+        window.history.replaceState(null, "", window.location.pathname);
       }
     };
     checkHash();
@@ -9340,6 +9708,7 @@ export default function App() {
         onChallenge={() => {}}
         onLogout={() => { logout(); setShowSidebar(false); }}
         onShowPatchNotes={() => { localStorage.removeItem(`patchSeen_${user.id}`); update({ lastPatchSeen: null }); setShowPatchNotes(true); setShowSidebar(false); }}
+        onViewProfile={() => { setProfilePlayerId(user.id); setShowSidebar(false); }}
       />
     )}
     {histPopup && (<>
@@ -9392,5 +9761,14 @@ export default function App() {
     <MusicPlayer />
     <ToastContainer />
     <StreakPopup />
+    <PwaInstallPrompt />
+    {/* Player Profile Page — overlays everything */}
+    {profilePlayerId && user && (
+      <PlayerProfilePage
+        user={user}
+        playerId={profilePlayerId}
+        onClose={() => setProfilePlayerId(null)}
+      />
+    )}
   </div>);
 }
