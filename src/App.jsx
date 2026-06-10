@@ -2959,8 +2959,8 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
 
   const need = CFG.deck.size - total;
   const pct = (total / CFG.deck.size) * 100;
-  const selSty = { padding:"8px 10px", background:"#100e08", border:"1px solid #2a2010", borderRadius:8, color:"#f0e8d8", fontSize:12, outline:"none", fontFamily:"'Cinzel',serif" };
-  const sortBtnSty = (active) => ({ padding:"5px 12px", background: active ? "rgba(232,192,96,0.2)" : "transparent", border:`1px solid ${active ? "#e8c060" : "#3a2810"}`, borderRadius:6, color: active ? "#e8c060" : "#806040", fontFamily:"'Cinzel',serif", fontSize:11, cursor:"pointer", letterSpacing:0.5, transition:"background .15s ease, border-color .15s ease, color .15s ease" });
+  const selSty = { padding:"8px 10px", background:"#0a0418", border:"1px solid rgba(100,60,180,0.25)", borderRadius:8, color:"#f0e8d8", fontSize:12, outline:"none", fontFamily:"'Cinzel',serif" };
+  const sortBtnSty = (active) => ({ padding:"5px 12px", background: active ? "rgba(232,192,96,0.2)" : "transparent", border:`1px solid ${active ? "#e8c060" : "rgba(100,60,180,0.3)"}`, borderRadius:6, color: active ? "#e8c060" : "#9070c0", fontFamily:"'Cinzel',serif", fontSize:11, cursor:"pointer", letterSpacing:0.5, transition:"background .15s ease, border-color .15s ease, color .15s ease" });
 
   return (<div style={{ position:"fixed", inset:0, zIndex:600, background:"rgba(2,1,0,0.97)", display:"flex", flexDirection:"column" }}>
     {dbPreview && <CardPreview card={dbPreview} onClose={() => setDbPreview(null)} />}
@@ -2975,7 +2975,7 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
         </div>
       </div>
       <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-        <input value={deckName} onChange={(e) => setDeckName(e.target.value)} placeholder="Deck name..." style={{ padding:"9px 12px", background:"#100e08", border:"1px solid #3a2810", borderRadius:8, color:"#f0e8d8", fontSize:13, outline:"none", fontFamily:"'Cinzel',serif", width:170 }} />
+        <input value={deckName} onChange={(e) => setDeckName(e.target.value)} placeholder="Deck name..." style={{ padding:"9px 12px", background:"#0a0418", border:"1px solid rgba(100,60,180,0.28)", borderRadius:8, color:"#f0e8d8", fontSize:13, outline:"none", fontFamily:"'Cinzel',serif", width:170 }} />
         <button onClick={save} disabled={!canSave} style={{ padding:"9px 22px", background:canSave?"linear-gradient(135deg,#c89010,#f0c040)":"rgba(255,255,255,0.06)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:13, fontWeight:700, letterSpacing:1, color:canSave?"#1a1000":"#403020", cursor:canSave?"pointer":"not-allowed" }}>
           SAVE ({total}/{CFG.deck.size})
         </button>
@@ -4010,7 +4010,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     {reconnecting && !gs?.winner && (
       <div style={{ position:"fixed", inset:0, zIndex:600, background:"rgba(0,0,0,0.92)", display:"flex", alignItems:"center", justifyContent:"center", animation:"fadeIn 0.3s" }}>
         <div style={{ background:"#0e0c08", border:"1px solid #e8c06055", borderRadius:16, padding:"36px 44px", textAlign:"center", maxWidth:360 }}>
-          <div style={{ width:80, height:80, borderRadius:"50%", background:`conic-gradient(#e8c060 ${(reconnectSecs/120)*360}deg, #2a2010 0deg)`, margin:"0 auto 20px", display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <div style={{ width:80, height:80, borderRadius:"50%", background:`conic-gradient(#e8c060 ${(reconnectSecs/120)*360}deg, rgba(40,20,80,0.7) 0deg)`, margin:"0 auto 20px", display:"flex", alignItems:"center", justifyContent:"center" }}>
             <div style={{ width:64, height:64, borderRadius:"50%", background:"#0e0c08", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:1 }}>
               <span style={{ fontFamily:"'Cinzel',serif", fontSize:20, fontWeight:700, color: reconnectSecs < 30 ? "#e05050" : "#e8c060", lineHeight:1 }}>{reconnectSecs}</span>
               <span style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:"#504030", letterSpacing:1 }}>SEC</span>
@@ -4611,7 +4611,7 @@ function MatchmakingScreen({ user, ranked, onMatch, onCancel, onRetry, onFallbac
       <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:26, color:'#e8c060', margin:'0 0 6px', letterSpacing:3 }}>DUEL FOUND</h2>
       <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:'#806040', letterSpacing:3, marginBottom:6 }}>CHALLENGER</div>
       <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, color:'#f0e8d8', fontWeight:700, marginBottom:24 }}>{oppName}</div>
-      <div style={{ width:64, height:64, borderRadius:'50%', background:`conic-gradient(#e8c060 ${countdown/20*360}deg, #2a2010 0deg)`, margin:'0 auto 22px', display:'flex', alignItems:'center', justifyContent:'center' }}>
+      <div style={{ width:64, height:64, borderRadius:'50%', background:`conic-gradient(#e8c060 ${countdown/20*360}deg, rgba(40,20,80,0.7) 0deg)`, margin:'0 auto 22px', display:'flex', alignItems:'center', justifyContent:'center' }}>
         <div style={{ width:50, height:50, borderRadius:'50%', background:'#0e0c08', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Cinzel',serif", fontSize:20, fontWeight:700, color:'#e8c060' }}>{countdown}</div>
       </div>
       <div style={{ display:'flex', gap:14, justifyContent:'center' }}>
@@ -4682,7 +4682,7 @@ function MatchmakingScreen({ user, ranked, onMatch, onCancel, onRetry, onFallbac
   return (
     <div style={{ maxWidth:480, margin:'0 auto', padding:'60px 24px', textAlign:'center' }}>
       {/* Countdown ring */}
-      <div style={{ width:88, height:88, borderRadius:'50%', background:`conic-gradient(#e8c060 ${(queueCountdown/15)*360}deg, #2a2010 0deg)`, margin:'0 auto 24px', display:'flex', alignItems:'center', justifyContent:'center', transition:'background 0.9s linear' }}>
+      <div style={{ width:88, height:88, borderRadius:'50%', background:`conic-gradient(#e8c060 ${(queueCountdown/15)*360}deg, rgba(40,20,80,0.7) 0deg)`, margin:'0 auto 24px', display:'flex', alignItems:'center', justifyContent:'center', transition:'background 0.9s linear' }}>
         <div style={{ width:70, height:70, borderRadius:'50%', background:'#0e0c08', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:1 }}>
           <span style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:700, color: nearFallback ? '#c08030' : '#e8c060', lineHeight:1 }}>{queueCountdown}</span>
           <span style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:'#504030', letterSpacing:1 }}>SEC</span>
@@ -5027,12 +5027,12 @@ function LeaderboardScreen({ user, onBack, onViewProfile }) {
     <div style={{ maxWidth:860, margin:"0 auto", padding:"24px 24px 60px", display:"flex", flexDirection:"column", gap:16, animation:"fadeIn 0.22s ease-out" }}>
       {/* Header */}
       <div style={{ display:"flex", alignItems:"center", gap:14, flexWrap:"wrap" }}>
-        <button onClick={onBack} style={{ background:"transparent", border:"1px solid #3a2810", borderRadius:8, padding:"8px 14px", fontFamily:"'Cinzel',serif", fontSize:11, color:"#806040", cursor:"pointer", transition:"all .15s" }} onMouseEnter={e=>e.currentTarget.style.borderColor="#e8c06066"} onMouseLeave={e=>e.currentTarget.style.borderColor="#3a2810"}>← BACK</button>
+        <button onClick={onBack} style={{ background:"transparent", border:"1px solid rgba(100,60,180,0.35)", borderRadius:8, padding:"8px 14px", fontFamily:"'Cinzel',serif", fontSize:11, color:"#9070c0", cursor:"pointer", transition:"border-color .15s" }} onMouseEnter={e=>e.currentTarget.style.borderColor="#e8c06066"} onMouseLeave={e=>e.currentTarget.style.borderColor="rgba(100,60,180,0.35)"}>← BACK</button>
         <div style={{ flex:1 }}>
           <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:"#e8c060", margin:0, letterSpacing:2 }}>🏆 RANKED LADDER</h2>
-          <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#504030", letterSpacing:2.5, marginTop:3 }}>SEASON 1 · TOP 100 PLAYERS</div>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#7060a0", letterSpacing:2.5, marginTop:3 }}>SEASON 1 · TOP 100 PLAYERS</div>
         </div>
-        <button onClick={() => { setPlayers(null); setRefreshKey(k => k+1); }} style={{ background:"transparent", border:"1px solid #2a2010", borderRadius:7, padding:"7px 14px", fontFamily:"'Cinzel',serif", fontSize:10, color:"#604828", cursor:"pointer", letterSpacing:1, transition:"all .15s" }} onMouseEnter={e=>e.currentTarget.style.color="#c09040"} onMouseLeave={e=>e.currentTarget.style.color="#604828"}>↻ REFRESH</button>
+        <button onClick={() => { setPlayers(null); setRefreshKey(k => k+1); }} style={{ background:"transparent", border:"1px solid rgba(100,60,180,0.25)", borderRadius:7, padding:"7px 14px", fontFamily:"'Cinzel',serif", fontSize:10, color:"#8060c0", cursor:"pointer", letterSpacing:1, transition:"color .15s" }} onMouseEnter={e=>e.currentTarget.style.color="#c09040"} onMouseLeave={e=>e.currentTarget.style.color="#8060c0"}>↻ REFRESH</button>
       </div>
 
       {/* My position banner */}
@@ -5053,7 +5053,7 @@ function LeaderboardScreen({ user, onBack, onViewProfile }) {
           <div style={{ fontFamily:"'Cinzel',serif", fontSize:myPos<=3?22:18, fontWeight:900, color:myPos<=3?podiumColors[myPos-1]:"#807060", minWidth:44, textAlign:"center" }}>
             {myPos <= 3 ? podiumIcons[myPos-1] : `#${myPos}`}
           </div>
-          <div style={{ width:44, height:44, borderRadius:"50%", overflow:"hidden", border:`2px solid ${myRank.color}66`, background:"#1a1408", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:15, color:"#e8c060", flexShrink:0 }}>
+          <div style={{ width:44, height:44, borderRadius:"50%", overflow:"hidden", border:`2px solid ${myRank.color}66`, background:"#120830", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:15, color:"#e8c060", flexShrink:0 }}>
             {me.avatar_url ? <img src={me.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (me.name||"?").slice(0,2).toUpperCase()}
           </div>
           <div style={{ flex:1, minWidth:120 }}>
@@ -5070,17 +5070,17 @@ function LeaderboardScreen({ user, onBack, onViewProfile }) {
 
       {/* Filters */}
       <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
-        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search player..." style={{ flex:1, minWidth:140, padding:"8px 12px", background:"#100e08", border:"1px solid #2a2010", borderRadius:8, color:"#f0e8d8", fontSize:12, outline:"none", fontFamily:"'Cinzel',serif" }} />
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search player..." style={{ flex:1, minWidth:140, padding:"8px 12px", background:"#0a0418", border:"1px solid rgba(100,60,180,0.25)", borderRadius:8, color:"#f0e8d8", fontSize:12, outline:"none", fontFamily:"'Cinzel',serif" }} />
         {["all", ...allTiers].map(tier => {
           const r = tier === "all" ? null : getRank(RANK_TIER_MMR[tier]);
           const active = tierFilter === tier;
           return (
-            <button key={tier} onClick={() => setTierFilter(tier)} style={{ padding:"6px 11px", background: active ? (r?`${r.color}22`:"rgba(232,192,96,0.18)") : "transparent", border:`1px solid ${active?(r?r.color:"#e8c060"):"#2a2010"}`, borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:10, color: active?(r?r.color:"#e8c060"):"#504030", cursor:"pointer", letterSpacing:0.5, transition:"all .12s" }}>
+            <button key={tier} onClick={() => setTierFilter(tier)} style={{ padding:"6px 11px", background: active ? (r?`${r.color}22`:"rgba(232,192,96,0.18)") : "transparent", border:`1px solid ${active?(r?r.color:"#e8c060"):"rgba(80,50,140,0.35)"}`, borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:10, color: active?(r?r.color:"#e8c060"):"#7060a0", cursor:"pointer", letterSpacing:0.5, transition:"all .12s" }}>
               {tier === "all" ? "ALL" : `${r.icon} ${tier}`}
             </button>
           );
         })}
-        <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#403020", marginLeft:4 }}>{filtered.length} shown</span>
+        <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#6050a0", marginLeft:4 }}>{filtered.length} shown</span>
       </div>
 
       {/* Table */}
@@ -5989,8 +5989,8 @@ function LoginModal({ needsProfile = false, userId, userEmail, onSignOut, onProf
   };
 
   return (<div onClick={onClose ? (e) => { if (e.target === e.currentTarget) onClose(); } : undefined} style={{ position:"fixed", inset:0, zIndex:999, background:"rgba(4,2,0,0.75)", backdropFilter:"blur(8px)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
-    <div style={{ background:"linear-gradient(160deg,#1e1c10,#100e08)", border:"1px solid #3a3020", borderRadius:18, padding:42, maxWidth:420, width:"100%", textAlign:"center", boxShadow:"0 32px 80px rgba(0,0,0,0.9)", animation:"fadeIn 0.6s ease-out", position:"relative", overflow:"hidden" }}>
-      {onClose && <button onClick={onClose} style={{ position:"absolute", top:14, right:14, background:"transparent", border:"none", color:"#5a4020", fontSize:18, cursor:"pointer", lineHeight:1, zIndex:2, padding:4 }}>✕</button>}
+    <div style={{ background:"linear-gradient(160deg,#160828,#0c0418)", border:"1px solid rgba(140,90,255,0.28)", borderRadius:18, padding:42, maxWidth:420, width:"100%", textAlign:"center", boxShadow:"0 32px 80px rgba(0,0,0,0.9), 0 0 60px rgba(100,60,200,0.12)", animation:"fadeIn 0.6s ease-out", position:"relative", overflow:"hidden" }}>
+      {onClose && <button onClick={onClose} style={{ position:"absolute", top:14, right:14, background:"transparent", border:"none", color:"#8060c0", fontSize:18, cursor:"pointer", lineHeight:1, zIndex:2, padding:4 }}>✕</button>}
       <div style={{ position:"absolute", inset:0, pointerEvents:"none" }}><FloatingParticles count={15} color="#e8c060" speed={0.3} /></div>
       <div style={{ position:"relative", zIndex:1 }}>
         <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:26, fontWeight:900, color:"#e8c060", margin:"0 0 4px", textShadow:"0 0 40px #c89020aa" }}>Forge {"&"} Fable</h2>
@@ -6011,7 +6011,7 @@ function LoginModal({ needsProfile = false, userId, userEmail, onSignOut, onProf
           <button onClick={() => { setSent(false); setMode("signin"); }} style={{ marginTop:16, padding:"10px 28px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:9, fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, letterSpacing:2, color:"#1a1000", cursor:"pointer" }}>SIGN IN</button>
         </>) : (<>
           <div style={{ display:"flex", gap:6, marginBottom:16, justifyContent:"center" }}>
-            {["signin","signup"].map((m) => (<button key={m} onClick={() => { setMode(m); setErr(""); }} style={{ padding:"7px 18px", background:mode===m?"rgba(232,192,96,0.15)":"transparent", border:`1px solid ${mode===m?"#e8c060":"#3a3020"}`, borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:mode===m?"#e8c060":"#604030", cursor:"pointer" }}>{m==="signin"?"SIGN IN":"SIGN UP"}</button>))}
+            {["signin","signup"].map((m) => (<button key={m} onClick={() => { setMode(m); setErr(""); }} style={{ padding:"7px 18px", background:mode===m?"rgba(232,192,96,0.15)":"transparent", border:`1px solid ${mode===m?"#e8c060":"rgba(100,60,180,0.3)"}`, borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:mode===m?"#e8c060":"#9070c0", cursor:"pointer" }}>{m==="signin"?"SIGN IN":"SIGN UP"}</button>))}
           </div>
           {inp(email, setEmail, "Email address", "email")}
           {inp(password, setPassword, "Password (6+ chars)", "password")}
@@ -6155,9 +6155,9 @@ function CollectionScreen({ user, onUpdateUser, onDeckBuilding, newPlayerMode })
       {/* Deck Select Panel */}
       {deckBuilderState === "select" && (
         <div style={{ position:"fixed", inset:0, zIndex:600, background:"rgba(2,1,0,0.97)", display:"flex", flexDirection:"column" }}>
-          <div style={{ padding:"18px 24px", borderBottom:"2px solid #3a2c10", background:"linear-gradient(180deg,#1a1608,#0e0c06)", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div style={{ padding:"18px 24px", borderBottom:"2px solid rgba(140,90,255,0.25)", background:"linear-gradient(180deg,#160828,#0c0418)", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
             <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:20, color:"#e8c060", margin:0, letterSpacing:2 }}>⚒ YOUR DECKS</h3>
-            <button onClick={closeDeckBuilder} style={{ padding:"8px 18px", background:"transparent", border:"1px solid #4a2010", borderRadius:8, color:"#806040", fontFamily:"'Cinzel',serif", fontSize:11, cursor:"pointer" }}>✕ CLOSE</button>
+            <button onClick={closeDeckBuilder} style={{ padding:"8px 18px", background:"transparent", border:"1px solid rgba(100,60,180,0.35)", borderRadius:8, color:"#9070c0", fontFamily:"'Cinzel',serif", fontSize:11, cursor:"pointer" }}>✕ CLOSE</button>
           </div>
           <div style={{ flex:1, overflowY:"auto", padding:"28px 32px", display:"flex", flexDirection:"column", gap:14, maxWidth:700, margin:"0 auto", width:"100%" }}>
             {/* Create new */}
@@ -6176,7 +6176,7 @@ function CollectionScreen({ user, onUpdateUser, onDeckBuilding, newPlayerMode })
               const hasStarter = decks.some(d => d.name === "Starter Deck");
               if (hasStarter) return null;
               return (
-                <div style={{ display:"flex", alignItems:"center", gap:16, padding:"18px 22px", background:"rgba(232,192,96,0.04)", border:"1px solid #3a2c10", borderRadius:14 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:16, padding:"18px 22px", background:"rgba(232,192,96,0.04)", border:"1px solid rgba(100,60,180,0.25)", borderRadius:14 }}>
                   <div style={{ flex:1 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                       <div style={{ fontFamily:"'Cinzel',serif", fontSize:16, fontWeight:700, color:"#f0e0c8", letterSpacing:1 }}>Starter Deck</div>
@@ -6191,10 +6191,10 @@ function CollectionScreen({ user, onUpdateUser, onDeckBuilding, newPlayerMode })
             })()}
             {/* Saved decks */}
             {decks.map((d, i) => (
-              <div key={i} style={{ display:"flex", alignItems:"center", gap:16, padding:"18px 22px", background:"#0e0c08", border:"1px solid #2a2010", borderRadius:14 }}>
+              <div key={i} style={{ display:"flex", alignItems:"center", gap:16, padding:"18px 22px", background:"#0a0418", border:"1px solid rgba(100,60,180,0.2)", borderRadius:14 }}>
                 <div style={{ flex:1 }}>
                   <div style={{ fontFamily:"'Cinzel',serif", fontSize:16, fontWeight:700, color:"#f0e0c8", letterSpacing:1 }}>{d.name}</div>
-                  <div style={{ fontSize:10, color:"#806040", marginTop:4 }}>{d.cards?.length || 0} cards</div>
+                  <div style={{ fontSize:10, color:"#9070c0", marginTop:4 }}>{d.cards?.length || 0} cards</div>
                 </div>
                 <button onClick={() => openDeckBuilder({ isNew:false, index:i, name:d.name, cards:d.cards||[] })}
                   style={{ padding:"9px 20px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:"#1a1000", cursor:"pointer", letterSpacing:1 }}>EDIT</button>
@@ -6233,8 +6233,8 @@ function CollectionScreen({ user, onUpdateUser, onDeckBuilding, newPlayerMode })
         </button>
       </div>
       <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." style={{ flex: 1, minWidth: 120, padding: "8px 12px", background: "#100e08", border: "1px solid #2a2010", borderRadius: 7, color: "#f0e8d8", fontSize: 12, outline: "none" }} />
-        <select value={regFilter} onChange={(e) => setRegFilter(e.target.value)} style={{ padding: "8px", background: "#100e08", border: "1px solid #2a2010", borderRadius: 7, color: "#f0e8d8", fontFamily: "'Cinzel',serif", fontSize: 10, outline: "none" }}>
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." style={{ flex: 1, minWidth: 120, padding: "8px 12px", background: "#0a0418", border: "1px solid rgba(100,60,180,0.25)", borderRadius: 7, color: "#f0e8d8", fontSize: 12, outline: "none" }} />
+        <select value={regFilter} onChange={(e) => setRegFilter(e.target.value)} style={{ padding: "8px", background: "#0a0418", border: "1px solid rgba(100,60,180,0.25)", borderRadius: 7, color: "#f0e8d8", fontFamily: "'Cinzel',serif", fontSize: 10, outline: "none" }}>
           <option value="all">All</option>{[...REGIONS, "Bloodpact"].map((r) => (<option key={r} value={r}>{r}</option>))}
         </select>
       </div>
@@ -6818,16 +6818,16 @@ function TutorialScreen({ onExit, onComplete }) {
     null;
 
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:200, background:"linear-gradient(160deg,#0a0806,#060402)", display:"flex", flexDirection:"column", overflow:"hidden" }}>
+    <div style={{ position:"fixed", inset:0, zIndex:200, background:"linear-gradient(160deg,#0c0420,#060214)", display:"flex", flexDirection:"column", overflow:"hidden" }}>
       {/* Top progress bar */}
       <div style={{ height:50, background:"rgba(6,4,2,0.96)", borderBottom:"1px solid rgba(232,192,96,0.1)", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 20px", flexShrink:0, gap:16 }}>
         <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#e8c060", letterSpacing:4, fontWeight:700, flexShrink:0 }}>⚔ TUTORIAL</div>
         <div style={{ display:"flex", gap:5, alignItems:"center", flex:1, justifyContent:"center" }}>
-          {TUT_STEPS.map((_,i) => (<div key={i} style={{ width:i===step?20:7, height:7, borderRadius:4, background:i<step?"#78cc45":i===step?"#e8c060":"#2a2010", transition:"all .3s" }} />))}
+          {TUT_STEPS.map((_,i) => (<div key={i} style={{ width:i===step?20:7, height:7, borderRadius:4, background:i<step?"#78cc45":i===step?"#e8c060":"rgba(80,50,140,0.5)", transition:"all .3s" }} />))}
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center", flexShrink:0 }}>
           <button onClick={() => { setVoiceOn(v => { const next = !v; if (!next && window.speechSynthesis) window.speechSynthesis.cancel(); return next; }); }} title={voiceOn ? "Mute narrator" : "Enable voice narration"} style={{ width:32, height:32, background:voiceOn?"rgba(232,192,96,0.15)":"transparent", border:`1px solid ${voiceOn?"#e8c06066":"#3a2010"}`, borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, cursor:"pointer", transition:"all .2s" }}>{voiceOn ? "🔊" : "🔇"}</button>
-          <button onClick={onExit} style={{ padding:"5px 16px", background:"transparent", border:"1px solid #3a2010", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:11, color:"#604030", cursor:"pointer", letterSpacing:1 }}>SKIP ✕</button>
+          <button onClick={onExit} style={{ padding:"5px 16px", background:"transparent", border:"1px solid rgba(100,60,180,0.35)", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:11, color:"#8060c0", cursor:"pointer", letterSpacing:1 }}>SKIP ✕</button>
         </div>
       </div>
 
