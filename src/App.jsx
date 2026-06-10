@@ -1036,200 +1036,145 @@ function Card({ card, size = "md", onClick, animDelay = 0, isThird = false, hide
 }
 
 
-// ═══ CARD V2 — NEW CARD FRAME DESIGN ══════════════════════════════════════════
+// ═══ CARD V2 — FULL-ART STYLE ════════════════════════════════════════════════
 function CardV2({ card, size = "md", onClick }) {
   const W = size === "sm" ? 148 : size === "lg" ? 228 : 188;
   const H = size === "sm" ? 240 : size === "lg" ? 370 : 300;
-  const BORDER = 11;
-  const ART_H = Math.floor(H * 0.50);
-  const NAME_H = Math.floor(H * 0.128);
+  const PANEL_H = Math.floor(H * 0.47);
 
   const kws = KW.filter(k => (card.keywords || []).includes(k.name));
   const isCreature = card.atk != null;
-  const isEnv = card.type === "environment";
-  const isSpell = card.type === "spell";
-  const isChamp = card.type === "champion";
-  const isBP = card.bloodpact || card.region === "Bloodpact";
 
-  // Frame palette — neutral gold for most, tinted for Bloodpact / Environment
-  const frameLight = isBP ? "#d08060" : isEnv ? "#70c8e0" : "#e8d880";
-  const frameMid   = isBP ? "#8a3020" : isEnv ? "#2a6888" : "#c4a84a";
-  const frameDark  = isBP ? "#4a1010" : isEnv ? "#1a4060" : "#7a6020";
-  const nameBarBg  = isBP
-    ? "linear-gradient(180deg,#8a3022,#6a2010)"
-    : isEnv
-    ? "linear-gradient(180deg,#2a6888,#1a4060)"
-    : "linear-gradient(180deg,#c8b060,#b09040)";
-  const nameTextC  = isBP ? "#fde0c8" : isEnv ? "#d8f4ff" : "#1a0e00";
-  const textAreaBg = isBP ? "#3a1a10" : isEnv ? "#0d2a3a" : "#d8c898";
-  const bodyTextC  = isBP ? "#f0c09a" : isEnv ? "#80d4e8" : "#2a1808";
-  const regionC    = isBP ? "#c08060" : isEnv ? "#60b8d0" : "#907040";
-
-  const gemBg = isBP
-    ? "radial-gradient(circle at 38% 30%, #ff6050, #900020)"
-    : isEnv
-    ? "radial-gradient(circle at 38% 30%, #60d4e8, #1a6080)"
-    : "radial-gradient(circle at 38% 30%, #f8e060, #c08010)";
-  const gemGlow = isBP ? "rgba(200,50,30,0.7)" : isEnv ? "rgba(40,180,220,0.6)" : "rgba(240,200,20,0.7)";
+  // Rarity border accent — used for the card edge glow + divider
+  const rarityAccent = { Common:"#7a9070", Uncommon:"#5070b0", Rare:"#7050c8", Epic:"#9050cc", Legendary:"#c8a030" }[card.rarity] || "#c8a030";
+  const accent = card.border || rarityAccent;
+  const BS = size === "sm" ? 24 : 30;
+  const FS = size === "sm" ? 9 : 11;
+  const NAME_FS = size === "sm" ? 8.5 : size === "lg" ? 13 : 10.5;
+  const typeLabel = card.type === "champion" ? "Champion" : card.type === "spell" ? "Spell" : card.type === "environment" ? "Environment" : "Creature";
 
   return (
-    <div onClick={onClick} style={{ position:"relative", width:W, height:H, flexShrink:0, cursor:"pointer" }}>
+    <div onClick={onClick} style={{
+      position:"relative", width:W, height:H, flexShrink:0, cursor:"pointer",
+      borderRadius:10,
+      border:`1.5px solid ${accent}88`,
+      boxShadow:[
+        `0 0 0 1px rgba(0,0,0,0.9)`,
+        `0 0 18px ${accent}28`,
+        `0 8px 30px rgba(0,0,0,0.85)`,
+      ].join(","),
+      overflow:"hidden", background:"#050210"
+    }}>
 
-      {/* ─── OUTER FRAME ─── */}
-      <div style={{
-        position:"absolute", inset:0, borderRadius:13,
-        background:`linear-gradient(148deg, ${frameLight} 0%, ${frameMid} 30%, ${frameLight}99 50%, ${frameMid} 70%, ${frameLight} 100%)`,
-        boxShadow:`0 0 0 1px ${frameDark}, inset 0 0 0 1px ${frameLight}55, 0 10px 32px rgba(0,0,0,0.8), 0 2px 6px rgba(0,0,0,0.5)`
-      }}>
-        {/* Knotwork texture simulation */}
-        <div style={{ position:"absolute", inset:0, borderRadius:13, pointerEvents:"none",
-          background:[
-            "repeating-linear-gradient(45deg,transparent,transparent 5px,rgba(0,0,0,0.055) 5px,rgba(0,0,0,0.055) 6px)",
-            "repeating-linear-gradient(-45deg,transparent,transparent 5px,rgba(255,255,255,0.045) 5px,rgba(255,255,255,0.045) 6px)",
-          ].join(",")
-        }} />
-        {/* Inner accent line */}
-        <div style={{ position:"absolute", inset:4, borderRadius:10, border:`1px solid ${frameLight}55`, pointerEvents:"none" }} />
-      </div>
-
-      {/* ─── ART WINDOW ─── */}
-      <div style={{
-        position:"absolute", top:BORDER, left:BORDER, right:BORDER, height:ART_H,
-        borderRadius:"5px 5px 0 0", overflow:"hidden",
-        border:`1px solid ${frameDark}`,
-        boxShadow:`inset 0 0 18px rgba(0,0,0,0.7), 0 0 0 1px ${frameLight}33`
-      }}>
+      {/* ─── FULL-BLEED ART ─── */}
+      <div style={{ position:"absolute", inset:0 }}>
         <CardArt card={card} />
-        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top,rgba(0,0,0,0.5) 0%,transparent 42%)", pointerEvents:"none" }} />
-        {(isChamp || isSpell || isEnv) && (
-          <div style={{
-            position:"absolute", top:7, right:7, zIndex:5,
-            fontSize:6.5, fontFamily:"'Cinzel',serif", fontWeight:700, letterSpacing:1,
-            background:"rgba(0,0,0,0.8)", borderRadius:3, padding:"2px 6px",
-            color: isChamp ? "#e8c060" : isSpell ? "#d090d0" : "#40c0e0",
-            border:`1px solid ${isChamp?"#e8c06066":isSpell?"#d090d066":"#40c0e066"}`
-          }}>
-            {isChamp ? "CHAMPION" : isSpell ? "SPELL" : "ENVIRONMENT"}
-          </div>
-        )}
       </div>
 
-      {/* ─── MANA GEM ─── */}
+      {/* ─── GRADIENT: art fades into dark panel ─── */}
       <div style={{
-        position:"absolute", top:1, left:3, zIndex:20,
-        width:38, height:38,
-        background:gemBg,
-        clipPath:"polygon(50% 0%,82% 9%,100% 38%,91% 72%,68% 97%,32% 97%,9% 72%,0% 38%,18% 9%)",
+        position:"absolute", inset:0, pointerEvents:"none",
+        background:"linear-gradient(to bottom, rgba(5,2,16,0.10) 0%, transparent 20%, transparent 30%, rgba(5,2,16,0.50) 48%, rgba(5,2,16,0.93) 60%, rgba(5,2,16,0.98) 100%)"
+      }} />
+
+      {/* ─── GLOSS SHEEN (top-left highlight) ─── */}
+      <div style={{
+        position:"absolute", inset:0, pointerEvents:"none",
+        background:"radial-gradient(ellipse at 28% 18%, rgba(255,255,255,0.055) 0%, transparent 60%)"
+      }} />
+
+      {/* ─── MANA BADGE — top left ─── */}
+      <div style={{
+        position:"absolute", top:8, left:8, zIndex:10,
+        width:BS+4, height:BS+4, borderRadius:"50%",
+        background:"radial-gradient(circle at 35% 32%, #282018, #0c0808)",
+        border:`2px solid ${accent}`,
+        boxShadow:`0 0 10px ${accent}55, inset 0 1px 0 rgba(255,255,255,0.08)`,
         display:"flex", alignItems:"center", justifyContent:"center",
-        fontFamily:"'Cinzel',serif", fontWeight:900, fontSize:15, color:"#fff",
-        textShadow:"0 1px 3px rgba(0,0,0,0.9)",
-        filter:`drop-shadow(0 2px 5px rgba(0,0,0,0.75)) drop-shadow(0 0 7px ${gemGlow})`
-      }}>
-        {isBP ? "B" : card.cost}
-      </div>
+        fontFamily:"'Cinzel',serif", fontWeight:900,
+        fontSize:FS+2, color:"#f0e0a0",
+        textShadow:"0 1px 4px rgba(0,0,0,0.95)"
+      }}>{card.cost}</div>
 
-      {/* ─── NAME BAR ─── */}
+      {/* ─── BOTTOM PANEL ─── */}
       <div style={{
-        position:"absolute", top:BORDER+ART_H, left:BORDER, right:BORDER, height:NAME_H,
-        background:nameBarBg,
-        borderLeft:`1px solid ${frameDark}`, borderRight:`1px solid ${frameDark}`,
-        display:"flex", alignItems:"center",
-        paddingLeft:7, paddingRight:3, gap:2,
-        boxShadow:`inset 0 1px 0 ${frameLight}44, 0 1px 0 ${frameDark}55`
+        position:"absolute", bottom:0, left:0, right:0, height:PANEL_H,
+        padding: size==="sm" ? "7px 8px 6px" : "9px 10px 7px",
+        display:"flex", flexDirection:"column", gap:3, zIndex:5
       }}>
-        <span style={{
-          flex:1, fontFamily:"'Cinzel',serif",
-          fontSize: size==="sm" ? 8.5 : size==="lg" ? 13 : 10.5,
-          fontWeight:700, color:nameTextC, letterSpacing:0.3,
-          whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis",
-          textShadow: isBP ? "0 1px 3px rgba(0,0,0,0.7)" : `0 1px 0 ${frameLight}77`
-        }}>{card.name}</span>
 
-        {/* ATK badge — starburst */}
-        {isCreature && (
-          <div style={{
-            flexShrink:0, width:size==="sm"?24:30, height:size==="sm"?24:30,
-            borderRadius:"50%",
-            background:"radial-gradient(circle at 38% 38%,#302818,#181008)",
-            border:"1.5px solid #504030",
-            display:"flex", alignItems:"center", justifyContent:"center",
-            position:"relative", boxShadow:"0 2px 6px rgba(0,0,0,0.75)"
-          }}>
-            <svg width="100%" height="100%" viewBox="0 0 30 30" style={{ position:"absolute", inset:0 }}>
-              {[0,45,90,135,180,225,270,315].map(a=>{
-                const r=a*Math.PI/180;
-                return <line key={a} x1="15" y1="15" x2={15+Math.cos(r)*12} y2={15+Math.sin(r)*12} stroke="#b09040" strokeWidth="1.3" strokeLinecap="round" opacity="0.75"/>;
-              })}
-              <circle cx="15" cy="15" r="5.5" fill="#181008"/>
-            </svg>
-            <span style={{ fontFamily:"'Cinzel',serif", fontWeight:900, fontSize:size==="sm"?8:10, color:"#e8c060", zIndex:1, lineHeight:1 }}>
-              {card.currentAtk ?? card.atk}
-            </span>
+        {/* Name + stat badges row */}
+        <div style={{ display:"flex", alignItems:"flex-start", gap:4 }}>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{
+              fontFamily:"'Cinzel',serif", fontWeight:900,
+              fontSize:NAME_FS, color:"#f0e0a0",
+              textTransform:"uppercase", letterSpacing:0.4, lineHeight:1.1,
+              whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis",
+              textShadow:"0 1px 8px rgba(0,0,0,0.95), 0 0 16px rgba(0,0,0,0.8)"
+            }}>{card.name}</div>
+            <div style={{
+              fontSize: size==="sm" ? 6.5 : 7.5,
+              color:"#907858", fontStyle:"italic",
+              fontFamily:"'Lora',serif", marginTop:1,
+              textShadow:"0 1px 4px rgba(0,0,0,0.9)"
+            }}>{card.region}{card.type === "champion" ? " · Champion" : ""}</div>
           </div>
-        )}
 
-        {/* HP badge — heart */}
-        {isCreature && (
-          <div style={{
-            flexShrink:0, width:size==="sm"?24:30, height:size==="sm"?24:30,
-            borderRadius:"50%",
-            background:"radial-gradient(circle at 38% 38%,#2a1018,#120808)",
-            border:"1.5px solid #4a2028",
-            display:"flex", alignItems:"center", justifyContent:"center",
-            position:"relative", boxShadow:"0 2px 6px rgba(0,0,0,0.75)"
-          }}>
-            <svg width="100%" height="100%" viewBox="0 0 30 30" style={{ position:"absolute", inset:0, opacity:0.9 }}>
-              <path d="M15 22C15 22 5 14 5 9c0-3.5 2.5-5 5-4 2 .8 5 3 5 3s3-2.2 5-3c2.5-1 5 .5 5 4 0 5-10 13-10 13Z" fill="#c04060"/>
-            </svg>
-            <span style={{ fontFamily:"'Cinzel',serif", fontWeight:900, fontSize:size==="sm"?8:10, color:"#ffb0c0", zIndex:1, lineHeight:1 }}>
-              {card.currentHp ?? card.hp}
-            </span>
-          </div>
-        )}
-      </div>
+          {isCreature && <>
+            {/* ATK — gold circle */}
+            <div style={{
+              flexShrink:0, width:BS, height:BS, borderRadius:"50%",
+              background:"radial-gradient(circle at 38% 35%, #3a2a08, #1a1206)",
+              border:"1.5px solid #c8a030",
+              boxShadow:"0 2px 8px rgba(0,0,0,0.85), 0 0 6px rgba(200,160,48,0.3)",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              fontFamily:"'Cinzel',serif", fontWeight:900, fontSize:FS,
+              color:"#f0d060", textShadow:"0 1px 3px rgba(0,0,0,0.9)"
+            }}>{card.currentAtk ?? card.atk}</div>
+            {/* HP — crimson circle */}
+            <div style={{
+              flexShrink:0, width:BS, height:BS, borderRadius:"50%",
+              background:"radial-gradient(circle at 38% 35%, #3a0e14, #1a0608)",
+              border:"1.5px solid #882030",
+              boxShadow:"0 2px 8px rgba(0,0,0,0.85), 0 0 6px rgba(180,30,50,0.3)",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              fontFamily:"'Cinzel',serif", fontWeight:900, fontSize:FS,
+              color:"#ffa0a0", textShadow:"0 1px 3px rgba(0,0,0,0.9)"
+            }}>{card.currentHp ?? card.hp}</div>
+          </>}
+        </div>
 
-      {/* ─── TEXT AREA ─── */}
-      <div style={{
-        position:"absolute",
-        top:BORDER+ART_H+NAME_H, left:BORDER, right:BORDER, bottom:BORDER,
-        background:textAreaBg,
-        borderRadius:"0 0 4px 4px",
-        borderLeft:`1px solid ${frameDark}`, borderRight:`1px solid ${frameDark}`, borderBottom:`1px solid ${frameDark}`,
-        padding:"7px 8px 18px", overflow:"hidden"
-      }}>
-        {/* Parchment misty overlay */}
-        <div style={{ position:"absolute", inset:0, borderRadius:"0 0 4px 4px", pointerEvents:"none",
-          background: isBP
-            ? "radial-gradient(ellipse at 30% 80%,rgba(200,80,60,0.14) 0%,transparent 55%)"
-            : isEnv
-            ? "radial-gradient(ellipse at 50% 80%,rgba(40,190,224,0.1) 0%,transparent 55%)"
-            : "radial-gradient(ellipse at 25% 75%,rgba(255,255,255,0.3) 0%,transparent 55%), radial-gradient(ellipse at 75% 25%,rgba(255,255,255,0.2) 0%,transparent 45%)"
-        }} />
+        {/* Accent divider */}
+        <div style={{ height:1, flexShrink:0, background:`linear-gradient(90deg, transparent, ${accent}55, transparent)`, margin:"1px 0" }} />
 
-        {kws.length > 0 && (
-          <div style={{ display:"flex", gap:3, flexWrap:"wrap", marginBottom:5, position:"relative", zIndex:1 }}>
-            {kws.map(k => (
-              <span key={k.name} style={{
-                fontSize:7, padding:"1px 6px", borderRadius:20,
-                background:`${k.color}cc`, color:"#fff", border:`1px solid ${k.color}`,
-                fontWeight:700, textShadow:"0 1px 2px rgba(0,0,0,0.7)"
-              }}>{k.icon} {k.name}</span>
-            ))}
-          </div>
-        )}
-
+        {/* Type + keyword line */}
         <div style={{
-          fontSize: size==="sm" ? 7.5 : 9,
-          color:bodyTextC, lineHeight:1.55,
-          fontFamily:"'Lora',serif", position:"relative", zIndex:1
+          fontSize: size==="sm" ? 6 : 7.5, color:"#786050",
+          fontFamily:"'Cinzel',serif", letterSpacing:0.3, fontStyle:"italic",
+          flexShrink:0, textShadow:"0 1px 3px rgba(0,0,0,0.8)"
+        }}>
+          ⚙ {typeLabel}{kws.length > 0 ? " · " + kws.map(k=>k.name).join(" · ") : ""}
+        </div>
+
+        {/* Ability text */}
+        <div style={{
+          flex:1, overflow:"hidden",
+          fontSize: size==="sm" ? 6.5 : 8,
+          color:"#c8b898", lineHeight:1.55,
+          fontFamily:"'Lora',serif",
+          textShadow:"0 1px 2px rgba(0,0,0,0.8)"
         }}>{card.ability}</div>
 
-        {/* Bottom: faction + diamond */}
-        <div style={{ position:"absolute", bottom:5, left:8, right:8, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-          <span style={{ fontSize:6.5, fontFamily:"'Cinzel',serif", fontWeight:700, letterSpacing:1.5, color:regionC, opacity:0.8 }}>
-            {(card.region||"").toUpperCase()}
-          </span>
-          <span style={{ fontSize:9, color:"#b8a040", opacity:0.45 }}>◆</span>
+        {/* Bottom metadata bar */}
+        <div style={{
+          display:"flex", justifyContent:"space-between", alignItems:"center",
+          flexShrink:0, fontSize:5.5, color:"#403028",
+          fontFamily:"'Cinzel',serif", letterSpacing:0.8
+        }}>
+          <span>{(card.rarity||"").toUpperCase()}</span>
+          <span style={{ color:accent+"44" }}>◆</span>
+          <span>FORGE {"&"} FABLE</span>
         </div>
       </div>
     </div>
