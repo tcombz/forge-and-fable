@@ -1070,9 +1070,9 @@ function CardV2({ card, size = "md", onClick }) {
       <div style={{ position:"absolute", inset:0, pointerEvents:"none",
         background:"radial-gradient(ellipse at 28% 16%, rgba(255,255,255,0.06) 0%, transparent 55%)" }} />
 
-      {/* ─── DARK VIGNETTE: art visible through bottom, no solid block ─── */}
+      {/* ─── DARK VIGNETTE ─── */}
       <div style={{ position:"absolute", inset:0, pointerEvents:"none",
-        background:"linear-gradient(to bottom, transparent 0%, transparent 26%, rgba(4,2,14,0.30) 42%, rgba(4,2,14,0.72) 58%, rgba(4,2,14,0.86) 100%)" }} />
+        background:"linear-gradient(to bottom, transparent 0%, transparent 22%, rgba(4,2,14,0.22) 38%, rgba(4,2,14,0.72) 52%, rgba(4,2,14,0.91) 63%, rgba(4,2,14,0.97) 73%, rgba(4,2,14,0.99) 100%)" }} />
 
       {/* ─── MANA BADGE — top left — BLUE CRYSTAL ─── */}
       <div style={{
@@ -1086,14 +1086,11 @@ function CardV2({ card, size = "md", onClick }) {
         color:"#dde8ff", textShadow:"0 0 8px rgba(120,140,255,0.9), 0 1px 3px rgba(0,0,0,0.95)"
       }}>{card.cost}</div>
 
-      {/* ─── PANEL CONTENT — smoked glass, art visible underneath ─── */}
+      {/* ─── PANEL CONTENT — no bg, text-shadow carries readability ─── */}
       <div style={{
         position:"absolute", bottom:0, left:0, right:0, height:PANEL_H,
         padding: size==="sm" ? "7px 8px 5px" : "9px 10px 6px",
-        display:"flex", flexDirection:"column", gap:3, zIndex:5,
-        background:"rgba(4,2,14,0.18)",
-        backdropFilter:"blur(2px)",
-        WebkitBackdropFilter:"blur(2px)"
+        display:"flex", flexDirection:"column", gap:3, zIndex:5
       }}>
 
         {/* Name + stat badges row */}
@@ -1101,14 +1098,14 @@ function CardV2({ card, size = "md", onClick }) {
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{
               fontFamily:"'Cinzel',serif", fontWeight:900, fontSize:NAME_FS,
-              color:"#f0e0a0", textTransform:"uppercase", letterSpacing:0.4, lineHeight:1.1,
+              color:"#f5eba8", textTransform:"uppercase", letterSpacing:0.4, lineHeight:1.1,
               whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis",
-              textShadow:"0 0 12px rgba(0,0,0,1), 0 1px 4px rgba(0,0,0,1), 0 2px 8px rgba(0,0,0,0.9)"
+              textShadow:"0 0 2px #000,0 0 5px #000,0 0 10px #000,0 1px 2px #000,0 2px 5px #000,0 3px 8px rgba(0,0,0,0.9)"
             }}>{card.name}</div>
             <div style={{
-              fontSize: size==="sm" ? 6.5 : 7.5, color:"#a09070",
+              fontSize: size==="sm" ? 6.5 : 7.5, color:"#b0a07a",
               fontStyle:"italic", fontFamily:"'Lora',serif", marginTop:1,
-              textShadow:"0 1px 4px rgba(0,0,0,1), 0 0 8px rgba(0,0,0,0.9)"
+              textShadow:"0 0 4px #000,0 1px 3px #000,0 2px 6px rgba(0,0,0,0.9)"
             }}>{card.region}{card.type==="champion" ? " · Champion" : ""}</div>
           </div>
 
@@ -1140,9 +1137,9 @@ function CardV2({ card, size = "md", onClick }) {
 
         {/* Type line */}
         <div style={{
-          fontSize: size==="sm" ? 6 : 7.5, color:"#807060",
+          fontSize: size==="sm" ? 6 : 7.5, color:"#908060",
           fontFamily:"'Cinzel',serif", letterSpacing:0.3, fontStyle:"italic", flexShrink:0,
-          textShadow:"0 1px 4px rgba(0,0,0,1), 0 0 8px rgba(0,0,0,0.9)"
+          textShadow:"0 0 4px #000,0 1px 3px #000,0 2px 6px rgba(0,0,0,0.9)"
         }}>⚙ {typeLabel}</div>
 
         {/* Keyword tags */}
@@ -1151,9 +1148,9 @@ function CardV2({ card, size = "md", onClick }) {
             {kws.map(k => (
               <span key={k.name} style={{
                 fontSize: size==="sm" ? 6 : 7, padding:"2px 7px", borderRadius:20,
-                background:`rgba(0,0,0,0.65)`, border:`1px solid ${k.color}bb`,
+                background:"rgba(0,0,0,0.72)", border:`1px solid ${k.color}cc`,
                 color:k.color, fontWeight:700, fontFamily:"'Cinzel',serif", letterSpacing:0.5,
-                textShadow:`0 0 6px ${k.color}88`
+                textShadow:`0 0 5px ${k.color}99, 0 0 2px #000`
               }}>{k.icon} {k.name}</span>
             ))}
           </div>
@@ -1162,20 +1159,20 @@ function CardV2({ card, size = "md", onClick }) {
         {/* Ability text */}
         <div style={{
           flex:1, overflow:"hidden",
-          fontSize: size==="sm" ? 6.5 : 8, color:"#d8caa8",
+          fontSize: size==="sm" ? 6.5 : 8, color:"#e0d0b0",
           lineHeight:1.55, fontFamily:"'Lora',serif",
-          textShadow:"0 1px 6px rgba(0,0,0,1), 0 0 10px rgba(0,0,0,0.95)"
+          textShadow:"0 0 3px #000,0 0 6px #000,0 1px 3px #000,0 2px 5px rgba(0,0,0,0.9)"
         }}>{card.ability}</div>
 
         {/* Bottom metadata */}
         <div style={{
           display:"flex", justifyContent:"space-between", alignItems:"center",
-          flexShrink:0, fontSize:5.5, color:"#504030",
+          flexShrink:0, fontSize:5.5, color:"#6a5038",
           fontFamily:"'Cinzel',serif", letterSpacing:0.8,
-          textShadow:"0 1px 3px rgba(0,0,0,1)"
+          textShadow:"0 0 4px #000,0 1px 3px #000"
         }}>
           <span>{(card.rarity||"").toUpperCase()}</span>
-          <span style={{ color:accent+"70" }}>◆</span>
+          <span style={{ color:accent+"88" }}>◆</span>
           <span>FORGE {"&"} FABLE</span>
         </div>
       </div>
@@ -6177,6 +6174,9 @@ function LoginModal({ needsProfile = false, userId, userEmail, onSignOut, onProf
 }
 
 // ═══ COLLECTION ══════════════════════════════════════════════════════════════
+const CRAFT_COST    = { Common:40, Uncommon:100, Rare:250, Epic:600, Legendary:1500 };
+const DISENCHANT_VAL= { Common:5,  Uncommon:15,  Rare:40,  Epic:100, Legendary:250  };
+
 function CollectionScreen({ user, onUpdateUser, onDeckBuilding, newPlayerMode }) {
   const col = user?.collection || {};
   const selectedArts = user?.selectedArts || {};
@@ -6191,6 +6191,25 @@ function CollectionScreen({ user, onUpdateUser, onDeckBuilding, newPlayerMode })
   const [regFilter, setRegFilter] = useState("all");
   const [artPicker, setArtPicker] = useState(null);
   const [previewCard, setPreviewCard] = useState(null);
+  const [craftMode, setCraftMode] = useState(false);
+  const [craftPending, setCraftPending] = useState(null);
+
+  const craftCard = async (card) => {
+    const cost = CRAFT_COST[card.rarity] || 9999;
+    if ((user?.shards || 0) < cost) return;
+    const newCol = { ...(user.collection || {}), [card.id]: (col[card.id] || 0) + 1 };
+    await onUpdateUser({ shards: (user.shards || 0) - cost, collection: newCol });
+    setCraftPending(null);
+    SFX.play("card_flip");
+  };
+  const disenchantCard = async (card) => {
+    const qty = col[card.id] || 0;
+    if (qty < 1) return;
+    const val = DISENCHANT_VAL[card.rarity] || 5;
+    const newCol = { ...(user.collection || {}), [card.id]: Math.max(0, qty - 1) };
+    await onUpdateUser({ shards: (user.shards || 0) + val, collection: newCol });
+    SFX.play("coin");
+  };
   // Deck builder: null=closed, "select"=deck picker, { index, name, cards }=editing
   const [deckBuilderState, setDeckBuilderState] = useState(null);
   const openDeckBuilder = (state) => { setDeckBuilderState(state); if (onDeckBuilding) onDeckBuilding(state && state !== "select"); };
@@ -6363,22 +6382,33 @@ function CollectionScreen({ user, onUpdateUser, onDeckBuilding, newPlayerMode })
           </div>
         </div>
       )}
-      {/* Header row: title + deck builder CTA */}
+      {/* Header row: title + shards + deck builder + craft toggle */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
         <div>
           <h2 style={{ fontFamily: "'Cinzel',serif", fontSize: 24, fontWeight: 700, color: "#e8c060", margin: 0 }}>Collection</h2>
-          <div style={{ fontSize: 11, color: "#806040", marginTop: 3 }}>{owned.length} / {ownablePool.length} cards obtained</div>
+          <div style={{ fontSize: 11, color: "#806040", marginTop: 3 }}>{owned.length} / {ownablePool.length} cards obtained · <span style={{ color:"#a0c8e0" }}>{user?.shards ?? 0} ⬙ shards</span></div>
         </div>
-        <button onClick={() => openDeckBuilder("select")}
-          style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 22px", background: "linear-gradient(135deg,#1a0838,#0e0420)", border: "2px solid #e8c06055", borderRadius: 12, cursor: "pointer", fontFamily: "'Cinzel',serif", color: "#e8c060", transition: "all .2s" }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor="#e8c060aa"; e.currentTarget.style.background="linear-gradient(135deg,#2a1048,#1a0830)"; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor="#e8c06055"; e.currentTarget.style.background="linear-gradient(135deg,#1a0838,#0e0420)"; }}>
-          <span style={{ fontSize: 22 }}>🗂</span>
-          <div style={{ textAlign: "left" }}>
-            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1 }}>BUILD DECK</div>
-            <div style={{ fontSize: 9, color: "#a08040", marginTop: 1 }}>{decks.length} deck{decks.length !== 1 ? "s" : ""} saved</div>
-          </div>
-        </button>
+        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+          {/* Craft Mode Toggle */}
+          <button onClick={() => { setCraftMode(m => !m); setCraftPending(null); }}
+            style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 18px", background: craftMode ? "linear-gradient(135deg,#1a0c38,#0a0820)" : "linear-gradient(135deg,#0c1428,#060e20)", border:`2px solid ${craftMode?"#60a0e0aa":"#3060a055"}`, borderRadius:12, cursor:"pointer", fontFamily:"'Cinzel',serif", color: craftMode ? "#80c8f0" : "#4080b0", transition:"all .2s" }}>
+            <span style={{ fontSize:18 }}>⬙</span>
+            <div style={{ textAlign:"left" }}>
+              <div style={{ fontSize:11, fontWeight:700, letterSpacing:1 }}>{craftMode ? "EXIT CRAFT" : "CRAFT"}</div>
+              <div style={{ fontSize:8, color: craftMode?"#4080a0":"#305070", marginTop:1 }}>forge cards from shards</div>
+            </div>
+          </button>
+          <button onClick={() => openDeckBuilder("select")}
+            style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 22px", background: "linear-gradient(135deg,#1a0838,#0e0420)", border: "2px solid #e8c06055", borderRadius: 12, cursor: "pointer", fontFamily: "'Cinzel',serif", color: "#e8c060", transition: "all .2s" }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor="#e8c060aa"; e.currentTarget.style.background="linear-gradient(135deg,#2a1048,#1a0830)"; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor="#e8c06055"; e.currentTarget.style.background="linear-gradient(135deg,#1a0838,#0e0420)"; }}>
+            <span style={{ fontSize: 22 }}>🗂</span>
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1 }}>BUILD DECK</div>
+              <div style={{ fontSize: 9, color: "#a08040", marginTop: 1 }}>{decks.length} deck{decks.length !== 1 ? "s" : ""} saved</div>
+            </div>
+          </button>
+        </div>
       </div>
       <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." style={{ flex: 1, minWidth: 120, padding: "8px 12px", background: "#0a0418", border: "1px solid rgba(100,60,180,0.25)", borderRadius: 7, color: "#f0e8d8", fontSize: 12, outline: "none" }} />
@@ -6386,21 +6416,69 @@ function CollectionScreen({ user, onUpdateUser, onDeckBuilding, newPlayerMode })
           <option value="all">All</option>{[...REGIONS, "Bloodpact"].map((r) => (<option key={r} value={r}>{r}</option>))}
         </select>
       </div>
+      {/* Craft mode banner */}
+      {craftMode && (
+        <div style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 18px", background:"rgba(40,80,160,0.12)", border:"1px solid rgba(80,140,220,0.3)", borderRadius:10, marginBottom:16 }}>
+          <span style={{ fontSize:20 }}>⬙</span>
+          <div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#80c0e8", letterSpacing:2, fontWeight:700 }}>CRAFT MODE — {user?.shards ?? 0} Shards Available</div>
+            <div style={{ fontSize:10, color:"#405070", marginTop:2 }}>Click CRAFT on any unowned card · Disenchant extras for shards back</div>
+          </div>
+        </div>
+      )}
       {/* OWNED */}
       <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#c09848", marginBottom:12, fontWeight:600 }}>OWNED ({filter(owned).length})</div>
       <div style={{ display:"flex", gap:14, flexWrap:"wrap", marginBottom:28, alignItems:"flex-start" }}>
-        {filter(owned).map((c, i) => <Fragment key={c.id}>{CollectionCard({ card:c, i })}</Fragment>)}
+        {filter(owned).map((c, i) => (
+          <div key={c.id} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+            <Fragment>{CollectionCard({ card:c, i })}</Fragment>
+            {craftMode && (
+              <button onClick={() => disenchantCard(c)}
+                style={{ padding:"3px 10px", background:"rgba(180,120,20,0.15)", border:"1px solid #a07830aa", borderRadius:20, fontFamily:"'Cinzel',serif", fontSize:8, color:"#c09040", cursor:"pointer", letterSpacing:1 }}>
+                ⬙ +{DISENCHANT_VAL[c.rarity]||5}
+              </button>
+            )}
+          </div>
+        ))}
         {filter(owned).length === 0 && <div style={{ fontSize:11, color:"#503828", fontStyle:"italic" }}>No cards yet — open some packs!</div>}
       </div>
       {/* NOT YET OBTAINED */}
       {filter(notYet).length > 0 && (<>
-        <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#604028", marginBottom:12, fontWeight:600 }}>NOT YET OBTAINED ({filter(notYet).length})</div>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color: craftMode?"#5090c0":"#604028", marginBottom:12, fontWeight:600 }}>
+          {craftMode ? `CRAFTABLE (${filter(notYet).length})` : `NOT YET OBTAINED (${filter(notYet).length})`}
+        </div>
         <div style={{ display:"flex", gap:14, flexWrap:"wrap", marginBottom:28 }}>
-          {filter(notYet).map((c) => (
-            <div key={c.id} style={{ opacity:0.35, filter:"grayscale(55%)", cursor:"default", position:"relative" }} title={c.name}>
-              <Card card={c} size="sm" />
-            </div>
-          ))}
+          {filter(notYet).map((c) => {
+            const cost = CRAFT_COST[c.rarity] || 9999;
+            const canAfford = (user?.shards || 0) >= cost;
+            const isPending = craftPending === c.id;
+            return craftMode ? (
+              <div key={c.id} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+                <div style={{ opacity: canAfford ? 1 : 0.55, filter: canAfford ? "none" : "grayscale(40%)", position:"relative" }}>
+                  <Card card={c} size="sm" />
+                </div>
+                {isPending ? (
+                  <div style={{ display:"flex", gap:4 }}>
+                    <button onClick={() => craftCard(c)}
+                      style={{ padding:"3px 10px", background:"rgba(60,160,80,0.25)", border:"1px solid #40c06088", borderRadius:20, fontFamily:"'Cinzel',serif", fontSize:8, color:"#60e080", cursor:"pointer", letterSpacing:1 }}>
+                      ✓ CONFIRM
+                    </button>
+                    <button onClick={() => setCraftPending(null)}
+                      style={{ padding:"3px 8px", background:"transparent", border:"1px solid #60304088", borderRadius:20, fontFamily:"'Cinzel',serif", fontSize:8, color:"#905050", cursor:"pointer" }}>✕</button>
+                  </div>
+                ) : (
+                  <button onClick={() => canAfford && setCraftPending(c.id)}
+                    style={{ padding:"3px 12px", background: canAfford?"rgba(40,100,200,0.2)":"rgba(40,40,60,0.2)", border:`1px solid ${canAfford?"#4080d0aa":"#30305088"}`, borderRadius:20, fontFamily:"'Cinzel',serif", fontSize:8, color: canAfford?"#80b8f0":"#404060", cursor: canAfford?"pointer":"not-allowed", letterSpacing:1 }}>
+                    ⬙ {cost} {!canAfford && "· need more"}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div key={c.id} style={{ opacity:0.35, filter:"grayscale(55%)", cursor:"default", position:"relative" }} title={c.name}>
+                <Card card={c} size="sm" />
+              </div>
+            );
+          })}
         </div>
       </>)}
       {/* COMING SOON — Fables + Food Fight */}
