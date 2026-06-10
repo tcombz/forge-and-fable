@@ -290,7 +290,7 @@ export default function LandingPage({ onPlayNow, onSignIn }) {
   return (
     <div style={{
       position: "fixed", inset: 0, zIndex: 10, overflowY: "auto", overflowX: "hidden",
-      background: "radial-gradient(ellipse at 50% 0%, #18120a 0%, #0c0804 40%, #060402 100%)",
+      background: "radial-gradient(ellipse at 50% -10%, #1e0840 0%, #100520 35%, #060312 70%, #040010 100%)",
       fontFamily: "'Cinzel',serif",
     }}>
       <style>{`
@@ -316,11 +316,11 @@ export default function LandingPage({ onPlayNow, onSignIn }) {
         .landing-cta:hover { transform: translateY(-3px); box-shadow: 0 0 56px #f0c04077, 0 10px 40px rgba(0,0,0,0.7); }
         .landing-cta:active { transform: translateY(0); }
         .landing-signin-link {
-          background: transparent; border: 1px solid #3a2810; border-radius: 8px;
+          background: transparent; border: 1px solid rgba(140,90,255,0.3); border-radius: 8px;
           padding: 11px 26px; font-family: 'Cinzel',serif; font-size: 11px;
-          color: #806040; cursor: pointer; letter-spacing: 1px; transition: border-color .2s, color .2s, background .2s;
+          color: #9070c0; cursor: pointer; letter-spacing: 1px; transition: border-color .2s, color .2s, background .2s;
         }
-        .landing-signin-link:hover { border-color: #e8c06066; color: #c8a060; background: rgba(232,192,96,0.05); }
+        .landing-signin-link:hover { border-color: rgba(200,160,255,0.6); color: #d0b0ff; background: rgba(140,90,255,0.08); }
       `}</style>
 
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
@@ -333,9 +333,10 @@ export default function LandingPage({ onPlayNow, onSignIn }) {
         <Particles count={36} />
 
         {/* Ambient glow orbs */}
-        <div style={{ position: "absolute", top: "20%", left: "20%",  width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle,#c8901010 0%,transparent 65%)", pointerEvents: "none", animation: "landingFloat 6s ease-in-out infinite alternate" }} />
-        <div style={{ position: "absolute", top: "60%", right: "15%", width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle,#9070ff0c 0%,transparent 65%)", pointerEvents: "none", animation: "landingFloat 8s ease-in-out 2s infinite alternate" }} />
-        <div style={{ position: "absolute", top: "40%", left: "60%",  width: 250, height: 250, borderRadius: "50%", background: "radial-gradient(circle,#30c0ff08 0%,transparent 65%)", pointerEvents: "none", animation: "landingFloat 5s ease-in-out 1s infinite alternate" }} />
+        <div style={{ position: "absolute", top: "10%", left: "15%",  width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle,rgba(140,60,255,0.22) 0%,transparent 65%)", pointerEvents: "none", animation: "landingFloat 6s ease-in-out infinite alternate" }} />
+        <div style={{ position: "absolute", top: "55%", right: "10%", width: 380, height: 380, borderRadius: "50%", background: "radial-gradient(circle,rgba(40,130,255,0.16) 0%,transparent 65%)", pointerEvents: "none", animation: "landingFloat 8s ease-in-out 2s infinite alternate" }} />
+        <div style={{ position: "absolute", top: "35%", left: "55%",  width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle,rgba(200,140,255,0.14) 0%,transparent 65%)", pointerEvents: "none", animation: "landingFloat 5s ease-in-out 1s infinite alternate" }} />
+        <div style={{ position: "absolute", top: "70%", left: "25%",  width: 250, height: 250, borderRadius: "50%", background: "radial-gradient(circle,rgba(232,192,96,0.1) 0%,transparent 60%)", pointerEvents: "none", animation: "landingFloat 7s ease-in-out 3s infinite alternate" }} />
 
         {/* Logo + title */}
         <div style={{ animation: "landingFadeUp .7s ease-out both", position: "relative", zIndex: 1, marginBottom: 24 }}>

@@ -735,9 +735,9 @@ function PatchNotesModal({ onDismiss }) {
   ];
   return (
     <div style={{ position:"fixed", inset:0, zIndex:300, background:"rgba(2,1,0,0.96)", backdropFilter:"blur(16px)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
-      <div style={{ background:"linear-gradient(160deg,#1c1a0e,#0e0c06)", border:"1px solid #e8c06044", borderRadius:18, width:"100%", maxWidth:430, boxShadow:"0 30px 80px rgba(0,0,0,0.98)", animation:"fadeIn 0.35s ease-out", overflow:"hidden" }}>
+      <div style={{ background:"linear-gradient(160deg,#160828,#0c0418)", border:"1px solid rgba(160,100,255,0.35)", borderRadius:18, width:"100%", maxWidth:430, boxShadow:"0 30px 80px rgba(0,0,0,0.98), 0 0 60px rgba(100,40,200,0.15)", animation:"fadeIn 0.35s ease-out", overflow:"hidden" }}>
         {/* Header */}
-        <div style={{ background:"linear-gradient(135deg,#1a1608,#100e04)", borderBottom:"1px solid #2a2210", padding:"20px 24px 16px", textAlign:"center" }}>
+        <div style={{ background:"linear-gradient(135deg,#1e0c38,#120620)", borderBottom:"1px solid rgba(140,90,255,0.2)", padding:"20px 24px 16px", textAlign:"center" }}>
           <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:"#e8c060", letterSpacing:1, marginBottom:6 }}>Forge {"&"} Fable</div>
           <div style={{ display:"inline-flex", alignItems:"center", gap:8, background:"rgba(232,192,96,0.1)", border:"1px solid #e8c06033", borderRadius:20, padding:"4px 14px" }}>
             <div style={{ width:6, height:6, borderRadius:"50%", background:"#78cc45", boxShadow:"0 0 8px #78cc45", animation:"pulse 1.5s infinite" }} />
@@ -2564,7 +2564,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     {/* First match — Chronicler intro overlay */}
     {showFirstMatchIntro && (
       <div style={{ position:"fixed", inset:0, zIndex:500, background:"rgba(2,1,0,0.95)", display:"flex", alignItems:"center", justifyContent:"center", animation:"fadeIn 0.4s ease-out" }}>
-        <div style={{ maxWidth:480, padding:"48px 44px", textAlign:"center", background:"linear-gradient(160deg,#140e04,#0a0804)", border:"1px solid #c89010aa", borderRadius:20, boxShadow:"0 0 80px rgba(200,144,16,0.12), 0 24px 80px rgba(0,0,0,0.95)", animation:"fadeIn 0.5s 0.1s ease-out both" }}>
+        <div style={{ maxWidth:480, padding:"48px 44px", textAlign:"center", background:"linear-gradient(160deg,#160828,#0c0418)", border:"1px solid rgba(200,150,255,0.4)", borderRadius:20, boxShadow:"0 0 80px rgba(140,60,255,0.2), 0 24px 80px rgba(0,0,0,0.95)", animation:"fadeIn 0.5s 0.1s ease-out both" }}>
           <div style={{ fontSize:48, marginBottom:16, filter:"drop-shadow(0 0 20px #c8901066)", animation:"pulse 2s ease-in-out infinite" }}>📜</div>
           <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#c89010", letterSpacing:4, marginBottom:16, fontWeight:700 }}>THE CHRONICLER</div>
           <div style={{ fontFamily:"'Lora',Georgia,serif", fontSize:15, color:"#d8cca8", lineHeight:1.85, marginBottom:32 }}>
@@ -2965,7 +2965,7 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
   return (<div style={{ position:"fixed", inset:0, zIndex:600, background:"rgba(2,1,0,0.97)", display:"flex", flexDirection:"column" }}>
     {dbPreview && <CardPreview card={dbPreview} onClose={() => setDbPreview(null)} />}
     {/* Header bar */}
-    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 20px", borderBottom:"2px solid #3a2c10", background:"linear-gradient(180deg,#1a1608,#0e0c06)", flexShrink:0, gap:12, flexWrap:"wrap" }}>
+    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 20px", borderBottom:"2px solid rgba(120,80,220,0.3)", background:"linear-gradient(180deg,#160828,#0c0418)", flexShrink:0, gap:12, flexWrap:"wrap" }}>
       <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
         <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:20, color:"#e8c060", margin:0, letterSpacing:2 }}>⚒ {isNew ? "NEW DECK" : `EDIT: ${editDeck.name}`}</h3>
         <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
@@ -2986,7 +2986,7 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
     {/* Main content */}
     <div className="deck-builder-grid" style={{ display:"grid", gridTemplateColumns:"1fr 330px", flex:1, overflow:"hidden" }}>
       {/* Card pool */}
-      <div style={{ display:"flex", flexDirection:"column", overflow:"hidden", borderRight:"1px solid #2a2010" }}>
+      <div style={{ display:"flex", flexDirection:"column", overflow:"hidden", borderRight:"1px solid rgba(100,60,180,0.2)" }}>
         {/* Filter bar */}
         <div style={{ padding:"10px 16px", borderBottom:"1px solid #2a1808", flexShrink:0 }}>
           <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap", marginBottom:8 }}>
@@ -3046,9 +3046,9 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
       </div>
 
       {/* Deck list panel */}
-      <div style={{ display:"flex", flexDirection:"column", overflow:"hidden", background:"linear-gradient(180deg,#0e0c06,#0a0806)" }}>
+      <div style={{ display:"flex", flexDirection:"column", overflow:"hidden", background:"linear-gradient(180deg,#0e0620,#080418)" }}>
         {/* Deck panel header */}
-        <div style={{ padding:"14px 18px", borderBottom:"1px solid #2a2010", flexShrink:0 }}>
+        <div style={{ padding:"14px 18px", borderBottom:"1px solid rgba(100,60,180,0.2)", flexShrink:0 }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
             <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#c09848", letterSpacing:1.5, fontWeight:700 }}>YOUR DECK</div>
             {deck.length > 0 && <button onClick={() => { setErrMsg(""); setDeck([]); }} style={{ padding:"3px 10px", background:"rgba(180,40,20,0.12)", border:"1px solid #5a1810", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:10, color:"#a06040", cursor:"pointer", letterSpacing:1 }}>CLEAR ALL</button>}
@@ -3956,7 +3956,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     {/* Forfeit confirm */}
     {/* In-battle profile popup */}
     {profilePopup && (<div style={{ position:"fixed", inset:0, zIndex:620, background:"rgba(0,0,0,0.82)", display:"flex", alignItems:"center", justifyContent:"center" }} onClick={()=>setProfilePopup(null)}>
-      <div style={{ background:"linear-gradient(160deg,#1c1a0e,#0e0c06)", border:"1px solid #4a3a18", borderRadius:18, padding:"28px 36px", minWidth:280, textAlign:"center", boxShadow:"0 30px 80px rgba(0,0,0,0.98), 0 0 0 1px #3a2c10", animation:"fadeIn 0.2s ease-out" }} onClick={e=>e.stopPropagation()}>
+      <div style={{ background:"linear-gradient(160deg,#160828,#0c0418)", border:"1px solid rgba(140,90,255,0.3)", borderRadius:18, padding:"28px 36px", minWidth:280, textAlign:"center", boxShadow:"0 30px 80px rgba(0,0,0,0.98), 0 0 40px rgba(100,40,200,0.12)", animation:"fadeIn 0.2s ease-out" }} onClick={e=>e.stopPropagation()}>
         {/* Avatar */}
         <div style={{ width:72, height:72, borderRadius:"50%", overflow:"hidden", margin:"0 auto 14px", border:"2px solid #e8c06077", background:"#1a1610", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:26, color:"#e8c060", boxShadow:"0 4px 20px rgba(0,0,0,0.6)" }}>
           {profilePopup.avatar ? <img src={profilePopup.avatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (profilePopup.name||"?").slice(0,2).toUpperCase()}
@@ -6633,7 +6633,7 @@ function HomeScreen({ setTab, user }) {
         { icon:"⚗", label:"Coming next: Player Profiles · Draft Mode · Tournament Mode", dim:true },
       ];
       return (
-        <section style={{ background:"linear-gradient(180deg,#0c0a06,#080608)", borderTop:"1px solid #2a2010", padding:"32px 28px 36px" }}>
+        <section style={{ background:"linear-gradient(180deg,#070214,#050110)", borderTop:"1px solid rgba(100,60,200,0.2)", padding:"32px 28px 36px" }}>
           <div style={{ maxWidth:1100, margin:"0 auto" }}>
             <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:20 }}>
               <span style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#806040", letterSpacing:3, fontWeight:700 }}>📋 PATCH NOTES</span>
@@ -7155,7 +7155,7 @@ function StoreScreen({ user, onUpdateUser }) {
         @keyframes storeCoin{0%{transform:translateY(0) rotate(0deg)}100%{transform:translateY(-120px) rotate(360deg);opacity:0}}
       `}</style>
       <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:0, overflow:"hidden" }}>
-        <div style={{ position:"absolute", inset:0, background:"radial-gradient(ellipse at 20% 30%,rgba(232,192,96,0.07),transparent 55%),radial-gradient(ellipse at 80% 70%,rgba(180,120,40,0.05),transparent 50%)", animation:"storeGlow 5s ease-in-out infinite" }} />
+        <div style={{ position:"absolute", inset:0, background:"radial-gradient(ellipse at 20% 30%,rgba(232,192,96,0.1),transparent 55%),radial-gradient(ellipse at 80% 70%,rgba(140,80,255,0.08),transparent 50%),radial-gradient(ellipse at 50% 100%,rgba(100,40,200,0.06),transparent 60%)", animation:"storeGlow 5s ease-in-out infinite" }} />
         {[{l:"12%",t:"18%",s:22,d:0},{l:"78%",t:"12%",s:16,d:1.2},{l:"55%",t:"72%",s:20,d:0.6},{l:"30%",t:"60%",s:14,d:1.8},{l:"88%",t:"45%",s:18,d:0.3},{l:"8%",t:"80%",s:12,d:2.1}].map((c,i)=>(
           <div key={i} style={{ position:"absolute", left:c.l, top:c.t, width:c.s, height:c.s, borderRadius:"50%", background:"radial-gradient(circle,#e8c060,#c8900a)", boxShadow:`0 0 ${c.s}px rgba(232,192,96,0.4)`, animation:`storeFloat ${3.5+i*0.7}s ease-in-out ${c.d}s infinite` }} />
         ))}
@@ -8763,11 +8763,11 @@ function PlayerSidebar({ user, onUpdateUser, onlineIds, onClose, onChallenge, on
   return (
     <>
       <div style={{ position:"fixed", inset:0, zIndex:490 }} onClick={onClose} />
-      <div style={{ position:"fixed", top:0, right:0, bottom:0, width:300, zIndex:500, background:"linear-gradient(180deg,#0f0d09 0%,#0a0806 100%)", borderLeft:"2px solid #2a2010", display:"flex", flexDirection:"column", boxShadow:"-12px 0 48px rgba(0,0,0,0.95)", animation:"slideInRight 0.22s ease-out", overflowY:"auto" }} onClick={e => e.stopPropagation()}>
+      <div style={{ position:"fixed", top:0, right:0, bottom:0, width:300, zIndex:500, background:"linear-gradient(180deg,#12082a 0%,#0a0418 100%)", borderLeft:"2px solid rgba(120,70,220,0.3)", display:"flex", flexDirection:"column", boxShadow:"-12px 0 60px rgba(0,0,0,0.98), -4px 0 40px rgba(80,30,160,0.12)", animation:"slideInRight 0.22s ease-out", overflowY:"auto" }} onClick={e => e.stopPropagation()}>
 
         {/* Header */}
-        <div style={{ padding:"16px 16px 12px", borderBottom:"1px solid #1a1408", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
-          <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#604030", letterSpacing:4, fontWeight:700 }}>PLAYER PROFILE</div>
+        <div style={{ padding:"16px 16px 12px", borderBottom:"1px solid rgba(100,60,180,0.2)", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#8060c0", letterSpacing:4, fontWeight:700 }}>PLAYER PROFILE</div>
           <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#604030", fontSize:18, padding:"2px 6px", lineHeight:1 }}>✕</button>
         </div>
 
@@ -9468,7 +9468,7 @@ export default function App() {
     }
   };
   if (loading) return <LoadingScreen />;
-  return (<div style={{ minHeight: "100vh", background: "#161210", color: "#e8e0d0", fontFamily: "'Lora',Georgia,serif", overflowX: "hidden" }} onClick={() => setShowSidebar(false)}>
+  return (<div style={{ minHeight: "100vh", background: "#080310", color: "#e8e0d0", fontFamily: "'Lora',Georgia,serif", overflowX: "hidden" }} onClick={() => setShowSidebar(false)}>
     <style>{`
       html{zoom:1.25}
       @media(max-width:1440px){html{zoom:1}}
@@ -9477,7 +9477,7 @@ export default function App() {
         .mode-cards{grid-template-columns:1fr 1fr!important}
         .deck-builder-grid{grid-template-columns:1fr!important}
       }
-      *{box-sizing:border-box}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:#161210}::-webkit-scrollbar-thumb{background:#4a4022;border-radius:3px}select option{background:#1a1408}button{transition:background .16s ease,box-shadow .16s ease,border-color .16s ease,color .14s ease,opacity .14s ease}canvas{image-rendering:auto}
+      *{box-sizing:border-box}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:#080310}::-webkit-scrollbar-thumb{background:#3a2880;border-radius:3px}select option{background:#100820}button{transition:background .16s ease,box-shadow .16s ease,border-color .16s ease,color .14s ease,opacity .14s ease}canvas{image-rendering:auto}
       @keyframes vfxShake{0%,100%{transform:translate(-50%,-50%)}25%{transform:translate(-55%,-45%)}75%{transform:translate(-45%,-55%)}}
       @keyframes vfxFloat{0%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(-50%,-120%)}}
       @keyframes vfxPulse{0%{opacity:.8;transform:translate(-50%,-50%) scale(.5)}100%{opacity:0;transform:translate(-50%,-50%) scale(2)}}
@@ -9668,9 +9668,9 @@ export default function App() {
         </div>
       </div>
     </div>)}
-    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "radial-gradient(ellipse at 15% 15%,rgba(200,140,20,0.11) 0%,transparent 50%),radial-gradient(ellipse at 85% 85%,rgba(30,120,200,0.08) 0%,transparent 50%)" }} />
+    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, background: "radial-gradient(ellipse at 20% 10%,rgba(120,60,255,0.18) 0%,transparent 45%),radial-gradient(ellipse at 80% 90%,rgba(40,100,255,0.12) 0%,transparent 45%),radial-gradient(ellipse at 50% 50%,rgba(80,20,160,0.08) 0%,transparent 60%)" }} />
 
-    <nav style={{ position: "sticky", width: "100%", top: 0, zIndex: 100, background: "linear-gradient(180deg,#221e12 0%,#181408 100%)", borderBottom: "2px solid #4a3c18", padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 72, boxShadow: "0 4px 24px rgba(0,0,0,0.5)", overflow: "hidden", WebkitFontSmoothing: "antialiased" }} onClick={(e) => { e.stopPropagation(); }}>
+    <nav style={{ position: "sticky", width: "100%", top: 0, zIndex: 100, background: "linear-gradient(180deg,#160630 0%,#0c0420 100%)", borderBottom: "2px solid rgba(140,90,255,0.28)", padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 72, boxShadow: "0 4px 40px rgba(0,0,0,0.7), 0 1px 0 rgba(160,100,255,0.12)", overflow: "hidden", WebkitFontSmoothing: "antialiased" }} onClick={(e) => { e.stopPropagation(); }}>
       <button onClick={() => { if (inPvpMatch) { setNavLeaveModal({ targetTab:"home" }); return; } setTab("home"); }} style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}>
         <WizardHat size={38} />
         <div>
@@ -9687,13 +9687,13 @@ export default function App() {
               if (locked) { setNavLeaveModal({ targetTab: t.id }); return; }
               setTab(t.id);
             }}
-              style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8px 16px", gap: 4, background: active ? "linear-gradient(180deg,rgba(232,192,96,0.18) 0%,rgba(232,192,96,0.06) 100%)" : "transparent", border: "none", borderBottom: active ? "3px solid #e8c060" : "3px solid transparent", cursor: "pointer", minWidth: 68, transition: "all .18s", position: "relative", opacity: locked ? 0.45 : 1 }}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8px 16px", gap: 4, background: active ? "linear-gradient(180deg,rgba(160,100,255,0.2) 0%,rgba(120,70,220,0.08) 100%)" : "transparent", border: "none", borderBottom: active ? "3px solid #e8c060" : "3px solid transparent", cursor: "pointer", minWidth: 68, transition: "background .16s ease, border-color .16s ease, opacity .16s ease", position: "relative", opacity: locked ? 0.45 : 1 }}
 >
-              <span style={{ position: "relative", fontFamily: "'Cinzel',serif", fontSize: 18, fontWeight: 900, color: active ? "#e8c060" : "#b09458", lineHeight: 1, textShadow: active ? "0 0 20px #e8c06088" : "none", transition: "all .18s" }}>
+              <span style={{ position: "relative", fontFamily: "'Cinzel',serif", fontSize: 18, fontWeight: 900, color: active ? "#e8c060" : "#9080c0", lineHeight: 1, textShadow: active ? "0 0 24px #e8c060aa, 0 0 48px #e8c06044" : "none", transition: "color .16s ease, text-shadow .16s ease" }}>
                 {t.icon}
                 {t.id === "quests" && questBadge > 0 && <span style={{ position:"absolute", top:-6, right:-8, minWidth:14, height:14, borderRadius:7, background:"#78cc45", border:"2px solid #181408", fontFamily:"'Cinzel',serif", fontSize:7, fontWeight:900, color:"#0a1804", display:"inline-flex", alignItems:"center", justifyContent:"center", padding:"0 3px", lineHeight:1 }}>{questBadge > 9 ? "9+" : questBadge}</span>}
               </span>
-              <span className="nav-labels" style={{ fontFamily: "'Cinzel',serif", fontSize: 10, fontWeight: 700, color: active ? "#e8c060" : "#a08858", letterSpacing: 1, lineHeight: 1, transition: "all .18s" }}>{t.label}</span>
+              <span className="nav-labels" style={{ fontFamily: "'Cinzel',serif", fontSize: 10, fontWeight: 700, color: active ? "#e8c060" : "#7060a0", letterSpacing: 1, lineHeight: 1, transition: "color .16s ease" }}>{t.label}</span>
             </button>
           );
         })}
@@ -9702,7 +9702,7 @@ export default function App() {
         <a href="https://discord.gg/RrjBaN8Akk" target="_blank" rel="noopener noreferrer" title="Join our Discord" style={{ display:"flex", alignItems:"center", justifyContent:"center", width:34, height:34, borderRadius:8, background:"rgba(88,101,242,0.18)", border:"1px solid #5865F255", color:"#8b9bff", flexShrink:0, transition:"all .18s", textDecoration:"none" }} onMouseEnter={(e)=>{e.currentTarget.style.background="rgba(88,101,242,0.35)";e.currentTarget.style.color="#fff";}} onMouseLeave={(e)=>{e.currentTarget.style.background="rgba(88,101,242,0.18)";e.currentTarget.style.color="#8b9bff";}}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.032.054a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
         </a>
-        <button onClick={(e) => { e.stopPropagation(); setShowSidebar((p) => !p); }} style={{ background:"none", border:"2px solid #e8c06044", borderRadius:"50%", padding:0, cursor:"pointer", width:36, height:36, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:"#e8c060" }}>{user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user.name||"?").slice(0,2).toUpperCase()}</button>
+        <button onClick={(e) => { e.stopPropagation(); setShowSidebar((p) => !p); }} style={{ background:"rgba(140,90,255,0.12)", border:"2px solid rgba(140,90,255,0.4)", borderRadius:"50%", padding:0, cursor:"pointer", width:36, height:36, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:"#e8c060" }}>{user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user.name||"?").slice(0,2).toUpperCase()}</button>
         {friendBadge > 0 && <span style={{ position:"absolute", top:-4, right:-4, minWidth:18, height:18, borderRadius:9, background:"#e04040", border:"2px solid #181408", animation:"pulse 1.2s ease-in-out infinite", boxShadow:"0 0 8px #e0404088", pointerEvents:"none", zIndex:10, fontFamily:"'Cinzel',serif", fontSize:9, fontWeight:900, color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", padding:"0 4px", lineHeight:1 }}>{friendBadge > 9 ? "9+" : friendBadge}</span>}
       </div>)}
     </nav>
