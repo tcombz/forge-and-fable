@@ -1040,16 +1040,15 @@ function Card({ card, size = "md", onClick, animDelay = 0, isThird = false, hide
 function CardV2({ card, size = "md", onClick }) {
   const W = size === "sm" ? 148 : size === "lg" ? 228 : 188;
   const H = size === "sm" ? 240 : size === "lg" ? 370 : 300;
-  const PANEL_H = Math.floor(H * 0.47);
+  const PANEL_H = Math.floor(H * 0.50);
 
   const kws = KW.filter(k => (card.keywords || []).includes(k.name));
   const isCreature = card.atk != null;
 
-  // Rarity border accent — used for the card edge glow + divider
   const rarityAccent = { Common:"#7a9070", Uncommon:"#5070b0", Rare:"#7050c8", Epic:"#9050cc", Legendary:"#c8a030" }[card.rarity] || "#c8a030";
   const accent = card.border || rarityAccent;
-  const BS = size === "sm" ? 24 : 30;
-  const FS = size === "sm" ? 9 : 11;
+  const BS = size === "sm" ? 26 : 32;
+  const FS = size === "sm" ? 10 : 12;
   const NAME_FS = size === "sm" ? 8.5 : size === "lg" ? 13 : 10.5;
   const typeLabel = card.type === "champion" ? "Champion" : card.type === "spell" ? "Spell" : card.type === "environment" ? "Environment" : "Creature";
 
@@ -1057,13 +1056,9 @@ function CardV2({ card, size = "md", onClick }) {
     <div onClick={onClick} style={{
       position:"relative", width:W, height:H, flexShrink:0, cursor:"pointer",
       borderRadius:10,
-      border:`1.5px solid ${accent}88`,
-      boxShadow:[
-        `0 0 0 1px rgba(0,0,0,0.9)`,
-        `0 0 18px ${accent}28`,
-        `0 8px 30px rgba(0,0,0,0.85)`,
-      ].join(","),
-      overflow:"hidden", background:"#050210"
+      border:`1.5px solid ${accent}99`,
+      boxShadow:[`0 0 0 1px rgba(0,0,0,0.9)`, `0 0 20px ${accent}30`, `0 8px 30px rgba(0,0,0,0.9)`].join(","),
+      overflow:"hidden", background:"#04020e"
     }}>
 
       {/* ─── FULL-BLEED ART ─── */}
@@ -1071,109 +1066,110 @@ function CardV2({ card, size = "md", onClick }) {
         <CardArt card={card} />
       </div>
 
-      {/* ─── GRADIENT: art fades into dark panel ─── */}
-      <div style={{
-        position:"absolute", inset:0, pointerEvents:"none",
-        background:"linear-gradient(to bottom, rgba(5,2,16,0.10) 0%, transparent 20%, transparent 30%, rgba(5,2,16,0.50) 48%, rgba(5,2,16,0.93) 60%, rgba(5,2,16,0.98) 100%)"
-      }} />
+      {/* ─── GLOSS SHEEN — top-left ─── */}
+      <div style={{ position:"absolute", inset:0, pointerEvents:"none",
+        background:"radial-gradient(ellipse at 28% 16%, rgba(255,255,255,0.06) 0%, transparent 55%)" }} />
 
-      {/* ─── GLOSS SHEEN (top-left highlight) ─── */}
-      <div style={{
-        position:"absolute", inset:0, pointerEvents:"none",
-        background:"radial-gradient(ellipse at 28% 18%, rgba(255,255,255,0.055) 0%, transparent 60%)"
-      }} />
+      {/* ─── FADE TRANSITION: art → dark panel ─── */}
+      <div style={{ position:"absolute", inset:0, pointerEvents:"none",
+        background:"linear-gradient(to bottom, transparent 0%, transparent 22%, rgba(4,2,14,0.40) 38%, rgba(4,2,14,0.92) 50%, rgba(4,2,14,1.0) 53%, rgba(4,2,14,1.0) 100%)" }} />
 
-      {/* ─── MANA BADGE — top left ─── */}
+      {/* ─── MANA BADGE — top left — BLUE CRYSTAL ─── */}
       <div style={{
         position:"absolute", top:8, left:8, zIndex:10,
-        width:BS+4, height:BS+4, borderRadius:"50%",
-        background:"radial-gradient(circle at 35% 32%, #282018, #0c0808)",
-        border:`2px solid ${accent}`,
-        boxShadow:`0 0 10px ${accent}55, inset 0 1px 0 rgba(255,255,255,0.08)`,
+        width:BS+2, height:BS+2, borderRadius:"50%",
+        background:"radial-gradient(circle at 35% 32%, #3838c8, #0c0a50)",
+        border:"2px solid #7070e8",
+        boxShadow:"0 0 12px rgba(80,80,220,0.65), inset 0 1px 0 rgba(180,180,255,0.15)",
         display:"flex", alignItems:"center", justifyContent:"center",
-        fontFamily:"'Cinzel',serif", fontWeight:900,
-        fontSize:FS+2, color:"#f0e0a0",
-        textShadow:"0 1px 4px rgba(0,0,0,0.95)"
+        fontFamily:"'Cinzel',serif", fontWeight:900, fontSize:FS+2,
+        color:"#dde8ff", textShadow:"0 0 8px rgba(120,140,255,0.9), 0 1px 3px rgba(0,0,0,0.95)"
       }}>{card.cost}</div>
 
-      {/* ─── BOTTOM PANEL ─── */}
+      {/* ─── SOLID DARK BACKING for panel ─── */}
+      <div style={{ position:"absolute", bottom:0, left:0, right:0, height:PANEL_H, background:"rgba(4,2,14,1.0)", zIndex:3 }} />
+
+      {/* ─── PANEL CONTENT ─── */}
       <div style={{
         position:"absolute", bottom:0, left:0, right:0, height:PANEL_H,
-        padding: size==="sm" ? "7px 8px 6px" : "9px 10px 7px",
+        padding: size==="sm" ? "7px 8px 5px" : "9px 10px 6px",
         display:"flex", flexDirection:"column", gap:3, zIndex:5
       }}>
 
         {/* Name + stat badges row */}
-        <div style={{ display:"flex", alignItems:"flex-start", gap:4 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:4, flexShrink:0 }}>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{
-              fontFamily:"'Cinzel',serif", fontWeight:900,
-              fontSize:NAME_FS, color:"#f0e0a0",
-              textTransform:"uppercase", letterSpacing:0.4, lineHeight:1.1,
-              whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis",
-              textShadow:"0 1px 8px rgba(0,0,0,0.95), 0 0 16px rgba(0,0,0,0.8)"
+              fontFamily:"'Cinzel',serif", fontWeight:900, fontSize:NAME_FS,
+              color:"#f0e0a0", textTransform:"uppercase", letterSpacing:0.4, lineHeight:1.1,
+              whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis"
             }}>{card.name}</div>
             <div style={{
-              fontSize: size==="sm" ? 6.5 : 7.5,
-              color:"#907858", fontStyle:"italic",
-              fontFamily:"'Lora',serif", marginTop:1,
-              textShadow:"0 1px 4px rgba(0,0,0,0.9)"
-            }}>{card.region}{card.type === "champion" ? " · Champion" : ""}</div>
+              fontSize: size==="sm" ? 6.5 : 7.5, color:"#706050",
+              fontStyle:"italic", fontFamily:"'Lora',serif", marginTop:1
+            }}>{card.region}{card.type==="champion" ? " · Champion" : ""}</div>
           </div>
 
-          {isCreature && <>
-            {/* ATK — gold circle */}
-            <div style={{
-              flexShrink:0, width:BS, height:BS, borderRadius:"50%",
-              background:"radial-gradient(circle at 38% 35%, #3a2a08, #1a1206)",
-              border:"1.5px solid #c8a030",
-              boxShadow:"0 2px 8px rgba(0,0,0,0.85), 0 0 6px rgba(200,160,48,0.3)",
-              display:"flex", alignItems:"center", justifyContent:"center",
-              fontFamily:"'Cinzel',serif", fontWeight:900, fontSize:FS,
-              color:"#f0d060", textShadow:"0 1px 3px rgba(0,0,0,0.9)"
-            }}>{card.currentAtk ?? card.atk}</div>
-            {/* HP — crimson circle */}
-            <div style={{
-              flexShrink:0, width:BS, height:BS, borderRadius:"50%",
-              background:"radial-gradient(circle at 38% 35%, #3a0e14, #1a0608)",
-              border:"1.5px solid #882030",
-              boxShadow:"0 2px 8px rgba(0,0,0,0.85), 0 0 6px rgba(180,30,50,0.3)",
-              display:"flex", alignItems:"center", justifyContent:"center",
-              fontFamily:"'Cinzel',serif", fontWeight:900, fontSize:FS,
-              color:"#ffa0a0", textShadow:"0 1px 3px rgba(0,0,0,0.9)"
-            }}>{card.currentHp ?? card.hp}</div>
-          </>}
+          {/* ATK — AMBER / ORANGE */}
+          {isCreature && <div style={{
+            flexShrink:0, width:BS, height:BS, borderRadius:"50%",
+            background:"radial-gradient(circle at 36% 32%, #d06010, #5a2808)",
+            border:"2px solid #e8a020",
+            boxShadow:"0 0 10px rgba(220,140,20,0.55), inset 0 1px 0 rgba(255,200,80,0.12)",
+            display:"flex", alignItems:"center", justifyContent:"center",
+            fontFamily:"'Cinzel',serif", fontWeight:900, fontSize:FS,
+            color:"#ffe060", textShadow:"0 0 6px rgba(255,200,40,0.7), 0 1px 3px rgba(0,0,0,0.95)"
+          }}>{card.currentAtk ?? card.atk}</div>}
+
+          {/* HP — VIVID RED */}
+          {isCreature && <div style={{
+            flexShrink:0, width:BS, height:BS, borderRadius:"50%",
+            background:"radial-gradient(circle at 36% 32%, #cc1020, #580410)",
+            border:"2px solid #ee2030",
+            boxShadow:"0 0 10px rgba(220,20,40,0.55), inset 0 1px 0 rgba(255,120,120,0.12)",
+            display:"flex", alignItems:"center", justifyContent:"center",
+            fontFamily:"'Cinzel',serif", fontWeight:900, fontSize:FS,
+            color:"#ffb0b0", textShadow:"0 0 6px rgba(255,80,80,0.7), 0 1px 3px rgba(0,0,0,0.95)"
+          }}>{card.currentHp ?? card.hp}</div>}
         </div>
 
-        {/* Accent divider */}
-        <div style={{ height:1, flexShrink:0, background:`linear-gradient(90deg, transparent, ${accent}55, transparent)`, margin:"1px 0" }} />
+        {/* Rarity-colored accent divider */}
+        <div style={{ height:1, flexShrink:0, background:`linear-gradient(90deg, transparent, ${accent}70, transparent)` }} />
 
-        {/* Type + keyword line */}
+        {/* Type line */}
         <div style={{
-          fontSize: size==="sm" ? 6 : 7.5, color:"#786050",
-          fontFamily:"'Cinzel',serif", letterSpacing:0.3, fontStyle:"italic",
-          flexShrink:0, textShadow:"0 1px 3px rgba(0,0,0,0.8)"
-        }}>
-          ⚙ {typeLabel}{kws.length > 0 ? " · " + kws.map(k=>k.name).join(" · ") : ""}
-        </div>
+          fontSize: size==="sm" ? 6 : 7.5, color:"#605040",
+          fontFamily:"'Cinzel',serif", letterSpacing:0.3, fontStyle:"italic", flexShrink:0
+        }}>⚙ {typeLabel}</div>
+
+        {/* Keyword tags */}
+        {kws.length > 0 && (
+          <div style={{ display:"flex", gap:4, flexWrap:"wrap", flexShrink:0 }}>
+            {kws.map(k => (
+              <span key={k.name} style={{
+                fontSize: size==="sm" ? 6 : 7, padding:"2px 7px", borderRadius:20,
+                background:`${k.color}30`, border:`1px solid ${k.color}99`,
+                color:k.color, fontWeight:700, fontFamily:"'Cinzel',serif", letterSpacing:0.5
+              }}>{k.icon} {k.name}</span>
+            ))}
+          </div>
+        )}
 
         {/* Ability text */}
         <div style={{
           flex:1, overflow:"hidden",
-          fontSize: size==="sm" ? 6.5 : 8,
-          color:"#c8b898", lineHeight:1.55,
-          fontFamily:"'Lora',serif",
-          textShadow:"0 1px 2px rgba(0,0,0,0.8)"
+          fontSize: size==="sm" ? 6.5 : 8, color:"#c0b090",
+          lineHeight:1.55, fontFamily:"'Lora',serif"
         }}>{card.ability}</div>
 
-        {/* Bottom metadata bar */}
+        {/* Bottom metadata */}
         <div style={{
           display:"flex", justifyContent:"space-between", alignItems:"center",
-          flexShrink:0, fontSize:5.5, color:"#403028",
+          flexShrink:0, fontSize:5.5, color:"#3a2a18",
           fontFamily:"'Cinzel',serif", letterSpacing:0.8
         }}>
           <span>{(card.rarity||"").toUpperCase()}</span>
-          <span style={{ color:accent+"44" }}>◆</span>
+          <span style={{ color:accent+"50" }}>◆</span>
           <span>FORGE {"&"} FABLE</span>
         </div>
       </div>
