@@ -1055,9 +1055,9 @@ function CardV2({ card, size = "md", onClick }) {
   return (
     <div onClick={onClick} style={{
       position:"relative", width:W, height:H, flexShrink:0, cursor:"pointer",
-      borderRadius:10,
-      border:`1.5px solid ${accent}99`,
-      boxShadow:[`0 0 0 1px rgba(0,0,0,0.9)`, `0 0 20px ${accent}30`, `0 8px 30px rgba(0,0,0,0.9)`].join(","),
+      borderRadius:7,
+      border:`2px solid ${accent}bb`,
+      boxShadow:[`0 0 0 1px rgba(0,0,0,0.95)`, `0 0 22px ${accent}35`, `0 10px 32px rgba(0,0,0,0.95)`].join(","),
       overflow:"hidden", background:"#04020e"
     }}>
 
@@ -1070,9 +1070,9 @@ function CardV2({ card, size = "md", onClick }) {
       <div style={{ position:"absolute", inset:0, pointerEvents:"none",
         background:"radial-gradient(ellipse at 28% 16%, rgba(255,255,255,0.06) 0%, transparent 55%)" }} />
 
-      {/* ─── FADE TRANSITION: art → dark panel ─── */}
+      {/* ─── DARK VIGNETTE: art visible through bottom, no solid block ─── */}
       <div style={{ position:"absolute", inset:0, pointerEvents:"none",
-        background:"linear-gradient(to bottom, transparent 0%, transparent 22%, rgba(4,2,14,0.40) 38%, rgba(4,2,14,0.92) 50%, rgba(4,2,14,1.0) 53%, rgba(4,2,14,1.0) 100%)" }} />
+        background:"linear-gradient(to bottom, transparent 0%, transparent 26%, rgba(4,2,14,0.30) 42%, rgba(4,2,14,0.72) 58%, rgba(4,2,14,0.86) 100%)" }} />
 
       {/* ─── MANA BADGE — top left — BLUE CRYSTAL ─── */}
       <div style={{
@@ -1086,14 +1086,14 @@ function CardV2({ card, size = "md", onClick }) {
         color:"#dde8ff", textShadow:"0 0 8px rgba(120,140,255,0.9), 0 1px 3px rgba(0,0,0,0.95)"
       }}>{card.cost}</div>
 
-      {/* ─── SOLID DARK BACKING for panel ─── */}
-      <div style={{ position:"absolute", bottom:0, left:0, right:0, height:PANEL_H, background:"rgba(4,2,14,1.0)", zIndex:3 }} />
-
-      {/* ─── PANEL CONTENT ─── */}
+      {/* ─── PANEL CONTENT — smoked glass, art visible underneath ─── */}
       <div style={{
         position:"absolute", bottom:0, left:0, right:0, height:PANEL_H,
         padding: size==="sm" ? "7px 8px 5px" : "9px 10px 6px",
-        display:"flex", flexDirection:"column", gap:3, zIndex:5
+        display:"flex", flexDirection:"column", gap:3, zIndex:5,
+        background:"rgba(4,2,14,0.18)",
+        backdropFilter:"blur(2px)",
+        WebkitBackdropFilter:"blur(2px)"
       }}>
 
         {/* Name + stat badges row */}
@@ -1102,11 +1102,13 @@ function CardV2({ card, size = "md", onClick }) {
             <div style={{
               fontFamily:"'Cinzel',serif", fontWeight:900, fontSize:NAME_FS,
               color:"#f0e0a0", textTransform:"uppercase", letterSpacing:0.4, lineHeight:1.1,
-              whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis"
+              whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis",
+              textShadow:"0 0 12px rgba(0,0,0,1), 0 1px 4px rgba(0,0,0,1), 0 2px 8px rgba(0,0,0,0.9)"
             }}>{card.name}</div>
             <div style={{
-              fontSize: size==="sm" ? 6.5 : 7.5, color:"#706050",
-              fontStyle:"italic", fontFamily:"'Lora',serif", marginTop:1
+              fontSize: size==="sm" ? 6.5 : 7.5, color:"#a09070",
+              fontStyle:"italic", fontFamily:"'Lora',serif", marginTop:1,
+              textShadow:"0 1px 4px rgba(0,0,0,1), 0 0 8px rgba(0,0,0,0.9)"
             }}>{card.region}{card.type==="champion" ? " · Champion" : ""}</div>
           </div>
 
@@ -1138,8 +1140,9 @@ function CardV2({ card, size = "md", onClick }) {
 
         {/* Type line */}
         <div style={{
-          fontSize: size==="sm" ? 6 : 7.5, color:"#605040",
-          fontFamily:"'Cinzel',serif", letterSpacing:0.3, fontStyle:"italic", flexShrink:0
+          fontSize: size==="sm" ? 6 : 7.5, color:"#807060",
+          fontFamily:"'Cinzel',serif", letterSpacing:0.3, fontStyle:"italic", flexShrink:0,
+          textShadow:"0 1px 4px rgba(0,0,0,1), 0 0 8px rgba(0,0,0,0.9)"
         }}>⚙ {typeLabel}</div>
 
         {/* Keyword tags */}
@@ -1148,8 +1151,9 @@ function CardV2({ card, size = "md", onClick }) {
             {kws.map(k => (
               <span key={k.name} style={{
                 fontSize: size==="sm" ? 6 : 7, padding:"2px 7px", borderRadius:20,
-                background:`${k.color}30`, border:`1px solid ${k.color}99`,
-                color:k.color, fontWeight:700, fontFamily:"'Cinzel',serif", letterSpacing:0.5
+                background:`rgba(0,0,0,0.65)`, border:`1px solid ${k.color}bb`,
+                color:k.color, fontWeight:700, fontFamily:"'Cinzel',serif", letterSpacing:0.5,
+                textShadow:`0 0 6px ${k.color}88`
               }}>{k.icon} {k.name}</span>
             ))}
           </div>
@@ -1158,18 +1162,20 @@ function CardV2({ card, size = "md", onClick }) {
         {/* Ability text */}
         <div style={{
           flex:1, overflow:"hidden",
-          fontSize: size==="sm" ? 6.5 : 8, color:"#c0b090",
-          lineHeight:1.55, fontFamily:"'Lora',serif"
+          fontSize: size==="sm" ? 6.5 : 8, color:"#d8caa8",
+          lineHeight:1.55, fontFamily:"'Lora',serif",
+          textShadow:"0 1px 6px rgba(0,0,0,1), 0 0 10px rgba(0,0,0,0.95)"
         }}>{card.ability}</div>
 
         {/* Bottom metadata */}
         <div style={{
           display:"flex", justifyContent:"space-between", alignItems:"center",
-          flexShrink:0, fontSize:5.5, color:"#3a2a18",
-          fontFamily:"'Cinzel',serif", letterSpacing:0.8
+          flexShrink:0, fontSize:5.5, color:"#504030",
+          fontFamily:"'Cinzel',serif", letterSpacing:0.8,
+          textShadow:"0 1px 3px rgba(0,0,0,1)"
         }}>
           <span>{(card.rarity||"").toUpperCase()}</span>
-          <span style={{ color:accent+"50" }}>◆</span>
+          <span style={{ color:accent+"70" }}>◆</span>
           <span>FORGE {"&"} FABLE</span>
         </div>
       </div>
