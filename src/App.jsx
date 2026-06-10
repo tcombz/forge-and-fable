@@ -1797,16 +1797,16 @@ function BattleChat({ user, aiMode, matchId }) {
         <button onClick={()=>setShowGifPanel(v=>!v)} style={{ padding:"4px 10px", background:showGifPanel?"linear-gradient(135deg,#c89010,#f0c040)":"rgba(232,192,96,0.1)", border:"1px solid #3a2c10", borderRadius:6, fontSize:10, cursor:"pointer", color:showGifPanel?"#1a1000":"#a09060", fontFamily:"'Cinzel',serif", fontWeight:600 }}>GIF</button>
       </div>
       {showGifPanel && (
-        <div style={{ padding:"8px 10px", borderBottom:"1px solid #1e1808", flexShrink:0, background:"#0a0806" }}>
+        <div style={{ padding:"8px 10px", borderBottom:"1px solid rgba(60,40,100,0.3)", flexShrink:0, background:"#060214" }}>
           <div style={{ display:"flex", gap:6, marginBottom:6 }}>
-            <input value={gifQuery} onChange={e=>setGifQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&searchGifs()} placeholder="Search GIFs..." style={{ flex:1, padding:"5px 8px", background:"#100e08", border:"1px solid #2a2010", borderRadius:6, color:"#f0e8d8", fontSize:11, outline:"none" }} />
+            <input value={gifQuery} onChange={e=>setGifQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&searchGifs()} placeholder="Search GIFs..." style={{ flex:1, padding:"5px 8px", background:"#0a0418", border:"1px solid rgba(100,60,180,0.25)", borderRadius:6, color:"#f0e8d8", fontSize:11, outline:"none" }} />
             <button onClick={searchGifs} disabled={searching} style={{ padding:"5px 10px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:6, fontSize:10, cursor:"pointer", color:"#1a1000", fontWeight:700 }}>{searching?"...":"GO"}</button>
           </div>
           {gifs.length > 0 && (
             <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:4, maxHeight:140, overflowY:"auto" }}>
               {gifs.map((g,i) => {
                 const url = g?.images?.fixed_height_small?.url;
-                return url ? (<img key={i} src={url} alt="" onClick={()=>sendGif(g)} style={{ width:"100%", height:60, objectFit:"cover", borderRadius:4, cursor:"pointer", border:"1px solid #2a2010" }} />) : null;
+                return url ? (<img key={i} src={url} alt="" onClick={()=>sendGif(g)} style={{ width:"100%", height:60, objectFit:"cover", borderRadius:4, cursor:"pointer", border:"1px solid rgba(80,50,140,0.4)" }} />) : null;
               })}
             </div>
           )}
@@ -2188,7 +2188,7 @@ function MatchResultOverlay({ result, opponentName, isAI, onPlayAgain, onExit, p
               VIEW QUESTS →
             </Btn>
           )}
-          <Btn variant="ghost" onClick={onExit} style={{ padding:"13px", fontSize:12, letterSpacing:1, width:"100%", border:"2px solid #2a2010" }}>
+          <Btn variant="ghost" onClick={onExit} style={{ padding:"13px", fontSize:12, letterSpacing:1, width:"100%", border:"2px solid rgba(100,60,180,0.3)" }}>
             EXIT
           </Btn>
         </div>
@@ -2742,7 +2742,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
           {g.phase === "player" && !aiThink ? (
             <TurnTimer key={timerKey} active={true} onExpire={endTurn} duration={CFG.aiTurnTimer} turnNum={g.turn}>
               {attCard ? (
-                <button onClick={g.enemyBoard.length === 0 ? atkFace : undefined} style={{ padding: "3px 12px", background: g.enemyBoard.length === 0 ? "linear-gradient(135deg,#6a0808,#a01010)" : "rgba(255,255,255,0.04)", border: `1px solid ${g.enemyBoard.length === 0 ? "#e04040" : "#2a1a10"}`, borderRadius: 20, color: g.enemyBoard.length === 0 ? "#ffaaaa" : "#604030", fontFamily: "'Cinzel',serif", fontSize: 9, cursor: g.enemyBoard.length === 0 ? "pointer" : "default" }}>
+                <button onClick={g.enemyBoard.length === 0 ? atkFace : undefined} style={{ padding: "3px 12px", background: g.enemyBoard.length === 0 ? "linear-gradient(135deg,#6a0808,#a01010)" : "rgba(255,255,255,0.04)", border: `1px solid ${g.enemyBoard.length === 0 ? "#e04040" : "rgba(80,50,140,0.3)"}`, borderRadius: 20, color: g.enemyBoard.length === 0 ? "#ffaaaa" : "#8060c0", fontFamily: "'Cinzel',serif", fontSize: 9, cursor: g.enemyBoard.length === 0 ? "pointer" : "default" }}>
                   {g.enemyBoard.length === 0 ? "STRIKE HERO" : "SELECT TARGET"}
                 </button>
               ) : null}
@@ -2751,7 +2751,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
             <>
               <div style={{ flex: 1, height: 1, background: "linear-gradient(to right,transparent,#382e18)" }} />
               {attCard ? (
-                <button onClick={g.enemyBoard.length === 0 ? atkFace : undefined} style={{ padding: "5px 16px", background: g.enemyBoard.length === 0 ? "linear-gradient(135deg,#6a0808,#a01010)" : "rgba(255,255,255,0.04)", border: `1px solid ${g.enemyBoard.length === 0 ? "#e04040" : "#2a1a10"}`, borderRadius: 20, color: g.enemyBoard.length === 0 ? "#ffaaaa" : "#604030", fontFamily: "'Cinzel',serif", fontSize: 9, cursor: g.enemyBoard.length === 0 ? "pointer" : "default" }}>
+                <button onClick={g.enemyBoard.length === 0 ? atkFace : undefined} style={{ padding: "5px 16px", background: g.enemyBoard.length === 0 ? "linear-gradient(135deg,#6a0808,#a01010)" : "rgba(255,255,255,0.04)", border: `1px solid ${g.enemyBoard.length === 0 ? "#e04040" : "rgba(80,50,140,0.3)"}`, borderRadius: 20, color: g.enemyBoard.length === 0 ? "#ffaaaa" : "#8060c0", fontFamily: "'Cinzel',serif", fontSize: 9, cursor: g.enemyBoard.length === 0 ? "pointer" : "default" }}>
                   {g.enemyBoard.length === 0 ? "STRIKE HERO" : "SELECT TARGET"}
                 </button>
               ) : (
@@ -3966,12 +3966,12 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
         {/* Rank badge */}
         {(() => { const r = profilePopup.rating||1000; const rank = r>=1800?"💎 DIAMOND":r>=1600?"🔮 PLATINUM":r>=1400?"🥇 GOLD":r>=1200?"🥈 SILVER":r>=1000?"🥉 BRONZE":"⚔ IRON"; return <div style={{ fontSize:10, color:"#c0a040", fontFamily:"'Cinzel',serif", letterSpacing:2, marginBottom:16, opacity:0.8 }}>{rank}</div>; })()}
         {/* Stats row */}
-        <div style={{ display:"flex", gap:0, justifyContent:"center", marginBottom:16, background:"rgba(255,255,255,0.03)", borderRadius:10, overflow:"hidden", border:"1px solid #2a2010" }}>
-          <div style={{ flex:1, padding:"12px 8px", borderRight:"1px solid #2a2010" }}>
+        <div style={{ display:"flex", gap:0, justifyContent:"center", marginBottom:16, background:"rgba(255,255,255,0.03)", borderRadius:10, overflow:"hidden", border:"1px solid rgba(100,60,180,0.2)" }}>
+          <div style={{ flex:1, padding:"12px 8px", borderRight:"1px solid rgba(80,50,140,0.25)" }}>
             <div style={{ fontFamily:"'Cinzel',serif", fontSize:20, fontWeight:700, color:"#78cc45", lineHeight:1 }}>{profilePopup.wins||0}</div>
             <div style={{ fontSize:8, color:"#50602e", letterSpacing:2, marginTop:4, fontFamily:"'Cinzel',serif" }}>WINS</div>
           </div>
-          {profilePopup.losses != null && <div style={{ flex:1, padding:"12px 8px", borderRight:"1px solid #2a2010" }}>
+          {profilePopup.losses != null && <div style={{ flex:1, padding:"12px 8px", borderRight:"1px solid rgba(80,50,140,0.25)" }}>
             <div style={{ fontFamily:"'Cinzel',serif", fontSize:20, fontWeight:700, color:"#e05050", lineHeight:1 }}>{profilePopup.losses}</div>
             <div style={{ fontSize:8, color:"#603030", letterSpacing:2, marginTop:4, fontFamily:"'Cinzel',serif" }}>LOSSES</div>
           </div>}
@@ -4293,7 +4293,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           {!gs.winner ? (
             <TurnTimer key={timerKey} active={true} onExpire={isMyTurn ? handleTimerExpire : ()=>{}} duration={CFG.pvpTurnTimer} turnNum={gs.turn}>
               {isMyTurn && attCard ? (
-                <button onClick={ai.enemyBoard.length===0?atkFace:undefined} style={{ padding:"3px 12px", background:ai.enemyBoard.length===0?"linear-gradient(135deg,#6a0808,#a01010)":"rgba(255,255,255,0.04)", border:`1px solid ${ai.enemyBoard.length===0?"#e04040":"#2a1a10"}`, borderRadius:20, color:ai.enemyBoard.length===0?"#ffaaaa":"#604030", fontFamily:"'Cinzel',serif", fontSize:9, cursor:ai.enemyBoard.length===0?"pointer":"default" }}>
+                <button onClick={ai.enemyBoard.length===0?atkFace:undefined} style={{ padding:"3px 12px", background:ai.enemyBoard.length===0?"linear-gradient(135deg,#6a0808,#a01010)":"rgba(255,255,255,0.04)", border:`1px solid ${ai.enemyBoard.length===0?"#e04040":"rgba(80,50,140,0.3)"}`, borderRadius:20, color:ai.enemyBoard.length===0?"#ffaaaa":"#8060c0", fontFamily:"'Cinzel',serif", fontSize:9, cursor:ai.enemyBoard.length===0?"pointer":"default" }}>
                   {ai.enemyBoard.length===0?"STRIKE HERO":"SELECT TARGET"}
                 </button>
               ) : null}
@@ -5128,7 +5128,7 @@ function LeaderboardScreen({ user, onBack, onViewProfile }) {
                     {isTop3 ? podiumIcons[p.position-1] : p.position}
                   </div>
                   <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                    <div style={{ width:32, height:32, borderRadius:"50%", overflow:"hidden", border:`1.5px solid ${rank.color}55`, background:"#1a1408", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:10, color:"#c09040", flexShrink:0 }}>
+                    <div style={{ width:32, height:32, borderRadius:"50%", overflow:"hidden", border:`1.5px solid ${rank.color}55`, background:"#120830", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:10, color:"#c09040", flexShrink:0 }}>
                       {p.avatar_url ? <img src={p.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (p.name||"?").slice(0,2).toUpperCase()}
                     </div>
                     <div>
@@ -5772,10 +5772,10 @@ function PackOpening({ user, onUpdateUser }) {
         <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
           {revealed.length < opening.cards.length ? (<>
             <button onClick={revealNext} style={{ padding: "11px 24px", background: "linear-gradient(135deg,#c89010,#f0c040)", border: "none", borderRadius: 8, fontFamily: "'Cinzel',serif", fontSize: 11, fontWeight: 700, letterSpacing: 1, color: "#1a1000", cursor: "pointer" }}>REVEAL NEXT</button>
-            <button onClick={revealAll} style={{ padding: "11px 24px", background: "transparent", border: "1px solid #3a2c10", borderRadius: 8, fontFamily: "'Cinzel',serif", fontSize: 11, color: "#a09058", cursor: "pointer" }}>REVEAL ALL</button>
+            <button onClick={revealAll} style={{ padding: "11px 24px", background: "transparent", border: "1px solid rgba(100,60,180,0.3)", borderRadius: 8, fontFamily: "'Cinzel',serif", fontSize: 11, color: "#9070c0", cursor: "pointer" }}>REVEAL ALL</button>
           </>) : (<>
             <button onClick={() => openPack(opening.pack)} style={{ padding: "11px 24px", background: "linear-gradient(135deg,#c89010,#f0c040)", border: "none", borderRadius: 8, fontFamily: "'Cinzel',serif", fontSize: 11, fontWeight: 700, color: "#1a1000", cursor: "pointer" }}>OPEN ANOTHER</button>
-            <button onClick={() => { setOpening(null); setRevealed([]); setRevIdx(-1); }} style={{ padding: "11px 20px", background: "transparent", border: "1px solid #3a2c10", borderRadius: 8, fontFamily: "'Cinzel',serif", fontSize: 11, color: "#a09058", cursor: "pointer" }}>DONE</button>
+            <button onClick={() => { setOpening(null); setRevealed([]); setRevIdx(-1); }} style={{ padding: "11px 20px", background: "transparent", border: "1px solid rgba(100,60,180,0.3)", borderRadius: 8, fontFamily: "'Cinzel',serif", fontSize: 11, color: "#9070c0", cursor: "pointer" }}>DONE</button>
           </>)}
         </div>
       </div>
@@ -6101,12 +6101,12 @@ function CollectionScreen({ user, onUpdateUser, onDeckBuilding, newPlayerMode })
               {activeSel !== "base" && <span style={{ width:6, height:6, borderRadius:"50%", background:"#e8c060", display:"inline-block" }} />}
             </button>
             {isOpen && (
-              <div style={{ position:"absolute", top:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", zIndex:200, background:"#0e0c08", border:"1px solid #3a2810", borderRadius:12, padding:12, boxShadow:"0 12px 40px rgba(0,0,0,0.9)", minWidth:280 }}>
+              <div style={{ position:"absolute", top:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", zIndex:200, background:"#0e0620", border:"1px solid rgba(140,90,255,0.3)", borderRadius:12, padding:12, boxShadow:"0 12px 40px rgba(0,0,0,0.9)", minWidth:280 }}>
                 <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#c09048", marginBottom:10, letterSpacing:2, fontWeight:700 }}>CHOOSE ART STYLE</div>
                 <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
                   {/* Base art */}
                   <div onClick={() => selectArt(card.id, "base")}
-                    style={{ cursor:"pointer", border:`2px solid ${activeSel==="base"?"#e8c060":"#2a2010"}`, borderRadius:10, overflow:"hidden", width:100, background:"#0c0a06", transition:"all .2s", boxShadow: activeSel==="base"?"0 0 14px #e8c06055":"none" }}>
+                    style={{ cursor:"pointer", border:`2px solid ${activeSel==="base"?"#e8c060":"rgba(80,50,140,0.4)"}`, borderRadius:10, overflow:"hidden", width:100, background:"#0a0418", transition:"all .2s", boxShadow: activeSel==="base"?"0 0 14px #e8c06055":"none" }}>
                     <div style={{ height:70, position:"relative" }}><CardArt card={card} /></div>
                     <div style={{ padding:"5px 6px", textAlign:"center" }}>
                       <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color: activeSel==="base"?"#e8c060":"#a08040", fontWeight:700 }}>ORIGINAL</div>
@@ -6120,7 +6120,7 @@ function CollectionScreen({ user, onUpdateUser, onDeckBuilding, newPlayerMode })
                     const altRarityGlow = RARITY_GLOW[alt.rarity] || null;
                     return (
                       <div key={alt.setId} onClick={() => selectArt(card.id, alt.setId)}
-                        style={{ cursor:"pointer", border:`2px solid ${isActive?(altRarityGlow||"#e8c060"):"#2a2010"}`, borderRadius:10, overflow:"hidden", width:100, background:"#0c0a06", transition:"all .2s", boxShadow: isActive ? `0 0 16px ${altRarityGlow||"#e8c060"}88` : altRarityGlow ? `0 0 6px ${altRarityGlow}44` : "none", filter: altRarityGlow ? `drop-shadow(0 0 5px ${altRarityGlow}66)` : "none" }}>
+                        style={{ cursor:"pointer", border:`2px solid ${isActive?(altRarityGlow||"#e8c060"):"rgba(80,50,140,0.4)"}`, borderRadius:10, overflow:"hidden", width:100, background:"#0a0418", transition:"all .2s", boxShadow: isActive ? `0 0 16px ${altRarityGlow||"#e8c060"}88` : altRarityGlow ? `0 0 6px ${altRarityGlow}44` : "none", filter: altRarityGlow ? `drop-shadow(0 0 5px ${altRarityGlow}66)` : "none" }}>
                         <div style={{ height:70, position:"relative", overflow:"hidden" }}>
                           {alt.imageUrl ? <img src={alt.imageUrl} alt={alt.setName} style={{ width:"100%", height:"100%", objectFit:"cover" }} referrerPolicy="no-referrer" /> : <CardArt card={card} />}
                         </div>
@@ -6222,9 +6222,9 @@ function CollectionScreen({ user, onUpdateUser, onDeckBuilding, newPlayerMode })
           <div style={{ fontSize: 11, color: "#806040", marginTop: 3 }}>{owned.length} / {ownablePool.length} cards obtained</div>
         </div>
         <button onClick={() => openDeckBuilder("select")}
-          style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 22px", background: "linear-gradient(135deg,#1a1608,#2a2010)", border: "2px solid #e8c06055", borderRadius: 12, cursor: "pointer", fontFamily: "'Cinzel',serif", color: "#e8c060", transition: "all .2s" }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor="#e8c060aa"; e.currentTarget.style.background="linear-gradient(135deg,#2a2010,#3a3018)"; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor="#e8c06055"; e.currentTarget.style.background="linear-gradient(135deg,#1a1608,#2a2010)"; }}>
+          style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 22px", background: "linear-gradient(135deg,#1a0838,#0e0420)", border: "2px solid #e8c06055", borderRadius: 12, cursor: "pointer", fontFamily: "'Cinzel',serif", color: "#e8c060", transition: "all .2s" }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor="#e8c060aa"; e.currentTarget.style.background="linear-gradient(135deg,#2a1048,#1a0830)"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor="#e8c06055"; e.currentTarget.style.background="linear-gradient(135deg,#1a0838,#0e0420)"; }}>
           <span style={{ fontSize: 22 }}>🗂</span>
           <div style={{ textAlign: "left" }}>
             <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1 }}>BUILD DECK</div>
@@ -6484,7 +6484,7 @@ function HomeScreen({ setTab, user }) {
             return (
               <div style={{ marginTop:10, display:"inline-flex", alignItems:"center", gap:8, padding:"7px 16px",
                 background: claimed ? "rgba(255,255,255,0.02)" : "rgba(232,192,96,0.10)",
-                border: `1px solid ${claimed ? "#2a2010" : "#e8c06055"}`,
+                border: `1px solid ${claimed ? "rgba(80,50,140,0.25)" : "#e8c06055"}`,
                 borderRadius:30,
                 boxShadow: claimed ? "none" : "0 0 18px rgba(232,192,96,0.15)",
                 animation: claimed ? "none" : "pulse 2.4s ease-in-out infinite" }}>
@@ -6497,8 +6497,8 @@ function HomeScreen({ setTab, user }) {
             );
           })()}
           {user && (
-            <div style={{ marginTop:14, background:"rgba(255,255,255,0.025)", border:"1px solid #2a2010", borderRadius:14, padding:"14px 18px" }}>
-              <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#503828", letterSpacing:3, marginBottom:12, display:"flex", alignItems:"center", gap:8 }}>
+            <div style={{ marginTop:14, background:"rgba(255,255,255,0.025)", border:"1px solid rgba(100,60,180,0.2)", borderRadius:14, padding:"14px 18px" }}>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#8060c0", letterSpacing:3, marginBottom:12, display:"flex", alignItems:"center", gap:8 }}>
                 🔥 LOGIN STREAK
                 <span style={{ color:"#e8c060", fontWeight:700 }}>DAY {Math.max(1, user.loginStreak || 1)}</span>
               </div>
@@ -6510,14 +6510,14 @@ function HomeScreen({ setTab, user }) {
                     <div key={r.day} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:5 }}>
                       <div style={{ width:34, height:34, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center",
                         background: filled ? "linear-gradient(135deg,#c89010,#f0c040)" : active ? "rgba(232,192,96,0.12)" : "rgba(255,255,255,0.03)",
-                        border: filled ? "2px solid #f0d870" : active ? "2px solid #e8c06066" : "1px solid #2a2010",
+                        border: filled ? "2px solid #f0d870" : active ? "2px solid #e8c06066" : "1px solid rgba(80,50,140,0.4)",
                         boxShadow: filled ? "0 0 12px rgba(232,192,96,0.5)" : active ? "0 0 8px rgba(232,192,96,0.2)" : "none",
-                        fontSize:12, color: filled ? "#1a1000" : active ? "#e8c060" : "#3a3020",
+                        fontSize:12, color: filled ? "#1a1000" : active ? "#e8c060" : "#5040a0",
                         fontWeight:900, fontFamily:"'Cinzel',serif",
                         animation: active ? "pulse 2s ease-in-out infinite" : "none" }}>
                         {filled ? "✓" : r.day}
                       </div>
-                      <div style={{ fontFamily:"'Cinzel',serif", fontSize:7, color: filled ? "#c89020" : active ? "#a08030" : "#3a3020", letterSpacing:0.5, textAlign:"center", lineHeight:1.3 }}>
+                      <div style={{ fontFamily:"'Cinzel',serif", fontSize:7, color: filled ? "#c89020" : active ? "#a08030" : "#5040a0", letterSpacing:0.5, textAlign:"center", lineHeight:1.3 }}>
                         {r.day === 7 ? "200+✦" : r.shards}
                       </div>
                     </div>
@@ -6641,7 +6641,7 @@ function HomeScreen({ setTab, user }) {
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))", gap:8 }}>
               {patchRows.map((r,i) => (
-                <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:12, padding:"10px 14px", borderRadius:9, background: r.dim ? "transparent" : "rgba(255,255,255,0.02)", border:`1px solid ${r.dim?"transparent":"#2a2010"}` }}>
+                <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:12, padding:"10px 14px", borderRadius:9, background: r.dim ? "transparent" : "rgba(255,255,255,0.02)", border:`1px solid ${r.dim?"transparent":"rgba(100,60,180,0.2)"}` }}>
                   <span style={{ fontSize:16, flexShrink:0, width:24, textAlign:"center", lineHeight:1.3 }}>{r.icon}</span>
                   <span style={{ fontSize:12, color: r.dim ? "#4a4030" : "#c0b490", lineHeight:1.5, flex:1 }}>{r.label}</span>
                 </div>
@@ -7267,7 +7267,7 @@ function StoreScreen({ user, onUpdateUser }) {
           <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
             {revealed.length < opening.cards.length ? (<>
               <button onClick={revealNext} style={{ padding: "11px 24px", background: "linear-gradient(135deg,#c89010,#f0c040)", border: "none", borderRadius: 8, fontFamily: "'Cinzel',serif", fontSize: 11, fontWeight: 700, letterSpacing: 1, color: "#1a1000", cursor: "pointer" }}>REVEAL NEXT</button>
-              <button onClick={revealAll} style={{ padding: "11px 24px", background: "transparent", border: "1px solid #3a2c10", borderRadius: 8, fontFamily: "'Cinzel',serif", fontSize: 11, color: "#a09058", cursor: "pointer" }}>REVEAL ALL</button>
+              <button onClick={revealAll} style={{ padding: "11px 24px", background: "transparent", border: "1px solid rgba(100,60,180,0.3)", borderRadius: 8, fontFamily: "'Cinzel',serif", fontSize: 11, color: "#9070c0", cursor: "pointer" }}>REVEAL ALL</button>
             </>) : (<>
               <button onClick={() => { setOpening(null); setRevealed([]); setRevIdx(-1); }} style={{ padding: "11px 24px", background: "linear-gradient(135deg,#c89010,#f0c040)", border: "none", borderRadius: 8, fontFamily: "'Cinzel',serif", fontSize: 11, fontWeight: 700, color: "#1a1000", cursor: "pointer" }}>DONE</button>
             </>)}
@@ -9549,15 +9549,15 @@ export default function App() {
       [style*="Cinzel"]{text-shadow:0 -1px 0 rgba(255,255,255,0.22),0 1px 0 rgba(0,0,0,0.65),0 2px 6px rgba(0,0,0,0.88);}
     `}</style>
     {isMobile && (
-      <div style={{ position:"fixed", inset:0, zIndex:9999, background:"linear-gradient(160deg,#0a0806,#0e0c08)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:32, textAlign:"center" }}>
+      <div style={{ position:"fixed", inset:0, zIndex:9999, background:"linear-gradient(160deg,#0c0420,#060214)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:32, textAlign:"center" }}>
         <WizardHat size={80} style={{ marginBottom: 16 }} />
         <div style={{ fontFamily:"var(--font-display,'Cinzel',serif)", fontSize:22, fontWeight:900, color:"var(--fnf-gold,#e8c060)", letterSpacing:4, marginBottom:12 }}>FORGE & FABLE</div>
         <div style={{ fontFamily:"'Cinzel',serif", fontSize:12, color:"#c08040", letterSpacing:2, marginBottom:20 }}>BEST EXPERIENCED ON DESKTOP</div>
-        <div style={{ maxWidth:320, fontFamily:"'Lora',serif", fontSize:13, color:"#907060", lineHeight:1.8, marginBottom:28 }}>
+        <div style={{ maxWidth:320, fontFamily:"'Lora',serif", fontSize:13, color:"#a090c0", lineHeight:1.8, marginBottom:28 }}>
           The battle board requires a wider screen for the full experience. Open this page on a laptop or desktop to play.
         </div>
         <div style={{ width:60, height:2, background:"linear-gradient(90deg,transparent,#e8c06066,transparent)", marginBottom:24 }} />
-        <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#503020", letterSpacing:3 }}>MOBILE SUPPORT COMING SOON</div>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#7060a0", letterSpacing:3 }}>MOBILE SUPPORT COMING SOON</div>
       </div>
     )}
     {!user && !loading && <LandingPage
