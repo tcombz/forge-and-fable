@@ -1,35 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 220 220" fill="none">
-  <!-- Outer gold rings -->
-  <circle cx="100" cy="100" r="90" stroke="#a08830" stroke-width="5.5"/>
-  <circle cx="100" cy="100" r="84" stroke="#c8a840" stroke-width="1" opacity="0.35"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 44" fill="none">
+  <!-- Shadow glow -->
+  <ellipse cx="20" cy="40" rx="11" ry="2.2" fill="#c89010" opacity="0.35"/>
 
-  <!-- HAMMER: head upper-left, handle lower-right, rotated -42deg -->
-  <g transform="rotate(-42 100 100)">
-    <!-- Handle -->
-    <rect x="93" y="56" width="14" height="68" rx="5" fill="#2e3848" stroke="#9a8840" stroke-width="2.2"/>
-    <!-- Head body -->
-    <rect x="57" y="36" width="56" height="28" rx="7" fill="#2e3848" stroke="#9a8840" stroke-width="2.5"/>
-    <!-- Face highlight (left face of head) -->
-    <rect x="59" y="38" width="16" height="24" rx="5" fill="#3d4f60" opacity="0.55"/>
-    <!-- Gold edge highlight on top of head -->
-    <rect x="59" y="38" width="54" height="4" rx="3" fill="#b09040" opacity="0.45"/>
-    <!-- Impact sparks -->
-    <polygon points="44,28 38,20 48,22" fill="#c8a840" opacity="0.95"/>
-    <polygon points="36,38 28,34 34,28" fill="#c8a840" opacity="0.75"/>
-    <polygon points="46,18 42,10 52,16" fill="#c8a840" opacity="0.5"/>
-  </g>
+  <!-- Hat cone body -->
+  <polygon points="20,3 7,31 33,31" fill="#1a0840" stroke="#c89018" stroke-width="0.9" stroke-linejoin="round"/>
+  <!-- Left-face shadow -->
+  <polygon points="20,3 7,31 20,31" fill="#0b0220" opacity="0.5"/>
 
-  <!-- QUILL: tip lower-center, feather upper-right, rotated 42deg -->
-  <g transform="rotate(42 100 100)">
-    <!-- Rachis (spine) -->
-    <line x1="100" y1="148" x2="100" y2="52" stroke="#2e3848" stroke-width="3.5" stroke-linecap="round"/>
-    <!-- Left vane -->
-    <path d="M100 52 C88 68 80 92 76 120 C82 104 90 84 98 68 Z" fill="#2e3848" stroke="#9a8840" stroke-width="1.8"/>
-    <!-- Right vane -->
-    <path d="M100 52 C112 68 118 88 122 114 C114 96 106 76 102 60 Z" fill="#3d4f60" stroke="#9a8840" stroke-width="1.8"/>
-    <!-- Vane highlight/sheen -->
-    <path d="M100 56 C104 72 106 90 104 108" stroke="#dce8f0" stroke-width="1.8" stroke-linecap="round" opacity="0.2"/>
-    <!-- Calamus (quill tip) -->
-    <path d="M100 148 C98 155 96 161 97 168 C100 161 103 155 102 148 Z" fill="#2e3848" stroke="#9a8840" stroke-width="1.5"/>
-  </g>
+  <!-- Gold band -->
+  <rect x="8" y="27" width="24" height="4" rx="1.8" fill="#c89010"/>
+  <!-- Band highlight -->
+  <rect x="8" y="27" width="24" height="1.6" rx="1.8" fill="#f0d060" opacity="0.38"/>
+
+  <!-- Centre gem -->
+  <circle cx="20" cy="29" r="2.1" fill="#f0d050"/>
+  <circle cx="20" cy="29" r="0.75" fill="#fff" opacity="0.7"/>
+
+  <!-- Brim -->
+  <ellipse cx="20" cy="31" rx="13.5" ry="3.4" fill="#1e0840" stroke="#c89018" stroke-width="0.85"/>
+  <ellipse cx="20" cy="30.5" rx="11.5" ry="2" fill="#32126a" opacity="0.55"/>
+
+  <!-- Hat tip glow -->
+  <circle cx="20" cy="4" r="2.4" fill="#e8c060" opacity="0.7"/>
+
+  <!-- Star rune -->
+  <text x="20" y="21" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="#f0d060" font-family="serif">✦</text>
+
+  <!-- Sparkles -->
+  <circle cx="8"  cy="13"  r="1.4" fill="#f0d050" opacity="0.85"/>
+  <circle cx="32" cy="11"  r="1.1" fill="#c0a0ff" opacity="0.75"/>
+  <circle cx="37" cy="22"  r="0.9" fill="#f0e060" opacity="0.65"/>
+  <circle cx="3"  cy="23"  r="1.1" fill="#a060ff" opacity="0.75"/>
+  <circle cx="22" cy="0.5" r="1"   fill="#f0e880" opacity="0.85"/>
 </svg>

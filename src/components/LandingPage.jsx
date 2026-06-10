@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import WizardHat from "./WizardHat";
 import { supabase } from "../supabase";
 
 // ─── Paste your Discord webhook URL here ─────────────────────────────────────
@@ -339,7 +340,7 @@ export default function LandingPage({ onPlayNow, onSignIn }) {
         {/* Logo + title */}
         <div style={{ animation: "landingFadeUp .7s ease-out both", position: "relative", zIndex: 1, marginBottom: 24 }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:14, marginBottom:8 }}>
-            <img src="/logo.svg" alt="" style={{ width:48, height:48, filter:"drop-shadow(0 0 16px rgba(160,136,48,0.7))", flexShrink:0 }} />
+            <WizardHat size={48} />
             <div style={{
               fontFamily: "'Cinzel',serif", fontSize: "clamp(44px, 7.5vw, 78px)",
               fontWeight: 900, letterSpacing: "clamp(4px, 1vw, 12px)",

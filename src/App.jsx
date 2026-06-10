@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, Fragment, Component 
 import { supabase } from "./supabase";
 import ForgeAndFableTeaser from "./components/ForgeAndFableTeaser";
 import LandingPage from "./components/LandingPage";
+import WizardHat from "./components/WizardHat";
 
 // ═══ STORAGE ═════════════════════════════════════════════════════════════════
 const store = {
@@ -160,7 +161,7 @@ const Skel = ({ w = "100%", h = 16, r = 6, style = {} }) => (
 function LoadingScreen({ label = "FORGING…" }) {
   return (
     <div style={{ minHeight: "100vh", background: "var(--fnf-bg,#161210)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 20 }}>
-      <img src="/logo.svg" alt="Forge &amp; Fable" style={{ width: 64, height: 64, animation: "pulse 2s ease-in-out infinite", filter: "drop-shadow(0 0 18px rgba(160,136,48,0.6))" }} />
+      <WizardHat size={64} />
       <div style={{ display: "flex", gap: 6 }}>
         {[0, 1, 2, 3].map(i => (
           <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--fnf-gold,#e8c060)", animation: `pulse 1.2s ${i * 0.18}s ease-in-out infinite` }} />
@@ -204,7 +205,7 @@ const STREAK_REWARDS = [
   { day: 4, shards: 50,  label: "50 ⬙" },
   { day: 5, shards: 75,  label: "75 ⬙" },
   { day: 6, shards: 100, label: "100 ⬙" },
-  { day: 7, shards: 200, label: "200 ⬙ + Fragment" },
+  { day: 7, shards: 200, label: "200 ⬙ + Echo Wisp" },
 ];
 
 // ─── Quest system helpers ─────────────────────────────────────────────────────
@@ -814,8 +815,8 @@ const POOL = [
   { id: "current", name: "Riptide Current", type: "spell", region: "Azure Deep", rarity: "Common", cost: 1, atk: null, hp: null, keywords: [], border: "#1880b8", seed: 131, bloodpact: false, imageUrl: "/cards/current.webp", imageScale: 1.1, ability: "Draw 2 cards.", flavor: "The deep gives.", effects: [{ trigger: "onPlay", effect: "draw", amount: 2 }] },
   { id: "kraken", name: "Abyssal Kraken", type: "creature", region: "Azure Deep", rarity: "Epic", cost: 5, atk: 4, hp: 5, keywords: ["Anchor"], border: "#1880b8", seed: 132, bloodpact: false, imageUrl: "/cards/kraken.webp", imageScale: 1.1, ability: "Anchor. On Play: 3 damage to random enemy.", flavor: "It waited below. Always.", effects: [{ trigger: "onPlay", effect: "damage_random_enemy", amount: 3 }] },
   { id: "env_depths", name: "Sunken Depths", type: "environment", region: "Azure Deep", rarity: "Uncommon", cost: 2, atk: null, hp: null, keywords: [], border: "#1880b8", seed: 133, bloodpact: false, imageUrl: "/cards/env_depths.webp", imageScale: 1.1, ability: "ENV: Draw extra card each turn.", flavor: "The pressure reveals.", effects: [{ trigger: "onTurnStart", effect: "draw", amount: 1 }] },
-  { id: "sprite", name: "Emberveil Sprite", type: "creature", region: "Ashfen", rarity: "Common", cost: 1, atk: 1, hp: 2, keywords: ["Bleed"], border: "#c04810", seed: 23, bloodpact: false, imageUrl: "/alt-art/sprite-anime-island.webp", imageScale: 1.1, ability: "Bleed - 1 stack on hit.", flavor: "Small. Spiteful.", effects: [] },
-  { id: "imp", name: "Ashfen Imp", type: "creature", region: "Ashfen", rarity: "Common", cost: 1, atk: 2, hp: 1, keywords: [], border: "#c04810", seed: 55, bloodpact: false, imageUrl: "/alt-art/imp-anime-island.webp", imageScale: 1.1, ability: "On Death: 2 damage to enemy hero.", flavor: "Burned the bridge before crossing.", effects: [{ trigger: "onDeath", effect: "damage_enemy_hero", amount: 2 }] },
+  { id: "sprite", name: "Emberveil Sprite", type: "creature", region: "Ashfen", rarity: "Common", cost: 1, atk: 1, hp: 2, keywords: ["Bleed"], border: "#c04810", seed: 23, bloodpact: false, imageScale: 1.1, ability: "Bleed - 1 stack on hit.", flavor: "Small. Spiteful.", effects: [] },
+  { id: "imp", name: "Ashfen Imp", type: "creature", region: "Ashfen", rarity: "Common", cost: 1, atk: 2, hp: 1, keywords: [], border: "#c04810", seed: 55, bloodpact: false, imageScale: 1.1, ability: "On Death: 2 damage to enemy hero.", flavor: "Burned the bridge before crossing.", effects: [{ trigger: "onDeath", effect: "damage_enemy_hero", amount: 2 }] },
   { id: "pyro", name: "Pyromancer", type: "creature", region: "Ashfen", rarity: "Uncommon", cost: 3, atk: 3, hp: 2, keywords: ["Bleed"], border: "#c04810", seed: 140, bloodpact: false, imageUrl: "/cards/pyro.webp", imageScale: 1.1, ability: "Bleed. On Play: 1 damage to ALL.", flavor: "Everything burns equally.", effects: [{ trigger: "onPlay", effect: "damage_all", amount: 1 }] },
   { id: "eruption", name: "Volcanic Eruption", type: "spell", region: "Ashfen", rarity: "Rare", cost: 4, atk: null, hp: null, keywords: [], border: "#c04810", seed: 141, bloodpact: false, imageUrl: "/cards/eruption.webp", imageScale: 1.1, ability: "4 to enemy hero. 1 to yours.", flavor: "The mountain remembers.", effects: [{ trigger: "onPlay", effect: "damage_enemy_hero", amount: 4 }, { trigger: "onPlay", effect: "damage_own_hero", amount: 1 }] },
   { id: "env_volcano", name: "Ashfen Caldera", type: "environment", region: "Ashfen", rarity: "Rare", cost: 3, atk: null, hp: null, keywords: [], border: "#c04810", seed: 142, bloodpact: false, imageUrl: "/cards/env_volcano.webp", imageScale: 1.1, ability: "ENV: +1 ATK to your creatures each turn.", flavor: "The heat forges warriors.", effects: [{ trigger: "onTurnStart", effect: "buff_allies", atk: 1, hp: 0 }] },
@@ -5823,10 +5824,10 @@ function useAuth() {
             const reward = STREAK_REWARDS[newStreak - 1];
             const newShards = (p.shards || 0) + reward.shards;
             const streakUpdates = { login_streak: newStreak, last_login_date: todayStr, shards: newShards };
-            // Day 7: also grant a cosmetic Fragment card copy
+            // Day 7: grant a bonus Echo Wisp card (1 extra copy in collection)
             if (newStreak === 7) {
               const col = { ...(p.collection || {}) };
-              const fragId = "fracture"; // Fragment card id
+              const fragId = "wisp";
               col[fragId] = (col[fragId] || 0) + 1;
               streakUpdates.collection = col;
               p = { ...p, collection: col };
@@ -7054,7 +7055,6 @@ function GuideScreen() {
 function StoreScreen({ user, onUpdateUser }) {
   const shards = user?.shards || 0;
   const [opening, setOpening] = useState(null);
-  useEffect(() => { SFX.play("pack_open"); }, []);
   const [revealed, setRevealed] = useState([]);
   const [revIdx, setRevIdx] = useState(-1);
   const [shakeCard, setShakeCard] = useState(-1);
@@ -7106,10 +7106,14 @@ function StoreScreen({ user, onUpdateUser }) {
     const cards = rollPack(pack);
     const col = { ...(user.collection || {}) };
     let dupeShards = 0;
+    const maxCopies = CFG.deck?.copies || 3;
     cards.forEach((c) => {
-      {
+      const owned = col[c.id] || 0;
+      if (owned >= maxCopies) {
         const gain = c.rarity === "Common" ? 2 : c.rarity === "Uncommon" ? 5 : c.rarity === "Rare" ? 10 : c.rarity === "Epic" ? 20 : 40;
-        dupeShards += gain; SFX.play("flip");
+        dupeShards += gain;
+      } else {
+        col[c.id] = owned + 1;
       }
     });
     const finalShards = newShards + dupeShards;
@@ -9147,7 +9151,7 @@ function StreakPopup() {
         marginBottom:16 }}>
         <span style={{ fontSize:18 }}>⬙</span>
         <span style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:900, color:"#f0d878" }}>+{popup.reward.shards} Shards</span>
-        {isMax && <span style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#c0a060" }}>+ Fragment</span>}
+        {isMax && <span style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#c0a060" }}>+ Echo Wisp</span>}
       </div>
       <div style={{ display:"flex", justifyContent:"center", gap:6, marginBottom:18 }}>
         {STREAK_REWARDS.map((r, i) => (
@@ -9262,7 +9266,7 @@ function PwaInstallPrompt() {
   return (
     <div style={{ position:"fixed", bottom:84, left:"50%", transform:"translateX(-50%)", zIndex:850, animation:"slideDown 0.35s cubic-bezier(.34,1.56,.64,1)", pointerEvents:"all" }}>
       <div style={{ background:"linear-gradient(160deg,#1c1408,#120e06)", border:"1px solid #e8c06055", borderRadius:14, padding:"16px 20px", display:"flex", alignItems:"flex-start", gap:14, boxShadow:"0 8px 40px rgba(0,0,0,0.9), 0 0 0 1px #e8c06022", maxWidth:360, backdropFilter:"blur(12px)" }}>
-        <img src="/logo.svg" alt="" style={{ width:36, height:36, flexShrink:0, filter:"drop-shadow(0 2px 6px rgba(160,136,48,0.4))" }} />
+        <WizardHat size={36} />
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ fontFamily:"'Cinzel',serif", fontSize:12, fontWeight:700, color:"#e8c060", letterSpacing:1, marginBottom:5 }}>Add Forge {"&"} Fable to your home screen for quick access</div>
           {isSafariMobile ? (
@@ -9501,6 +9505,7 @@ export default function App() {
       @keyframes deckCardShake{0%{transform:translateX(0) rotate(0deg)}15%{transform:translateX(-7px) rotate(-2deg)}30%{transform:translateX(7px) rotate(2deg)}45%{transform:translateX(-5px) rotate(-1deg)}60%{transform:translateX(5px) rotate(1deg)}75%{transform:translateX(-3px)}90%{transform:translateX(2px)}100%{transform:translateX(0) rotate(0deg)}}
       @keyframes shieldPulse{0%,100%{opacity:0.7;box-shadow:0 0 10px #60a0ff44,inset 0 0 8px #4080c033}50%{opacity:1;box-shadow:0 0 20px #60a0ff99,inset 0 0 16px #4080c066}}
       @keyframes dupeToast{0%{opacity:0;transform:translateY(20px) scale(0.8)}15%{opacity:1;transform:translateY(0) scale(1)}75%{opacity:1}100%{opacity:0;transform:translateY(-30px) scale(0.9)}}
+      @keyframes splatLabel{0%{opacity:0;transform:translate(-50%,-50%) scale(0.4) rotate(-12deg)}40%{opacity:1;transform:translate(-50%,-50%) scale(1.15) rotate(4deg)}65%{transform:translate(-50%,-50%) scale(0.96) rotate(-2deg)}100%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(0deg)}}
       @keyframes vfxHitFlash{0%{opacity:0}10%{opacity:1}100%{opacity:0}}
       @keyframes vfxHealFlash{0%{opacity:0}15%{opacity:1}60%{opacity:.7}100%{opacity:0}}
       @keyframes vfxRingBurst{0%{opacity:0.9;transform:translate(-50%,-50%) scale(0.1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
@@ -9542,7 +9547,7 @@ export default function App() {
     `}</style>
     {isMobile && (
       <div style={{ position:"fixed", inset:0, zIndex:9999, background:"linear-gradient(160deg,#0a0806,#0e0c08)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:32, textAlign:"center" }}>
-        <img src="/logo.svg" alt="Forge &amp; Fable" style={{ width:80, height:80, marginBottom:16, filter:"drop-shadow(0 4px 16px rgba(160,136,48,0.55))" }} />
+        <WizardHat size={80} style={{ marginBottom: 16 }} />
         <div style={{ fontFamily:"var(--font-display,'Cinzel',serif)", fontSize:22, fontWeight:900, color:"var(--fnf-gold,#e8c060)", letterSpacing:4, marginBottom:12 }}>FORGE & FABLE</div>
         <div style={{ fontFamily:"'Cinzel',serif", fontSize:12, color:"#c08040", letterSpacing:2, marginBottom:20 }}>BEST EXPERIENCED ON DESKTOP</div>
         <div style={{ maxWidth:320, fontFamily:"'Lora',serif", fontSize:13, color:"#907060", lineHeight:1.8, marginBottom:28 }}>
@@ -9664,7 +9669,7 @@ export default function App() {
 
     <nav style={{ position: "sticky", width: "100%", top: 0, zIndex: 100, background: "linear-gradient(180deg,#221e12 0%,#181408 100%)", borderBottom: "2px solid #4a3c18", padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 72, boxShadow: "0 4px 24px rgba(0,0,0,0.5)", overflow: "hidden", WebkitFontSmoothing: "antialiased" }} onClick={(e) => { e.stopPropagation(); }}>
       <button onClick={() => { if (inPvpMatch) { setNavLeaveModal({ targetTab:"home" }); return; } setTab("home"); }} style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}>
-        <img src="/logo.svg" alt="Forge &amp; Fable" style={{ width: 38, height: 38, flexShrink: 0, filter: "drop-shadow(0 2px 8px rgba(160,136,48,0.5))" }} />
+        <WizardHat size={38} />
         <div>
           <div style={{ fontFamily: "var(--font-display,'Cinzel',serif)", fontSize: 16, fontWeight: 900, color: "var(--fnf-gold,#e8c060)", lineHeight: 1, letterSpacing: 1 }}>Forge {"&"} Fable</div>
           <div style={{ fontSize: 8, color: "var(--fnf-gold-mute,#6a5028)", letterSpacing: 3, fontFamily: "var(--font-display,'Cinzel',serif)", marginTop: 3 }}>{CURRENT_PATCH} · ALPHA</div>
@@ -9752,7 +9757,7 @@ export default function App() {
       </ErrorBoundary>
       {!inBattle && <footer style={{ borderTop: "1px solid var(--fnf-bg-elevated,#1e1a0e)", padding: 22, textAlign: "center", display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <img src="/logo.svg" alt="" style={{ width:22, height:22, opacity:0.4 }} />
+          <WizardHat size={22} style={{ opacity: 0.4 }} />
           <div style={{ fontFamily:"var(--font-display,'Cinzel',serif)", fontSize:13, fontWeight:700, color:"#40301a" }}>Forge {"&"} Fable</div>
         </div>
         <p style={{ fontSize: 9, color: "#30280e", margin: 0, letterSpacing: 1 }}>{CURRENT_PATCH}: FABLES CARDS LIVE · ZEUS LIGHTNING METER · HADES SOUL HARVEST · CERBERUS WHELP · MEDUSA'S GAZE</p>
