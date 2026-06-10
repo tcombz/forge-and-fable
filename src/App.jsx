@@ -2042,7 +2042,7 @@ function MatchResultOverlay({ result, opponentName, isAI, onPlayAgain, onExit, p
         </div>
 
         {/* ── Stats row ── */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6, background:"rgba(255,255,255,0.025)", border:"1px solid #2a2010", borderRadius:12, padding:"12px 10px" }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6, background:"rgba(255,255,255,0.025)", border:"1px solid rgba(100,60,180,0.2)", borderRadius:12, padding:"12px 10px" }}>
           {[
             ["TURNS", turns, "#e8c060"],
             ["DURATION", durStr, "#80a8c8"],
@@ -2051,20 +2051,20 @@ function MatchResultOverlay({ result, opponentName, isAI, onPlayAgain, onExit, p
           ].map(([label, val, col]) => (
             <div key={label} style={{ textAlign:"center" }}>
               <div style={{ fontFamily:"'Cinzel',serif", fontSize:20, fontWeight:900, color:col, lineHeight:1 }}>{val}</div>
-              <div style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:"#403428", letterSpacing:2, marginTop:4 }}>{label}</div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:"#7060a0", letterSpacing:2, marginTop:4 }}>{label}</div>
             </div>
           ))}
         </div>
 
         {/* ── Damage dealt ── */}
-        <div style={{ background:"rgba(255,255,255,0.025)", border:"1px solid #2a2010", borderRadius:12, padding:"10px 14px" }}>
-          <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#503428", letterSpacing:3, marginBottom:8, textAlign:"center" }}>DAMAGE DEALT</div>
+        <div style={{ background:"rgba(255,255,255,0.025)", border:"1px solid rgba(100,60,180,0.2)", borderRadius:12, padding:"10px 14px" }}>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#8060c0", letterSpacing:3, marginBottom:8, textAlign:"center" }}>DAMAGE DEALT</div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr auto 1fr", gap:8, alignItems:"center" }}>
             <div style={{ textAlign:"right" }}>
               <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:"#78cc45", lineHeight:1 }}>{damageDealt ?? "—"}</div>
               <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#406030", letterSpacing:1 }}>YOU</div>
             </div>
-            <div style={{ width:1, height:32, background:"#2a2010" }} />
+            <div style={{ width:1, height:32, background:"rgba(100,60,180,0.3)" }} />
             <div style={{ textAlign:"left" }}>
               <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:"#e05050", lineHeight:1 }}>{opponentDamageDealt ?? "—"}</div>
               <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#603030", letterSpacing:1 }}>{opponentName?.split("_")[0] || "ENEMY"}</div>
@@ -2074,8 +2074,8 @@ function MatchResultOverlay({ result, opponentName, isAI, onPlayAgain, onExit, p
 
         {/* ── Final board snapshot ── */}
         {(playerBoard?.length > 0 || enemyBoard?.length > 0) && (
-          <div style={{ background:"rgba(255,255,255,0.025)", border:"1px solid #2a2010", borderRadius:12, padding:"10px 14px" }}>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#503428", letterSpacing:3, marginBottom:8, textAlign:"center" }}>FINAL BOARD</div>
+          <div style={{ background:"rgba(255,255,255,0.025)", border:"1px solid rgba(100,60,180,0.2)", borderRadius:12, padding:"10px 14px" }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#8060c0", letterSpacing:3, marginBottom:8, textAlign:"center" }}>FINAL BOARD</div>
             {/* Enemy board */}
             {enemyBoard?.length > 0 && (
               <div style={{ marginBottom:6 }}>
@@ -4775,7 +4775,7 @@ function PlayerProfilePage({ user, playerId, onClose }) {
     <div style={{ position:"fixed", inset:0, zIndex:600, background:"rgba(0,0,0,0.95)", display:"flex", alignItems:"center", justifyContent:"center" }}>
       <div style={{ textAlign:"center" }}>
         <div style={{ fontSize:36, animation:"pulse 1.5s infinite" }}>⬡</div>
-        <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#604030", letterSpacing:3, marginTop:12 }}>LOADING PROFILE…</div>
+        <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:"#8060c0", letterSpacing:3, marginTop:12 }}>LOADING PROFILE…</div>
       </div>
     </div>
   );
@@ -4807,13 +4807,13 @@ function PlayerProfilePage({ user, playerId, onClose }) {
       <div style={{ maxWidth:900, margin:"0 auto", padding:"28px 24px 80px" }}>
         {/* Header */}
         <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:24 }}>
-          <button onClick={onClose} style={{ background:"transparent", border:"1px solid #3a2810", borderRadius:8, padding:"8px 14px", fontFamily:"'Cinzel',serif", fontSize:11, color:"#806040", cursor:"pointer", transition:"border-color .15s" }} onMouseEnter={e=>e.currentTarget.style.borderColor="#e8c06066"} onMouseLeave={e=>e.currentTarget.style.borderColor="#3a2810"}>← BACK</button>
-          <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", letterSpacing:4, fontWeight:700 }}>{isOwn ? "MY PROFILE" : "PLAYER PROFILE"}</div>
+          <button onClick={onClose} style={{ background:"transparent", border:"1px solid rgba(100,60,180,0.4)", borderRadius:8, padding:"8px 14px", fontFamily:"'Cinzel',serif", fontSize:11, color:"#9080c0", cursor:"pointer", transition:"border-color .15s" }} onMouseEnter={e=>e.currentTarget.style.borderColor="#e8c06066"} onMouseLeave={e=>e.currentTarget.style.borderColor="rgba(100,60,180,0.4)"}>← BACK</button>
+          <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#8060c0", letterSpacing:4, fontWeight:700 }}>{isOwn ? "MY PROFILE" : "PLAYER PROFILE"}</div>
         </div>
 
         {/* Identity card */}
-        <div style={{ background:"linear-gradient(135deg,#0e0c06 0%,#0a0806 100%)", border:`1px solid ${rank.color}33`, borderRadius:16, padding:"24px 28px", marginBottom:14, display:"flex", gap:24, alignItems:"center", flexWrap:"wrap", boxShadow:`0 0 40px ${rank.color}18` }}>
-          <div style={{ width:88, height:88, borderRadius:"50%", overflow:"hidden", border:`3px solid ${rank.color}88`, background:"#1a1408", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:24, color:"#e8c060", flexShrink:0, boxShadow:`0 0 28px ${rank.color}44` }}>
+        <div style={{ background:"linear-gradient(135deg,#0e0620 0%,#080418 100%)", border:`1px solid ${rank.color}33`, borderRadius:16, padding:"24px 28px", marginBottom:14, display:"flex", gap:24, alignItems:"center", flexWrap:"wrap", boxShadow:`0 0 40px ${rank.color}18` }}>
+          <div style={{ width:88, height:88, borderRadius:"50%", overflow:"hidden", border:`3px solid ${rank.color}88`, background:"#120830", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:24, color:"#e8c060", flexShrink:0, boxShadow:`0 0 28px ${rank.color}44` }}>
             {profile.avatarUrl ? <img src={profile.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (profile.name||"?").slice(0,2).toUpperCase()}
           </div>
           <div style={{ flex:1, minWidth:180 }}>
@@ -4825,7 +4825,7 @@ function PlayerProfilePage({ user, playerId, onClose }) {
                 <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:`${rank.color}aa` }}>· {profile.rankedRating ?? 1000} MMR</span>
               </div>
               {favFaction && (
-                <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"4px 12px", background:"rgba(255,255,255,0.04)", border:"1px solid #2a2010", borderRadius:10 }}>
+                <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"4px 12px", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(100,60,180,0.2)", borderRadius:10 }}>
                   <span style={{ width:7, height:7, borderRadius:"50%", background:GLOW[favFaction]||"#808080", display:"inline-block", boxShadow:`0 0 5px ${GLOW[favFaction]||"#808080"}` }} />
                   <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#c0a868", letterSpacing:1 }}>{favFaction} main</span>
                 </div>
@@ -4834,13 +4834,13 @@ function PlayerProfilePage({ user, playerId, onClose }) {
           </div>
           {/* Login streak */}
           <div style={{ textAlign:"center", flexShrink:0 }}>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#604030", letterSpacing:3, marginBottom:10, fontWeight:700 }}>LOGIN STREAK</div>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#8060c0", letterSpacing:3, marginBottom:10, fontWeight:700 }}>LOGIN STREAK</div>
             <div style={{ display:"flex", gap:4, justifyContent:"center", marginBottom:8 }}>
               {STREAK_REWARDS.map((r, i) => {
                 const active = i < streak;
                 const isCurrent = i === streak - 1;
                 return (
-                  <div key={i} title={`Day ${i+1}: ${r.label}`} style={{ width:22, height:22, borderRadius:5, background:active ? `linear-gradient(135deg,#c89010,#f0c040)` : "rgba(255,255,255,0.04)", border:`1px solid ${active?"#e8c06066":"#2a2010"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, boxShadow:isCurrent?"0 0 10px #e8c06066":"none", transition:"all .2s" }}>
+                  <div key={i} title={`Day ${i+1}: ${r.label}`} style={{ width:22, height:22, borderRadius:5, background:active ? `linear-gradient(135deg,#c89010,#f0c040)` : "rgba(255,255,255,0.04)", border:`1px solid ${active?"#e8c06066":"rgba(80,50,140,0.35)"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, boxShadow:isCurrent?"0 0 10px #e8c06066":"none", transition:"all .2s" }}>
                     {active ? "✦" : ""}
                   </div>
                 );
@@ -4852,24 +4852,24 @@ function PlayerProfilePage({ user, playerId, onClose }) {
 
         {/* Stats grid */}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:14 }}>
-          <div style={{ background:"linear-gradient(135deg,#0e0c06,#0a0806)", border:"1px solid #2a2010", borderRadius:14, padding:"18px 22px" }}>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", letterSpacing:3, marginBottom:14, fontWeight:700 }}>TOTAL RECORD</div>
+          <div style={{ background:"linear-gradient(135deg,#0e0620,#080418)", border:"1px solid rgba(100,60,180,0.2)", borderRadius:14, padding:"18px 22px" }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#8060c0", letterSpacing:3, marginBottom:14, fontWeight:700 }}>TOTAL RECORD</div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6 }}>
               {[["PLAYED",totalMatches,"#e8c060"],["WINS",totalWins,"#78cc45"],["LOSSES",totalLosses,"#e05050"],["WIN%",winRate+"%",winRate>=50?"#78cc45":"#e8a020"]].map(([l,v,c])=>(
                 <div key={l} style={{ textAlign:"center" }}>
                   <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:c, lineHeight:1 }}>{v}</div>
-                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:"#504028", letterSpacing:1.5, marginTop:5 }}>{l}</div>
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:"#7060a0", letterSpacing:1.5, marginTop:5 }}>{l}</div>
                 </div>
               ))}
             </div>
           </div>
-          <div style={{ background:"linear-gradient(135deg,#0e0c06,#0a0806)", border:"1px solid #2a2010", borderRadius:14, padding:"18px 22px" }}>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", letterSpacing:3, marginBottom:14, fontWeight:700 }}>RANKED RECORD</div>
+          <div style={{ background:"linear-gradient(135deg,#0e0620,#080418)", border:"1px solid rgba(100,60,180,0.2)", borderRadius:14, padding:"18px 22px" }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#8060c0", letterSpacing:3, marginBottom:14, fontWeight:700 }}>RANKED RECORD</div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6 }}>
               {[["MMR",profile.rankedRating??1000,rank.color],["WINS",rankedWins,"#78cc45"],["LOSSES",rankedLosses,"#e05050"],["WIN%",rankedWinRate+"%",rankedWinRate>=50?"#78cc45":"#e8a020"]].map(([l,v,c])=>(
                 <div key={l} style={{ textAlign:"center" }}>
                   <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:c, lineHeight:1 }}>{v}</div>
-                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:"#504028", letterSpacing:1.5, marginTop:5 }}>{l}</div>
+                  <div style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:"#7060a0", letterSpacing:1.5, marginTop:5 }}>{l}</div>
                 </div>
               ))}
             </div>
@@ -4879,8 +4879,8 @@ function PlayerProfilePage({ user, playerId, onClose }) {
         {/* Chart + Cosmetics row */}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 200px", gap:14, marginBottom:14 }}>
           {/* 14-day chart */}
-          <div style={{ background:"linear-gradient(135deg,#0e0c06,#0a0806)", border:"1px solid #2a2010", borderRadius:14, padding:"18px 22px" }}>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", letterSpacing:3, marginBottom:14, fontWeight:700 }}>MATCHES PLAYED · LAST 14 DAYS</div>
+          <div style={{ background:"linear-gradient(135deg,#0e0620,#080418)", border:"1px solid rgba(100,60,180,0.2)", borderRadius:14, padding:"18px 22px" }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#8060c0", letterSpacing:3, marginBottom:14, fontWeight:700 }}>MATCHES PLAYED · LAST 14 DAYS</div>
             <div style={{ display:"flex", alignItems:"flex-end", gap:3, height:76 }}>
               {chartData.map((d) => {
                 const wh = d.wins   > 0 ? Math.max(4, Math.round((d.wins   / maxBar) * 68)) : 0;
@@ -4893,7 +4893,7 @@ function PlayerProfilePage({ user, playerId, onClose }) {
                       {lh > 0 && <div style={{ height:lh, background:isToday?"#ff8080":"#e05050", borderRadius:wh>0?"0":"2px 2px 0 0", opacity:.75 }} />}
                       {d.total === 0 && <div style={{ height:2, background:"rgba(255,255,255,0.05)", borderRadius:1 }} />}
                     </div>
-                    <div style={{ fontFamily:"'Cinzel',serif", fontSize:6, color:isToday?"#907050":"#3a2818", marginTop:3 }}>{d.label}</div>
+                    <div style={{ fontFamily:"'Cinzel',serif", fontSize:6, color:isToday?"#a090d0":"#6050a0", marginTop:3 }}>{d.label}</div>
                   </div>
                 );
               })}
@@ -4902,29 +4902,29 @@ function PlayerProfilePage({ user, playerId, onClose }) {
               {[["#78cc45","WINS"],["#e05050","LOSSES"]].map(([c,l])=>(
                 <div key={l} style={{ display:"flex", alignItems:"center", gap:5 }}>
                   <div style={{ width:8, height:8, background:c, borderRadius:2 }} />
-                  <span style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:"#504028" }}>{l}</span>
+                  <span style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:"#7060a0" }}>{l}</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Cosmetics */}
-          <div style={{ background:"linear-gradient(135deg,#0e0c06,#0a0806)", border:"1px solid #2a2010", borderRadius:14, padding:"18px 20px" }}>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", letterSpacing:3, marginBottom:14, fontWeight:700 }}>COSMETICS</div>
+          <div style={{ background:"linear-gradient(135deg,#0e0620,#080418)", border:"1px solid rgba(100,60,180,0.2)", borderRadius:14, padding:"18px 20px" }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#8060c0", letterSpacing:3, marginBottom:14, fontWeight:700 }}>COSMETICS</div>
             <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
               <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                <div style={{ width:38, height:52, border:"1px solid #3a2810", borderRadius:6, background:"linear-gradient(160deg,#1a1408,#0e0c06)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>🎴</div>
-                <div><div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#807050", letterSpacing:1 }}>CARD BACK</div><div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#c0a060", marginTop:2 }}>Standard</div></div>
+                <div style={{ width:38, height:52, border:"1px solid rgba(100,60,180,0.3)", borderRadius:6, background:"linear-gradient(160deg,#120830,#0e0620)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>🎴</div>
+                <div><div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#9070c0", letterSpacing:1 }}>CARD BACK</div><div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#c0a060", marginTop:2 }}>Standard</div></div>
               </div>
-              <div style={{ height:1, background:"#1a1408" }} />
+              <div style={{ height:1, background:"rgba(60,40,100,0.3)" }} />
               <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                <div style={{ width:38, height:38, borderRadius:6, background:"linear-gradient(135deg,#e8c06022,#1a1408)", border:"1px solid #e8c06033", display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, flexShrink:0 }}>✦</div>
-                <div><div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#807050", letterSpacing:1 }}>ALT ARTS</div><div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#c0a060", marginTop:2 }}>{altCount} unlocked</div></div>
+                <div style={{ width:38, height:38, borderRadius:6, background:"linear-gradient(135deg,#e8c06022,#120830)", border:"1px solid #e8c06033", display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, flexShrink:0 }}>✦</div>
+                <div><div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#9070c0", letterSpacing:1 }}>ALT ARTS</div><div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#c0a060", marginTop:2 }}>{altCount} unlocked</div></div>
               </div>
-              <div style={{ height:1, background:"#1a1408" }} />
+              <div style={{ height:1, background:"rgba(60,40,100,0.3)" }} />
               <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                 <div style={{ width:38, height:38, borderRadius:6, border:`2px solid ${rank.color}55`, background:`${rank.color}12`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:17, flexShrink:0 }}>{rank.icon}</div>
-                <div><div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#807050", letterSpacing:1 }}>BORDER</div><div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:rank.color, marginTop:2 }}>{rank.name}</div></div>
+                <div><div style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#9070c0", letterSpacing:1 }}>BORDER</div><div style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:rank.color, marginTop:2 }}>{rank.name}</div></div>
               </div>
             </div>
           </div>
@@ -4932,10 +4932,10 @@ function PlayerProfilePage({ user, playerId, onClose }) {
 
         {/* Quest progress — own profile only */}
         {isOwn && localQuests && (
-          <div style={{ background:"linear-gradient(135deg,#0e0c06,#0a0806)", border:"1px solid #2a2010", borderRadius:14, padding:"18px 22px", marginBottom:14 }}>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", letterSpacing:3, marginBottom:14, fontWeight:700, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div style={{ background:"linear-gradient(135deg,#0e0620,#080418)", border:"1px solid rgba(100,60,180,0.2)", borderRadius:14, padding:"18px 22px", marginBottom:14 }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#8060c0", letterSpacing:3, marginBottom:14, fontWeight:700, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
               <span>DAILY QUEST PROGRESS</span>
-              <span style={{ color:"#3a2010", fontSize:8 }}>RESETS DAILY</span>
+              <span style={{ color:"rgba(100,60,180,0.6)", fontSize:8 }}>RESETS DAILY</span>
             </div>
             <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
               {localQuests.quests.map(q => {
@@ -4946,7 +4946,7 @@ function PlayerProfilePage({ user, playerId, onClose }) {
                       <span style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:q.completed?"#78cc45":"#c0a060" }}>{q.completed?"✓ ":""}{q.label}</span>
                       <span style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#a0b8c8" }}>⬙ {q.reward} · {q.progress}/{q.goal}</span>
                     </div>
-                    <div style={{ height:6, background:"rgba(255,255,255,0.05)", borderRadius:3, overflow:"hidden", border:"1px solid #1e1408" }}>
+                    <div style={{ height:6, background:"rgba(255,255,255,0.05)", borderRadius:3, overflow:"hidden", border:"1px solid rgba(60,40,100,0.3)" }}>
                       <div style={{ height:"100%", width:`${pct}%`, background:q.completed?"linear-gradient(90deg,#50a030,#78cc45)":"linear-gradient(90deg,#6a4010,#c89010)", borderRadius:3, transition:"width .5s" }} />
                     </div>
                   </div>
@@ -4958,11 +4958,11 @@ function PlayerProfilePage({ user, playerId, onClose }) {
 
         {/* Recent matches */}
         {(profile.matchHistory||[]).length > 0 && (
-          <div style={{ background:"linear-gradient(135deg,#0e0c06,#0a0806)", border:"1px solid #2a2010", borderRadius:14, padding:"18px 22px" }}>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", letterSpacing:3, marginBottom:14, fontWeight:700 }}>RECENT MATCHES</div>
+          <div style={{ background:"linear-gradient(135deg,#0e0620,#080418)", border:"1px solid rgba(100,60,180,0.2)", borderRadius:14, padding:"18px 22px" }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, color:"#8060c0", letterSpacing:3, marginBottom:14, fontWeight:700 }}>RECENT MATCHES</div>
             <div style={{ display:"flex", flexDirection:"column", gap:5, maxHeight:260, overflowY:"auto" }}>
               {(profile.matchHistory||[]).slice(0,20).map((h,i)=>(
-                <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", background:"rgba(255,255,255,0.02)", borderRadius:8, border:"1px solid #1a1408" }}>
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", background:"rgba(255,255,255,0.02)", borderRadius:8, border:"1px solid rgba(60,40,100,0.25)" }}>
                   <div style={{ width:8, height:8, borderRadius:"50%", background:h.result==="W"?"#78cc45":"#e05050", flexShrink:0, boxShadow:h.result==="W"?"0 0 6px #78cc4566":"0 0 6px #e0505066" }} />
                   <div style={{ fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, color:h.result==="W"?"#78cc45":"#e05050", flexShrink:0, minWidth:16 }}>{h.result==="W"?"W":"L"}</div>
                   <div style={{ flex:1, minWidth:0 }}>
@@ -5084,11 +5084,11 @@ function LeaderboardScreen({ user, onBack, onViewProfile }) {
       </div>
 
       {/* Table */}
-      <div style={{ background:"linear-gradient(180deg,#0e0c06,#0a0806)", border:"1px solid #2a1a08", borderRadius:14, overflow:"hidden" }}>
+      <div style={{ background:"linear-gradient(180deg,#0e0620,#080418)", border:"1px solid rgba(100,60,180,0.2)", borderRadius:14, overflow:"hidden" }}>
         {/* Column headers */}
-        <div style={{ display:"grid", gridTemplateColumns:"52px 1fr 96px 60px 60px 64px", padding:"10px 18px", borderBottom:"1px solid #1a1608", background:"rgba(232,192,96,0.04)" }}>
+        <div style={{ display:"grid", gridTemplateColumns:"52px 1fr 96px 60px 60px 64px", padding:"10px 18px", borderBottom:"1px solid rgba(60,40,100,0.3)", background:"rgba(232,192,96,0.04)" }}>
           {[["#","left"],["PLAYER","left"],["MMR","center"],["W","center"],["L","center"],["WIN%","center"]].map(([h,a]) => (
-            <div key={h} style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#504028", letterSpacing:2, textAlign:a }}>{h}</div>
+            <div key={h} style={{ fontFamily:"'Cinzel',serif", fontSize:8, color:"#7060a0", letterSpacing:2, textAlign:a }}>{h}</div>
           ))}
         </div>
         {players === null ? (
@@ -7949,11 +7949,11 @@ function FriendsScreen({ user, onStartDuel, incomingChallenge, setIncomingChalle
   return (
     <div style={{ maxWidth: 760, margin: "0 auto", padding: "28px 16px" }}>
       <div style={{ fontFamily:"'Cinzel',serif", fontSize:24, fontWeight:900, color:"#e8c060", marginBottom:4, letterSpacing:2 }}>⚉ FRIENDS</div>
-      <div style={{ fontSize:11, color:"#604030", fontFamily:"'Cinzel',serif", letterSpacing:2, marginBottom:24 }}>CHALLENGE FRIENDS · SEE WHO'S ONLINE</div>
+      <div style={{ fontSize:11, color:"#8060c0", fontFamily:"'Cinzel',serif", letterSpacing:2, marginBottom:24 }}>CHALLENGE FRIENDS · SEE WHO'S ONLINE</div>
 
       {/* Search */}
       <div style={{ display:"flex", gap:8, marginBottom:24 }}>
-        <input value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doSearch()} placeholder="Search by username…" style={{ flex:1, padding:"10px 14px", background:"#0e0c08", border:"1px solid #3a2a10", borderRadius:8, color:"#e8d8a0", fontFamily:"'Cinzel',serif", fontSize:12, outline:"none" }} />
+        <input value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doSearch()} placeholder="Search by username…" style={{ flex:1, padding:"10px 14px", background:"#0a0418", border:"1px solid rgba(100,60,180,0.3)", borderRadius:8, color:"#e8d8a0", fontFamily:"'Cinzel',serif", fontSize:12, outline:"none" }} />
         <button onClick={doSearch} disabled={searching} style={{ padding:"10px 20px", background:"linear-gradient(135deg,#4a3010,#6a4818)", border:"1px solid #8a6030", borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:"#e8c060", cursor:"pointer", fontWeight:700 }}>{searching?"…":"SEARCH"}</button>
       </div>
 
@@ -7984,11 +7984,11 @@ function FriendsScreen({ user, onStartDuel, incomingChallenge, setIncomingChalle
 
       {/* Search results */}
       {searchResults.length > 0 && (
-        <div style={{ background:"#0a0806", border:"1px solid #2a1e08", borderRadius:10, marginBottom:20, overflow:"hidden" }}>
-          <div style={{ padding:"8px 14px", borderBottom:"1px solid #1a1408", fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", letterSpacing:3 }}>SEARCH RESULTS</div>
+        <div style={{ background:"#060214", border:"1px solid rgba(100,60,180,0.25)", borderRadius:10, marginBottom:20, overflow:"hidden" }}>
+          <div style={{ padding:"8px 14px", borderBottom:"1px solid rgba(60,40,100,0.3)", fontFamily:"'Cinzel',serif", fontSize:9, color:"#8060c0", letterSpacing:3 }}>SEARCH RESULTS</div>
           {searchResults.map(p => (
-            <div key={p.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", borderBottom:"1px solid #140e04" }}>
-              <div style={{ width:34, height:34, borderRadius:"50%", background:"#1a1208", border:"1px solid #3a2810", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:12, color:"#e8c060", overflow:"hidden", flexShrink:0 }}>
+            <div key={p.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", borderBottom:"1px solid rgba(40,30,70,0.4)" }}>
+              <div style={{ width:34, height:34, borderRadius:"50%", background:"#120830", border:"1px solid rgba(100,60,180,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:12, color:"#e8c060", overflow:"hidden", flexShrink:0 }}>
                 {p.avatar_url ? <img src={p.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (p.name||"?").slice(0,2).toUpperCase()}
               </div>
               <span style={{ flex:1, fontFamily:"'Cinzel',serif", fontSize:13, color:"#d0c098" }}>{p.name}</span>
@@ -8012,11 +8012,11 @@ function FriendsScreen({ user, onStartDuel, incomingChallenge, setIncomingChalle
 
       {/* Pending incoming */}
       {pendingIn.length > 0 && (
-        <div style={{ background:"#0a0806", border:"1px solid #3a2a10", borderRadius:10, marginBottom:20, overflow:"hidden" }}>
-          <div style={{ padding:"8px 14px", borderBottom:"1px solid #1a1408", fontFamily:"'Cinzel',serif", fontSize:9, color:"#e8c060", letterSpacing:3 }}>PENDING REQUESTS ({pendingIn.length})</div>
+        <div style={{ background:"#060214", border:"1px solid rgba(140,90,255,0.3)", borderRadius:10, marginBottom:20, overflow:"hidden" }}>
+          <div style={{ padding:"8px 14px", borderBottom:"1px solid rgba(60,40,100,0.35)", fontFamily:"'Cinzel',serif", fontSize:9, color:"#e8c060", letterSpacing:3 }}>PENDING REQUESTS ({pendingIn.length})</div>
           {pendingIn.map(p => (
-            <div key={p.rowId} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", borderBottom:"1px solid #100c04" }}>
-              <div style={{ width:34, height:34, borderRadius:"50%", background:"#1a1208", border:"1px solid #3a2810", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:12, color:"#e8c060" }}>{p.name.slice(0,2).toUpperCase()}</div>
+            <div key={p.rowId} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", borderBottom:"1px solid rgba(40,30,70,0.4)" }}>
+              <div style={{ width:34, height:34, borderRadius:"50%", background:"#120830", border:"1px solid rgba(100,60,180,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:12, color:"#e8c060" }}>{p.name.slice(0,2).toUpperCase()}</div>
               <span style={{ flex:1, fontFamily:"'Cinzel',serif", fontSize:13, color:"#d0c098" }}>{p.name}</span>
               <button onClick={()=>acceptRequest(p)} style={{ padding:"6px 14px", background:"linear-gradient(135deg,#1a4010,#2a6018)", border:"1px solid #4a8030", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:10, color:"#78cc45", cursor:"pointer", fontWeight:700 }}>ACCEPT</button>
               <button onClick={()=>removeFriend(p)} style={{ padding:"6px 10px", background:"transparent", border:"1px solid #3a1010", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:10, color:"#804040", cursor:"pointer" }}>✕</button>
@@ -8026,18 +8026,18 @@ function FriendsScreen({ user, onStartDuel, incomingChallenge, setIncomingChalle
       )}
 
       {/* Friends list */}
-      <div style={{ background:"#0a0806", border:"1px solid #2a1e08", borderRadius:10, overflow:"hidden" }}>
-        <div style={{ padding:"8px 14px", borderBottom:"1px solid #1a1408", fontFamily:"'Cinzel',serif", fontSize:9, color:"#604030", letterSpacing:3 }}>FRIENDS — {friends.filter(f=>isOnline(f.id)).length} ONLINE</div>
-        {friends.length === 0 && <div style={{ padding:"28px", textAlign:"center", fontFamily:"'Cinzel',serif", fontSize:11, color:"#3a2a10", letterSpacing:2 }}>NO FRIENDS YET — SEARCH TO ADD</div>}
+      <div style={{ background:"#060214", border:"1px solid rgba(100,60,180,0.25)", borderRadius:10, overflow:"hidden" }}>
+        <div style={{ padding:"8px 14px", borderBottom:"1px solid rgba(60,40,100,0.3)", fontFamily:"'Cinzel',serif", fontSize:9, color:"#8060c0", letterSpacing:3 }}>FRIENDS — {friends.filter(f=>isOnline(f.id)).length} ONLINE</div>
+        {friends.length === 0 && <div style={{ padding:"28px", textAlign:"center", fontFamily:"'Cinzel',serif", fontSize:11, color:"#5040a0", letterSpacing:2 }}>NO FRIENDS YET — SEARCH TO ADD</div>}
         {friends.map(f => {
           const online = isOnline(f.id);
           return (
-            <div key={f.rowId} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", borderBottom:"1px solid #100c04", background: online ? "rgba(120,200,69,0.04)" : "transparent", transition:"background .3s" }}>
+            <div key={f.rowId} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", borderBottom:"1px solid rgba(40,30,70,0.35)", background: online ? "rgba(120,200,69,0.04)" : "transparent", transition:"background .3s" }}>
               <div onClick={()=>openProfile(f.id, f.name)} style={{ position:"relative", flexShrink:0, cursor:"pointer" }} title="View profile">
-                <div style={{ width:38, height:38, borderRadius:"50%", background:"#1a1208", border:`2px solid ${online?"#78cc4566":"#2a1e0a"}`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:13, color:"#e8c060", transition:"border-color .3s", overflow:"hidden" }}>
+                <div style={{ width:38, height:38, borderRadius:"50%", background:"#120830", border:`2px solid ${online?"#78cc4566":"rgba(80,50,140,0.4)"}`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:13, color:"#e8c060", transition:"border-color .3s", overflow:"hidden" }}>
                   {f.avatar_url ? <img src={f.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : f.name.slice(0,2).toUpperCase()}
                 </div>
-                <div style={{ position:"absolute", bottom:1, right:1, width:10, height:10, borderRadius:"50%", background:online?"#78cc45":"#e05050", border:"2px solid #0a0806", transition:"background .3s", boxShadow:online?"0 0 6px #78cc4588":"0 0 4px #e0505055" }} />
+                <div style={{ position:"absolute", bottom:1, right:1, width:10, height:10, borderRadius:"50%", background:online?"#78cc45":"#e05050", border:"2px solid #060214", transition:"background .3s", boxShadow:online?"0 0 6px #78cc4588":"0 0 4px #e0505055" }} />
               </div>
               <div onClick={()=>openProfile(f.id, f.name)} style={{ flex:1, cursor:"pointer" }}>
                 <div style={{ fontFamily:"'Cinzel',serif", fontSize:13, color:"#d0c098", fontWeight:700 }}>{f.name}</div>
@@ -8053,13 +8053,13 @@ function FriendsScreen({ user, onStartDuel, incomingChallenge, setIncomingChalle
       </div>
 
       {pendingOut.length > 0 && (
-        <div style={{ marginTop:16, background:"#0a0806", border:"1px solid #1a1408", borderRadius:10, overflow:"hidden" }}>
-          <div style={{ padding:"8px 14px", borderBottom:"1px solid #1a1408", fontFamily:"'Cinzel',serif", fontSize:9, color:"#403828", letterSpacing:3 }}>SENT REQUESTS</div>
+        <div style={{ marginTop:16, background:"#060214", border:"1px solid rgba(60,40,100,0.3)", borderRadius:10, overflow:"hidden" }}>
+          <div style={{ padding:"8px 14px", borderBottom:"1px solid rgba(60,40,100,0.25)", fontFamily:"'Cinzel',serif", fontSize:9, color:"#6050a0", letterSpacing:3 }}>SENT REQUESTS</div>
           {pendingOut.map(p => (
-            <div key={p.rowId} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", borderBottom:"1px solid #100c04" }}>
-              <div style={{ width:34, height:34, borderRadius:"50%", background:"#1a1208", border:"1px solid #2a1e0a", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:12, color:"#806040" }}>{p.name.slice(0,2).toUpperCase()}</div>
-              <span style={{ flex:1, fontFamily:"'Cinzel',serif", fontSize:13, color:"#806040" }}>{p.name}</span>
-              <button onClick={()=>removeFriend(p)} style={{ padding:"6px 12px", background:"transparent", border:"1px solid #2a1a08", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:10, color:"#604030", cursor:"pointer" }}>CANCEL</button>
+            <div key={p.rowId} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", borderBottom:"1px solid rgba(40,30,70,0.35)" }}>
+              <div style={{ width:34, height:34, borderRadius:"50%", background:"#120830", border:"1px solid rgba(80,50,140,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Cinzel',serif", fontSize:12, color:"#9070c0" }}>{p.name.slice(0,2).toUpperCase()}</div>
+              <span style={{ flex:1, fontFamily:"'Cinzel',serif", fontSize:13, color:"#9070c0" }}>{p.name}</span>
+              <button onClick={()=>removeFriend(p)} style={{ padding:"6px 12px", background:"transparent", border:"1px solid rgba(80,50,140,0.3)", borderRadius:6, fontFamily:"'Cinzel',serif", fontSize:10, color:"#8060c0", cursor:"pointer" }}>CANCEL</button>
             </div>
           ))}
         </div>
@@ -8068,7 +8068,7 @@ function FriendsScreen({ user, onStartDuel, incomingChallenge, setIncomingChalle
       {/* Friend profile modal */}
       {viewProfile && (
         <div style={{ position:"fixed", inset:0, zIndex:600, background:"rgba(0,0,0,0.88)", display:"flex", alignItems:"center", justifyContent:"center" }} onClick={() => setViewProfile(null)}>
-          <div style={{ background:"linear-gradient(160deg,#1a1208,#0e0a04)", border:"2px solid #3a2810", borderRadius:18, width:320, maxHeight:"80vh", overflowY:"auto", animation:"fadeIn 0.2s" }} onClick={e=>e.stopPropagation()}>
+          <div style={{ background:"linear-gradient(160deg,#160828,#0c0418)", border:"2px solid rgba(140,90,255,0.3)", borderRadius:18, width:320, maxHeight:"80vh", overflowY:"auto", animation:"fadeIn 0.2s" }} onClick={e=>e.stopPropagation()}>
             {viewProfile.loading ? (
               <div style={{ padding:40, textAlign:"center", fontFamily:"'Cinzel',serif", color:"#e8c060", fontSize:13, letterSpacing:2, animation:"pulse 1.5s infinite" }}>LOADING…</div>
             ) : (() => {
@@ -8082,9 +8082,9 @@ function FriendsScreen({ user, onStartDuel, incomingChallenge, setIncomingChalle
               return (
                 <>
                   {/* Header */}
-                  <div style={{ position:"relative", height:80, background:`linear-gradient(160deg,${rank.color}22,#0e0a04)`, borderRadius:"16px 16px 0 0", overflow:"hidden", flexShrink:0 }}>
+                  <div style={{ position:"relative", height:80, background:`linear-gradient(160deg,${rank.color}22,#0c0418)`, borderRadius:"16px 16px 0 0", overflow:"hidden", flexShrink:0 }}>
                     <div style={{ position:"absolute", top:"50%", left:20, transform:"translateY(-50%)", display:"flex", alignItems:"center", gap:14 }}>
-                      <div style={{ width:52, height:52, borderRadius:"50%", overflow:"hidden", border:`2px solid ${rank.color}88`, display:"flex", alignItems:"center", justifyContent:"center", background:"#1a1408", fontFamily:"'Cinzel',serif", fontSize:16, color:"#e8c060", flexShrink:0 }}>
+                      <div style={{ width:52, height:52, borderRadius:"50%", overflow:"hidden", border:`2px solid ${rank.color}88`, display:"flex", alignItems:"center", justifyContent:"center", background:"#120830", fontFamily:"'Cinzel',serif", fontSize:16, color:"#e8c060", flexShrink:0 }}>
                         {viewProfile.avatar_url ? <img src={viewProfile.avatar_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (viewProfile.name||"?").slice(0,2).toUpperCase()}
                       </div>
                       <div>
@@ -8092,38 +8092,38 @@ function FriendsScreen({ user, onStartDuel, incomingChallenge, setIncomingChalle
                         <div style={{ fontSize:10, color:rank.color, fontFamily:"'Cinzel',serif", fontWeight:700 }}>{rank.icon} {rank.label}</div>
                       </div>
                     </div>
-                    <button onClick={()=>setViewProfile(null)} style={{ position:"absolute", top:10, right:14, background:"none", border:"none", color:"#604030", fontSize:18, cursor:"pointer", lineHeight:1 }}>✕</button>
+                    <button onClick={()=>setViewProfile(null)} style={{ position:"absolute", top:10, right:14, background:"none", border:"none", color:"#8060c0", fontSize:18, cursor:"pointer", lineHeight:1 }}>✕</button>
                   </div>
                   {/* Stats */}
-                  <div style={{ padding:"18px 22px", display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12, borderBottom:"1px solid #1a1408" }}>
+                  <div style={{ padding:"18px 22px", display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12, borderBottom:"1px solid rgba(60,40,100,0.3)" }}>
                     {[["RATING", rating],["WINS", wins],["WIN RATE", wr+"%"]].map(([label,val])=>(
                       <div key={label} style={{ textAlign:"center" }}>
                         <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, fontWeight:900, color:"#e8c060" }}>{val}</div>
-                        <div style={{ fontSize:8, color:"#504030", fontFamily:"'Cinzel',serif", letterSpacing:2, marginTop:2 }}>{label}</div>
+                        <div style={{ fontSize:8, color:"#7060a0", fontFamily:"'Cinzel',serif", letterSpacing:2, marginTop:2 }}>{label}</div>
                       </div>
                     ))}
                   </div>
                   {/* Record */}
-                  <div style={{ padding:"14px 22px", borderBottom:"1px solid #1a1408" }}>
-                    <div style={{ fontSize:9, color:"#604030", fontFamily:"'Cinzel',serif", letterSpacing:2, marginBottom:8 }}>RANKED RECORD</div>
+                  <div style={{ padding:"14px 22px", borderBottom:"1px solid rgba(60,40,100,0.3)" }}>
+                    <div style={{ fontSize:9, color:"#8060c0", fontFamily:"'Cinzel',serif", letterSpacing:2, marginBottom:8 }}>RANKED RECORD</div>
                     <div style={{ display:"flex", gap:4, alignItems:"center" }}>
                       <div style={{ height:8, borderRadius:4, background:"#78cc45", width:`${total>0?wr:50}%`, minWidth:4, transition:"width .4s" }} />
                       <div style={{ height:8, borderRadius:4, background:"#e05050", flex:1, minWidth:4 }} />
                     </div>
                     <div style={{ display:"flex", justifyContent:"space-between", marginTop:5, fontSize:10, fontFamily:"'Cinzel',serif" }}>
                       <span style={{ color:"#78cc45" }}>{wins}W</span>
-                      <span style={{ color:"#806040" }}>{total} games</span>
+                      <span style={{ color:"#9070c0" }}>{total} games</span>
                       <span style={{ color:"#e05050" }}>{losses}L</span>
                     </div>
                   </div>
                   {/* Collection */}
                   <div style={{ padding:"14px 22px" }}>
-                    <div style={{ fontSize:9, color:"#604030", fontFamily:"'Cinzel',serif", letterSpacing:2, marginBottom:8 }}>COLLECTION</div>
+                    <div style={{ fontSize:9, color:"#8060c0", fontFamily:"'Cinzel',serif", letterSpacing:2, marginBottom:8 }}>COLLECTION</div>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                       <span style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:900, color:"#e8c060" }}>{colSize}</span>
-                      <span style={{ fontSize:10, color:"#604030", fontFamily:"'Cinzel',serif" }}>/ {GAMEPLAY_POOL.length} cards</span>
+                      <span style={{ fontSize:10, color:"#8060c0", fontFamily:"'Cinzel',serif" }}>/ {GAMEPLAY_POOL.length} cards</span>
                     </div>
-                    <div style={{ height:6, background:"#0e0c08", borderRadius:3, overflow:"hidden", marginTop:8, border:"1px solid #1a1408" }}>
+                    <div style={{ height:6, background:"#0a0418", borderRadius:3, overflow:"hidden", marginTop:8, border:"1px solid rgba(60,40,100,0.3)" }}>
                       <div style={{ height:"100%", width:`${Math.round(colSize/GAMEPLAY_POOL.length*100)}%`, background:"linear-gradient(90deg,#804010,#e8c060)", borderRadius:3, transition:"width .5s" }} />
                     </div>
                   </div>
