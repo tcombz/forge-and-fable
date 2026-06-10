@@ -95,7 +95,7 @@ function Btn({ children, onClick, variant = "ghost", size = "md", disabled = fal
     fontFamily: "var(--font-display, 'Cinzel',serif)",
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.5 : 1,
-    transition: "all .18s",
+    transition: "background .16s ease, box-shadow .16s ease, border-color .16s ease, color .14s ease, opacity .14s ease",
     border: "none",
     borderRadius: "var(--radius-md, 10px)",
     letterSpacing: 1,
@@ -2560,7 +2560,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   const atkFace = async () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking-face" }); await new Promise(r => setTimeout(r, 380)); const dmg = att.currentAtk; vfx.add("damage", { amount: dmg, duration: 500 }); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if (s.playerZeusInPlay && (att.keywords || []).includes("Swift")) { s.playerLightningMeter = (s.playerLightningMeter || 0) + 1; if (s.playerLightningMeter >= 2) { s = fireLightningMeter(s, "player", vfx, (m) => { s.log = [...s.log.slice(-20), m]; }); } } s = resolveEffects("onAttack", att, s, "player", vfx); if (s.enemyHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 200)); setAnimUids({}); };
   const attCard = attacker ? g.playerBoard.find((c) => c.uid === attacker) : null;
 
-  return (<div className="battle-wrapper" style={{ width:"100%", height:"calc(100vh - 72px)", padding:"8px 14px 6px", background:"#0a0806", boxSizing:"border-box", overflow:"visible", display:"flex", flexDirection:"column" }} onClick={() => { SFX.init(); }}>
+  return (<div className="battle-wrapper" style={{ width:"100%", height:"calc(100vh - 72px)", padding:"8px 14px 6px", background:"radial-gradient(ellipse at 50% -5%, #1e0840 0%, #100520 35%, #060312 70%, #040010 100%)", boxSizing:"border-box", overflow:"visible", display:"flex", flexDirection:"column" }} onClick={() => { SFX.init(); }}>
     {/* First match — Chronicler intro overlay */}
     {showFirstMatchIntro && (
       <div style={{ position:"fixed", inset:0, zIndex:500, background:"rgba(2,1,0,0.95)", display:"flex", alignItems:"center", justifyContent:"center", animation:"fadeIn 0.4s ease-out" }}>
@@ -2577,8 +2577,8 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     {previewCard && <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />}
     {/* Live Action Ticker */}
     {liveAction && (
-      <div style={{ position:"fixed", top:"38%", left:"50%", transform:"translateX(-50%)", zIndex:290, pointerEvents:"none", animation:"fadeIn 0.15s" }}>
-        <div style={{ background:"rgba(10,8,4,0.92)", border:`2px solid ${logColor(liveAction)}`, borderRadius:12, padding:"12px 28px", fontFamily:"'Cinzel',serif", fontSize:16, fontWeight:700, color:logColor(liveAction), letterSpacing:1, whiteSpace:"nowrap", boxShadow:`0 4px 28px ${logColor(liveAction)}55` }}>
+      <div style={{ position:"fixed", top:"38%", left:"50%", transform:"translateX(-50%)", zIndex:290, pointerEvents:"none", animation:"mythicAction 0.28s cubic-bezier(0.34,1.56,0.64,1)" }}>
+        <div style={{ background:"rgba(6,3,16,0.96)", border:`2px solid ${logColor(liveAction)}`, borderRadius:14, padding:"13px 34px", fontFamily:"'Cinzel',serif", fontSize:17, fontWeight:800, color:logColor(liveAction), letterSpacing:2, whiteSpace:"nowrap", boxShadow:`0 0 40px ${logColor(liveAction)}55, 0 0 80px ${logColor(liveAction)}18, inset 0 0 20px ${logColor(liveAction)}0a`, textShadow:`0 0 18px ${logColor(liveAction)}aa` }}>
           {logIcon(liveAction)}{liveAction}
         </div>
       </div>
@@ -2594,8 +2594,8 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
             <div style={{ height:1, width:80, background:`linear-gradient(270deg,transparent,${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"})` }} />
           </div>
           {/* main announcement */}
-          <div style={{ background:turnBanner==="YOUR TURN"?"linear-gradient(135deg,#071a02 0%,#0d2804 50%,#071a02 100%)":"linear-gradient(135deg,#1a0202 0%,#280404 50%,#1a0202 100%)", border:`2px solid ${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"}`, borderRadius:6, padding:"12px 48px", textAlign:"center", position:"relative", overflow:"hidden", boxShadow:`0 0 50px ${turnBanner==="YOUR TURN"?"#78cc4533":"#e0505033"}` }}>
-            <div style={{ fontFamily:"'Cinzel',serif", fontSize:24, fontWeight:900, color:turnBanner==="YOUR TURN"?"#78cc45":"#e05050", letterSpacing:6, textShadow:`0 0 24px ${turnBanner==="YOUR TURN"?"#78cc45":"#e05050"}, 0 2px 4px rgba(0,0,0,0.9)`, lineHeight:1 }}>{turnBanner}</div>
+          <div style={{ background:turnBanner==="YOUR TURN"?"linear-gradient(135deg,#041a10 0%,#082a1a 50%,#041a10 100%)":"linear-gradient(135deg,#140410 0%,#220618 50%,#140410 100%)", border:`2px solid ${turnBanner==="YOUR TURN"?"#50e080":"#e04080"}`, borderRadius:8, padding:"14px 56px", textAlign:"center", position:"relative", overflow:"hidden", boxShadow:`0 0 60px ${turnBanner==="YOUR TURN"?"#50e08044":"#e0408044"}, 0 0 120px ${turnBanner==="YOUR TURN"?"#50e08018":"#e0408018"}` }}>
+            <div style={{ fontFamily:"'Cinzel',serif", fontSize:26, fontWeight:900, color:turnBanner==="YOUR TURN"?"#60f090":"#f060a0", letterSpacing:7, textShadow:`0 0 30px ${turnBanner==="YOUR TURN"?"#50e080":"#e04080"}, 0 0 60px ${turnBanner==="YOUR TURN"?"#50e08066":"#e0408044"}, 0 2px 4px rgba(0,0,0,0.95)`, lineHeight:1 }}>{turnBanner}</div>
             <div style={{ fontFamily:"'Cinzel',serif", fontSize:9, letterSpacing:3, color:turnBanner==="YOUR TURN"?"#78cc4588":"#e0505088", marginTop:5 }}>{turnBanner==="YOUR TURN"?"PLAY YOUR CARDS":"OPPONENT THINKING"}</div>
           </div>
           {/* bottom bar */}
@@ -2662,7 +2662,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
                       {thresholds.map(t => {
                         const isActive = active?.[`t${t}`];
                         const thresh = Math.max(1, t - jaxRed);
-                        return <div key={t} style={{ flex:1, height:6, borderRadius:3, background: isActive ? col : "rgba(255,255,255,0.06)", boxShadow: isActive ? `0 0 8px ${col}aa` : "none", transition:"all .3s", cursor:"pointer" }} title={`T${t} (${thresh}): ${descs[`t${t}`]}`} />;
+                        return <div key={t} style={{ flex:1, height:6, borderRadius:3, background: isActive ? col : "rgba(255,255,255,0.06)", boxShadow: isActive ? `0 0 8px ${col}aa` : "none", transition:"background .3s ease, box-shadow .3s ease", cursor:"pointer" }} title={`T${t} (${thresh}): ${descs[`t${t}`]}`} />;
                       })}
                     </div>
                     {isExpanded && (
@@ -2693,13 +2693,13 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
           <button onClick={()=>{ const el=document.documentElement; if(!document.fullscreenElement){el.requestFullscreen?.();}else{document.exitFullscreen?.();} }} style={{ flex:1, padding:"8px 4px", background:"rgba(14,12,8,0.8)", border:"1px solid #604028aa", borderRadius:8, color:"#a08050", fontFamily:"'Cinzel',serif", fontSize:13, cursor:"pointer" }} title="Fullscreen">⛶</button>
         </div>
       </div>
-      <div style={{ background: envTheme ? envTheme.bg : "linear-gradient(180deg,#2a1c0c 0%,#1e1408 50%,#281a08 100%)", border: `1px solid ${envTheme ? envTheme.glow + "44" : "#5a3c1a55"}`, borderRadius: 14, overflow: "visible", position: "relative", transition: "background 1.5s ease, border-color 1s ease", boxShadow: envTheme ? undefined : "inset 0 0 60px rgba(0,0,0,0.4), 0 0 0 1px #3a2010", display:"flex", flexDirection:"column", height:"100%" }}>
+      <div style={{ background: envTheme ? envTheme.bg : "linear-gradient(180deg,#1a1038 0%,#100c26 50%,#0d0920 100%)", border: `1px solid ${envTheme ? envTheme.glow + "44" : "rgba(150,100,255,0.18)"}`, borderRadius: 14, overflow: "visible", position: "relative", transition: "background 1.5s ease, border-color 1s ease", boxShadow: envTheme ? undefined : "inset 0 0 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(100,60,200,0.12), 0 0 60px rgba(60,20,120,0.12)", display:"flex", flexDirection:"column", height:"100%" }}>
         {g.phase === "opening" && <OpeningDraw onResult={handleOpeningResult} />}
         <VFXOverlay effects={vfx.effects} />
         {/* Environment particles */}
         {envTheme && <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1 }}><FloatingParticles count={20} color={envTheme.particle} speed={0.6} /></div>}
         {/* Enemy zone */}
-        <div style={{ background: "linear-gradient(180deg, rgba(180,30,20,0.28) 0%, rgba(120,18,12,0.22) 100%)", borderBottom: "2px solid #8a2010", borderLeft: "3px solid #c03020", padding: "4px 10px", position: "relative", zIndex: Object.keys(animUids).some(uid => g.enemyBoard?.some(c => c.uid === uid)) ? 5 : 2, boxShadow: "inset 0 -6px 24px rgba(200,40,20,0.18), inset 3px 0 12px rgba(200,40,20,0.12)", flex:"0 0 auto" }}>
+        <div style={{ background: "linear-gradient(180deg, rgba(210,30,15,0.42) 0%, rgba(150,12,6,0.3) 100%)", borderBottom: "2px solid rgba(200,40,20,0.7)", borderLeft: "3px solid rgba(230,50,25,0.8)", padding: "4px 10px", position: "relative", zIndex: Object.keys(animUids).some(uid => g.enemyBoard?.some(c => c.uid === uid)) ? 5 : 2, boxShadow: "inset 0 -12px 48px rgba(220,25,10,0.28), inset 3px 0 24px rgba(200,15,5,0.18), inset 0 0 60px rgba(160,5,0,0.1)", flex:"0 0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#3a0c0c,#200808)", border: "2px solid #a0202044", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "#cc6666", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>AI</div>
@@ -2732,13 +2732,13 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
               <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:full?"#ffe040":"#a08820", fontWeight:700 }}>{full?"READY!":"ENEMY ⚡"}</span>
             </div>);
           })()}
-          <div style={{ fontSize: 13, color: targetingSpell ? "#ffe040" : "#e05050", fontFamily: "'Cinzel',serif", letterSpacing: 3, marginBottom: 4, textAlign: "center", fontWeight: 700, textShadow: "0 -1px 0 rgba(255,255,255,0.3), 0 1px 4px rgba(0,0,0,0.95), 0 0 12px rgba(0,0,0,0.8)" }}>{targetingSpell ? `⚡ CHOOSE TARGET — ${targetingSpell.name}` : "ENEMY FIELD"}</div>
+          <div style={{ fontSize: 13, color: targetingSpell ? "#ffe040" : "#ff6666", fontFamily: "'Cinzel',serif", letterSpacing: 3, marginBottom: 4, textAlign: "center", fontWeight: 700, textShadow: `0 -1px 0 rgba(255,255,255,0.3), 0 1px 4px rgba(0,0,0,0.95), 0 0 16px ${targetingSpell?"rgba(255,220,0,0.6)":"rgba(255,60,60,0.5)"}` }}>{targetingSpell ? `⚡ CHOOSE TARGET — ${targetingSpell.name}` : "ENEMY FIELD"}</div>
           <div style={{ height:166, display:"flex", gap:8, flexWrap:"nowrap", justifyContent:"center", alignItems:"center", overflow:"visible" }}>
             {g.enemyBoard.length === 0 ? <span style={{ fontSize: 10, color: "#241010", letterSpacing: 3 }}>---</span> : g.enemyBoard.map((c) => (<Token key={c.uid} c={resolveCardArt(c, {})} animType={animUids[c.uid]} isTarget={!!attacker || !!targetingSpell} canSelect={false} onClick={() => { if (targetingSpell) { playCard(targetingSpell, c.uid); } else if (attacker) { atkCreature(c); } else { SFX.play("ability"); setPreviewCard(c); } }} />))}
           </div>
         </div>
         {/* Centre divider with timer */}
-        <div style={{ padding: "3px 14px", background: envTheme ? "rgba(0,0,0,0.35)" : "#0e0c08", borderBottom: "2px solid #3a1a0a", borderTop: "2px solid #1a3a0a", display: "flex", alignItems: "center", gap: 10, position: "relative", zIndex: 2 }}>
+        <div style={{ padding: "3px 14px", background: envTheme ? "rgba(0,0,0,0.45)" : "rgba(4,2,14,0.9)", borderBottom: "2px solid rgba(100,60,200,0.28)", borderTop: "2px solid rgba(100,60,200,0.28)", display: "flex", alignItems: "center", gap: 10, position: "relative", zIndex: 2 }}>
           {g.phase === "player" && !aiThink ? (
             <TurnTimer key={timerKey} active={true} onExpire={endTurn} duration={CFG.aiTurnTimer} turnNum={g.turn}>
               {attCard ? (
@@ -2762,19 +2762,19 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
           )}
         </div>
         {/* Player zone */}
-        <div style={{ background: "linear-gradient(180deg, rgba(20,100,10,0.22) 0%, rgba(30,130,15,0.28) 100%)", borderLeft: "3px solid #307030", padding: "4px 10px", position: "relative", zIndex: Object.keys(animUids).some(uid => g.playerBoard?.some(c => c.uid === uid)) ? 5 : 2, boxShadow: "inset 0 6px 24px rgba(20,160,10,0.18), inset 3px 0 12px rgba(20,160,10,0.12)", flex:1, display:"flex", flexDirection:"column", overflow:"visible", minHeight:0 }}>
+        <div style={{ background: "linear-gradient(180deg, rgba(10,90,200,0.22) 0%, rgba(20,110,230,0.3) 100%)", borderLeft: "3px solid rgba(50,130,255,0.6)", padding: "4px 10px", position: "relative", zIndex: Object.keys(animUids).some(uid => g.playerBoard?.some(c => c.uid === uid)) ? 5 : 2, boxShadow: "inset 0 10px 48px rgba(20,90,220,0.22), inset 3px 0 24px rgba(30,80,200,0.16), inset 0 0 60px rgba(10,60,180,0.1)", flex:1, display:"flex", flexDirection:"column", overflow:"visible", minHeight:0 }}>
           {g.environment?.owner === "player" && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 12px", background:`${g.environment.border}18`, border:`1px solid ${g.environment.border}33`, borderRadius:6, marginBottom:5, animation:"slideDown 0.3s" }}>
             <div style={{ width:6, height:6, borderRadius:"50%", background:g.environment.border, boxShadow:`0 0 6px ${g.environment.border}`, animation:"pulse 2s infinite", flexShrink:0 }} />
             <span style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:g.environment.border, fontWeight:700, flexShrink:0 }}>{g.environment.name}</span>
             <span style={{ fontSize:10, color:"#a09068", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.environment.ability}</span>
             <span style={{ fontSize:10, color:"#806040", fontFamily:"'Cinzel',serif", flexShrink:0 }}>{Math.ceil((g.environment.turnsRemaining||4)/2)}R</span>
           </div>}
-          <div style={{ fontSize: 13, color: dragOverField ? "#a0ff60" : "#6dc830", fontFamily: "'Cinzel',serif", letterSpacing: 3, marginBottom: 4, textAlign: "center", fontWeight: 700, textShadow: "0 -1px 0 rgba(255,255,255,0.3), 0 1px 4px rgba(0,0,0,0.95), 0 0 12px rgba(0,0,0,0.8)", transition: "color .15s" }}>YOUR FIELD</div>
+          <div style={{ fontSize: 13, color: dragOverField ? "#80d0ff" : "#5ab0ff", fontFamily: "'Cinzel',serif", letterSpacing: 3, marginBottom: 4, textAlign: "center", fontWeight: 700, textShadow: "0 -1px 0 rgba(255,255,255,0.3), 0 1px 4px rgba(0,0,0,0.95), 0 0 16px rgba(50,120,255,0.6)", transition: "color .15s" }}>YOUR FIELD</div>
           <div
             onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDragOverField(true); }}
             onDragLeave={() => setDragOverField(false)}
             onDrop={(e) => { e.preventDefault(); setDragOverField(false); const card = dragCardRef.current; if (card) playCard(card); dragCardRef.current = null; }}
-            style={{ height:166, flex:"0 0 auto", display:"flex", gap:8, flexWrap:"nowrap", justifyContent:"center", alignItems:"center", overflow:"visible", marginBottom:6, borderRadius:8, border: dragOverField ? "2px dashed #78cc4599" : "2px dashed transparent", background: dragOverField ? "rgba(100,200,50,0.07)" : "transparent", transition:"border-color .14s ease, background .14s ease" }}>
+            style={{ height:166, flex:"0 0 auto", display:"flex", gap:8, flexWrap:"nowrap", justifyContent:"center", alignItems:"center", overflow:"visible", marginBottom:6, borderRadius:8, border: dragOverField ? "2px dashed rgba(80,180,255,0.6)" : "2px dashed transparent", background: dragOverField ? "rgba(50,130,255,0.07)" : "transparent", transition:"border-color .14s ease, background .14s ease" }}>
             {g.playerBoard.length === 0 ? <span style={{ fontSize: 10, color: dragOverField ? "#78cc45" : "#181408", letterSpacing: 3 }}>{dragOverField ? "DROP TO PLAY" : "PLAY A CARD"}</span> : g.playerBoard.map((c) => (<Token key={c.uid} c={resolveCardArt(c, user?.selectedArts || {})} animType={animUids[c.uid]} selected={attacker === c.uid} isTarget={false} canSelect={g.phase === "player" && c.canAttack && !c.hasAttacked && !aiThink} onClick={() => selectAtt(c)} onRightClick={() => { SFX.play("ability"); setPreviewCard(c); }} />))}
           </div>
           <div style={{ paddingTop: 24, marginTop: -16, marginBottom: 4, flex:"0 0 auto", overflow:"visible", position:"relative", zIndex:10 }}>
@@ -2960,7 +2960,7 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
   const need = CFG.deck.size - total;
   const pct = (total / CFG.deck.size) * 100;
   const selSty = { padding:"8px 10px", background:"#100e08", border:"1px solid #2a2010", borderRadius:8, color:"#f0e8d8", fontSize:12, outline:"none", fontFamily:"'Cinzel',serif" };
-  const sortBtnSty = (active) => ({ padding:"5px 12px", background: active ? "rgba(232,192,96,0.2)" : "transparent", border:`1px solid ${active ? "#e8c060" : "#3a2810"}`, borderRadius:6, color: active ? "#e8c060" : "#806040", fontFamily:"'Cinzel',serif", fontSize:11, cursor:"pointer", letterSpacing:0.5, transition:"all .15s" });
+  const sortBtnSty = (active) => ({ padding:"5px 12px", background: active ? "rgba(232,192,96,0.2)" : "transparent", border:`1px solid ${active ? "#e8c060" : "#3a2810"}`, borderRadius:6, color: active ? "#e8c060" : "#806040", fontFamily:"'Cinzel',serif", fontSize:11, cursor:"pointer", letterSpacing:0.5, transition:"background .15s ease, border-color .15s ease, color .15s ease" });
 
   return (<div style={{ position:"fixed", inset:0, zIndex:600, background:"rgba(2,1,0,0.97)", display:"flex", flexDirection:"column" }}>
     {dbPreview && <CardPreview card={dbPreview} onClose={() => setDbPreview(null)} />}
@@ -3951,7 +3951,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
     }
     return <span key={key}>{parts}</span>;
   };
-  return (<div className="battle-wrapper" style={{ width:"100%", height:"calc(100vh - 72px)", padding:"8px 14px 6px", background:"#0a0806", boxSizing:"border-box", overflow:"visible", display:"flex", flexDirection:"column" }} onClick={() => { SFX.init(); }}>
+  return (<div className="battle-wrapper" style={{ width:"100%", height:"calc(100vh - 72px)", padding:"8px 14px 6px", background:"radial-gradient(ellipse at 50% -5%, #1e0840 0%, #100520 35%, #060312 70%, #040010 100%)", boxSizing:"border-box", overflow:"visible", display:"flex", flexDirection:"column" }} onClick={() => { SFX.init(); }}>
     {previewCard && <CardPreview card={previewCard} onClose={() => setPreviewCard(null)} />}
     {/* Forfeit confirm */}
     {/* In-battle profile popup */}
@@ -4142,7 +4142,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
                       {thresholds.map(t => {
                         const isActive = active?.[`t${t}`];
                         const thresh = Math.max(1, t - jaxRed);
-                        return <div key={t} style={{ flex:1, height:6, borderRadius:3, background: isActive ? col : "rgba(255,255,255,0.06)", boxShadow: isActive ? `0 0 8px ${col}aa` : "none", transition:"all .3s", cursor:"pointer" }} title={`T${t} (${thresh}): ${descs[`t${t}`]}`} />;
+                        return <div key={t} style={{ flex:1, height:6, borderRadius:3, background: isActive ? col : "rgba(255,255,255,0.06)", boxShadow: isActive ? `0 0 8px ${col}aa` : "none", transition:"background .3s ease, box-shadow .3s ease", cursor:"pointer" }} title={`T${t} (${thresh}): ${descs[`t${t}`]}`} />;
                       })}
                     </div>
                     {isExpanded && (
@@ -4208,7 +4208,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
                       {thresholds.map(t => {
                         const isActive = active?.[`t${t}`];
                         const thresh = Math.max(1, t - jaxRed);
-                        return <div key={t} style={{ flex:1, height:6, borderRadius:3, background: isActive ? col : "rgba(255,255,255,0.06)", boxShadow: isActive ? `0 0 8px ${col}aa` : "none", transition:"all .3s", cursor:"pointer" }} title={`T${t} (${thresh}): ${descs[`t${t}`]}`} />;
+                        return <div key={t} style={{ flex:1, height:6, borderRadius:3, background: isActive ? col : "rgba(255,255,255,0.06)", boxShadow: isActive ? `0 0 8px ${col}aa` : "none", transition:"background .3s ease, box-shadow .3s ease", cursor:"pointer" }} title={`T${t} (${thresh}): ${descs[`t${t}`]}`} />;
                       })}
                     </div>
                     {isExpanded && (
@@ -4256,7 +4256,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           </div>
         )}
         {/* Opponent zone — use opponent's env theme */}
-        <div style={{ background: opEnvTheme ? opEnvTheme.bg : "rgba(180,30,20,0.22)", borderBottom:"2px solid #8a2010", borderLeft:"3px solid #c03020", padding:"4px 10px", position:"relative", zIndex:Object.keys(animUids).some(uid => ai.enemyBoard?.some(c => c.uid === uid)) ? 5 : 2, transition:"background 1.5s ease", boxShadow:"inset 0 -6px 24px rgba(200,40,20,0.14), inset 3px 0 12px rgba(200,40,20,0.1)", flex:"0 0 auto" }}>
+        <div style={{ background: opEnvTheme ? opEnvTheme.bg : "linear-gradient(180deg, rgba(210,30,15,0.42) 0%, rgba(150,12,6,0.3) 100%)", borderBottom:"2px solid rgba(200,40,20,0.7)", borderLeft:"3px solid rgba(230,50,25,0.8)", padding:"4px 10px", position:"relative", zIndex:Object.keys(animUids).some(uid => ai.enemyBoard?.some(c => c.uid === uid)) ? 5 : 2, transition:"background 1.5s ease", boxShadow:"inset 0 -12px 48px rgba(220,25,10,0.28), inset 3px 0 24px rgba(200,15,5,0.18), inset 0 0 60px rgba(160,5,0,0.1)", flex:"0 0 auto" }}>
           {opEnvTheme && <div style={{ position:"absolute", inset:0, pointerEvents:"none", zIndex:1 }}><FloatingParticles count={opEnvTheme.pCount||20} color={opEnvTheme.particle} speed={opEnvTheme.pSpeed||0.6} shape={opEnvTheme.pShape||"circle"} direction={opEnvTheme.pDir||"up"} /></div>}
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -4283,13 +4283,13 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           </div>}
           {/* Opponent lightning meter */}
           {ai.enemyZeusInPlay && (() => { const em=ai.enemyLightningMeter||0; const full=em>=2; return (<div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6, padding:"5px 10px", background:full?"rgba(255,220,0,0.13)":"rgba(255,220,0,0.04)", border:`1px solid rgba(255,220,0,${full?0.65:0.2})`, borderRadius:8, boxShadow:full?"0 0 14px rgba(255,210,0,0.4)":"none", transition:"all .3s" }}><span style={{ fontSize:18, lineHeight:1, filter:full?"drop-shadow(0 0 6px #ffe040) drop-shadow(0 0 12px #f0a000)":"none", transition:"filter .3s" }}>⚡</span><div style={{ display:"flex", gap:5 }}>{[0,1].map(i=>{ const lit=i<em; return (<div key={i} style={{ width:28, height:14, borderRadius:4, background:lit?"linear-gradient(90deg,#fffaaa,#ffe030,#f09000)":"rgba(60,50,0,0.45)", border:`1px solid ${lit?"#f0d020":"#2a1c00"}`, boxShadow:lit?"0 0 10px #ffe040bb, inset 0 1px 0 rgba(255,255,200,0.4)":"none", transition:"all .25s" }}/>); })}</div><span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:full?"#ffe040":"#a08820", fontWeight:700 }}>{full?"READY!":"OPP ⚡"}</span></div>); })()}
-          <div style={{ fontSize:13, color:targetingSpell?"#ffe040":"#5a2424", fontFamily:"'Cinzel',serif", letterSpacing:3, marginBottom:4, textAlign:"center", fontWeight:700, textShadow:"0 1px 4px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.6)" }}>{targetingSpell?`⚡ CHOOSE TARGET — ${targetingSpell.name}`:"ENEMY FIELD"}</div>
+          <div style={{ fontSize:13, color:targetingSpell?"#ffe040":"#ff6666", fontFamily:"'Cinzel',serif", letterSpacing:3, marginBottom:4, textAlign:"center", fontWeight:700, textShadow:`0 1px 4px rgba(0,0,0,0.95), 0 0 16px ${targetingSpell?"rgba(255,220,0,0.6)":"rgba(255,60,60,0.5)"}` }}>{targetingSpell?`⚡ CHOOSE TARGET — ${targetingSpell.name}`:"ENEMY FIELD"}</div>
           <div style={{ height:166, display:"flex", gap:8, flexWrap:"nowrap", justifyContent:"center", alignItems:"center", overflow:"visible" }}>
             {ai.enemyBoard.length===0?<span style={{ fontSize:10, color:"#241010", letterSpacing:3 }}>---</span>:ai.enemyBoard.map((c)=>(<Token key={c.uid} c={resolveCardArt(c,myRole==="p1"?gs?.p2Arts||{}:gs?.p1Arts||{})} animType={animUids[c.uid]} isTarget={!!attacker||!!targetingSpell} canSelect={false} onClick={()=>{ if(targetingSpell){playCard(targetingSpell,c.uid);}else if(attacker)atkCreature(c); else setPreviewCard(c); }}/>))}
           </div>
         </div>
         {/* Divider with timer */}
-        <div style={{ padding:"3px 14px", background:envTheme?"rgba(0,0,0,0.35)":"#0e0c08", borderBottom:"2px solid #1a3a0a", borderTop:"2px solid #3a1a0a", display:"flex", alignItems:"center", gap:10, position:"relative", zIndex:2, flex:"0 0 auto" }}>
+        <div style={{ padding:"3px 14px", background:envTheme?"rgba(0,0,0,0.45)":"rgba(4,2,14,0.9)", borderBottom:"2px solid rgba(100,60,200,0.28)", borderTop:"2px solid rgba(100,60,200,0.28)", display:"flex", alignItems:"center", gap:10, position:"relative", zIndex:2, flex:"0 0 auto" }}>
           {!gs.winner ? (
             <TurnTimer key={timerKey} active={true} onExpire={isMyTurn ? handleTimerExpire : ()=>{}} duration={CFG.pvpTurnTimer} turnNum={gs.turn}>
               {isMyTurn && attCard ? (
@@ -4307,7 +4307,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
           )}
         </div>
         {/* My zone — use my env theme */}
-        <div style={{ background: myEnvTheme ? myEnvTheme.bg : "rgba(20,100,10,0.22)", borderLeft:"3px solid #307030", padding:"4px 10px", position:"relative", zIndex:Object.keys(animUids).some(uid => ai.playerBoard?.some(c => c.uid === uid)) ? 5 : 2, transition:"background 1.5s ease", boxShadow:"inset 0 6px 24px rgba(20,160,10,0.14), inset 3px 0 12px rgba(20,160,10,0.1)", flex:1, display:"flex", flexDirection:"column", overflow:"visible", minHeight:0 }}>
+        <div style={{ background: myEnvTheme ? myEnvTheme.bg : "linear-gradient(180deg, rgba(10,90,200,0.22) 0%, rgba(20,110,230,0.3) 100%)", borderLeft:"3px solid rgba(50,130,255,0.6)", padding:"4px 10px", position:"relative", zIndex:Object.keys(animUids).some(uid => ai.playerBoard?.some(c => c.uid === uid)) ? 5 : 2, transition:"background 1.5s ease", boxShadow:"inset 0 10px 48px rgba(20,90,220,0.22), inset 3px 0 24px rgba(30,80,200,0.16), inset 0 0 60px rgba(10,60,180,0.1)", flex:1, display:"flex", flexDirection:"column", overflow:"visible", minHeight:0 }}>
           {myEnvTheme && <div style={{ position:"absolute", inset:0, pointerEvents:"none", zIndex:1 }}><FloatingParticles count={myEnvTheme.pCount||20} color={myEnvTheme.particle} speed={myEnvTheme.pSpeed||0.6} shape={myEnvTheme.pShape||"circle"} direction={myEnvTheme.pDir||"up"} /></div>}
           {myEnvCard && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 12px", background:`${myEnvCard.border}18`, border:`1px solid ${myEnvCard.border}44`, borderRadius:6, marginBottom:5, position:"relative", zIndex:2, animation:"slideDown 0.3s" }}>
             <div style={{ width:6, height:6, borderRadius:"50%", background:myEnvCard.border, boxShadow:`0 0 6px ${myEnvCard.border}`, animation:"pulse 2s infinite", flexShrink:0 }} />
@@ -4315,12 +4315,12 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
             <span style={{ fontSize:10, color:"#a09068", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{myEnvCard.ability}</span>
             <span style={{ fontSize:10, color:"#78cc45", fontFamily:"'Cinzel',serif", flexShrink:0, background:"rgba(80,180,50,0.15)", padding:"1px 5px", borderRadius:4 }}>YOURS · {Math.ceil((myEnvCard.turnsRemaining||4)/2)}R</span>
           </div>}
-          <div style={{ fontSize:13, color:dragOverField?"#a0ff60":"#6dc830", fontFamily:"'Cinzel',serif", letterSpacing:3, marginBottom:4, textAlign:"center", fontWeight:700, textShadow:"0 -1px 0 rgba(255,255,255,0.3), 0 1px 4px rgba(0,0,0,0.95), 0 0 12px rgba(0,0,0,0.8)", position:"relative", zIndex:2, transition:"color .15s" }}>YOUR FIELD</div>
+          <div style={{ fontSize:13, color:dragOverField?"#80d0ff":"#5ab0ff", fontFamily:"'Cinzel',serif", letterSpacing:3, marginBottom:4, textAlign:"center", fontWeight:700, textShadow:"0 -1px 0 rgba(255,255,255,0.3), 0 1px 4px rgba(0,0,0,0.95), 0 0 16px rgba(50,120,255,0.6)", position:"relative", zIndex:2, transition:"color .15s" }}>YOUR FIELD</div>
           <div
             onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDragOverField(true); }}
             onDragLeave={() => setDragOverField(false)}
             onDrop={(e) => { e.preventDefault(); setDragOverField(false); const card = dragCardRef.current; if (card) playCard(card); dragCardRef.current = null; }}
-            style={{ height:166, flex:"0 0 auto", display:"flex", gap:8, flexWrap:"nowrap", justifyContent:"center", alignItems:"center", overflow:"visible", marginBottom:6, borderRadius:8, border: dragOverField ? "2px dashed #78cc4599" : "2px dashed transparent", background: dragOverField ? "rgba(100,200,50,0.07)" : "transparent", transition:"border-color .14s ease, background .14s ease" }}>
+            style={{ height:166, flex:"0 0 auto", display:"flex", gap:8, flexWrap:"nowrap", justifyContent:"center", alignItems:"center", overflow:"visible", marginBottom:6, borderRadius:8, border: dragOverField ? "2px dashed rgba(80,180,255,0.6)" : "2px dashed transparent", background: dragOverField ? "rgba(50,130,255,0.07)" : "transparent", transition:"border-color .14s ease, background .14s ease" }}>
             {ai.playerBoard.length===0?<span style={{ fontSize:10, color:dragOverField?"#78cc45":"#181408", letterSpacing:3 }}>{dragOverField?"DROP TO PLAY":isMyTurn?"PLAY A CARD":"WAITING..."}</span>:ai.playerBoard.map((c)=>(<Token key={c.uid} c={resolveCardArt(c,myRole==="p1"?gs?.p1Arts||{}:gs?.p2Arts||{})} animType={animUids[c.uid]} selected={attacker===c.uid} isTarget={false} canSelect={isMyTurn&&c.canAttack&&!c.hasAttacked&&!syncing} onClick={()=>selectAtt(c)} onRightClick={()=>setPreviewCard(c)}/>))}
           </div>
           <div style={{ paddingTop:38, marginTop:-28, marginBottom:6, flex:"0 0 auto", overflow:"visible", position:"relative", zIndex:10 }}>
@@ -9477,12 +9477,13 @@ export default function App() {
         .mode-cards{grid-template-columns:1fr 1fr!important}
         .deck-builder-grid{grid-template-columns:1fr!important}
       }
-      *{box-sizing:border-box}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:#161210}::-webkit-scrollbar-thumb{background:#4a4022;border-radius:3px}select option{background:#1a1408}button{transition:all .18s}canvas{image-rendering:auto}
+      *{box-sizing:border-box}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:#161210}::-webkit-scrollbar-thumb{background:#4a4022;border-radius:3px}select option{background:#1a1408}button{transition:background .16s ease,box-shadow .16s ease,border-color .16s ease,color .14s ease,opacity .14s ease}canvas{image-rendering:auto}
       @keyframes vfxShake{0%,100%{transform:translate(-50%,-50%)}25%{transform:translate(-55%,-45%)}75%{transform:translate(-45%,-55%)}}
       @keyframes vfxFloat{0%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(-50%,-120%)}}
       @keyframes vfxPulse{0%{opacity:.8;transform:translate(-50%,-50%) scale(.5)}100%{opacity:0;transform:translate(-50%,-50%) scale(2)}}
       @keyframes vfxEnv{0%{opacity:0}30%{opacity:1}100%{opacity:0}}
       @keyframes fadeIn{0%{opacity:0;transform:translateY(8px) scale(0.98)}100%{opacity:1;transform:translateY(0) scale(1)}}
+      @keyframes mythicAction{0%{opacity:0;transform:translateX(-50%) translateY(14px) scale(0.88)}50%{opacity:1;transform:translateX(-50%) translateY(-2px) scale(1.04)}72%{transform:translateX(-50%) translateY(0) scale(0.99)}100%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
       @keyframes cardReveal{0%{opacity:0;transform:scale(0.84) translateY(18px)}65%{opacity:1;transform:scale(1.05) translateY(-4px)}100%{opacity:1;transform:scale(1) translateY(0)}}
       @keyframes slideInLeft{0%{opacity:0;transform:translateX(-32px) scale(0.97)}100%{opacity:1;transform:translateX(0) scale(1)}}
       @keyframes slideInRight{0%{opacity:0;transform:translateX(32px) scale(0.97)}100%{opacity:1;transform:translateX(0) scale(1)}}
@@ -9490,13 +9491,13 @@ export default function App() {
       @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
       @keyframes turnBannerIn{0%{opacity:0;transform:translate(-50%,-50%) scale(0.7)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}25%{transform:translate(-50%,-50%) scale(1)}75%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.1)}}
       @keyframes turnStamp{0%{opacity:0;transform:scale(1.4)}8%{opacity:1;transform:scale(0.94)}16%{transform:scale(1.02)}22%{transform:scale(1)}70%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.05)}}
-      @keyframes cardDie{0%{opacity:1;transform:scale(1) rotate(0deg);filter:brightness(1)}10%{opacity:1;transform:scale(1.06) rotate(2deg);filter:brightness(2.6) saturate(0.2)}30%{opacity:.85;transform:scale(0.88) rotate(-14deg) translateY(10px);filter:brightness(0.5) saturate(0)}62%{opacity:.35;transform:scale(0.62) rotate(-32deg) translateY(32px);filter:brightness(0.15)}100%{opacity:0;transform:scale(0.2) rotate(-52deg) translateY(60px);filter:brightness(0)}}
+      @keyframes cardDie{0%{opacity:1;transform:scale(1) rotate(0deg)}10%{opacity:0.9;transform:scale(1.06) rotate(2deg)}30%{opacity:0.7;transform:scale(0.88) rotate(-14deg) translateY(10px)}62%{opacity:0.28;transform:scale(0.62) rotate(-32deg) translateY(32px)}100%{opacity:0;transform:scale(0.18) rotate(-52deg) translateY(60px)}}
       @keyframes cardSummon{0%{opacity:0;transform:translateY(44px) scale(0.76)}50%{opacity:1;transform:translateY(-10px) scale(1.08)}72%{transform:translateY(3px) scale(0.97)}88%{transform:translateY(-2px) scale(1.02)}100%{opacity:1;transform:translateY(0) scale(1)}}
       @keyframes spellCast{0%{opacity:0;transform:translate(-50%,-50%) scale(0.4)}30%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}70%{opacity:.9;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.4)}}
       @keyframes envFlash{0%{opacity:0}20%{opacity:1}80%{opacity:.8}100%{opacity:0}}
-      @keyframes prismaticPop{0%{transform:scale(1);filter:brightness(1)}20%{transform:scale(1.14);filter:brightness(2.8) saturate(1.4)}55%{transform:scale(1.06);filter:brightness(1.6) saturate(1.2)}100%{transform:scale(1);filter:brightness(1)}}
+      @keyframes prismaticPop{0%{transform:scale(1);opacity:1}20%{transform:scale(1.16);opacity:0.88}55%{transform:scale(1.07);opacity:0.95}100%{transform:scale(1);opacity:1}}
       @keyframes foilShimmer{0%{background-position:200% center}100%{background-position:-200% center}}
-      @keyframes prismShimmer{0%{background-position:0% 50%;filter:hue-rotate(0deg) brightness(1.2)}50%{background-position:100% 50%;filter:hue-rotate(180deg) brightness(1.5)}100%{background-position:0% 50%;filter:hue-rotate(360deg) brightness(1.2)}}
+      @keyframes prismShimmer{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
       @keyframes prismPulse{0%,100%{box-shadow:0 0 18px #ff808088,0 0 36px #8080ff66,0 0 54px #80ff8044}33%{box-shadow:0 0 18px #80ff8088,0 0 36px #ff808066,0 0 54px #8080ff44}66%{box-shadow:0 0 18px #8080ff88,0 0 36px #80ff8066,0 0 54px #ff808044}}
       @keyframes nebulaDrift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
       @keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
@@ -9514,10 +9515,10 @@ export default function App() {
       @keyframes vfxSpellFlash{0%{opacity:0}15%{opacity:1}100%{opacity:0}}
       @keyframes cardLunge{0%{transform:translateY(0) scale(1)}22%{transform:translateY(-52px) scale(1.13) rotate(-2deg)}48%{transform:translateY(-42px) scale(1.08)}100%{transform:translateY(0) scale(1)}}
       @keyframes cardLungeDown{0%{transform:translateY(0) scale(1)}22%{transform:translateY(52px) scale(1.13) rotate(2deg)}48%{transform:translateY(42px) scale(1.08)}100%{transform:translateY(0) scale(1)}}
-      @keyframes cardLungeFace{0%{transform:translateY(0) scale(1);filter:brightness(1)}16%{transform:translateY(-96px) scale(1.2) rotate(-3deg);filter:brightness(2.2)}46%{transform:translateY(-80px) scale(1.14) rotate(-1deg);filter:brightness(1.3)}80%{transform:translateY(-8px) scale(1.02);filter:brightness(1)}100%{transform:translateY(0) scale(1);filter:brightness(1)}}
-      @keyframes cardLungeFaceDown{0%{transform:translateY(0) scale(1);filter:brightness(1)}16%{transform:translateY(96px) scale(1.2) rotate(3deg);filter:brightness(2.2)}46%{transform:translateY(80px) scale(1.14) rotate(1deg);filter:brightness(1.3)}80%{transform:translateY(8px) scale(1.02);filter:brightness(1)}100%{transform:translateY(0) scale(1);filter:brightness(1)}}
+      @keyframes cardLungeFace{0%,100%{transform:translateY(0) scale(1)}16%{transform:translateY(-96px) scale(1.22) rotate(-3deg)}46%{transform:translateY(-80px) scale(1.15) rotate(-1deg)}80%{transform:translateY(-8px) scale(1.02)}}
+      @keyframes cardLungeFaceDown{0%,100%{transform:translateY(0) scale(1)}16%{transform:translateY(96px) scale(1.22) rotate(3deg)}46%{transform:translateY(80px) scale(1.15) rotate(1deg)}80%{transform:translateY(8px) scale(1.02)}}
       @keyframes coinSpin{0%{transform:rotateY(0deg);opacity:1}40%{transform:rotateY(720deg)}70%{transform:rotateY(1260deg)}100%{transform:rotateY(1440deg)}}
-      @keyframes cardHit{0%{transform:translate(0,0) rotate(0deg);filter:brightness(1)}8%{transform:translate(-11px,5px) rotate(-3deg);filter:brightness(4.5) saturate(0)}26%{transform:translate(9px,4px) rotate(2.5deg);filter:brightness(2.8)}50%{transform:translate(-5px,1px) rotate(-1.5deg);filter:brightness(1.6)}100%{transform:translate(0,0) rotate(0deg);filter:brightness(1)}}
+      @keyframes cardHit{0%,100%{transform:translate(0,0) rotate(0deg)}8%{transform:translate(-12px,5px) rotate(-4deg)}26%{transform:translate(10px,4px) rotate(3deg)}50%{transform:translate(-6px,2px) rotate(-2deg)}75%{transform:translate(4px,1px) rotate(1deg)}}
       @keyframes shimmer{0%{background-position:-600px 0}100%{background-position:600px 0}}
       .skel{background:linear-gradient(90deg,#1a1608 25%,#2a2210 50%,#1a1608 75%);background-size:600px 100%;animation:shimmer 1.6s infinite linear;border-radius:6px}
       @media(prefers-reduced-motion:reduce){*{animation-duration:0.01ms!important;transition-duration:0.01ms!important}}
