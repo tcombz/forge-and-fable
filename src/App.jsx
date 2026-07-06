@@ -831,6 +831,21 @@ function spawnToken(s, tokenId, side, vfx, L) {
   if (L) L(`🍽 ${def.name} spawned!`);
   return s;
 }
+// Haunt passive: fires once per discard event; Specter tokens themselves cannot re-trigger Haunt
+function spawnHauntSpecters(s, side, count, vfx, L) {
+  if (count <= 0) return s;
+  const myB = side === "player" ? "playerBoard" : "enemyBoard";
+  const hasHaunt = s[myB].some(c => (c.keywords||[]).includes("Haunt") && !c.isToken);
+  if (!hasHaunt) return s;
+  let spawned = 0;
+  for (let i = 0; i < count; i++) {
+    if (s[myB].length >= CFG.maxBoard) break;
+    s = spawnToken(s, "specter", side, vfx, L);
+    spawned++;
+  }
+  if (spawned > 0 && L) L(`👻 Haunt: ${spawned} Specter${spawned > 1 ? "s" : ""} rise!`);
+  return s;
+}
 // Build a proper random 40-card deck from what the player owns (up to 3 copies each).
 // If they don't own enough, fill with random pool cards to always hit exactly CFG.deck.size.
 function buildRandomDeck(pool, col) {
@@ -1333,7 +1348,7 @@ function getEffectiveCost(card, env, side = null) {
   const reduction = envEffects.filter(e => e.effect === "cost_reduction").reduce((n,e) => n+(e.amount||0), 0);
   return Math.max(1, card.cost - reduction);
 }
-function makeInst(c, p = "p") { const pool = POOL.find(x => x.id === c.id) || c; const kw = pool.keywords || c.keywords || []; return { ...c, imageUrl: pool.imageUrl || c.imageUrl, imageScale: pool.imageScale || c.imageScale, altObjectPosition: pool.altObjectPosition || c.altObjectPosition, uid: uid(p + c.id), currentHp: c.hp, maxHp: c.hp, currentAtk: c.atk, canAttack: false, hasAttacked: false, bleed: 0, echoQueued: false, keywords: kw, shielded: kw.includes("Shield") }; }
+function makeInst(c, p = "p") { const pool = POOL.find(x => x.id === c.id) || c; const kw = pool.keywords || c.keywords || []; return { ...c, imageUrl: pool.imageUrl || c.imageUrl, imageScale: pool.imageScale || c.imageScale, altObjectPosition: pool.altObjectPosition || c.altObjectPosition, uid: uid(p + c.id), currentHp: c.hp, maxHp: c.hp, currentAtk: c.atk, canAttack: false, hasAttacked: false, bleed: 0, echoQueued: false, keywords: kw, shielded: kw.includes("Shield"), chargeCount: kw.includes("Charge") ? (c.chargeCount ?? 3) : undefined }; }
 const TARGETED_SPELL_EFFECTS = ["bolt_damage", "anchor_target", "freeze_target"];
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1583,6 +1598,99 @@ function resolveEffects(trigger, card, state, side, vfx, opts = {}) {
         }
         break;
       }
+      // ── Veilborn Wastes: discard / Haunt mechanics ──────────────────────────
+      case "discard_and_draw": {
+        // Discard lowest-cost non-token card from hand, then draw one. Triggers Haunt.
+        const hd = side === "player" ? "playerHand" : "enemyHand";
+        const dk = side === "player" ? "playerDeck" : "enemyDeck";
+        const discardable = s[hd].filter(c => c.uid !== card.uid && !c.isToken);
+        if (discardable.length > 0) {
+          const lowest = [...discardable].sort((a, b) => a.cost - b.cost)[0];
+          s[hd] = s[hd].filter(c => c.uid !== lowest.uid);
+          L(`${card.name}: discard ${lowest.name}`);
+          s = spawnHauntSpecters(s, side, 1, vfx, L);
+          if (s[dk].length > 0 && s[hd].length < CFG.maxHand) {
+            s[hd] = [...s[hd], makeInst(s[dk][0], side === "player" ? "p" : "e")];
+            s[dk] = s[dk].slice(1);
+            L(`${card.name}: draw 1`);
+          }
+        }
+        break;
+      }
+      case "discard_for_heal": {
+        // Discard lowest-cost non-token card, heal hero. Triggers Haunt.
+        const hd = side === "player" ? "playerHand" : "enemyHand";
+        const discardable = s[hd].filter(c => c.uid !== card.uid && !c.isToken);
+        if (discardable.length > 0) {
+          const lowest = [...discardable].sort((a, b) => a.cost - b.cost)[0];
+          s[hd] = s[hd].filter(c => c.uid !== lowest.uid);
+          L(`${card.name}: discard ${lowest.name}, heal ${fx.amount}!`);
+          s[myHP] = Math.min(CFG.startHP, s[myHP] + fx.amount);
+          if (vfx) vfx.add("heal", { amount: fx.amount, side });
+          s = spawnHauntSpecters(s, side, 1, vfx, L);
+        }
+        break;
+      }
+      case "discard_and_buff": {
+        // Discard lowest-cost non-token card, gain ATK/HP on this card. Triggers Haunt.
+        const hd = side === "player" ? "playerHand" : "enemyHand";
+        const discardable = s[hd].filter(c => c.uid !== card.uid && !c.isToken);
+        if (discardable.length > 0) {
+          const lowest = [...discardable].sort((a, b) => a.cost - b.cost)[0];
+          s[hd] = s[hd].filter(c => c.uid !== lowest.uid);
+          L(`${card.name}: discard ${lowest.name}, gain +${fx.atk||0}/+${fx.hp||0}!`);
+          s[myB] = s[myB].map(c => c.uid === card.uid
+            ? { ...c, currentAtk: c.currentAtk + (fx.atk||0), currentHp: c.currentHp + (fx.hp||0), maxHp: c.maxHp + (fx.hp||0) }
+            : c);
+          if (vfx) vfx.add("ability", { color: "#c060ff" });
+          s = spawnHauntSpecters(s, side, 1, vfx, L);
+        }
+        break;
+      }
+      case "discard_multi": {
+        // Discard up to fx.amount lowest-cost non-token cards, draw that many. Triggers Haunt per discard.
+        const hd = side === "player" ? "playerHand" : "enemyHand";
+        const dk = side === "player" ? "playerDeck" : "enemyDeck";
+        const discardable = s[hd].filter(c => c.uid !== card.uid && !c.isToken).sort((a, b) => a.cost - b.cost);
+        const toDiscard = discardable.slice(0, fx.amount);
+        const discardCount = toDiscard.length;
+        toDiscard.forEach(dc => { s[hd] = s[hd].filter(c => c.uid !== dc.uid); });
+        if (discardCount > 0) {
+          L(`${card.name}: discard ${discardCount}, draw ${discardCount}!`);
+          s = spawnHauntSpecters(s, side, discardCount, vfx, L);
+          for (let i = 0; i < discardCount; i++) {
+            if (s[dk].length > 0 && s[hd].length < CFG.maxHand) {
+              s[hd] = [...s[hd], makeInst(s[dk][0], side === "player" ? "p" : "e")];
+              s[dk] = s[dk].slice(1);
+            }
+          }
+        }
+        break;
+      }
+      case "discard_hero_damage": {
+        // Discard up to fx.amount lowest-cost cards, deal 2× discarded to enemy hero. Triggers Haunt.
+        const hd = side === "player" ? "playerHand" : "enemyHand";
+        const discardable = s[hd].filter(c => c.uid !== card.uid && !c.isToken).sort((a, b) => a.cost - b.cost);
+        const toDiscard = discardable.slice(0, fx.amount);
+        const discardCount = toDiscard.length;
+        toDiscard.forEach(dc => { s[hd] = s[hd].filter(c => c.uid !== dc.uid); });
+        const damage = discardCount * 2;
+        s[thHP] -= damage;
+        L(`${card.name}: discard ${discardCount} → ${damage} damage to enemy hero!`);
+        if (discardCount > 0) { s = spawnHauntSpecters(s, side, discardCount, vfx, L); }
+        if (vfx && damage > 0) vfx.add("damage", { amount: damage });
+        break;
+      }
+      // ── Clockwork Compact: mass-spawn ───────────────────────────────────────
+      case "spawn_specters": {
+        for (let i = 0; i < fx.amount; i++) {
+          if (s[myB].length >= CFG.maxBoard) break;
+          s = spawnToken(s, "specter", side, vfx, L);
+        }
+        L(`${card.name}: ${fx.amount} Specters rise!`);
+        if (vfx) vfx.add("ability", { color: "#9040c0" });
+        break;
+      }
     }
   }
   return s;
@@ -1647,11 +1755,11 @@ function computeEnemyPlayPhase(g, vfx) {
 function computeEnemyAttackPhase(g, vfx) {
   let s = { ...g, playerBoard: g.playerBoard.map((c) => ({ ...c })), enemyBoard: g.enemyBoard.map((c) => ({ ...c })), playerHand: [...g.playerHand], enemyHand: [...g.enemyHand], playerDeck: [...g.playerDeck], log: [...g.log] };
   const L = (m) => { s.log = [...s.log.slice(-20), m]; };
-  s.enemyBoard.filter((c) => c.canAttack && !c.hasAttacked).forEach((att) => {
+  s.enemyBoard.filter((c) => c.canAttack && !c.hasAttacked && (!(c.keywords||[]).includes("Charge") || (c.chargeCount||0) > 0)).forEach((att) => {
     if (s.playerHP <= 0) return;
     const av = att.currentAtk;
-    if (s.playerBoard.length > 0) { const tgt = [...s.playerBoard].sort((a, b) => a.currentHp - b.currentHp)[0]; let nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av; let nAHP = att.shielded ? att.currentHp : att.currentHp - tgt.currentAtk; if (tgt.shielded) L(`${tgt.name} shield absorbs!`); if (att.shielded) L(`${att.name} shield absorbs counter!`); s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP, shielded: false } : c).filter((c) => c.currentHp > 0); s.playerBoard = s.playerBoard.map((c) => c.uid === tgt.uid ? { ...c, currentHp: nTHP, shielded: false, bleed: (c.bleed || 0) + ((att.keywords || []).includes("Bleed") ? (att.bleedAmount || 1) : 0) } : c).filter((c) => c.currentHp > 0); if (nTHP <= 0) { L(`${tgt.name} falls!`); s = resolveEffects("onDeath", tgt, s, "player", vfx); if (s.playerBoard.find(c => c.id === "hades_soul_reaper") || s.playerHand.find(c => c.id === "hades_soul_reaper")) { s = resolveEffects("onFriendlyDeath", {id:"hades_soul_reaper",effects:[{trigger:"onFriendlyDeath",effect:"soul_harvest"}]}, s, "player", vfx); } } if (nAHP <= 0) s = resolveEffects("onDeath", att, s, "enemy", vfx);
-    } else { s.playerHP -= av; s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c); L(`${att.name} hits you for ${av}!`); if (s.enemyZeusInPlay && (att.keywords || []).includes("Swift")) { s.enemyLightningMeter = (s.enemyLightningMeter || 0) + 1; if (s.enemyLightningMeter >= 2) { s = fireLightningMeter(s, "enemy", vfx, L); } } s = resolveEffects("onAttack", att, s, "enemy", vfx); }
+    if (s.playerBoard.length > 0) { const tgt = [...s.playerBoard].sort((a, b) => a.currentHp - b.currentHp)[0]; let nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av; let nAHP = att.shielded ? att.currentHp : att.currentHp - tgt.currentAtk; if (tgt.shielded) L(`${tgt.name} shield absorbs!`); if (att.shielded) L(`${att.name} shield absorbs counter!`); s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP, shielded: false, chargeCount: (c.keywords||[]).includes("Charge") && c.chargeCount != null ? Math.max(0, c.chargeCount - 1) : c.chargeCount } : c).filter((c) => c.currentHp > 0); s.playerBoard = s.playerBoard.map((c) => c.uid === tgt.uid ? { ...c, currentHp: nTHP, shielded: false, bleed: (c.bleed || 0) + ((att.keywords || []).includes("Bleed") ? (att.bleedAmount || 1) : 0) } : c).filter((c) => c.currentHp > 0); if (nTHP <= 0) { L(`${tgt.name} falls!`); s = resolveEffects("onDeath", tgt, s, "player", vfx); if (s.playerBoard.find(c => c.id === "hades_soul_reaper") || s.playerHand.find(c => c.id === "hades_soul_reaper")) { s = resolveEffects("onFriendlyDeath", {id:"hades_soul_reaper",effects:[{trigger:"onFriendlyDeath",effect:"soul_harvest"}]}, s, "player", vfx); } } if (nAHP <= 0) s = resolveEffects("onDeath", att, s, "enemy", vfx);
+    } else { s.playerHP -= av; s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, chargeCount: (c.keywords||[]).includes("Charge") && c.chargeCount != null ? Math.max(0, c.chargeCount - 1) : c.chargeCount } : c); L(`${att.name} hits you for ${av}!`); if (s.enemyZeusInPlay && (att.keywords || []).includes("Swift")) { s.enemyLightningMeter = (s.enemyLightningMeter || 0) + 1; if (s.enemyLightningMeter >= 2) { s = fireLightningMeter(s, "enemy", vfx, L); } } s = resolveEffects("onAttack", att, s, "enemy", vfx); }
   });
   if (s.playerHP <= 0) return { ...s, phase: "gameover", winner: "enemy", log: [...s.log, "Defeated..."] };
   const newTurn = g.turn + 1, newMax = Math.min(CFG.maxEnergy, newTurn);
@@ -1701,11 +1809,11 @@ function computeEnemyTurn(g, vfx) {
     if ((card.keywords || []).includes("Fracture") && s.enemyBoard.length < CFG.maxBoard) s.enemyBoard = [...s.enemyBoard, { ...inst, uid: uid("ef"), shielded: false, currentHp: Math.ceil(card.hp / 2), maxHp: Math.ceil(card.hp / 2), currentAtk: Math.ceil(card.atk / 2), name: card.name + " Frag", keywords: [], effects: [] }];
     s = resolveEffects("onPlay", card, s, "enemy", vfx);
   });
-  s.enemyBoard.filter((c) => c.canAttack && !c.hasAttacked).forEach((att) => {
+  s.enemyBoard.filter((c) => c.canAttack && !c.hasAttacked && (!(c.keywords||[]).includes("Charge") || (c.chargeCount||0) > 0)).forEach((att) => {
     if (s.playerHP <= 0) return;
     const av = att.currentAtk;
-    if (s.playerBoard.length > 0) { const tgt = [...s.playerBoard].sort((a, b) => a.currentHp - b.currentHp)[0]; let nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av; let nAHP = att.shielded ? att.currentHp : att.currentHp - tgt.currentAtk; if (att.shielded) L(`${att.name} shield absorbs counter!`); s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP, shielded: false } : c).filter((c) => c.currentHp > 0); s.playerBoard = s.playerBoard.map((c) => c.uid === tgt.uid ? { ...c, currentHp: nTHP, shielded: false, bleed: (c.bleed || 0) + ((att.keywords || []).includes("Bleed") ? (att.bleedAmount || 1) : 0) } : c).filter((c) => c.currentHp > 0); if (nTHP <= 0) { L(`${tgt.name} falls!`); s = resolveEffects("onDeath", tgt, s, "player", vfx); } if (nAHP <= 0) s = resolveEffects("onDeath", att, s, "enemy", vfx);
-    } else { s.playerHP -= av; s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c); L(`${att.name} hits you for ${av}!`); if (s.enemyZeusInPlay && (att.keywords || []).includes("Swift")) { s.enemyLightningMeter = (s.enemyLightningMeter || 0) + 1; if (s.enemyLightningMeter >= 2) { s = fireLightningMeter(s, "enemy", vfx, L); } } s = resolveEffects("onAttack", att, s, "enemy", vfx); }
+    if (s.playerBoard.length > 0) { const tgt = [...s.playerBoard].sort((a, b) => a.currentHp - b.currentHp)[0]; let nTHP = tgt.shielded ? tgt.currentHp : tgt.currentHp - av; let nAHP = att.shielded ? att.currentHp : att.currentHp - tgt.currentAtk; if (att.shielded) L(`${att.name} shield absorbs counter!`); s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP, shielded: false, chargeCount: (c.keywords||[]).includes("Charge") && c.chargeCount != null ? Math.max(0, c.chargeCount - 1) : c.chargeCount } : c).filter((c) => c.currentHp > 0); s.playerBoard = s.playerBoard.map((c) => c.uid === tgt.uid ? { ...c, currentHp: nTHP, shielded: false, bleed: (c.bleed || 0) + ((att.keywords || []).includes("Bleed") ? (att.bleedAmount || 1) : 0) } : c).filter((c) => c.currentHp > 0); if (nTHP <= 0) { L(`${tgt.name} falls!`); s = resolveEffects("onDeath", tgt, s, "player", vfx); } if (nAHP <= 0) s = resolveEffects("onDeath", att, s, "enemy", vfx);
+    } else { s.playerHP -= av; s.enemyBoard = s.enemyBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, chargeCount: (c.keywords||[]).includes("Charge") && c.chargeCount != null ? Math.max(0, c.chargeCount - 1) : c.chargeCount } : c); L(`${att.name} hits you for ${av}!`); if (s.enemyZeusInPlay && (att.keywords || []).includes("Swift")) { s.enemyLightningMeter = (s.enemyLightningMeter || 0) + 1; if (s.enemyLightningMeter >= 2) { s = fireLightningMeter(s, "enemy", vfx, L); } } s = resolveEffects("onAttack", att, s, "enemy", vfx); }
   });
   if (s.playerHP <= 0) return { ...s, phase: "gameover", winner: "enemy", log: [...s.log, "Defeated..."] };
   const newTurn = g.turn + 1, newMax = Math.min(CFG.maxEnergy, newTurn);
@@ -2414,7 +2522,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
       push();flashAction(`Enemy plays ${card.name}!`);SFX.play("summon");await wait(850);
     }
     // Attacks
-    const attUids=s.enemyBoard.filter(c=>c.canAttack&&!c.hasAttacked).map(c=>c.uid);
+    const attUids=s.enemyBoard.filter(c=>c.canAttack&&!c.hasAttacked&&(!(c.keywords||[]).includes("Charge")||(c.chargeCount||0)>0)).map(c=>c.uid);
     for (const attUid of attUids) {
       if(s.playerHP<=0)break;
       const att=s.enemyBoard.find(c=>c.uid===attUid);
@@ -2428,7 +2536,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         if(nAHP<att.currentHp&&nAHP>0){setAnimUids(p=>({...p,[att.uid]:"hit"}));await wait(280);}
         const dyingUids={};if(nTHP<=0){dyingUids[tgt.uid]="dying";SFX.play("kill");}if(nAHP<=0)dyingUids[att.uid]="dying";
         if(Object.keys(dyingUids).length>0){setAnimUids(p=>({...p,...dyingUids}));vfx.add("creatureDie",{color:"#e06040",duration:700});await wait(680);}
-        s.enemyBoard=s.enemyBoard.map(c=>c.uid===att.uid?{...c,hasAttacked:true,currentHp:nAHP,shielded:false}:c).filter(c=>c.currentHp>0);
+        s.enemyBoard=s.enemyBoard.map(c=>c.uid===att.uid?{...c,hasAttacked:true,currentHp:nAHP,shielded:false,chargeCount:(c.keywords||[]).includes("Charge")&&c.chargeCount!=null?Math.max(0,c.chargeCount-1):c.chargeCount}:c).filter(c=>c.currentHp>0);
         if(nTHP<=0) creaturesPlayedRef.current += 1;
         s.playerBoard=s.playerBoard.map(c=>c.uid===tgt.uid?{...c,currentHp:nTHP,shielded:false,bleed:(c.bleed||0)+((att.keywords||[]).includes("Bleed")?1:0)}:c).filter(c=>c.currentHp>0);
         s.log=[...s.log.slice(-20),`${att.name}(${av}) attacks ${tgt.name}`];
@@ -2443,7 +2551,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         s=resolveEffects("onAttack",att,s,"enemy",vfx);
         flashAction(`${att.name} attacks ${tgt.name}!`);
       } else {
-        s.playerHP-=av;s.enemyBoard=s.enemyBoard.map(c=>c.uid===att.uid?{...c,hasAttacked:true}:c);
+        s.playerHP-=av;s.enemyBoard=s.enemyBoard.map(c=>c.uid===att.uid?{...c,hasAttacked:true,chargeCount:(c.keywords||[]).includes("Charge")&&c.chargeCount!=null?Math.max(0,c.chargeCount-1):c.chargeCount}:c);
         s.log=[...s.log.slice(-20),`${att.name} hits you for ${av}!`];flashAction(`${att.name} hits you for ${av}!`);vfx.add("damage",{amount:av,duration:500});
         if(s.enemyZeusInPlay&&(att.keywords||[]).includes("Swift")){s.enemyLightningMeter=(s.enemyLightningMeter||0)+1;if(s.enemyLightningMeter>=2){s=fireLightningMeter(s,"enemy",vfx,(m)=>{s.log=[...s.log.slice(-20),m];});}}
         s=resolveEffects("onAttack",att,s,"enemy",vfx);
@@ -2585,7 +2693,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     setTimeout(() => setAnimUids(p => { const n = {...p}; delete n[summonUid]; return n; }), 550);
   };
 
-  const selectAtt = (c) => { if (g.phase !== "player" || aiThink) return; if (attacker === c.uid) { setAttacker(null); return; } if (c.canAttack && !c.hasAttacked) setAttacker(c.uid); };
+  const selectAtt = (c) => { if (g.phase !== "player" || aiThink) return; if (attacker === c.uid) { setAttacker(null); return; } const chargeOk = !(c.keywords||[]).includes("Charge") || (c.chargeCount||0) > 0; if (c.canAttack && !c.hasAttacked && chargeOk) setAttacker(c.uid); };
   const atkCreature = async (tgt) => {
     if (!attacker || g.phase !== "player") return;
     const att = g.playerBoard.find((c) => c.uid === attacker);
@@ -2615,7 +2723,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
       if (att.shielded) s.log = [...s.log, `${att.name} shield absorbs counter!`];
       // Anchor immunity: anchored units cannot be removed by effects — but can die from combat damage
       s.enemyBoard = prev.enemyBoard.map((c) => c.uid === tgt.uid ? { ...c, currentHp: nTHP, shielded: false, bleed: (c.bleed || 0) + ((att.keywords || []).includes("Bleed") ? (att.bleedAmount || 1) : 0) } : c).filter((c) => c.currentHp > 0);
-      s.playerBoard = prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP, shielded: false } : c).filter((c) => c.currentHp > 0);
+      s.playerBoard = prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP, shielded: false, chargeCount: (c.keywords||[]).includes("Charge") && c.chargeCount != null ? Math.max(0, c.chargeCount - 1) : c.chargeCount } : c).filter((c) => c.currentHp > 0);
       s.log = [...s.log, `${att.name}(${av}) attacks ${tgt.name}`];
       if (nTHP <= 0) { s.log = [...s.log, `💀 ${tgt.name} slain by ${att.name}!`]; s = resolveEffects("onDeath", tgt, s, "enemy", vfx); }
       if (nAHP <= 0) { s.log = [...s.log, `💀 ${att.name} slain by ${tgt.name}!`]; s = resolveEffects("onDeath", att, s, "player", vfx); }
@@ -2636,7 +2744,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     await new Promise(r => setTimeout(r, 200));
     setAnimUids({});
   };
-  const atkFace = async () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking-face" }); await new Promise(r => setTimeout(r, 380)); const dmg = att.currentAtk; vfx.add("damage", { amount: dmg, duration: 500 }); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if (s.playerZeusInPlay && (att.keywords || []).includes("Swift")) { s.playerLightningMeter = (s.playerLightningMeter || 0) + 1; if (s.playerLightningMeter >= 2) { s = fireLightningMeter(s, "player", vfx, (m) => { s.log = [...s.log.slice(-20), m]; }); } } s = resolveEffects("onAttack", att, s, "player", vfx); if (s.enemyHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 200)); setAnimUids({}); };
+  const atkFace = async () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking-face" }); await new Promise(r => setTimeout(r, 380)); const dmg = att.currentAtk; vfx.add("damage", { amount: dmg, duration: 500 }); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, chargeCount: (c.keywords||[]).includes("Charge") && c.chargeCount != null ? Math.max(0, c.chargeCount - 1) : c.chargeCount } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if (s.playerZeusInPlay && (att.keywords || []).includes("Swift")) { s.playerLightningMeter = (s.playerLightningMeter || 0) + 1; if (s.playerLightningMeter >= 2) { s = fireLightningMeter(s, "player", vfx, (m) => { s.log = [...s.log.slice(-20), m]; }); } } s = resolveEffects("onAttack", att, s, "player", vfx); if (s.enemyHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 200)); setAnimUids({}); };
   const attCard = attacker ? g.playerBoard.find((c) => c.uid === attacker) : null;
 
   return (<div className="battle-wrapper" style={{ width:"100%", height:"calc(100vh - 72px)", padding:"8px 14px 6px", background:"radial-gradient(ellipse at 50% -5%, #1e0840 0%, #100520 35%, #060312 70%, #040010 100%)", boxSizing:"border-box", overflow:"visible", display:"flex", flexDirection:"column" }} onClick={() => { SFX.init(); }}>
@@ -3456,7 +3564,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       if (tgt.shielded) ai.log = [...ai.log, `${tgt.name} shield absorbs!`];
       if (att.shielded) ai.log = [...ai.log, `${att.name} shield absorbs counter!`];
       ai.enemyBoard = ai.enemyBoard.map(c => c.uid === tgt.uid ? { ...c, currentHp: nTHP, shielded: false, bleed: (c.bleed||0)+((att.keywords||[]).includes("Bleed")?(att.bleedAmount||1):0) } : c).filter(c => c.currentHp > 0);
-      ai.playerBoard = ai.playerBoard.map(c => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP, shielded: false } : c).filter(c => c.currentHp > 0);
+      ai.playerBoard = ai.playerBoard.map(c => c.uid === att.uid ? { ...c, hasAttacked: true, currentHp: nAHP, shielded: false, chargeCount: (c.keywords||[]).includes("Charge") && c.chargeCount != null ? Math.max(0, c.chargeCount - 1) : c.chargeCount } : c).filter(c => c.currentHp > 0);
       if (nTHP <= 0) { ai.log = [...ai.log, `💀 ${tgt.name} slain by ${att.name}!`]; ai = resolveEffects("onDeath", tgt, ai, "enemy", vfxInst); if (ai.enemyBoard.find(c=>c.id==="hades_soul_reaper")||ai.enemyHand.find(c=>c.id==="hades_soul_reaper")) { ai = resolveEffects("onFriendlyDeath",{id:"hades_soul_reaper",effects:[{trigger:"onFriendlyDeath",effect:"soul_harvest"}]},ai,"enemy",vfxInst); } }
       if (nAHP <= 0) { ai.log = [...ai.log, `💀 ${att.name} slain by ${tgt.name}!`]; ai = resolveEffects("onDeath", att, ai, "player", vfxInst); if (ai.playerBoard.find(c=>c.id==="hades_soul_reaper")||ai.playerHand.find(c=>c.id==="hades_soul_reaper")) { ai = resolveEffects("onFriendlyDeath",{id:"hades_soul_reaper",effects:[{trigger:"onFriendlyDeath",effect:"soul_harvest"}]},ai,"player",vfxInst); } }
       // onAttack triggers (spawn tokens, etc.)
@@ -3475,7 +3583,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
       if (!att) return gs;
       const dmg = att.currentAtk;
       ai.enemyHP -= dmg;
-      ai.playerBoard = ai.playerBoard.map(c => c.uid === att.uid ? { ...c, hasAttacked: true } : c);
+      ai.playerBoard = ai.playerBoard.map(c => c.uid === att.uid ? { ...c, hasAttacked: true, chargeCount: (c.keywords||[]).includes("Charge") && c.chargeCount != null ? Math.max(0, c.chargeCount - 1) : c.chargeCount } : c);
       ai.log = [...ai.log.slice(-20), `${att.name} deals ${dmg} direct!`];
       // onAttack triggers (spawn tokens, etc.)
       const attAfterFace = ai.playerBoard.find(c => c.uid === action.attackerUid);
