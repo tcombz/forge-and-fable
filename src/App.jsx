@@ -500,7 +500,9 @@ const KW = [
   { name: "Resonate", icon: "\u25C8", color: "#c88020", desc: "+1 ATK per enemy on the field" },
   { name: "Anchor", icon: "\u2693", color: "#80b0e0", desc: "Cannot be removed, banished, or targeted by enemy spells" },
   { name: "Shield", icon: "\u2666", color: "#60a0d0", desc: "Blocks the first hit taken" },
-  { name: "Splat", icon: "💥", color: "#ff6040", desc: "When destroyed, deal 1 damage to a random enemy target" },
+  { name: "Splat",   icon: "💥", color: "#ff6040", desc: "When destroyed, deal 1 damage to a random enemy target" },
+  { name: "Haunt",  icon: "👻", color: "#a060d0", desc: "On death, returns to your hand as a 1/1 ghost copy (cost 1)" },
+  { name: "Charge", icon: "🔋", color: "#e0a020", desc: "Can attack multiple times per turn (counter shows remaining attacks)" },
 ];
 const REGIONS = ["Thornwood", "Shattered Expanse", "Azure Deep", "Ashfen", "Ironmarch", "Sunveil", "Food Fight", "Fables"];
 const GLOW = { Thornwood: "#70ff30", "Shattered Expanse": "#c090ff", "Azure Deep": "#30d0ff", Ashfen: "#ff6820", Ironmarch: "#9090ff", Sunveil: "#ffd030", Bloodpact: "#ff2848", "Food Fight": "#ff5030", Fables: "#9070ff" };
@@ -1383,6 +1385,10 @@ function resolveEffects(trigger, card, state, side, vfx, opts = {}) {
   const L = (m) => { s.log = [...(s.log || []).slice(-20), m]; };
   const myB = side === "player" ? "playerBoard" : "enemyBoard", thB = side === "player" ? "enemyBoard" : "playerBoard";
   const myHP = side === "player" ? "playerHP" : "enemyHP", thHP = side === "player" ? "enemyHP" : "playerHP";
+  // Clear Zeus flag when he leaves the board
+  if (trigger === "onDeath" && card.id === "zeus_storm_father") {
+    s[side === "player" ? "playerZeusInPlay" : "enemyZeusInPlay"] = false;
+  }
   // Auto-fire Splat on death — respects Shield on the target; triggers onDeath for killed units
   if (trigger === "onDeath" && (card.keywords || []).includes("Splat")) {
     const splatThB = side === "player" ? "enemyBoard" : "playerBoard";
@@ -1437,7 +1443,8 @@ function resolveEffects(trigger, card, state, side, vfx, opts = {}) {
       case "bleed_all_enemies": s[thB] = s[thB].map((c) => ({ ...c, bleed: (c.bleed || 0) + fx.amount })); L(`${card.name}: ${fx.amount} Bleed to all!`); break;
       // ── Fables mechanics ──────────────────────────────────────────────────
       case "zeus_onplay_damage": {
-        // Zeus on play: 2 dmg to a random unit on field, or enemy hero if board empty
+        // Zeus on play: mark him in play, then 2 dmg to a random unit or enemy hero
+        s[side === "player" ? "playerZeusInPlay" : "enemyZeusInPlay"] = true;
         const thBZ = side === "player" ? "enemyBoard" : "playerBoard";
         const thHPZ = side === "player" ? "enemyHP" : "playerHP";
         if (s[thBZ].length > 0) {
@@ -2408,8 +2415,8 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
       ? buildRandomDeck(GAMEPLAY_POOL.filter(c => (c.cost || 0) <= 3 && c.type !== "environment"), getStarterCollection())
       : matchConfig?.ghostEnemyDeck?.length > 0 ? [...matchConfig.ghostEnemyDeck] : buildRandomDeck(GAMEPLAY_POOL, getStarterCollection());
     const ed = shuf(rawEd.slice(0, CFG.deck.size).map(resolveFromPool));
-    const playerZeusInPlay = pd.some(c => c.id === "zeus_storm_father");
-    const enemyZeusInPlay = ed.some(c => c.id === "zeus_storm_father");
+    const playerZeusInPlay = false;
+    const enemyZeusInPlay = false;
     const enemyName = matchConfig?.opponentName || "Enemy";
     return { matchId: uid("m"), turn: 1, phase: "opening", winner: null, playerHP: CFG.startHP, playerEnergy: CFG.startEnergy, maxEnergy: CFG.startEnergy, playerHand: pd.slice(0, CFG.startHand).map((c) => makeInst(c, "p")), playerDeck: pd.slice(CFG.startHand), playerBoard: [], enemyHP: CFG.startHP, enemyHand: ed.slice(0, CFG.startHand).map((c) => makeInst(c, "e")), enemyDeck: ed.slice(CFG.startHand), enemyBoard: [], environment: null, envLastTurn: null, mapTheme: "default", log: ["Draw for priority!"], playerLightningMeter: 0, enemyLightningMeter: 0, firstCardPlayedThisTurn: false, spellsPlayedThisTurn: 0, playerZeusInPlay, enemyZeusInPlay, playerName: user?.name || "You", enemyName };
   };
@@ -2518,7 +2525,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
     if (s.enemyDeck.length>0&&s.enemyHand.length<6) { s.enemyHand=[...s.enemyHand,makeInst(s.enemyDeck[0],"e")];s.enemyDeck=s.enemyDeck.slice(1);s.log=[...s.log.slice(-20),"Enemy draws."];push();flashAction("Enemy draws...");await wait(500); }
     // Play cards
     let en=s.maxEnergy;
-    for (const card of [...s.enemyHand].sort((a,b)=>b.cost-a.cost)) {
+    for (const card of [...s.enemyHand].sort((a,b)=>{ const sp=c=>c.type==="spell"&&s.playerBoard.length>=3?1:0; if(sp(b)!==sp(a))return sp(b)-sp(a); return b.cost-a.cost; })) {
       if (card.type==="environment") { if(!card.bloodpact&&card.cost<=en){en-=card.cost;s.environment={...card,owner:"enemy",turnsRemaining:2};s.enemyHand=s.enemyHand.filter(c=>c.uid!==card.uid);s.log=[...s.log.slice(-20),`Enemy: ${card.name}! (2 rounds)`];s=resolveEffects("onPlay",card,s,"enemy",vfx);push();flashAction(`Enemy plays ${card.name}!`);SFX.play("env_play");await wait(750);} continue; }
       if (card.type==="spell") { const canCast=card.bloodpact?card.cost<s.enemyHP:card.cost<=en; if(canCast){if(card.bloodpact)s.enemyHP-=card.cost;else en-=card.cost;s.enemyHand=s.enemyHand.filter(c=>c.uid!==card.uid);s.log=[...s.log.slice(-20),`Enemy casts ${card.name}!`];s=resolveEffects("onPlay",card,s,"enemy",vfx);if(s.enemyZeusInPlay){s.enemyLightningMeter=(s.enemyLightningMeter||0)+1;if(s.enemyLightningMeter>=2){s=fireLightningMeter(s,"enemy",vfx,(m)=>{s.log=[...s.log.slice(-20),m];});}}push();flashAction(`Enemy casts ${card.name}!`);SFX.play("ability");await wait(700);} continue; }
       if(s.enemyBoard.length>=CFG.maxBoard)continue;
@@ -2541,8 +2548,11 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
       if(!att||att.hasAttacked)continue;
       const av=att.currentAtk;
       setAnimUids(p=>({...p,[att.uid]:"attacking-down"}));SFX.play("attack");await wait(340);
-      if(s.playerBoard.length>0){
-        const tgt=[...s.playerBoard].sort((a,b)=>a.currentHp-b.currentHp)[0];
+      const readyAtk=s.enemyBoard.filter(c=>!c.hasAttacked&&c.canAttack&&(!(c.keywords||[]).includes("Charge")||(c.chargeCount||0)>0)).reduce((sum,c)=>sum+c.currentAtk,0);
+      if(s.playerBoard.length>0&&readyAtk<s.playerHP){
+        const kills=s.playerBoard.filter(t=>(t.shielded?t.currentHp:t.currentHp-av)<=0);
+        const cleanKills=kills.filter(t=>!((att.shielded?att.currentHp:att.currentHp-t.currentAtk)<=0));
+        const tgt=cleanKills.length>0?cleanKills.sort((a,b)=>scoreThreat(b)-scoreThreat(a))[0]:kills.length>0?kills.sort((a,b)=>scoreThreat(b)-scoreThreat(a))[0]:[...s.playerBoard].sort((a,b)=>scoreThreat(b)-scoreThreat(a))[0];
         setAnimUids(p=>({...p,[tgt.uid]:"hit"}));vfx.add("attackImpact",{duration:500});await wait(200);
         const nTHP=tgt.shielded?tgt.currentHp:tgt.currentHp-av;const nAHP=att.shielded?att.currentHp:att.currentHp-tgt.currentAtk;
         if(nAHP<att.currentHp&&nAHP>0){setAnimUids(p=>({...p,[att.uid]:"hit"}));await wait(280);}
@@ -2550,21 +2560,19 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         if(Object.keys(dyingUids).length>0){setAnimUids(p=>({...p,...dyingUids}));vfx.add("creatureDie",{color:"#e06040",duration:700});await wait(680);}
         s.enemyBoard=s.enemyBoard.map(c=>c.uid===att.uid?{...c,hasAttacked:true,currentHp:nAHP,shielded:false,chargeCount:(c.keywords||[]).includes("Charge")&&c.chargeCount!=null?Math.max(0,c.chargeCount-1):c.chargeCount}:c).filter(c=>c.currentHp>0);
         if(nTHP<=0) creaturesPlayedRef.current += 1;
-        s.playerBoard=s.playerBoard.map(c=>c.uid===tgt.uid?{...c,currentHp:nTHP,shielded:false,bleed:(c.bleed||0)+((att.keywords||[]).includes("Bleed")?1:0)}:c).filter(c=>c.currentHp>0);
+        s.playerBoard=s.playerBoard.map(c=>c.uid===tgt.uid?{...c,currentHp:nTHP,shielded:false,bleed:(c.bleed||0)+((att.keywords||[]).includes("Bleed")?(att.bleedAmount||1):0)}:c).filter(c=>c.currentHp>0);
         s.log=[...s.log.slice(-20),`${att.name}(${av}) attacks ${tgt.name}`];
         if(nTHP<=0){s.log=[...s.log,`💀 ${tgt.name} slain!`];s=resolveEffects("onDeath",tgt,s,"player",vfx);}
         if(nAHP<=0){s.log=[...s.log,`💀 ${att.name} slain!`];s=resolveEffects("onDeath",att,s,"enemy",vfx);}
-        // Hades Soul Harvest: player Hades gains HP when a player unit is killed by enemy
         if(nTHP<=0&&(s.playerBoard.find(c=>c.id==="hades_soul_reaper")||s.playerHand.find(c=>c.id==="hades_soul_reaper"))){s=resolveEffects("onFriendlyDeath",{id:"hades_soul_reaper",effects:[{trigger:"onFriendlyDeath",effect:"soul_harvest"}]},s,"player",vfx);}
-        // Hades Soul Harvest: enemy Hades gains HP when enemy unit dies
         if(nAHP<=0&&(s.enemyBoard.find(c=>c.id==="hades_soul_reaper")||s.enemyHand.find(c=>c.id==="hades_soul_reaper"))){s=resolveEffects("onFriendlyDeath",{id:"hades_soul_reaper",effects:[{trigger:"onFriendlyDeath",effect:"soul_harvest"}]},s,"enemy",vfx);}
-        // Lightning Meter: enemy Swift attack
         if(s.enemyZeusInPlay&&(att.keywords||[]).includes("Swift")){s.enemyLightningMeter=(s.enemyLightningMeter||0)+1;if(s.enemyLightningMeter>=2){s=fireLightningMeter(s,"enemy",vfx,(m)=>{s.log=[...s.log.slice(-20),m];});}}
         s=resolveEffects("onAttack",att,s,"enemy",vfx);
         flashAction(`${att.name} attacks ${tgt.name}!`);
       } else {
         s.playerHP-=av;s.enemyBoard=s.enemyBoard.map(c=>c.uid===att.uid?{...c,hasAttacked:true,chargeCount:(c.keywords||[]).includes("Charge")&&c.chargeCount!=null?Math.max(0,c.chargeCount-1):c.chargeCount}:c);
-        s.log=[...s.log.slice(-20),`${att.name} hits you for ${av}!`];flashAction(`${att.name} hits you for ${av}!`);vfx.add("damage",{amount:av,duration:500});
+        const faceMsg=s.playerBoard.length>0?`${att.name} rushes face for ${av}!`:`${att.name} hits you for ${av}!`;
+        s.log=[...s.log.slice(-20),faceMsg];flashAction(faceMsg);vfx.add("damage",{amount:av,duration:500});
         if(s.enemyZeusInPlay&&(att.keywords||[]).includes("Swift")){s.enemyLightningMeter=(s.enemyLightningMeter||0)+1;if(s.enemyLightningMeter>=2){s=fireLightningMeter(s,"enemy",vfx,(m)=>{s.log=[...s.log.slice(-20),m];});}}
         s=resolveEffects("onAttack",att,s,"enemy",vfx);
       }
