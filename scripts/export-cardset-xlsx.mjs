@@ -210,6 +210,8 @@ const KEYWORDS = [
   ["Fracture", "When played, a half-stats fragment copy of this unit is also put onto the board.",                       "Implemented"],
   ["Resonate", "This unit gains +1 ATK for each card currently on the enemy board at the time it enters play.",         "Implemented"],
   ["Splat",    "When this unit is destroyed, it deals 1 damage to a random enemy.",                                     "Implemented"],
+  ["Haunt",    "When this unit dies, it returns to your hand as a ghost (1/1) copy that costs 1.",                      "Implemented"],
+  ["Charge",   "This unit can attack a limited number of times per turn (chargeCount tracks remaining attacks).",        "Implemented"],
 ];
 
 for (const [kw, desc, status] of KEYWORDS) {
