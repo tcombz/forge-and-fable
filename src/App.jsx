@@ -489,9 +489,9 @@ function MusicPlayer() {
 const CFG = { startHP: 30, startHand: 3, maxHand: 7, maxBoard: 6, startEnergy: 1, maxEnergy: 7, turnTimer: 45, pvpTurnTimer: 60, aiTurnTimer: 90, deck: { size: 40, maxChamp: 4, maxAuraEnv: 4, copies: 3 } };
 
 // ═══ CONSTANTS ═══════════════════════════════════════════════════════════════
-const RC = { Common: "#8a8a7a", Uncommon: "#c0922a", Rare: "#5090ff", Epic: "#a860d8", Legendary: "#f0b818" };
-const RARITY_GLOW = { Rare: "#3070d0", Epic: "#9040c0", Legendary: "#e8c060", Champion: "#f0a020", Prismatic: "#ffffff" };
-const REGION_COLORS = { Fables: "#9070ff", "Food Fight": "#ff6040", Bloodpact: "#cc2030" };
+const RC = { Common: "var(--rarity-common,#8a8a7a)", Uncommon: "var(--rarity-uncommon,#c0922a)", Rare: "var(--rarity-rare,#5090ff)", Epic: "var(--rarity-epic,#a860d8)", Legendary: "var(--rarity-legendary,#f0b818)" };
+const RARITY_GLOW = { Rare: "var(--glow-rare,#3070d0)", Epic: "var(--glow-epic,#9040c0)", Legendary: "var(--glow-legendary,#e8c060)", Champion: "var(--glow-champion,#f0a020)", Prismatic: "var(--glow-prismatic,#ffffff)" };
+const REGION_COLORS = { Fables: "var(--region-fables,#9070ff)", "Food Fight": "var(--region-foodfight,#ff5030)", Bloodpact: "var(--region-bloodpact,#ff2848)" };
 const KW = [
   { name: "Swift", icon: "\u26A1", color: "#5a9a28", desc: "Attacks the turn it's played" },
   { name: "Fracture", icon: "\u2727", color: "#a060d0", desc: "A Fragment copy enters alongside" },
@@ -505,7 +505,7 @@ const KW = [
   { name: "Charge", icon: "🔋", color: "#e0a020", desc: "Can attack multiple times per turn (counter shows remaining attacks)" },
 ];
 const REGIONS = ["Thornwood", "Shattered Expanse", "Azure Deep", "Ashfen", "Ironmarch", "Sunveil", "Food Fight", "Fables"];
-const GLOW = { Thornwood: "#70ff30", "Shattered Expanse": "#c090ff", "Azure Deep": "#30d0ff", Ashfen: "#ff6820", Ironmarch: "#9090ff", Sunveil: "#ffd030", Bloodpact: "#ff2848", "Food Fight": "#ff5030", Fables: "#9070ff" };
+const GLOW = { Thornwood: "var(--glow-thornwood,#70ff30)", "Shattered Expanse": "var(--glow-expanse,#c090ff)", "Azure Deep": "var(--glow-azure,#30d0ff)", Ashfen: "var(--glow-ashfen,#ff6820)", Ironmarch: "var(--glow-ironmarch,#9090ff)", Sunveil: "var(--glow-sunveil,#ffd030)", Bloodpact: "var(--glow-bloodpact,#ff2848)", "Food Fight": "var(--glow-foodfight,#ff5030)", Fables: "var(--glow-fables,#9070ff)" };
 const ENV_THEMES = {
   Thornwood:         { bg: "linear-gradient(180deg,#040e02 0%,#0a1a06 40%,#081808 100%)", particle: "#60dd28", glow: "#40a020", pShape: "leaf",   pDir: "down", pCount: 28, pSpeed: 0.5 },
   "Shattered Expanse":{ bg: "linear-gradient(180deg,#06001a 0%,#0c0030 40%,#080020 100%)", particle: "#c080ff", glow: "#8040d0", pShape: "spark",  pDir: "up",   pCount: 35, pSpeed: 1.2 },
@@ -952,24 +952,30 @@ function Card({ card, size = "md", onClick, animDelay = 0, isThird = false, hide
             <div style={{ display: "flex", flexDirection: "column", gap: 3, alignItems: "flex-end" }}>
               {isPrismatic && <div style={{ fontSize: 7, background: "linear-gradient(135deg,rgba(0,0,0,0.85),rgba(0,0,0,0.75))", color: "#ffffff", border: "1px solid rgba(255,255,255,0.6)", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700, backgroundImage:"linear-gradient(135deg,#ff008088,#8000ff88)", animation:"prismShimmer 4s linear infinite", backgroundSize:"400% 400%" }}>✦ PRISMATIC</div>}
               {isAnimeIsland && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.8)", color: "#ff80c0", border: "1px solid #ff80c088", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>🌸</div>}
-              {isEnv && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.75)", color: "#28c0cc", border: "1px solid #28a0cc66", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>ENV</div>}
-              {card.type === "spell" && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.75)", color: "#d090d0", border: "1px solid #d090d066", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>SPELL</div>}
-              {card.type === "champion" && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.75)", color: "#e8c060", border: "1px solid #e8c06066", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>CHAMPION</div>}
+              {isEnv && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.75)", color: "var(--fnf-env,#28c0cc)", border: "1px solid #28a0cc66", borderRadius: "var(--radius-sm,4px)", padding: "2px 6px", fontFamily: "var(--font-display,'Cinzel',serif)", fontWeight: 700 }}>ENV</div>}
+              {card.type === "spell" && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.75)", color: "var(--fnf-spell,#d090d0)", border: "1px solid #d090d066", borderRadius: "var(--radius-sm,4px)", padding: "2px 6px", fontFamily: "var(--font-display,'Cinzel',serif)", fontWeight: 700 }}>SPELL</div>}
+              {card.type === "champion" && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.75)", color: "var(--fnf-gold,#e8c060)", border: "1px solid #e8c06066", borderRadius: "var(--radius-sm,4px)", padding: "2px 6px", fontFamily: "var(--font-display,'Cinzel',serif)", fontWeight: 700 }}>CHAMPION</div>}
             </div>
           </div>
           {/* Bottom text overlay */}
           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0 10px 8px", zIndex: 4 }}>
             {kws.length > 0 && (<div style={{ display: "flex", gap: 3, flexWrap: "wrap", marginBottom: 3 }}>{kws.map((k) => (<span key={k.name} style={{ fontSize: 7, padding: "1px 5px", borderRadius: 20, background: `${k.color}cc`, color: "#fff", border: `1px solid ${k.color}ee`, fontWeight: 700, textShadow: "0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.8)" }}>{k.icon} {k.name}</span>))}</div>)}
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: size === "sm" ? 10 : 12, fontWeight: 700, color: "#fff", lineHeight: 1.2, textShadow: "0 1px 4px rgba(0,0,0,0.9)" }}>{card.name}</div>
+            <div style={{ fontFamily: "var(--font-display,'Cinzel',serif)", fontSize: size === "sm" ? 10 : 12, fontWeight: 700, color: "#fff", lineHeight: 1.2, textShadow: "0 1px 4px rgba(0,0,0,0.9)" }}>{card.name}</div>
             <div style={{ fontSize: 8, color: border, marginTop: 1, marginBottom: 3, textShadow: "0 1px 3px rgba(0,0,0,0.9)" }}>{(card.type || "creature").charAt(0).toUpperCase() + (card.type || "").slice(1)} · <span style={{ color: REGION_COLORS[card.region] || border }}>{card.region}</span></div>
-            <div style={{ fontSize: size === "sm" ? 8.5 : 9.5, color: isEnv ? "#80d0e0" : "#d8c898", lineHeight: 1.5, marginBottom: card.atk != null ? 5 : 0 }}>{card.ability}</div>
+            <div style={{ fontSize: size === "sm" ? 8.5 : 9.5, color: isEnv ? "var(--fnf-env,#80d0e0)" : "var(--fnf-text-secondary,#d8c898)", lineHeight: 1.5, marginBottom: card.atk != null ? 5 : 0 }}>{card.ability}</div>
             {card.atk != null ? (
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(0,0,0,0.55)", borderRadius: 6, padding: "3px 10px" }}>
-                <div style={{ textAlign: "center" }}><div style={{ fontSize: 18, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#ff7750", lineHeight: 1 }}>{card.currentAtk != null ? card.currentAtk : card.atk}</div><div style={{ fontSize: 7, color: "#996655", letterSpacing: 1 }}>ATK</div></div>
-                <div style={{ textAlign: "center" }}><div style={{ fontSize: 18, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#50c065", lineHeight: 1 }}>{card.currentHp != null ? card.currentHp : card.hp}</div><div style={{ fontSize: 7, color: "#448850", letterSpacing: 1 }}>HP</div></div>
+              <div style={{ display: "flex", gap: 4 }}>
+                <div style={{ flex: 1, background: "linear-gradient(135deg,rgba(110,18,8,0.96),rgba(170,38,18,0.92))", border: "1px solid rgba(255,112,80,0.6)", borderRadius: "var(--radius-sm,6px)", padding: "4px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "inset 0 1px 0 rgba(255,150,100,0.18), 0 0 8px rgba(255,80,50,0.2)" }}>
+                  <span style={{ fontSize: 7, color: "var(--fnf-atk,#ff9070)", fontWeight: 700, letterSpacing: 0.5 }}>ATK</span>
+                  <span style={{ fontSize: 18, fontFamily: "var(--font-display,'Cinzel',serif)", fontWeight: 900, color: "#fff", lineHeight: 1, textShadow: "0 1px 4px rgba(0,0,0,0.95)" }}>{card.currentAtk != null ? card.currentAtk : card.atk}</span>
+                </div>
+                <div style={{ flex: 1, background: "linear-gradient(135deg,rgba(8,72,18,0.96),rgba(18,118,30,0.92))", border: "1px solid rgba(76,192,90,0.6)", borderRadius: "var(--radius-sm,6px)", padding: "4px 8px", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "inset 0 1px 0 rgba(150,255,150,0.12), 0 0 8px rgba(50,192,80,0.2)" }}>
+                  <span style={{ fontSize: 7, color: "var(--fnf-hp,#50c060)", fontWeight: 700, letterSpacing: 0.5 }}>HP</span>
+                  <span style={{ fontSize: 18, fontFamily: "var(--font-display,'Cinzel',serif)", fontWeight: 900, color: "#fff", lineHeight: 1, textShadow: "0 1px 4px rgba(0,0,0,0.95)" }}>{card.currentHp != null ? card.currentHp : card.hp}</span>
+                </div>
               </div>
             ) : (
-              <div style={{ textAlign: "center", fontFamily: "'Cinzel',serif", fontSize: size === "sm" ? 9 : 11, fontWeight: 700, letterSpacing: 2, color: isEnv ? "#40c0e0" : "#d090d0" }}>{isEnv ? "ENVIRONMENT" : "SPELL"}</div>
+              <div style={{ textAlign: "center", fontFamily: "var(--font-display,'Cinzel',serif)", fontSize: size === "sm" ? 9 : 11, fontWeight: 700, letterSpacing: 2, color: isEnv ? "var(--fnf-env,#40c0e0)" : "var(--fnf-spell,#d090d0)" }}>{isEnv ? "ENVIRONMENT" : "SPELL"}</div>
             )}
           </div>
           {/* Inner frame */}
@@ -1191,28 +1197,35 @@ function Token({ c, selected, isTarget, canSelect, onClick, onRightClick, animTy
   const pct = c.currentHp / c.maxHp;
   const opac = (c.hasAttacked && !isTarget) ? 0.45 : 1;
   const kws = KW.filter((k) => (c.keywords || []).includes(k.name));
+  const rarityS = { Rare: "0 0 0 1.5px #3070d030, 0 0 14px #3070d020", Epic: "0 0 0 1.5px #9040c030, 0 0 14px #9040c020", Legendary: "0 0 0 1.5px #e8c06040, 0 0 18px #e8c06028" }[c.rarity] || "";
   return (
-    <div className="token" onClick={onClick} onContextMenu={(e) => { e.preventDefault(); if (onRightClick) onRightClick(); }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ width: 118, height: 160, cursor: (canSelect || isTarget) ? "pointer" : "default", userSelect: "none", border: `2px solid ${selected ? "#f0d840" : animType==="hit" ? "#ff3030" : (animType==="attacking"||animType==="attacking-down"||animType==="attacking-face"||animType==="attacking-face-down") ? "#ff8030" : isTarget && hov ? "#e84040" : hov && canSelect ? c.border + "aa" : c.border + "55"}`, borderRadius: 10, overflow: "hidden", opacity: animType==="dying" ? 1 : opac, boxShadow: animType==="hit" ? "0 0 28px #ff303088, 0 0 60px #ff202044" : (animType==="attacking"||animType==="attacking-down") ? `0 0 28px ${c.border}aa, 0 0 50px ${c.border}55` : (animType==="attacking-face"||animType==="attacking-face-down") ? `0 0 40px #ff6020cc, 0 0 80px #ff401088` : selected ? `0 0 22px #f0d84066` : hov ? `0 6px 18px ${c.border}44` : "none", transform: animType ? "none" : selected ? "translateY(-8px)" : hov ? "translateY(-4px)" : "none", animation: animType === "attacking" ? "cardLunge 0.42s cubic-bezier(0.22,0.61,0.36,1)" : animType === "attacking-down" ? "cardLungeDown 0.42s cubic-bezier(0.22,0.61,0.36,1)" : animType === "attacking-face" ? "cardLungeFace 0.52s cubic-bezier(0.22,0.61,0.36,1)" : animType === "attacking-face-down" ? "cardLungeFaceDown 0.52s cubic-bezier(0.22,0.61,0.36,1)" : animType === "hit" ? "cardHit 0.44s cubic-bezier(0.25,0.46,0.45,0.94)" : animType === "dying" ? "cardDie 0.65s cubic-bezier(0.55,0,1,0.45) forwards" : animType === "summoning" ? (c.rarity==="Prismatic"?"prismaticPop 0.7s ease-out, cardSummon 0.55s cubic-bezier(0.34,1.56,0.64,1)":"cardSummon 0.55s cubic-bezier(0.34,1.56,0.64,1)") : "none", transition: animType ? "none" : "transform .16s cubic-bezier(0.34,1.56,0.64,1), box-shadow .16s ease, border-color .12s ease, opacity .12s ease", willChange: animType ? "transform, filter" : "transform", position: "relative", zIndex: animType ? 50 : undefined }}>
+    <div className="token" onClick={onClick} onContextMenu={(e) => { e.preventDefault(); if (onRightClick) onRightClick(); }} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ width: 118, height: 160, cursor: (canSelect || isTarget) ? "pointer" : "default", userSelect: "none", border: `2px solid ${selected ? "#f0d840" : animType==="hit" ? "#ff3030" : (animType==="attacking"||animType==="attacking-down"||animType==="attacking-face"||animType==="attacking-face-down") ? "#ff8030" : isTarget && hov ? "#e84040" : hov && canSelect ? c.border + "aa" : c.border + "55"}`, borderRadius: 10, overflow: "hidden", opacity: animType==="dying" ? 1 : opac, boxShadow: animType==="hit" ? "0 0 28px #ff303088, 0 0 60px #ff202044" : (animType==="attacking"||animType==="attacking-down") ? `0 0 28px ${c.border}aa, 0 0 50px ${c.border}55` : (animType==="attacking-face"||animType==="attacking-face-down") ? `0 0 40px #ff6020cc, 0 0 80px #ff401088` : selected ? `0 0 22px #f0d84066` : hov ? `0 6px 18px ${c.border}44${rarityS ? `, ${rarityS}` : ""}` : rarityS || "none", transform: animType ? "none" : selected ? "translateY(-8px)" : hov ? "translateY(-4px)" : "none", animation: animType === "attacking" ? "cardLunge 0.48s cubic-bezier(0.22,0.61,0.36,1)" : animType === "attacking-down" ? "cardLungeDown 0.48s cubic-bezier(0.22,0.61,0.36,1)" : animType === "attacking-face" ? "cardLungeFace 0.56s cubic-bezier(0.22,0.61,0.36,1)" : animType === "attacking-face-down" ? "cardLungeFaceDown 0.56s cubic-bezier(0.22,0.61,0.36,1)" : animType === "hit" ? "cardHit 0.5s cubic-bezier(0.25,0.46,0.45,0.94)" : animType === "dying" ? "cardDie 0.7s cubic-bezier(0.55,0,1,0.45) forwards" : animType === "summoning" ? (c.rarity==="Prismatic"?"prismaticPop 0.7s ease-out, cardSummon 0.6s cubic-bezier(0.34,1.56,0.64,1)":"cardSummon 0.6s cubic-bezier(0.34,1.56,0.64,1)") : "none", transition: animType ? "none" : "transform .16s cubic-bezier(0.34,1.56,0.64,1), box-shadow .16s ease, border-color .12s ease, opacity .12s ease", willChange: animType ? "transform, filter" : "transform", position: "relative", zIndex: animType ? 50 : undefined }}>
       {/* Full art */}
       <div style={{ position: "absolute", inset: 0 }}><CardArt card={c} /></div>
       {/* Bottom gradient */}
-      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(4,2,0,0.96) 0%, rgba(4,2,0,0.75) 28%, rgba(4,2,0,0.25) 50%, transparent 68%)", zIndex: 1 }} />
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, var(--fnf-bg-overlay,rgba(4,2,0,0.96)) 0%, var(--fnf-bg-overlay-sm,rgba(4,2,0,0.75)) 28%, rgba(4,2,0,0.25) 50%, transparent 68%)", zIndex: 1 }} />
       {/* Bottom text */}
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0 6px 4px", zIndex: 3 }}>
-        {c.bleed > 0 && <div style={{ fontSize: 7, color: "#ff6060", fontWeight: 700, marginBottom: 1 }}>🩸 BLEED {c.bleed}</div>}
-        {c.frozen && <div style={{ fontSize: 7, color: "#80c0ff", fontWeight: 700, marginBottom: 1 }}>❄ FROZEN</div>}
-        {c.buffNote && <div style={{ fontSize: 7, color: "#60e880", fontWeight: 700, marginBottom: 1 }}>⬆ {c.buffNote}</div>}
-        {c.debuffNote && <div style={{ fontSize: 7, color: "#ff6060", fontWeight: 700, marginBottom: 1 }}>⬇ {c.debuffNote}</div>}
-        {c.synTag && <div style={{ fontSize: 7, color: "#e8c8ff", fontWeight: 700, marginBottom: 2, background: "rgba(80,0,120,0.82)", border: "1px solid #c080ff88", borderRadius: 4, padding: "1px 4px", display: "inline-block", textShadow: "0 1px 3px rgba(0,0,0,0.9)", letterSpacing: 0.3 }}>✦ {c.synTag}</div>}
-        {(kws.length > 0 || c.shielded) && <div style={{ display: "flex", gap: 2, flexWrap: "wrap", marginBottom: 2 }}>{kws.filter(k => k.name !== "Shield").map((k) => (<span key={k.name} style={{ fontSize: 6, padding: "1px 3px", borderRadius: 6, background: `${k.color}cc`, color: "#fff", border: `1px solid ${k.color}ee`, fontWeight: 700, textShadow: "0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.8)" }}>{k.icon}{k.name}</span>))}{c.shielded && <span style={{ fontSize: 6, padding: "1px 3px", borderRadius: 6, background: "rgba(40,100,200,0.85)", color: "#fff", border: "1px solid #60a0ffcc", fontWeight: 700 }}>♦ SHIELD</span>}</div>}
-        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#fff", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textShadow: "0 0 6px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.name}</div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 2 }}>
-          <span style={{ fontSize: 19, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#ff7050", textShadow: "0 0 8px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.currentAtk}</span>
-          <span style={{ fontSize: 19, fontFamily: "'Cinzel',serif", fontWeight: 700, color: pct < 0.4 ? "#e04040" : "#50c060", textShadow: "0 0 8px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.currentHp}</span>
+        {c.bleed > 0 && <div style={{ fontSize: 7, color: "var(--fnf-bleed,#ff6060)", fontWeight: 700, marginBottom: 1 }}>🩸 BLEED {c.bleed}</div>}
+        {c.frozen && <div style={{ fontSize: 7, color: "var(--fnf-frozen,#80c0ff)", fontWeight: 700, marginBottom: 1 }}>❄ FROZEN</div>}
+        {c.buffNote && <div style={{ fontSize: 7, color: "var(--fnf-success,#78cc45)", fontWeight: 700, marginBottom: 1 }}>⬆ {c.buffNote}</div>}
+        {c.debuffNote && <div style={{ fontSize: 7, color: "var(--fnf-bleed,#ff6060)", fontWeight: 700, marginBottom: 1 }}>⬇ {c.debuffNote}</div>}
+        {c.synTag && <div style={{ fontSize: 7, color: "#e8c8ff", fontWeight: 700, marginBottom: 2, background: "rgba(80,0,120,0.82)", border: "1px solid #c080ff88", borderRadius: "var(--radius-sm,6px)", padding: "1px 4px", display: "inline-block", textShadow: "0 1px 3px rgba(0,0,0,0.9)", letterSpacing: 0.3 }}>✦ {c.synTag}</div>}
+        {(kws.length > 0 || c.shielded) && <div style={{ display: "flex", gap: 2, flexWrap: "wrap", marginBottom: 2 }}>{kws.filter(k => k.name !== "Shield").map((k) => (<span key={k.name} style={{ fontSize: 6, padding: "1px 3px", borderRadius: "var(--radius-pill,999px)", background: `${k.color}cc`, color: "#fff", border: `1px solid ${k.color}ee`, fontWeight: 700, textShadow: "0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.8)" }}>{k.icon}{k.name}</span>))}{c.shielded && <span style={{ fontSize: 6, padding: "1px 3px", borderRadius: "var(--radius-pill,999px)", background: "rgba(40,100,200,0.85)", color: "#fff", border: "1px solid var(--fnf-shield,#60a0ff)cc", fontWeight: 700 }}>♦ SHIELD</span>}</div>}
+        <div style={{ fontFamily: "var(--font-display,'Cinzel',serif)", fontSize: 10, color: "#fff", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textShadow: "0 0 6px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.name}</div>
+        <div style={{ display: "flex", gap: 3, marginTop: 2 }}>
+          <div style={{ flex: 1, background: "linear-gradient(135deg,rgba(110,18,8,0.94),rgba(170,38,18,0.90))", border: "1px solid rgba(255,112,80,0.55)", borderRadius: "var(--radius-sm,6px)", padding: "2px 5px", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "inset 0 1px 0 rgba(255,150,100,0.15)" }}>
+            <span style={{ fontSize: 6, color: "var(--fnf-atk,#ff9070)", fontWeight: 700, letterSpacing: 0.5, lineHeight: 1 }}>ATK</span>
+            <span style={{ fontSize: 16, fontFamily: "var(--font-display,'Cinzel',serif)", fontWeight: 900, color: "#fff", lineHeight: 1, textShadow: "0 1px 3px rgba(0,0,0,0.9)" }}>{c.currentAtk}</span>
+          </div>
+          <div style={{ flex: 1, background: pct < 0.25 ? "linear-gradient(135deg,rgba(110,10,10,0.94),rgba(170,20,20,0.90))" : pct < 0.55 ? "linear-gradient(135deg,rgba(110,58,0,0.94),rgba(160,90,8,0.90))" : "linear-gradient(135deg,rgba(8,72,18,0.94),rgba(18,118,30,0.90))", border: `1px solid ${pct < 0.25 ? "rgba(224,60,60,0.55)" : pct < 0.55 ? "rgba(224,140,28,0.55)" : "rgba(76,192,90,0.55)"}`, borderRadius: "var(--radius-sm,6px)", padding: "2px 5px", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.10)" }}>
+            <span style={{ fontSize: 6, color: pct < 0.25 ? "var(--fnf-hp-low,#e04040)" : pct < 0.55 ? "var(--fnf-hp-mid,#e09020)" : "var(--fnf-hp,#50c060)", fontWeight: 700, letterSpacing: 0.5, lineHeight: 1 }}>HP</span>
+            <span style={{ fontSize: 16, fontFamily: "var(--font-display,'Cinzel',serif)", fontWeight: 900, color: "#fff", lineHeight: 1, textShadow: "0 1px 3px rgba(0,0,0,0.9)" }}>{c.currentHp}</span>
+          </div>
         </div>
       </div>
       {/* HP bar */}
-      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 4, background: "#050402", zIndex: 4 }}><div style={{ height: "100%", width: `${Math.max(0, pct) * 100}%`, background: pct < 0.25 ? "linear-gradient(90deg,#c02020,#e03030)" : pct < 0.55 ? "linear-gradient(90deg,#c07010,#e09020)" : "linear-gradient(90deg,#28882a,#3ab040)", transition: "width .35s cubic-bezier(0.4,0,0.2,1), background .4s ease", boxShadow: pct < 0.25 ? "0 0 6px #e0303066" : pct < 0.55 ? "0 0 6px #e0902066" : "0 0 6px #3ab04066" }} /></div>
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 5, background: "#050402", zIndex: 4 }}><div style={{ height: "100%", width: `${Math.max(0, pct) * 100}%`, background: pct < 0.25 ? "linear-gradient(90deg,#c02020,var(--fnf-hp-low,#e03030))" : pct < 0.55 ? "linear-gradient(90deg,#c07010,var(--fnf-hp-mid,#e09020))" : "linear-gradient(90deg,#28882a,var(--fnf-hp,#3ab040))", transition: "width .35s var(--ease-in-out,cubic-bezier(0.4,0,0.2,1)), background .4s ease", boxShadow: pct < 0.25 ? "0 0 8px #e0303088" : pct < 0.55 ? "0 0 8px #e0902088" : "0 0 8px #3ab04088" }} /></div>
       {/* Shield glow overlay */}
       {c.shielded && <div style={{ position:"absolute", inset:0, borderRadius:8, border:"2px solid #60a0ffcc", pointerEvents:"none", zIndex:6, animation:"shieldPulse 2s ease-in-out infinite" }} />}
       {/* Champion yellow back glow */}
@@ -1243,7 +1256,7 @@ function HandCard({ card, playable, onClick, onRightClick, onDragStart }) {
       } : undefined}
       onDragEnd={() => setDragging(false)}
     >
-      <div onClick={playable ? onClick : undefined} onContextMenu={onRightClick ? (e) => { e.preventDefault(); onRightClick(); } : undefined} style={{ width: 100, height: 140, flexShrink: 0, cursor: playable ? (onDragStart ? "grab" : "pointer") : "not-allowed", opacity: playable ? (dragging ? 0.45 : 1) : 0.35, border: `2px solid ${isBP ? "#a81830" : hov && playable ? card.border : "#201c10"}`, borderRadius: 10, overflow: "hidden", transform: hov && playable && !dragging ? "scale(1.13) translateY(-4px)" : "none", transformOrigin: "50% 100%", boxShadow: hov && playable && !dragging ? `0 12px 32px ${card.border}88, 0 0 48px ${card.border}44` : "none", transition: "transform .18s cubic-bezier(0.34,1.56,0.64,1), box-shadow .18s ease, border-color .12s ease, opacity .12s ease", userSelect: "none", position: "relative", willChange: "transform" }}>
+      <div onClick={playable ? onClick : undefined} onContextMenu={onRightClick ? (e) => { e.preventDefault(); onRightClick(); } : undefined} style={{ width: 100, height: 140, flexShrink: 0, cursor: playable ? (onDragStart ? "grab" : "pointer") : "not-allowed", opacity: playable ? (dragging ? 0.45 : 1) : 0.35, border: `2px solid ${isBP ? "#a81830" : hov && playable ? card.border : playable ? card.border + "55" : "#201c10"}`, borderRadius: 10, overflow: "hidden", transform: hov && playable && !dragging ? "scale(1.13) translateY(-6px)" : "none", transformOrigin: "50% 100%", boxShadow: hov && playable && !dragging ? `0 14px 36px ${card.border}88, 0 0 52px ${card.border}44` : playable ? `0 0 10px ${card.border}30` : "none", transition: "transform .18s cubic-bezier(0.34,1.56,0.64,1), box-shadow .18s ease, border-color .12s ease, opacity .12s ease", userSelect: "none", position: "relative", willChange: "transform" }}>
         {/* Full art */}
         <div style={{ position: "absolute", inset: 0 }}><CardArt card={card} /></div>
         {/* Bottom gradient */}
@@ -1256,14 +1269,20 @@ function HandCard({ card, playable, onClick, onRightClick, onDragStart }) {
         )}
         {/* Bottom: name + stats */}
         <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0 5px 4px", zIndex: 3 }}>
-          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#fff", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textShadow: "0 0 6px #000, 0 1px 4px #000, -1px 0 2px #000, 1px 0 2px #000", lineHeight: 1.2 }}>{card.name}</div>
+          <div style={{ fontFamily: "var(--font-display,'Cinzel',serif)", fontSize: 10, color: "#fff", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textShadow: "0 0 6px #000, 0 1px 4px #000, -1px 0 2px #000, 1px 0 2px #000", lineHeight: 1.2 }}>{card.name}</div>
           {card.atk != null ? (
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
-              <span style={{ fontSize: 14, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#ff7050", textShadow: "0 0 6px #000, 0 1px 4px #000" }}>{card.currentAtk ?? card.atk}</span>
-              <span style={{ fontSize: 14, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#50c060", textShadow: "0 0 6px #000, 0 1px 4px #000" }}>{card.currentHp ?? card.hp}</span>
+            <div style={{ display: "flex", gap: 2, marginTop: 2 }}>
+              <div style={{ flex: 1, background: "linear-gradient(135deg,rgba(110,18,8,0.94),rgba(170,38,18,0.90))", border: "1px solid rgba(255,112,80,0.5)", borderRadius: "var(--radius-sm,6px)", padding: "1px 4px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 5, color: "var(--fnf-atk,#ff9070)", fontWeight: 700, lineHeight: 1 }}>ATK</span>
+                <span style={{ fontSize: 13, fontFamily: "var(--font-display,'Cinzel',serif)", fontWeight: 900, color: "#fff", lineHeight: 1, textShadow: "0 1px 2px rgba(0,0,0,0.9)" }}>{card.currentAtk ?? card.atk}</span>
+              </div>
+              <div style={{ flex: 1, background: "linear-gradient(135deg,rgba(8,72,18,0.94),rgba(18,118,30,0.90))", border: "1px solid rgba(76,192,90,0.5)", borderRadius: "var(--radius-sm,6px)", padding: "1px 4px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 5, color: "var(--fnf-hp,#50c060)", fontWeight: 700, lineHeight: 1 }}>HP</span>
+                <span style={{ fontSize: 13, fontFamily: "var(--font-display,'Cinzel',serif)", fontWeight: 900, color: "#fff", lineHeight: 1, textShadow: "0 1px 2px rgba(0,0,0,0.9)" }}>{card.currentHp ?? card.hp}</span>
+              </div>
             </div>
           ) : (
-            <div style={{ fontSize: 7, color: isEnv ? "#40c0e0" : "#d090d0", fontFamily: "'Cinzel',serif", marginTop: 2 }}>{isEnv ? "ENV" : "SPELL"}</div>
+            <div style={{ fontSize: 7, color: isEnv ? "var(--fnf-env,#40c0e0)" : "var(--fnf-spell,#d090d0)", fontFamily: "var(--font-display,'Cinzel',serif)", marginTop: 2 }}>{isEnv ? "ENV" : "SPELL"}</div>
           )}
         </div>
       {/* Shield glow on HandCard */}
@@ -1271,13 +1290,13 @@ function HandCard({ card, playable, onClick, onRightClick, onDragStart }) {
       </div>
       {/* Hover tooltip with full card info */}
       {hov && !dragging && (
-        <div style={{ position: "fixed", top: "auto", bottom: "auto", left: "auto", width: 240, background: "linear-gradient(160deg,#1e1c10,#12100a)", border: `2px solid ${card.border}88`, borderRadius: 12, padding: 14, zIndex: 9999, boxShadow: `0 16px 40px rgba(0,0,0,0.95), 0 0 30px ${card.border}33`, pointerEvents: "none" }}
+        <div style={{ position: "fixed", top: "auto", bottom: "auto", left: "auto", width: 240, background: "linear-gradient(160deg,var(--fnf-bg-elevated,#1e1c10),var(--fnf-bg,#12100a))", border: `2px solid ${card.border}88`, borderRadius: "var(--radius-lg,12px)", padding: 14, zIndex: 9999, boxShadow: `var(--shadow-xl,0 16px 40px rgba(0,0,0,0.95)), 0 0 30px ${card.border}33`, pointerEvents: "none" }}
           ref={el => { if (el) { const rect = el.parentElement?.getBoundingClientRect?.() || {}; const w = el.offsetWidth || 240; const h = el.offsetHeight || 280; const vw = window.innerWidth; const vh = window.innerHeight; el.style.left = Math.max(8, Math.min(vw - w - 8, (rect.left||0) + (rect.width||0)/2 - w/2)) + "px"; const spaceAbove = (rect.top||0) - 12; if (spaceAbove >= h) { el.style.top = "auto"; el.style.bottom = (vh - (rect.top||0) + 12) + "px"; } else { el.style.top = ((rect.bottom||0) + 12) + "px"; el.style.bottom = "auto"; } } }}>
-          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 14, fontWeight: 700, color: "#f0e0c8", marginBottom: 5 }}>{card.name}</div>
-          <div style={{ fontSize: 11, color: card.border, marginBottom: 6, fontFamily: "'Cinzel',serif" }}>{(card.type || "creature").charAt(0).toUpperCase() + (card.type || "").slice(1)} · <span style={{ color: REGION_COLORS[card.region] || card.border }}>{card.region}</span></div>
-          <div style={{ fontSize: 12, color: "#d0c098", lineHeight: 1.65, marginBottom: 6 }}>{card.ability}</div>
-          {card.atk != null && <div style={{ fontSize: 12, color: "#a09060", marginBottom: 3 }}>ATK <span style={{ color: "#ff7050", fontWeight: 700 }}>{card.atk}</span> · HP <span style={{ color: "#50c060", fontWeight: 700 }}>{card.hp}</span></div>}
-          <div style={{ fontSize: 10, fontStyle: "italic", color: "#706040", marginTop: 4, lineHeight:1.5 }}>"{card.flavor}"</div>
+          <div style={{ fontFamily: "var(--font-display,'Cinzel',serif)", fontSize: 14, fontWeight: 700, color: "var(--fnf-text,#f0e0c8)", marginBottom: 5 }}>{card.name}</div>
+          <div style={{ fontSize: 11, color: card.border, marginBottom: 6, fontFamily: "var(--font-display,'Cinzel',serif)" }}>{(card.type || "creature").charAt(0).toUpperCase() + (card.type || "").slice(1)} · <span style={{ color: REGION_COLORS[card.region] || card.border }}>{card.region}</span></div>
+          <div style={{ fontSize: 12, color: "var(--fnf-text-secondary,#d0c098)", lineHeight: 1.65, marginBottom: 6 }}>{card.ability}</div>
+          {card.atk != null && <div style={{ fontSize: 12, color: "var(--fnf-text-muted,#a09060)", marginBottom: 3 }}>ATK <span style={{ color: "var(--fnf-atk,#ff7050)", fontWeight: 700 }}>{card.atk}</span> · HP <span style={{ color: "var(--fnf-hp,#50c060)", fontWeight: 700 }}>{card.hp}</span></div>}
+          <div style={{ fontSize: 10, fontStyle: "italic", color: "var(--fnf-text-dim,#706040)", marginTop: 4, lineHeight:1.5 }}>"{card.flavor}"</div>
           {kws.length > 0 && (
             <div style={{ marginTop: 6, borderTop: "1px solid #2a2010", paddingTop: 5, display: "flex", flexDirection: "column", gap: 3 }}>
               {kws.map(k => (
@@ -2766,6 +2785,8 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
   };
   const atkFace = async () => { if (!attacker || g.phase !== "player") return; const att = g.playerBoard.find((c) => c.uid === attacker); if (!att) return; SFX.play("attack"); setAnimUids({ [att.uid]: "attacking-face" }); await new Promise(r => setTimeout(r, 380)); const dmg = att.currentAtk; vfx.add("damage", { amount: dmg, duration: 500 }); setGame((prev) => { const nHP = prev.enemyHP - dmg; let s = { ...prev, enemyHP: nHP, playerBoard: prev.playerBoard.map((c) => c.uid === att.uid ? { ...c, hasAttacked: true, chargeCount: (c.keywords||[]).includes("Charge") && c.chargeCount != null ? Math.max(0, c.chargeCount - 1) : c.chargeCount } : c), log: [...prev.log.slice(-20), `${att.name} deals ${dmg} direct!`] }; if (s.playerZeusInPlay && (att.keywords || []).includes("Swift")) { s.playerLightningMeter = (s.playerLightningMeter || 0) + 1; if (s.playerLightningMeter >= 2) { s = fireLightningMeter(s, "player", vfx, (m) => { s.log = [...s.log.slice(-20), m]; }); } } s = resolveEffects("onAttack", att, s, "player", vfx); if (s.enemyHP <= 0) { s.phase = "gameover"; s.winner = "player"; s.log = [...s.log, "Victory!"]; } return s; }); setAttacker(null); await new Promise(r => setTimeout(r, 200)); setAnimUids({}); };
   const attCard = attacker ? g.playerBoard.find((c) => c.uid === attacker) : null;
+  const playerReadyAtk = g.playerBoard.filter(c => c.canAttack && !c.hasAttacked).reduce((s, c) => s + c.currentAtk, 0);
+  const isLethal = g.phase === "player" && !aiThink && g.enemyBoard.length === 0 && playerReadyAtk >= g.enemyHP && g.enemyHP > 0;
 
   return (<div className="battle-wrapper" style={{ width:"100%", height:"calc(100vh - 72px)", padding:"8px 14px 6px", background:"radial-gradient(ellipse at 50% -5%, #1e1a0e 0%, #141008 35%, #0c0a04 70%, #080600 100%)", boxSizing:"border-box", overflow:"visible", display:"flex", flexDirection:"column" }} onClick={() => { SFX.init(); }}>
     {/* First match — Chronicler intro overlay */}
@@ -2909,15 +2930,15 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
         <div style={{ background: "linear-gradient(180deg, rgba(210,30,15,0.42) 0%, rgba(150,12,6,0.3) 100%)", borderBottom: "2px solid rgba(200,40,20,0.7)", borderLeft: "3px solid rgba(230,50,25,0.8)", padding: "4px 10px", position: "relative", zIndex: Object.keys(animUids).some(uid => g.enemyBoard?.some(c => c.uid === uid)) ? 5 : 2, boxShadow: "inset 0 -12px 48px rgba(220,25,10,0.28), inset 3px 0 24px rgba(200,15,5,0.18), inset 0 0 60px rgba(160,5,0,0.1)", flex:"0 0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#3a0c0c,#200808)", border: "2px solid #a0202044", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "#cc6666", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>AI</div>
-              <span style={{ fontFamily: "'Cinzel',serif", fontSize: 14, color: "#cc4848", letterSpacing: 2, fontWeight: 700, textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>ENEMY</span>
+              <div style={{ width: 40, height: 40, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%, #5a1010, #1a0404)", border: "2px solid rgba(200,40,40,0.55)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "#ff8080", fontFamily: "var(--font-display,'Cinzel',serif)", fontWeight: 700, boxShadow: "0 0 14px rgba(200,30,30,0.45), inset 0 1px 0 rgba(255,100,100,0.15)", flexShrink: 0 }}>AI</div>
+              <span style={{ fontFamily: "var(--font-display,'Cinzel',serif)", fontSize: 14, color: "#cc4848", letterSpacing: 2, fontWeight: 700, textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>ENEMY</span>
               <div style={{ display: "flex", gap: 2, marginLeft: 4 }}>{Array.from({ length: g.enemyHand.length }).map((_, i) => (<div key={i} style={{ width: 14, height: 20, background: "linear-gradient(135deg,#240c0c,#180808)", border: "1px solid #341818", borderRadius: 2 }} />))}</div>
               <span style={{ fontSize: 8, color: "#604040", fontFamily: "'Cinzel',serif" }}>Deck: {g.enemyDeck.length}</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:3 }}>
                 <div style={{ width: 100, height: 12, background: "#110606", borderRadius: 6, overflow: "hidden", border:"1px solid #2a1010", boxShadow:"inset 0 2px 4px rgba(0,0,0,0.6)" }}><div style={{ height: "100%", width: `${Math.max(0,(g.enemyHP / CFG.startHP) * 100)}%`, background: `linear-gradient(90deg, ${hpCol(g.enemyHP)}cc, ${hpCol(g.enemyHP)})`, borderRadius:6, transition: "width .45s cubic-bezier(0.4,0,0.2,1), background .5s", boxShadow:`0 0 10px ${hpCol(g.enemyHP)}88, inset 0 1px 0 rgba(255,255,255,0.15)` }} /></div>
-                <span style={{ fontFamily: "'Cinzel',serif", fontSize: 20, fontWeight: 700, color: hpCol(g.enemyHP), textShadow:`0 0 12px ${hpCol(g.enemyHP)}99, 0 1px 3px rgba(0,0,0,0.9)` }}>{g.enemyHP} <span style={{ fontSize:9, color:"#604040", fontWeight:400 }}>HP</span></span>
+                <span style={{ fontFamily: "var(--font-display,'Cinzel',serif)", fontSize: 22, fontWeight: 900, color: hpCol(g.enemyHP), textShadow:`0 0 14px ${hpCol(g.enemyHP)}99, 0 1px 3px rgba(0,0,0,0.9)` }}>{g.enemyHP}<span style={{ fontSize:9, color:"#604040", fontWeight:400, marginLeft:2 }}>/{CFG.startHP}</span></span>
               </div>
             </div>
           </div>
@@ -2939,7 +2960,7 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
               <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:full?"#ffe040":"#a08820", fontWeight:700 }}>{full?"READY!":"ENEMY ⚡"}</span>
             </div>);
           })()}
-          <div style={{ fontSize: 13, color: targetingSpell ? "#ffe040" : "#ff6666", fontFamily: "'Cinzel',serif", letterSpacing: 3, marginBottom: 4, textAlign: "center", fontWeight: 700, textShadow: `0 -1px 0 rgba(255,255,255,0.3), 0 1px 4px rgba(0,0,0,0.95), 0 0 16px ${targetingSpell?"rgba(255,220,0,0.6)":"rgba(255,60,60,0.5)"}` }}>{targetingSpell ? `⚡ CHOOSE TARGET — ${targetingSpell.name}` : "ENEMY FIELD"}</div>
+          <div style={{ fontSize: 13, color: targetingSpell ? "#ffe040" : isLethal ? "#ff3030" : "#ff6666", fontFamily: "var(--font-display,'Cinzel',serif)", letterSpacing: 3, marginBottom: 4, textAlign: "center", fontWeight: 700, textShadow: `0 -1px 0 rgba(255,255,255,0.3), 0 1px 4px rgba(0,0,0,0.95), 0 0 16px ${targetingSpell?"rgba(255,220,0,0.6)":isLethal?"rgba(255,30,30,0.9)":"rgba(255,60,60,0.5)"}`, animation: isLethal ? "pulse 0.9s ease-in-out infinite" : undefined }}>{targetingSpell ? `⚡ CHOOSE TARGET — ${targetingSpell.name}` : isLethal ? "⚔ LETHAL — STRIKE HERO" : "ENEMY FIELD"}</div>
           <div style={{ height:166, display:"flex", gap:8, flexWrap:"nowrap", justifyContent:"center", alignItems:"center", overflow:"visible" }}>
             {g.enemyBoard.length === 0 ? <span style={{ fontSize: 10, color: "#241010", letterSpacing: 3 }}>---</span> : g.enemyBoard.map((c) => (<Token key={c.uid} c={resolveCardArt(c, {})} animType={animUids[c.uid]} isTarget={!!attacker || !!targetingSpell} canSelect={false} onClick={() => { if (targetingSpell) { playCard(targetingSpell, c.uid); } else if (attacker) { atkCreature(c); } else { SFX.play("ability"); setPreviewCard(c); } }} />))}
           </div>
@@ -2981,30 +3002,30 @@ function BattleScreen({ user, onUpdateUser, matchConfig, onExit }) {
             onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDragOverField(true); }}
             onDragLeave={() => setDragOverField(false)}
             onDrop={(e) => { e.preventDefault(); setDragOverField(false); const card = dragCardRef.current; if (card) playCard(card); dragCardRef.current = null; }}
-            style={{ height:166, flex:"0 0 auto", display:"flex", gap:8, flexWrap:"nowrap", justifyContent:"center", alignItems:"center", overflow:"visible", marginBottom:6, borderRadius:8, border: dragOverField ? "2px dashed rgba(80,180,255,0.6)" : "2px dashed transparent", background: dragOverField ? "rgba(50,130,255,0.07)" : "transparent", transition:"border-color .14s ease, background .14s ease" }}>
-            {g.playerBoard.length === 0 ? <span style={{ fontSize: 10, color: dragOverField ? "#78cc45" : "#181408", letterSpacing: 3 }}>{dragOverField ? "DROP TO PLAY" : "PLAY A CARD"}</span> : g.playerBoard.map((c) => (<Token key={c.uid} c={resolveCardArt(c, user?.selectedArts || {})} animType={animUids[c.uid]} selected={attacker === c.uid} isTarget={false} canSelect={g.phase === "player" && c.canAttack && !c.hasAttacked && !aiThink} onClick={() => selectAtt(c)} onRightClick={() => { SFX.play("ability"); setPreviewCard(c); }} />))}
+            style={{ height:166, flex:"0 0 auto", display:"flex", gap:8, flexWrap:"nowrap", justifyContent:"center", alignItems:"center", overflow:"visible", marginBottom:6, borderRadius:10, border: dragOverField ? "2px solid rgba(80,200,255,0.7)" : "2px dashed rgba(255,255,255,0.06)", background: dragOverField ? "rgba(40,120,255,0.12)" : "transparent", boxShadow: dragOverField ? "inset 0 0 24px rgba(40,140,255,0.18), 0 0 18px rgba(40,140,255,0.22)" : "none", transition:"border-color .14s ease, background .14s ease, box-shadow .14s ease" }}>
+            {g.playerBoard.length === 0 ? <span style={{ fontSize: 10, fontFamily:"var(--font-display,'Cinzel',serif)", color: dragOverField ? "#78efaa" : "#282018", letterSpacing: 3, fontWeight: 700 }}>{dragOverField ? "▼ DROP TO PLAY" : "PLAY A CARD"}</span> : g.playerBoard.map((c) => (<Token key={c.uid} c={resolveCardArt(c, user?.selectedArts || {})} animType={animUids[c.uid]} selected={attacker === c.uid} isTarget={false} canSelect={g.phase === "player" && c.canAttack && !c.hasAttacked && !aiThink} onClick={() => selectAtt(c)} onRightClick={() => { SFX.play("ability"); setPreviewCard(c); }} />))}
           </div>
           <div style={{ paddingTop: 24, marginTop: -16, marginBottom: 4, flex:"0 0 auto", overflow:"visible", position:"relative", zIndex:10 }}>
             <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "nowrap", overflow:"visible" }}>
-              {g.playerHand.map((card) => { const isEnv = card.type === "environment"; const isSpl = card.type === "spell"; const eff = getEffectiveCost(card, g.environment, "player"); const cp = g.phase === "player" && !aiThink && (isEnv || isSpl || g.playerBoard.length < CFG.maxBoard) && (card.bloodpact ? card.cost < g.playerHP : eff <= g.playerEnergy); return (<HandCard key={card.uid} card={resolveCardArt({ ...card, cost: eff }, user?.selectedArts || {})} playable={cp} onClick={() => playCard(card)} onRightClick={() => { SFX.play("card_inspect"); setPreviewCard(card); }} onDragStart={(c) => { dragCardRef.current = c; }} />); })}
+              {g.playerHand.map((card, hIdx) => { const isEnv = card.type === "environment"; const isSpl = card.type === "spell"; const eff = getEffectiveCost(card, g.environment, "player"); const cp = g.phase === "player" && !aiThink && (isEnv || isSpl || g.playerBoard.length < CFG.maxBoard) && (card.bloodpact ? card.cost < g.playerHP : eff <= g.playerEnergy); const hMid = (g.playerHand.length - 1) / 2; const hPos = hIdx - hMid; const hRot = hPos * 3.5; const hY = Math.abs(hPos) * 5; return (<div key={card.uid} style={{ transform: `rotate(${hRot}deg) translateY(${hY}px)`, transformOrigin: "50% 100%", transition: "transform .2s var(--ease-bounce,cubic-bezier(0.34,1.56,0.64,1))" }}><HandCard card={resolveCardArt({ ...card, cost: eff }, user?.selectedArts || {})} playable={cp} onClick={() => playCard(card)} onRightClick={() => { SFX.play("card_inspect"); setPreviewCard(card); }} onDragStart={(c) => { dragCardRef.current = c; }} /></div>); })}
             </div>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flex:"0 0 auto" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#4a9020,#6aab3a)", border: "2px solid #e8c06055", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cinzel',serif", fontSize: 12, fontWeight: 700, color: "#fff" }}>{user?.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user?.name || "??").slice(0, 2).toUpperCase()}</div>
+              <div style={{ width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg,#3a7218,#5a9a30)", border: `2px solid ${g.phase === "player" && !aiThink ? "rgba(232,192,96,0.75)" : "rgba(232,192,96,0.3)"}`, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-display,'Cinzel',serif)", fontSize: 12, fontWeight: 700, color: "#fff", boxShadow: g.phase === "player" && !aiThink ? "0 0 14px rgba(232,192,96,0.45)" : "none", transition: "border-color .4s, box-shadow .4s", flexShrink: 0 }}>{user?.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (user?.name || "??").slice(0, 2).toUpperCase()}</div>
               <span style={{ fontSize: 10, color: "#e8c060", fontFamily: "'Cinzel',serif" }}>Deck: {g.playerDeck.length}</span>
               <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
                 <div style={{ width: 100, height: 12, background: "#060808", borderRadius: 6, overflow: "hidden", border:"1px solid #1a2010", boxShadow:"inset 0 2px 4px rgba(0,0,0,0.6)" }}><div style={{ height: "100%", width: `${Math.max(0,(g.playerHP / CFG.startHP) * 100)}%`, background: `linear-gradient(90deg, ${hpCol(g.playerHP)}cc, ${hpCol(g.playerHP)})`, borderRadius:6, transition: "width .45s cubic-bezier(0.4,0,0.2,1), background .5s", boxShadow:`0 0 10px ${hpCol(g.playerHP)}88, inset 0 1px 0 rgba(255,255,255,0.15)` }} /></div>
-                <span style={{ fontFamily: "'Cinzel',serif", fontSize: 20, fontWeight: 700, color: hpCol(g.playerHP), textShadow:`0 0 12px ${hpCol(g.playerHP)}99, 0 1px 3px rgba(0,0,0,0.9)` }}>{g.playerHP} <span style={{ fontSize:9, color:"#806040", fontWeight:400 }}>HP</span></span>
+                <span style={{ fontFamily: "var(--font-display,'Cinzel',serif)", fontSize: 22, fontWeight: 900, color: hpCol(g.playerHP), textShadow:`0 0 14px ${hpCol(g.playerHP)}99, 0 1px 3px rgba(0,0,0,0.9)` }}>{g.playerHP}<span style={{ fontSize:9, color:"#806040", fontWeight:400, marginLeft:2 }}>/{CFG.startHP}</span></span>
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
                 <span style={{ fontSize: 8, color: "#c0a060", fontFamily: "'Cinzel',serif" }}>ENERGY</span>
-                <div style={{ display: "flex", gap: 4, alignItems: "flex-end" }}>{Array.from({ length: g.maxEnergy }).map((_, i) => (<div key={i} style={{ width: 18, height: 22, background: i < g.playerEnergy ? "linear-gradient(160deg,#90e0ff 0%,#2090d0 45%,#1060a0 100%)" : "rgba(20,50,80,0.35)", borderRadius: "50% 50% 45% 45% / 40% 40% 60% 60%", border: `1px solid ${i < g.playerEnergy ? "#60c8ff88" : "#1a3a5a44"}`, boxShadow: i < g.playerEnergy ? "0 2px 8px #2090ff55, inset 0 1px 0 rgba(255,255,255,0.35)" : "none", transition: "background .22s ease, box-shadow .22s ease, border-color .22s ease" }} />))}</div>
+                <div style={{ display: "flex", gap: 4, alignItems: "flex-end" }}>{Array.from({ length: g.maxEnergy }).map((_, i) => (<div key={i} style={{ width: 18, height: 22, background: i < g.playerEnergy ? "linear-gradient(160deg,#90e0ff 0%,#2090d0 45%,#1060a0 100%)" : "rgba(20,50,80,0.35)", borderRadius: "50% 50% 45% 45% / 40% 40% 60% 60%", border: `1px solid ${i < g.playerEnergy ? "#60c8ff88" : "#1a3a5a44"}`, boxShadow: i < g.playerEnergy ? "0 2px 8px #2090ff55, inset 0 1px 0 rgba(255,255,255,0.35)" : "none", transition: "background .22s ease, box-shadow .22s ease, border-color .22s ease", animation: i === g.playerEnergy - 1 && g.phase === "player" && !aiThink ? "pulse 1.6s ease-in-out infinite" : undefined }} />))}</div>
                 <span style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#60c8ff", fontWeight: 700 }}>{g.playerEnergy}/{g.maxEnergy}</span>
               </div>
-              <button onClick={()=>{SFX.play("end_turn_go");endTurn();}} disabled={g.phase !== "player" || aiThink} style={{ padding: "8px 16px", background: g.phase === "player" && !aiThink ? "linear-gradient(135deg,#c89010,#f0c040)" : "rgba(255,255,255,0.04)", border: "none", borderRadius: 7, fontFamily: "'Cinzel',serif", fontSize: 10, fontWeight: 700, letterSpacing: 2, color: g.phase === "player" && !aiThink ? "#1a1000" : "#404030", cursor: g.phase === "player" && !aiThink ? "pointer" : "not-allowed", boxShadow: g.phase==="player"&&!aiThink?"0 0 18px #e8c06044,0 4px 12px rgba(200,144,0,0.3)":"none", transition:"all .18s" }}>{aiThink ? "THINKING..." : "END TURN"}</button>
+              <button onClick={()=>{SFX.play("end_turn_go");endTurn();}} disabled={g.phase !== "player" || aiThink} aria-label="End Turn" style={{ padding: "8px 16px", background: g.phase === "player" && !aiThink ? "linear-gradient(135deg,#c89010,#f0c040)" : "rgba(255,255,255,0.04)", border: "none", borderRadius: 7, fontFamily: "'Cinzel',serif", fontSize: 10, fontWeight: 700, letterSpacing: 2, color: g.phase === "player" && !aiThink ? "#1a1000" : "#404030", cursor: g.phase === "player" && !aiThink ? "pointer" : "not-allowed", boxShadow: g.phase==="player"&&!aiThink?"0 0 18px #e8c06044,0 4px 12px rgba(200,144,0,0.3)":"none", transition:"all .18s" }}>{aiThink ? "THINKING..." : "END TURN"}</button>
             </div>
           </div>
           {/* Lightning Meter — only shown when player has Zeus in deck */}
@@ -3172,7 +3193,7 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
   return (<div style={{ position:"fixed", inset:0, zIndex:600, background:"rgba(2,1,0,0.97)", display:"flex", flexDirection:"column" }}>
     {dbPreview && <CardPreview card={dbPreview} onClose={() => setDbPreview(null)} />}
     {/* Header bar */}
-    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 20px", borderBottom:"2px solid rgba(120,80,220,0.3)", background:"linear-gradient(180deg,#160828,#0c0418)", flexShrink:0, gap:12, flexWrap:"wrap" }}>
+    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"16px 22px", borderBottom:"2px solid rgba(140,90,240,0.35)", background:"linear-gradient(180deg,#1a0c34 0%,#0e0520 100%)", flexShrink:0, gap:12, flexWrap:"wrap", boxShadow:"0 4px 24px rgba(0,0,0,0.7), inset 0 -1px 0 rgba(140,90,240,0.15)" }}>
       <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
         <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:20, color:"#e8c060", margin:0, letterSpacing:2 }}>⚒ {isNew ? "NEW DECK" : `EDIT: ${editDeck.name}`}</h3>
         <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
@@ -3206,10 +3227,13 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
               <option value="environment">Environments</option>
               <option value="aura">Auras</option>
             </select>
-            <select value={regionFilter} onChange={e=>setRegionFilter(e.target.value)} style={selSty}>
-              <option value="all">All Factions</option>
-              {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
-            </select>
+          </div>
+          <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginBottom:8 }}>
+            {[["all","ALL"], ...REGIONS.map(r=>[r,r])].map(([val,label])=>{
+              const active=regionFilter===val;
+              const col=REGION_COLORS[val]||GLOW[val]||"#a08050";
+              return(<button key={val} onClick={()=>setRegionFilter(val)} style={{ padding:"4px 10px", borderRadius:20, fontFamily:"var(--font-display,'Cinzel',serif)", fontSize:8, fontWeight:700, letterSpacing:0.8, cursor:"pointer", border:active?`1px solid ${col}`:"1px solid rgba(80,50,140,0.2)", background:active?`${col}1e`:"rgba(10,4,24,0.5)", color:active?col:"#504848", boxShadow:active?`0 0 8px ${col}33`:"none", transition:"all .14s" }}>{label==="all"?"ALL":label}</button>);
+            })}
           </div>
           <div style={{ display:"flex", gap:6, alignItems:"center" }}>
             <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#60504a", letterSpacing:1 }}>SORT:</span>
@@ -4527,17 +4551,18 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
             onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDragOverField(true); }}
             onDragLeave={() => setDragOverField(false)}
             onDrop={(e) => { e.preventDefault(); setDragOverField(false); const card = dragCardRef.current; if (card) playCard(card); dragCardRef.current = null; }}
-            style={{ height:166, flex:"0 0 auto", display:"flex", gap:8, flexWrap:"nowrap", justifyContent:"center", alignItems:"center", overflow:"visible", marginBottom:6, borderRadius:8, border: dragOverField ? "2px dashed rgba(80,180,255,0.6)" : "2px dashed transparent", background: dragOverField ? "rgba(50,130,255,0.07)" : "transparent", transition:"border-color .14s ease, background .14s ease" }}>
-            {ai.playerBoard.length===0?<span style={{ fontSize:10, color:dragOverField?"#78cc45":"#181408", letterSpacing:3 }}>{dragOverField?"DROP TO PLAY":isMyTurn?"PLAY A CARD":"WAITING..."}</span>:ai.playerBoard.map((c)=>(<Token key={c.uid} c={resolveCardArt(c,myRole==="p1"?gs?.p1Arts||{}:gs?.p2Arts||{})} animType={animUids[c.uid]} selected={attacker===c.uid} isTarget={false} canSelect={isMyTurn&&c.canAttack&&!c.hasAttacked&&!syncing} onClick={()=>selectAtt(c)} onRightClick={()=>setPreviewCard(c)}/>))}
+            style={{ height:166, flex:"0 0 auto", display:"flex", gap:8, flexWrap:"nowrap", justifyContent:"center", alignItems:"center", overflow:"visible", marginBottom:6, borderRadius:10, border: dragOverField ? "2px solid rgba(80,200,255,0.7)" : "2px dashed rgba(255,255,255,0.06)", background: dragOverField ? "rgba(40,120,255,0.12)" : "transparent", boxShadow: dragOverField ? "inset 0 0 24px rgba(40,140,255,0.18), 0 0 18px rgba(40,140,255,0.22)" : "none", transition:"border-color .14s ease, background .14s ease, box-shadow .14s ease" }}>
+            {ai.playerBoard.length===0?<span style={{ fontSize:10, fontFamily:"var(--font-display,'Cinzel',serif)", color:dragOverField?"#78efaa":"#282018", letterSpacing:3, fontWeight:700 }}>{dragOverField?"▼ DROP TO PLAY":isMyTurn?"PLAY A CARD":"WAITING..."}</span>:ai.playerBoard.map((c)=>(<Token key={c.uid} c={resolveCardArt(c,myRole==="p1"?gs?.p1Arts||{}:gs?.p2Arts||{})} animType={animUids[c.uid]} selected={attacker===c.uid} isTarget={false} canSelect={isMyTurn&&c.canAttack&&!c.hasAttacked&&!syncing} onClick={()=>selectAtt(c)} onRightClick={()=>setPreviewCard(c)}/>))}
           </div>
           <div style={{ paddingTop:38, marginTop:-28, marginBottom:6, flex:"0 0 auto", overflow:"visible", position:"relative", zIndex:10 }}>
             <div style={{ display:"flex", gap:6, justifyContent:"center", flexWrap:"nowrap", overflow:"visible" }}>
-              {ai.playerHand.map((card)=>{
+              {ai.playerHand.map((card,hIdx)=>{
                 const needsAllies=(card.type==="spell")&&(card.effects||[]).some(e=>["buff_allies","heal_all_allies","buff_random_ally","buff_keyword_allies"].includes(e.effect));
                 const eff=getEffectiveCost(card,ai.environment);
                 const canAfford=card.bloodpact?card.cost<ai.playerHP:eff<=ai.playerEnergy;
                 const cp=isMyTurn&&!syncing&&canAfford&&(card.type==="environment"||card.type==="spell"||ai.playerBoard.length<CFG.maxBoard)&&!(needsAllies&&ai.playerBoard.length===0);
-                return(<HandCard key={card.uid} card={resolveCardArt({...card,cost:eff},myRole==="p1"?gs?.p1Arts||{}:gs?.p2Arts||{})} playable={cp} onClick={()=>playCard(card)} onRightClick={()=>{ SFX.play("card_inspect"); setPreviewCard(card); }} onDragStart={(c) => { dragCardRef.current = c; }}/>);
+                const hMid=(ai.playerHand.length-1)/2; const hPos=hIdx-hMid; const hRot=hPos*3.5; const hY=Math.abs(hPos)*5;
+                return(<div key={card.uid} style={{transform:`rotate(${hRot}deg) translateY(${hY}px)`,transformOrigin:"50% 100%",transition:"transform .2s var(--ease-bounce,cubic-bezier(0.34,1.56,0.64,1))"}}><HandCard card={resolveCardArt({...card,cost:eff},myRole==="p1"?gs?.p1Arts||{}:gs?.p2Arts||{})} playable={cp} onClick={()=>playCard(card)} onRightClick={()=>{ SFX.play("card_inspect"); setPreviewCard(card); }} onDragStart={(c) => { dragCardRef.current = c; }}/></div>);
               })}
             </div>
           </div>
@@ -4558,7 +4583,7 @@ function PvpBattleScreen({ user, matchConfig, onExit, onUpdateUser, setInPvpMatc
                 <div style={{ display:"flex", gap:4, alignItems:"flex-end" }}>{Array.from({length:ai.maxEnergy}).map((_,i)=>(<div key={i} style={{ width:18, height:22, background:i<ai.playerEnergy?"linear-gradient(160deg,#90e0ff 0%,#2090d0 45%,#1060a0 100%)":"rgba(20,50,80,0.35)", borderRadius:"50% 50% 45% 45% / 40% 40% 60% 60%", border:`1px solid ${i<ai.playerEnergy?"#60c8ff88":"#1a3a5a44"}`, boxShadow:i<ai.playerEnergy?"0 2px 8px #2090ff55, inset 0 1px 0 rgba(255,255,255,0.35)":"none", transition:"all .25s" }}/>))}</div>
                 <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#60c8ff", fontWeight:700 }}>{ai.playerEnergy}/{ai.maxEnergy}</span>
               </div>
-              <button onClick={()=>{SFX.play("end_turn_go");endTurn();}} disabled={!isMyTurn||syncing} style={{ padding:"8px 16px", background:isMyTurn&&!syncing?"linear-gradient(135deg,#c89010,#f0c040)":"rgba(255,255,255,0.04)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, letterSpacing:2, color:isMyTurn&&!syncing?"#1a1000":"#404030", cursor:isMyTurn&&!syncing?"pointer":"not-allowed", boxShadow:isMyTurn&&!syncing?"0 0 18px #e8c06044,0 4px 12px rgba(200,144,0,0.3)":"none", transition:"all .18s" }}>{syncing?"SYNCING...":"END TURN"}</button>
+              <button onClick={()=>{SFX.play("end_turn_go");endTurn();}} disabled={!isMyTurn||syncing} aria-label="End Turn" style={{ padding:"8px 16px", background:isMyTurn&&!syncing?"linear-gradient(135deg,#c89010,#f0c040)":"rgba(255,255,255,0.04)", border:"none", borderRadius:7, fontFamily:"'Cinzel',serif", fontSize:10, fontWeight:700, letterSpacing:2, color:isMyTurn&&!syncing?"#1a1000":"#404030", cursor:isMyTurn&&!syncing?"pointer":"not-allowed", boxShadow:isMyTurn&&!syncing?"0 0 18px #e8c06044,0 4px 12px rgba(200,144,0,0.3)":"none", transition:"all .18s" }}>{syncing?"SYNCING...":"END TURN"}</button>
             </div>
           </div>
           {/* My lightning meter */}
@@ -4813,9 +4838,10 @@ function MatchmakingScreen({ user, ranked, onMatch, onCancel, onRetry, onFallbac
   const backBtn = (label='CANCEL') => (<button onClick={onCancel} style={{ marginTop:28, padding:'10px 28px', background:'transparent', border:'1px solid #3a2010', borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:'#806040', cursor:'pointer' }}>{label}</button>);
 
   if (phase === 'found') return (
-    <div style={{ maxWidth:480, margin:'0 auto', padding:'60px 24px', textAlign:'center' }}>
-      <div style={{ fontSize:56, marginBottom:14, animation:'pulse 0.7s ease-in-out infinite' }}>⚔</div>
-      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:26, color:'#e8c060', margin:'0 0 6px', letterSpacing:3 }}>DUEL FOUND</h2>
+    <div style={{ maxWidth:480, margin:'0 auto', padding:'60px 24px', textAlign:'center', position:'relative' }}>
+      <div style={{ position:'absolute', inset:0, borderRadius:20, background:'radial-gradient(ellipse at 50% 30%,rgba(180,60,20,0.12) 0%,transparent 70%)', pointerEvents:'none' }} />
+      <div style={{ fontSize:56, marginBottom:14, animation:'pulse 0.7s ease-in-out infinite', filter:'drop-shadow(0 0 20px rgba(232,100,30,0.6))' }}>⚔</div>
+      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:26, color:'#e8c060', margin:'0 0 6px', letterSpacing:3, textShadow:'0 0 30px rgba(232,192,96,0.5)' }}>DUEL FOUND</h2>
       <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:'#806040', letterSpacing:3, marginBottom:6 }}>CHALLENGER</div>
       <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, color:'#f0e8d8', fontWeight:700, marginBottom:24 }}>{oppName}</div>
       <div style={{ width:64, height:64, borderRadius:'50%', background:`conic-gradient(#e8c060 ${countdown/20*360}deg, rgba(40,20,80,0.7) 0deg)`, margin:'0 auto 22px', display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -4887,9 +4913,10 @@ function MatchmakingScreen({ user, ranked, onMatch, onCancel, onRetry, onFallbac
 
   const nearFallback = queueCountdown <= 5;
   return (
-    <div style={{ maxWidth:480, margin:'0 auto', padding:'60px 24px', textAlign:'center' }}>
+    <div style={{ maxWidth:480, margin:'0 auto', padding:'60px 24px', textAlign:'center', position:'relative' }}>
+      <div style={{ position:'absolute', inset:0, borderRadius:20, background:'radial-gradient(ellipse at 50% 40%,rgba(60,20,120,0.15) 0%,transparent 65%)', pointerEvents:'none' }} />
       {/* Countdown ring */}
-      <div style={{ width:88, height:88, borderRadius:'50%', background:`conic-gradient(#e8c060 ${(queueCountdown/15)*360}deg, rgba(40,20,80,0.7) 0deg)`, margin:'0 auto 24px', display:'flex', alignItems:'center', justifyContent:'center', transition:'background 0.9s linear' }}>
+      <div style={{ width:96, height:96, borderRadius:'50%', background:`conic-gradient(${nearFallback?'#c08030':'#e8c060'} ${(queueCountdown/15)*360}deg, rgba(40,20,80,0.4) 0deg)`, margin:'0 auto 24px', display:'flex', alignItems:'center', justifyContent:'center', transition:'background 0.9s linear', boxShadow:`0 0 28px ${nearFallback?'rgba(180,100,0,0.35)':'rgba(232,192,96,0.25)'}`, filter:`drop-shadow(0 0 8px ${nearFallback?'rgba(200,120,20,0.4)':'rgba(232,192,96,0.3)'})` }}>
         <div style={{ width:70, height:70, borderRadius:'50%', background:'#0e0c08', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:1 }}>
           <span style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:700, color: nearFallback ? '#c08030' : '#e8c060', lineHeight:1 }}>{queueCountdown}</span>
           <span style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:'#504030', letterSpacing:1 }}>SEC</span>
@@ -6536,10 +6563,10 @@ function CollectionScreen({ user, onUpdateUser, onDeckBuilding, newPlayerMode })
         </div>
       )}
       {/* Header row: title + shards + deck builder + craft toggle */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 12, padding: "16px 20px", background: "linear-gradient(135deg,rgba(20,10,40,0.7),rgba(10,6,24,0.6))", border: "1px solid rgba(100,60,180,0.18)", borderRadius: 12, backdropFilter: "blur(8px)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04), 0 4px 20px rgba(0,0,0,0.5)" }}>
         <div>
-          <h2 style={{ fontFamily: "'Cinzel',serif", fontSize: 24, fontWeight: 700, color: "#e8c060", margin: 0 }}>Collection</h2>
-          <div style={{ fontSize: 11, color: "#806040", marginTop: 3 }}>{owned.length} / {ownablePool.length} cards obtained · <span style={{ color:"#a0c8e0" }}>{user?.shards ?? 0} ⬙ shards</span></div>
+          <h2 style={{ fontFamily: "var(--font-display,'Cinzel',serif)", fontSize: 24, fontWeight: 900, color: "var(--fnf-gold,#e8c060)", margin: 0, letterSpacing: 2, textShadow: "0 0 30px rgba(232,192,96,0.35)" }}>COLLECTION</h2>
+          <div style={{ fontSize: 11, color: "#806040", marginTop: 4 }}><span style={{ color:"#a09070" }}>{owned.length}</span><span style={{ color:"#504030" }}> / {ownablePool.length} obtained</span> · <span style={{ color:"#a0c8e0", fontWeight: 600 }}>{user?.shards ?? 0} ⬙</span><span style={{ color:"#504a38" }}> shards</span></div>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
           {/* Craft Mode Toggle */}
@@ -6563,11 +6590,19 @@ function CollectionScreen({ user, onUpdateUser, onDeckBuilding, newPlayerMode })
           </button>
         </div>
       </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." style={{ flex: 1, minWidth: 120, padding: "8px 12px", background: "#0a0418", border: "1px solid rgba(100,60,180,0.25)", borderRadius: 7, color: "#f0e8d8", fontSize: 12, outline: "none" }} />
-        <select value={regFilter} onChange={(e) => setRegFilter(e.target.value)} style={{ padding: "8px", background: "#0a0418", border: "1px solid rgba(100,60,180,0.25)", borderRadius: 7, color: "#f0e8d8", fontFamily: "'Cinzel',serif", fontSize: 10, outline: "none" }}>
-          <option value="all">All</option>{[...REGIONS, "Bloodpact"].map((r) => (<option key={r} value={r}>{r}</option>))}
-        </select>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search cards..." style={{ flex: 1, minWidth: 160, padding: "8px 12px", background: "rgba(10,4,24,0.8)", border: "1px solid rgba(100,60,180,0.3)", borderRadius: 8, color: "#f0e8d8", fontSize: 12, outline: "none", boxShadow: "inset 0 1px 0 rgba(0,0,0,0.5)" }} />
+      </div>
+      <div style={{ display: "flex", gap: 6, marginBottom: 20, flexWrap: "wrap" }}>
+        {[["all","ALL",null], ...[...REGIONS, "Bloodpact"].map(r=>[r,r,REGION_COLORS[r]||GLOW[r]])].map(([val,label,col])=>{
+          const active = regFilter===val;
+          const accentColor = col || "#a08050";
+          return (
+            <button key={val} onClick={()=>setRegFilter(val)} style={{ padding:"5px 12px", borderRadius:20, fontFamily:"var(--font-display,'Cinzel',serif)", fontSize:9, fontWeight:700, letterSpacing:1, cursor:"pointer", border: active ? `1px solid ${accentColor}` : "1px solid rgba(80,50,140,0.22)", background: active ? `${accentColor}22` : "rgba(10,4,24,0.5)", color: active ? accentColor : "#605040", boxShadow: active ? `0 0 10px ${accentColor}44, inset 0 0 8px ${accentColor}11` : "none", transition:"all .15s ease", textShadow: active ? `0 0 8px ${accentColor}88` : "none" }}>
+              {label==="all"?"ALL FACTIONS":label}
+            </button>
+          );
+        })}
       </div>
       {/* ══ FORGE MODE ══ */}
       {craftMode ? (<>
@@ -9901,7 +9936,7 @@ export default function App() {
       }
       *{box-sizing:border-box}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:#080310}::-webkit-scrollbar-thumb{background:#3a2880;border-radius:3px}select option{background:#100820}button{transition:background .16s ease,box-shadow .16s ease,border-color .16s ease,color .14s ease,opacity .14s ease}canvas{image-rendering:auto}
       @keyframes vfxShake{0%,100%{transform:translate(-50%,-50%)}25%{transform:translate(-55%,-45%)}75%{transform:translate(-45%,-55%)}}
-      @keyframes vfxFloat{0%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(-50%,-120%)}}
+      @keyframes vfxFloat{0%{opacity:0;transform:translate(-50%,-50%) scale(1.6)}8%{opacity:1;transform:translate(-50%,-58%) scale(1.0)}60%{opacity:1;transform:translate(-50%,-95%) scale(0.9)}100%{opacity:0;transform:translate(-50%,-130%) scale(0.75)}}
       @keyframes vfxPulse{0%{opacity:.8;transform:translate(-50%,-50%) scale(.5)}100%{opacity:0;transform:translate(-50%,-50%) scale(2)}}
       @keyframes vfxEnv{0%{opacity:0}30%{opacity:1}100%{opacity:0}}
       @keyframes fadeIn{0%{opacity:0;transform:translateY(8px) scale(0.98)}100%{opacity:1;transform:translateY(0) scale(1)}}
@@ -9913,8 +9948,8 @@ export default function App() {
       @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
       @keyframes turnBannerIn{0%{opacity:0;transform:translate(-50%,-50%) scale(0.7)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}25%{transform:translate(-50%,-50%) scale(1)}75%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.1)}}
       @keyframes turnStamp{0%{opacity:0;transform:scale(1.4)}8%{opacity:1;transform:scale(0.94)}16%{transform:scale(1.02)}22%{transform:scale(1)}70%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.05)}}
-      @keyframes cardDie{0%{opacity:1;transform:scale(1) rotate(0deg)}10%{opacity:0.9;transform:scale(1.06) rotate(2deg)}30%{opacity:0.7;transform:scale(0.88) rotate(-14deg) translateY(10px)}62%{opacity:0.28;transform:scale(0.62) rotate(-32deg) translateY(32px)}100%{opacity:0;transform:scale(0.18) rotate(-52deg) translateY(60px)}}
-      @keyframes cardSummon{0%{opacity:0;transform:translateY(44px) scale(0.76)}50%{opacity:1;transform:translateY(-10px) scale(1.08)}72%{transform:translateY(3px) scale(0.97)}88%{transform:translateY(-2px) scale(1.02)}100%{opacity:1;transform:translateY(0) scale(1)}}
+      @keyframes cardDie{0%{opacity:1;transform:scale(1) rotate(0deg)}8%{opacity:0.95;transform:scale(1.1) rotate(3deg)}20%{opacity:0.85;transform:scale(0.96) rotate(-8deg) translateY(4px)}38%{opacity:0.65;transform:scale(0.82) rotate(-20deg) translateY(16px)}62%{opacity:0.28;transform:scale(0.55) rotate(-38deg) translateY(38px)}80%{opacity:0.08;transform:scale(0.28) rotate(-50deg) translateY(58px)}100%{opacity:0;transform:scale(0.08) rotate(-60deg) translateY(72px)}}
+      @keyframes cardSummon{0%{opacity:0;transform:translateY(56px) scale(0.68) rotate(-3deg)}40%{opacity:1;transform:translateY(-14px) scale(1.14) rotate(1deg)}65%{transform:translateY(5px) scale(0.95) rotate(-0.5deg)}82%{transform:translateY(-3px) scale(1.04)}92%{transform:translateY(1px) scale(0.99)}100%{opacity:1;transform:translateY(0) scale(1) rotate(0deg)}}
       @keyframes spellCast{0%{opacity:0;transform:translate(-50%,-50%) scale(0.4)}30%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}70%{opacity:.9;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.4)}}
       @keyframes envFlash{0%{opacity:0}20%{opacity:1}80%{opacity:.8}100%{opacity:0}}
       @keyframes prismaticPop{0%{transform:scale(1);opacity:1}20%{transform:scale(1.16);opacity:0.88}55%{transform:scale(1.07);opacity:0.95}100%{transform:scale(1);opacity:1}}
@@ -9931,16 +9966,18 @@ export default function App() {
       @keyframes shieldPulse{0%,100%{opacity:0.7;box-shadow:0 0 10px #60a0ff44,inset 0 0 8px #4080c033}50%{opacity:1;box-shadow:0 0 20px #60a0ff99,inset 0 0 16px #4080c066}}
       @keyframes dupeToast{0%{opacity:0;transform:translateY(20px) scale(0.8)}15%{opacity:1;transform:translateY(0) scale(1)}75%{opacity:1}100%{opacity:0;transform:translateY(-30px) scale(0.9)}}
       @keyframes splatLabel{0%{opacity:0;transform:translate(-50%,-50%) scale(0.4) rotate(-12deg)}40%{opacity:1;transform:translate(-50%,-50%) scale(1.15) rotate(4deg)}65%{transform:translate(-50%,-50%) scale(0.96) rotate(-2deg)}100%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(0deg)}}
-      @keyframes vfxHitFlash{0%{opacity:0}10%{opacity:1}100%{opacity:0}}
+      @keyframes vfxHitFlash{0%{opacity:0}6%{opacity:1}18%{opacity:0.85}100%{opacity:0}}
       @keyframes vfxHealFlash{0%{opacity:0}15%{opacity:1}60%{opacity:.7}100%{opacity:0}}
-      @keyframes vfxRingBurst{0%{opacity:0.9;transform:translate(-50%,-50%) scale(0.1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
+      @keyframes heroHit{0%{opacity:0}5%{opacity:1}100%{opacity:0}}
+      @keyframes cardPlay{0%{opacity:0;transform:translateY(20px) scale(0.8) rotate(-6deg)}45%{opacity:1;transform:translateY(-8px) scale(1.12) rotate(2deg)}70%{transform:translateY(2px) scale(0.97) rotate(-0.5deg)}100%{opacity:1;transform:translateY(0) scale(1) rotate(0deg)}}
+      @keyframes vfxRingBurst{0%{opacity:0.9;transform:translate(-50%,-50%) scale(0.05)}35%{opacity:0.85;transform:translate(-50%,-50%) scale(0.6)}70%{opacity:0.4;transform:translate(-50%,-50%) scale(0.9)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.1)}}
       @keyframes vfxSpellFlash{0%{opacity:0}15%{opacity:1}100%{opacity:0}}
-      @keyframes cardLunge{0%{transform:translateY(0) scale(1)}22%{transform:translateY(-52px) scale(1.13) rotate(-2deg)}48%{transform:translateY(-42px) scale(1.08)}100%{transform:translateY(0) scale(1)}}
-      @keyframes cardLungeDown{0%{transform:translateY(0) scale(1)}22%{transform:translateY(52px) scale(1.13) rotate(2deg)}48%{transform:translateY(42px) scale(1.08)}100%{transform:translateY(0) scale(1)}}
+      @keyframes cardLunge{0%{transform:translateY(0) scale(1)}18%{transform:translateY(-66px) scale(1.18) rotate(-4deg)}38%{transform:translateY(-54px) scale(1.1) rotate(-2deg)}58%{transform:translateY(-2px) scale(0.96)}75%{transform:translateY(2px) scale(1.02)}100%{transform:translateY(0) scale(1)}}
+      @keyframes cardLungeDown{0%{transform:translateY(0) scale(1)}18%{transform:translateY(66px) scale(1.18) rotate(4deg)}38%{transform:translateY(54px) scale(1.1) rotate(2deg)}58%{transform:translateY(2px) scale(0.96)}75%{transform:translateY(-2px) scale(1.02)}100%{transform:translateY(0) scale(1)}}
       @keyframes cardLungeFace{0%,100%{transform:translateY(0) scale(1)}16%{transform:translateY(-96px) scale(1.22) rotate(-3deg)}46%{transform:translateY(-80px) scale(1.15) rotate(-1deg)}80%{transform:translateY(-8px) scale(1.02)}}
       @keyframes cardLungeFaceDown{0%,100%{transform:translateY(0) scale(1)}16%{transform:translateY(96px) scale(1.22) rotate(3deg)}46%{transform:translateY(80px) scale(1.15) rotate(1deg)}80%{transform:translateY(8px) scale(1.02)}}
       @keyframes coinSpin{0%{transform:rotateY(0deg);opacity:1}40%{transform:rotateY(720deg)}70%{transform:rotateY(1260deg)}100%{transform:rotateY(1440deg)}}
-      @keyframes cardHit{0%,100%{transform:translate(0,0) rotate(0deg)}8%{transform:translate(-12px,5px) rotate(-4deg)}26%{transform:translate(10px,4px) rotate(3deg)}50%{transform:translate(-6px,2px) rotate(-2deg)}75%{transform:translate(4px,1px) rotate(1deg)}}
+      @keyframes cardHit{0%,100%{transform:translate(0,0) rotate(0deg) scale(1)}6%{transform:translate(-18px,8px) rotate(-6deg) scale(0.94)}20%{transform:translate(14px,6px) rotate(5deg) scale(0.97)}40%{transform:translate(-9px,3px) rotate(-3deg) scale(0.99)}62%{transform:translate(6px,2px) rotate(2deg)}80%{transform:translate(-3px,0px) rotate(-1deg)}}
       @keyframes shimmer{0%{background-position:-600px 0}100%{background-position:600px 0}}
       .skel{background:linear-gradient(90deg,#1a1608 25%,#2a2210 50%,#1a1608 75%);background-size:600px 100%;animation:shimmer 1.6s infinite linear;border-radius:6px}
       @media(prefers-reduced-motion:reduce){*{animation-duration:0.01ms!important;transition-duration:0.01ms!important}}
