@@ -139,3 +139,40 @@
   --radius-xl:   18px;
   --radius-pill: 999px;
 }
+
+/* ── Global focus ring ───────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--fnf-gold, #e8c060);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+:focus:not(:focus-visible) { outline: none; }
+
+/* ── Reduced motion ──────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:  0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Responsive: deck builder grid ──────────────────────────────────────── */
+.deck-builder-grid {
+  grid-template-columns: 1fr 330px;
+}
+@media (max-width: 700px) {
+  .deck-builder-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Wide content scroll containers ─────────────────────────────────────── */
+.overflow-x-scroll { overflow-x: auto; }
+
+/* ── Scrollbar styling ───────────────────────────────────────────────────── */
+::-webkit-scrollbar              { width: 6px; height: 6px; }
+::-webkit-scrollbar-track        { background: rgba(0,0,0,0.3); border-radius: 3px; }
+::-webkit-scrollbar-thumb        { background: rgba(100,70,160,0.45); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover  { background: rgba(140,100,210,0.65); }
