@@ -33,7 +33,8 @@ class ErrorBoundary extends Component {
       <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:320, padding:40, textAlign:"center" }}>
         <div style={{ fontSize:40, marginBottom:16 }}>⚔</div>
         <div style={{ fontFamily:"'Cinzel',serif", fontSize:18, color:"#e8c060", marginBottom:8, letterSpacing:2 }}>SOMETHING WENT WRONG</div>
-        <div style={{ fontSize:12, color:"#806040", marginBottom:24, maxWidth:380 }}>{this.props.label || "An unexpected error occurred."} Please try again.</div>
+        <div style={{ fontSize:12, color:"#806040", marginBottom:12, maxWidth:380 }}>{this.props.label || "An unexpected error occurred."} Please try again.</div>
+        {this.state.error && <div style={{ fontSize:10, color:"#e05050", background:"rgba(200,40,40,0.08)", border:"1px solid #e0505030", borderRadius:8, padding:"8px 12px", maxWidth:480, marginBottom:16, wordBreak:"break-all", textAlign:"left", fontFamily:"monospace" }}>{String(this.state.error)}</div>}
         <button onClick={() => this.setState({ hasError: false, error: null })}
           style={{ padding:"10px 28px", background:"linear-gradient(135deg,#c89010,#f0c040)", border:"none", borderRadius:10, fontFamily:"'Cinzel',serif", fontSize:11, fontWeight:700, color:"#1a1000", cursor:"pointer", letterSpacing:1 }}>
           RETRY
@@ -553,6 +554,7 @@ const PI = Math.PI;
 // ═══ UTILS ═══════════════════════════════════════════════════════════════════
 function mkRng(seed) { let s = ((seed || 1) * 69069 + 1) >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
 function hexToRgb(hex) { const m = hex.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i); return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : null; }
+function canvasHex(v) { const m = String(v||"").match(/,\s*(#[0-9a-f]{3,8})\s*\)/i); return m ? m[1] : (v || "#70ff30"); }
 function safeRoundRect(ctx, x, y, w, h, r) {
   const rad = typeof r === "number" ? r : 0;
   ctx.beginPath(); ctx.moveTo(x + rad, y); ctx.lineTo(x + w - rad, y); ctx.quadraticCurveTo(x + w, y, x + w, y + rad); ctx.lineTo(x + w, y + h - rad); ctx.quadraticCurveTo(x + w, y + h, x + w - rad, y + h); ctx.lineTo(x + rad, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - rad); ctx.lineTo(x, y + rad); ctx.quadraticCurveTo(x, y, x + rad, y); ctx.closePath();
@@ -772,7 +774,7 @@ function PatchNotesModal({ onDismiss }) {
 
 // ═══ CANVAS ART ══════════════════════════════════════════════════════════════
 function drawCardArt(ctx, card, W, H) {
-  const rng = mkRng(card.seed || 42); const region = card.region || "Thornwood"; const type = card.type || "creature"; const g = GLOW[region] || "#70ff30";
+  const rng = mkRng(card.seed || 42); const region = card.region || "Thornwood"; const type = card.type || "creature"; const g = canvasHex(GLOW[region] || "#70ff30");
   ctx.clearRect(0, 0, W, H);
   const bgs = { Thornwood: ["#010801","#041204","#071a06"], "Shattered Expanse": ["#02000a","#06001a","#0a002a"], "Azure Deep": ["#010308","#020818","#030c28"], Ashfen: ["#0c0100","#1e0400","#2a0600"], Ironmarch: ["#030304","#06060c","#0a0a14"], Sunveil: ["#0c0600","#1a0e00","#260e00"], Bloodpact: ["#080002","#120006","#1c000a"] };
   const cols = bgs[region] || bgs.Thornwood;
