@@ -1,61 +1,130 @@
 @import "tailwindcss";
 
 /* ═══ FORGE & FABLE — DESIGN TOKENS ════════════════════════════════════════
-   Single source of truth for the colour palette, typography, and spacing.
-   These CSS custom properties can be used anywhere — including React inline
-   styles via the var() function.
+   Single source of truth for colour, typography, spacing, and motion.
+   All components consume these; never hardcode a hex value that has a token.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
   /* ── Brand colours (derived from logo) ─────────────────────────────────── */
-  --fnf-logo-charcoal: #2e3848;   /* hammer/quill icon fill                  */
-  --fnf-logo-gold:     #a08830;   /* logo ring & icon outline                */
+  --fnf-logo-charcoal: #2e3848;
+  --fnf-logo-gold:     #a08830;
 
   /* ── Background scale ───────────────────────────────────────────────────── */
-  --fnf-bg:           #161210;    /* page background                         */
-  --fnf-bg-elevated:  #1e1a0e;    /* cards, panels, modals                   */
-  --fnf-bg-sunken:    #0e0c08;    /* inputs, inner wells                     */
-  --fnf-bg-nav:       #1e1a0e;    /* nav bar                                 */
+  --fnf-bg:            #161210;    /* page background                          */
+  --fnf-bg-elevated:   #1e1a0e;    /* cards, panels, modals                    */
+  --fnf-bg-sunken:     #0e0c08;    /* inputs, inner wells                      */
+  --fnf-bg-nav:        #1e1a0e;    /* nav bar                                  */
+  --fnf-bg-overlay:    rgba(4,2,0,0.96);   /* card art bottom overlay          */
+  --fnf-bg-overlay-sm: rgba(4,2,0,0.75);   /* card art lighter overlay         */
+  --fnf-bg-modal:      rgba(2,1,0,0.92);   /* modal backdrop                   */
 
   /* ── Gold / accent scale ────────────────────────────────────────────────── */
-  --fnf-gold:         #e8c060;    /* primary text highlight, active states   */
-  --fnf-gold-bright:  #f0d050;    /* CTA button highlight edge               */
-  --fnf-gold-base:    #c89010;    /* CTA button base                         */
-  --fnf-gold-dim:     #a08040;    /* secondary / inactive labels             */
-  --fnf-gold-mute:    #7a6030;    /* very muted / placeholder                */
-  --fnf-gold-border:  #4a3c18;    /* gold-tinted section borders             */
-  --fnf-gold-border2: #3a2c14;    /* dimmer borders                          */
+  --fnf-gold:          #e8c060;    /* primary text highlight, active states    */
+  --fnf-gold-bright:   #f0d050;    /* CTA button highlight edge                */
+  --fnf-gold-base:     #c89010;    /* CTA button base                          */
+  --fnf-gold-dim:      #a08040;    /* secondary / inactive labels              */
+  --fnf-gold-mute:     #7a6030;    /* very muted / placeholder                 */
+  --fnf-gold-border:   #4a3c18;    /* gold-tinted section borders              */
+  --fnf-gold-border2:  #3a2c14;    /* dimmer borders                           */
 
   /* ── Text scale ─────────────────────────────────────────────────────────── */
-  --fnf-text:         #e8e0d0;    /* primary body text                       */
-  --fnf-text-secondary: #c0b898;  /* secondary body text                     */
-  --fnf-text-muted:   #a09070;    /* muted labels                            */
-  --fnf-text-dim:     #706040;    /* dim / disabled                          */
+  --fnf-text:          #e8e0d0;    /* primary body text                        */
+  --fnf-text-secondary:#c0b898;    /* secondary body text                      */
+  --fnf-text-muted:    #a09070;    /* muted labels                             */
+  --fnf-text-dim:      #706040;    /* dim / disabled                           */
 
   /* ── Semantic colours ───────────────────────────────────────────────────── */
-  --fnf-atk:          #ff7050;    /* attack stat                             */
-  --fnf-hp:           #50c060;    /* HP stat                                 */
-  --fnf-spell:        #d090d0;    /* spell card accent                       */
-  --fnf-env:          #28c0cc;    /* environment card accent                 */
-  --fnf-champion:     #e8c060;    /* champion card accent (same as gold)     */
-  --fnf-success:      #78cc45;    /* success / win / confirm                 */
-  --fnf-danger:       #e05050;    /* danger / loss / error                   */
-  --fnf-warning:      #e8a020;    /* warning / alpha notice                  */
-  --fnf-blood:        #c03040;    /* Bloodpact region accent                 */
+  --fnf-atk:           #ff7050;    /* attack stat                              */
+  --fnf-hp:            #50c060;    /* HP stat (healthy)                        */
+  --fnf-hp-mid:        #e09020;    /* HP stat (injured)                        */
+  --fnf-hp-low:        #e04040;    /* HP stat (critical)                       */
+  --fnf-spell:         #d090d0;    /* spell card accent                        */
+  --fnf-env:           #28c0cc;    /* environment card accent                  */
+  --fnf-champion:      #e8c060;    /* champion card accent (same as gold)      */
+  --fnf-success:       #78cc45;    /* success / win / confirm                  */
+  --fnf-danger:        #e05050;    /* danger / loss / error                    */
+  --fnf-warning:       #e8a020;    /* warning / alpha notice                   */
+  --fnf-blood:         #c03040;    /* Bloodpact region accent                  */
+  --fnf-shield:        #60a0ff;    /* Shield keyword glow                      */
+  --fnf-bleed:         #ff6060;    /* Bleed status text                        */
+  --fnf-frozen:        #80c0ff;    /* Frozen status text                       */
 
   /* ── Button gradients ───────────────────────────────────────────────────── */
-  --fnf-btn-primary:  linear-gradient(135deg, #c89010, #f0c040);
+  --fnf-btn-primary:       linear-gradient(135deg, #c89010, #f0c040);
   --fnf-btn-primary-hover: linear-gradient(135deg, #d4a020, #f0d050);
-  --fnf-btn-danger:   linear-gradient(135deg, #3a0808, #5a1010);
-  --fnf-btn-success:  linear-gradient(135deg, #143a06, #1e560c);
+  --fnf-btn-danger:        linear-gradient(135deg, #3a0808, #5a1010);
+  --fnf-btn-success:       linear-gradient(135deg, #143a06, #1e560c);
+
+  /* ── Rarity colours ─────────────────────────────────────────────────────── */
+  --rarity-common:    #8a8a7a;
+  --rarity-uncommon:  #c0922a;
+  --rarity-rare:      #5090ff;
+  --rarity-epic:      #a860d8;
+  --rarity-legendary: #f0b818;
+  --rarity-prismatic: #ffffff;
+
+  /* ── Rarity glows ────────────────────────────────────────────────────────── */
+  --glow-rare:        #3070d0;
+  --glow-epic:        #9040c0;
+  --glow-legendary:   #e8c060;
+  --glow-champion:    #f0a020;
+  --glow-prismatic:   #ffffff;
+
+  /* ── Region identity colours ────────────────────────────────────────────── */
+  --region-thornwood:  #70e030;
+  --region-expanse:    #c090ff;
+  --region-azure:      #30d0ff;
+  --region-ashfen:     #ff6820;
+  --region-ironmarch:  #9090ff;
+  --region-sunveil:    #ffd030;
+  --region-bloodpact:  #ff2848;
+  --region-foodfight:  #ff5030;
+  --region-fables:     #9070ff;
+
+  /* ── Region art glows (aura + VFX borders) ──────────────────────────────── */
+  --glow-thornwood:  #70ff30;
+  --glow-expanse:    #c090ff;
+  --glow-azure:      #30d0ff;
+  --glow-ashfen:     #ff6820;
+  --glow-ironmarch:  #9090ff;
+  --glow-sunveil:    #ffd030;
+  --glow-bloodpact:  #ff2848;
+  --glow-foodfight:  #ff5030;
+  --glow-fables:     #9070ff;
+
+  /* ── Card cost badge backgrounds ────────────────────────────────────────── */
+  --cost-default:   linear-gradient(160deg, #90e0ff 0%, #2090d0 40%, #0a60a0 100%);
+  --cost-bloodpact: radial-gradient(#ff3050, #a00018);
+  --cost-env:       radial-gradient(#40c0e0, #1a6888);
+  --cost-prismatic: radial-gradient(#ffffff, #c0a0ff);
+
+  /* ── Elevation / shadow scale ────────────────────────────────────────────── */
+  --shadow-sm:   0 2px 8px rgba(0,0,0,0.60);
+  --shadow-md:   0 4px 16px rgba(0,0,0,0.75);
+  --shadow-lg:   0 8px 32px rgba(0,0,0,0.88);
+  --shadow-xl:   0 16px 56px rgba(0,0,0,0.95);
+  --shadow-card: 0 10px 36px rgba(0,0,0,0.95), 0 2px 8px rgba(0,0,0,0.70);
+  --shadow-gold: 0 4px 16px rgba(200,144,0,0.25);
+  --shadow-gold-hov: 0 6px 24px rgba(200,144,0,0.45);
+
+  /* ── Motion tokens ───────────────────────────────────────────────────────── */
+  --dur-instant: 80ms;
+  --dur-fast:    160ms;
+  --dur-base:    260ms;
+  --dur-slow:    420ms;
+  --dur-xslow:   650ms;
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out:    cubic-bezier(0.22, 0, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.40, 0, 0.20, 1);
 
   /* ── Typography ─────────────────────────────────────────────────────────── */
-  --font-display: 'Cinzel', serif;   /* headers, labels, all UI chrome       */
-  --font-body:    'Lora', Georgia, serif; /* narrative text, flavor           */
+  --font-display: 'Cinzel', serif;        /* headers, labels, all UI chrome    */
+  --font-body:    'Lora', Georgia, serif; /* narrative text, flavor            */
 
   /* ── Spacing scale ──────────────────────────────────────────────────────── */
-  --space-1: 4px;
-  --space-2: 8px;
+  --space-1:  4px;
+  --space-2:  8px;
   --space-3: 12px;
   --space-4: 16px;
   --space-5: 24px;
@@ -63,10 +132,10 @@
   --space-7: 48px;
   --space-8: 64px;
 
-  /* ── Radii ──────────────────────────────────────────────────────────────── */
-  --radius-sm:  6px;
-  --radius-md:  10px;
-  --radius-lg:  14px;
-  --radius-xl:  18px;
+  /* ── Border radii ────────────────────────────────────────────────────────── */
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   14px;
+  --radius-xl:   18px;
   --radius-pill: 999px;
 }

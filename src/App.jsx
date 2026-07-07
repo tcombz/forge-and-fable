@@ -489,9 +489,9 @@ function MusicPlayer() {
 const CFG = { startHP: 30, startHand: 3, maxHand: 7, maxBoard: 6, startEnergy: 1, maxEnergy: 7, turnTimer: 45, pvpTurnTimer: 60, aiTurnTimer: 90, deck: { size: 40, maxChamp: 4, maxAuraEnv: 4, copies: 3 } };
 
 // ═══ CONSTANTS ═══════════════════════════════════════════════════════════════
-const RC = { Common: "#8a8a7a", Uncommon: "#c0922a", Rare: "#5090ff", Epic: "#a860d8", Legendary: "#f0b818" };
-const RARITY_GLOW = { Rare: "#3070d0", Epic: "#9040c0", Legendary: "#e8c060", Champion: "#f0a020", Prismatic: "#ffffff" };
-const REGION_COLORS = { Fables: "#9070ff", "Food Fight": "#ff6040", Bloodpact: "#cc2030" };
+const RC = { Common: "var(--rarity-common,#8a8a7a)", Uncommon: "var(--rarity-uncommon,#c0922a)", Rare: "var(--rarity-rare,#5090ff)", Epic: "var(--rarity-epic,#a860d8)", Legendary: "var(--rarity-legendary,#f0b818)" };
+const RARITY_GLOW = { Rare: "var(--glow-rare,#3070d0)", Epic: "var(--glow-epic,#9040c0)", Legendary: "var(--glow-legendary,#e8c060)", Champion: "var(--glow-champion,#f0a020)", Prismatic: "var(--glow-prismatic,#ffffff)" };
+const REGION_COLORS = { Fables: "var(--region-fables,#9070ff)", "Food Fight": "var(--region-foodfight,#ff5030)", Bloodpact: "var(--region-bloodpact,#ff2848)" };
 const KW = [
   { name: "Swift", icon: "\u26A1", color: "#5a9a28", desc: "Attacks the turn it's played" },
   { name: "Fracture", icon: "\u2727", color: "#a060d0", desc: "A Fragment copy enters alongside" },
@@ -505,7 +505,7 @@ const KW = [
   { name: "Charge", icon: "🔋", color: "#e0a020", desc: "Can attack multiple times per turn (counter shows remaining attacks)" },
 ];
 const REGIONS = ["Thornwood", "Shattered Expanse", "Azure Deep", "Ashfen", "Ironmarch", "Sunveil", "Food Fight", "Fables"];
-const GLOW = { Thornwood: "#70ff30", "Shattered Expanse": "#c090ff", "Azure Deep": "#30d0ff", Ashfen: "#ff6820", Ironmarch: "#9090ff", Sunveil: "#ffd030", Bloodpact: "#ff2848", "Food Fight": "#ff5030", Fables: "#9070ff" };
+const GLOW = { Thornwood: "var(--glow-thornwood,#70ff30)", "Shattered Expanse": "var(--glow-expanse,#c090ff)", "Azure Deep": "var(--glow-azure,#30d0ff)", Ashfen: "var(--glow-ashfen,#ff6820)", Ironmarch: "var(--glow-ironmarch,#9090ff)", Sunveil: "var(--glow-sunveil,#ffd030)", Bloodpact: "var(--glow-bloodpact,#ff2848)", "Food Fight": "var(--glow-foodfight,#ff5030)", Fables: "var(--glow-fables,#9070ff)" };
 const ENV_THEMES = {
   Thornwood:         { bg: "linear-gradient(180deg,#040e02 0%,#0a1a06 40%,#081808 100%)", particle: "#60dd28", glow: "#40a020", pShape: "leaf",   pDir: "down", pCount: 28, pSpeed: 0.5 },
   "Shattered Expanse":{ bg: "linear-gradient(180deg,#06001a 0%,#0c0030 40%,#080020 100%)", particle: "#c080ff", glow: "#8040d0", pShape: "spark",  pDir: "up",   pCount: 35, pSpeed: 1.2 },
@@ -952,24 +952,24 @@ function Card({ card, size = "md", onClick, animDelay = 0, isThird = false, hide
             <div style={{ display: "flex", flexDirection: "column", gap: 3, alignItems: "flex-end" }}>
               {isPrismatic && <div style={{ fontSize: 7, background: "linear-gradient(135deg,rgba(0,0,0,0.85),rgba(0,0,0,0.75))", color: "#ffffff", border: "1px solid rgba(255,255,255,0.6)", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700, backgroundImage:"linear-gradient(135deg,#ff008088,#8000ff88)", animation:"prismShimmer 4s linear infinite", backgroundSize:"400% 400%" }}>✦ PRISMATIC</div>}
               {isAnimeIsland && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.8)", color: "#ff80c0", border: "1px solid #ff80c088", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>🌸</div>}
-              {isEnv && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.75)", color: "#28c0cc", border: "1px solid #28a0cc66", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>ENV</div>}
-              {card.type === "spell" && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.75)", color: "#d090d0", border: "1px solid #d090d066", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>SPELL</div>}
-              {card.type === "champion" && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.75)", color: "#e8c060", border: "1px solid #e8c06066", borderRadius: 4, padding: "2px 6px", fontFamily: "'Cinzel',serif", fontWeight: 700 }}>CHAMPION</div>}
+              {isEnv && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.75)", color: "var(--fnf-env,#28c0cc)", border: "1px solid #28a0cc66", borderRadius: "var(--radius-sm,4px)", padding: "2px 6px", fontFamily: "var(--font-display,'Cinzel',serif)", fontWeight: 700 }}>ENV</div>}
+              {card.type === "spell" && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.75)", color: "var(--fnf-spell,#d090d0)", border: "1px solid #d090d066", borderRadius: "var(--radius-sm,4px)", padding: "2px 6px", fontFamily: "var(--font-display,'Cinzel',serif)", fontWeight: 700 }}>SPELL</div>}
+              {card.type === "champion" && <div style={{ fontSize: 7, background: "rgba(0,0,0,0.75)", color: "var(--fnf-gold,#e8c060)", border: "1px solid #e8c06066", borderRadius: "var(--radius-sm,4px)", padding: "2px 6px", fontFamily: "var(--font-display,'Cinzel',serif)", fontWeight: 700 }}>CHAMPION</div>}
             </div>
           </div>
           {/* Bottom text overlay */}
           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0 10px 8px", zIndex: 4 }}>
             {kws.length > 0 && (<div style={{ display: "flex", gap: 3, flexWrap: "wrap", marginBottom: 3 }}>{kws.map((k) => (<span key={k.name} style={{ fontSize: 7, padding: "1px 5px", borderRadius: 20, background: `${k.color}cc`, color: "#fff", border: `1px solid ${k.color}ee`, fontWeight: 700, textShadow: "0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.8)" }}>{k.icon} {k.name}</span>))}</div>)}
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: size === "sm" ? 10 : 12, fontWeight: 700, color: "#fff", lineHeight: 1.2, textShadow: "0 1px 4px rgba(0,0,0,0.9)" }}>{card.name}</div>
+            <div style={{ fontFamily: "var(--font-display,'Cinzel',serif)", fontSize: size === "sm" ? 10 : 12, fontWeight: 700, color: "#fff", lineHeight: 1.2, textShadow: "0 1px 4px rgba(0,0,0,0.9)" }}>{card.name}</div>
             <div style={{ fontSize: 8, color: border, marginTop: 1, marginBottom: 3, textShadow: "0 1px 3px rgba(0,0,0,0.9)" }}>{(card.type || "creature").charAt(0).toUpperCase() + (card.type || "").slice(1)} · <span style={{ color: REGION_COLORS[card.region] || border }}>{card.region}</span></div>
-            <div style={{ fontSize: size === "sm" ? 8.5 : 9.5, color: isEnv ? "#80d0e0" : "#d8c898", lineHeight: 1.5, marginBottom: card.atk != null ? 5 : 0 }}>{card.ability}</div>
+            <div style={{ fontSize: size === "sm" ? 8.5 : 9.5, color: isEnv ? "var(--fnf-env,#80d0e0)" : "var(--fnf-text-secondary,#d8c898)", lineHeight: 1.5, marginBottom: card.atk != null ? 5 : 0 }}>{card.ability}</div>
             {card.atk != null ? (
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(0,0,0,0.55)", borderRadius: 6, padding: "3px 10px" }}>
-                <div style={{ textAlign: "center" }}><div style={{ fontSize: 18, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#ff7750", lineHeight: 1 }}>{card.currentAtk != null ? card.currentAtk : card.atk}</div><div style={{ fontSize: 7, color: "#996655", letterSpacing: 1 }}>ATK</div></div>
-                <div style={{ textAlign: "center" }}><div style={{ fontSize: 18, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#50c065", lineHeight: 1 }}>{card.currentHp != null ? card.currentHp : card.hp}</div><div style={{ fontSize: 7, color: "#448850", letterSpacing: 1 }}>HP</div></div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(0,0,0,0.55)", borderRadius: "var(--radius-sm,6px)", padding: "3px 10px" }}>
+                <div style={{ textAlign: "center" }}><div style={{ fontSize: 18, fontFamily: "var(--font-display,'Cinzel',serif)", fontWeight: 700, color: "var(--fnf-atk,#ff7050)", lineHeight: 1 }}>{card.currentAtk != null ? card.currentAtk : card.atk}</div><div style={{ fontSize: 7, color: "#996655", letterSpacing: 1 }}>ATK</div></div>
+                <div style={{ textAlign: "center" }}><div style={{ fontSize: 18, fontFamily: "var(--font-display,'Cinzel',serif)", fontWeight: 700, color: "var(--fnf-hp,#50c060)", lineHeight: 1 }}>{card.currentHp != null ? card.currentHp : card.hp}</div><div style={{ fontSize: 7, color: "#448850", letterSpacing: 1 }}>HP</div></div>
               </div>
             ) : (
-              <div style={{ textAlign: "center", fontFamily: "'Cinzel',serif", fontSize: size === "sm" ? 9 : 11, fontWeight: 700, letterSpacing: 2, color: isEnv ? "#40c0e0" : "#d090d0" }}>{isEnv ? "ENVIRONMENT" : "SPELL"}</div>
+              <div style={{ textAlign: "center", fontFamily: "var(--font-display,'Cinzel',serif)", fontSize: size === "sm" ? 9 : 11, fontWeight: 700, letterSpacing: 2, color: isEnv ? "var(--fnf-env,#40c0e0)" : "var(--fnf-spell,#d090d0)" }}>{isEnv ? "ENVIRONMENT" : "SPELL"}</div>
             )}
           </div>
           {/* Inner frame */}
@@ -1196,23 +1196,23 @@ function Token({ c, selected, isTarget, canSelect, onClick, onRightClick, animTy
       {/* Full art */}
       <div style={{ position: "absolute", inset: 0 }}><CardArt card={c} /></div>
       {/* Bottom gradient */}
-      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(4,2,0,0.96) 0%, rgba(4,2,0,0.75) 28%, rgba(4,2,0,0.25) 50%, transparent 68%)", zIndex: 1 }} />
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, var(--fnf-bg-overlay,rgba(4,2,0,0.96)) 0%, var(--fnf-bg-overlay-sm,rgba(4,2,0,0.75)) 28%, rgba(4,2,0,0.25) 50%, transparent 68%)", zIndex: 1 }} />
       {/* Bottom text */}
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0 6px 4px", zIndex: 3 }}>
-        {c.bleed > 0 && <div style={{ fontSize: 7, color: "#ff6060", fontWeight: 700, marginBottom: 1 }}>🩸 BLEED {c.bleed}</div>}
-        {c.frozen && <div style={{ fontSize: 7, color: "#80c0ff", fontWeight: 700, marginBottom: 1 }}>❄ FROZEN</div>}
-        {c.buffNote && <div style={{ fontSize: 7, color: "#60e880", fontWeight: 700, marginBottom: 1 }}>⬆ {c.buffNote}</div>}
-        {c.debuffNote && <div style={{ fontSize: 7, color: "#ff6060", fontWeight: 700, marginBottom: 1 }}>⬇ {c.debuffNote}</div>}
-        {c.synTag && <div style={{ fontSize: 7, color: "#e8c8ff", fontWeight: 700, marginBottom: 2, background: "rgba(80,0,120,0.82)", border: "1px solid #c080ff88", borderRadius: 4, padding: "1px 4px", display: "inline-block", textShadow: "0 1px 3px rgba(0,0,0,0.9)", letterSpacing: 0.3 }}>✦ {c.synTag}</div>}
-        {(kws.length > 0 || c.shielded) && <div style={{ display: "flex", gap: 2, flexWrap: "wrap", marginBottom: 2 }}>{kws.filter(k => k.name !== "Shield").map((k) => (<span key={k.name} style={{ fontSize: 6, padding: "1px 3px", borderRadius: 6, background: `${k.color}cc`, color: "#fff", border: `1px solid ${k.color}ee`, fontWeight: 700, textShadow: "0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.8)" }}>{k.icon}{k.name}</span>))}{c.shielded && <span style={{ fontSize: 6, padding: "1px 3px", borderRadius: 6, background: "rgba(40,100,200,0.85)", color: "#fff", border: "1px solid #60a0ffcc", fontWeight: 700 }}>♦ SHIELD</span>}</div>}
-        <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#fff", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textShadow: "0 0 6px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.name}</div>
+        {c.bleed > 0 && <div style={{ fontSize: 7, color: "var(--fnf-bleed,#ff6060)", fontWeight: 700, marginBottom: 1 }}>🩸 BLEED {c.bleed}</div>}
+        {c.frozen && <div style={{ fontSize: 7, color: "var(--fnf-frozen,#80c0ff)", fontWeight: 700, marginBottom: 1 }}>❄ FROZEN</div>}
+        {c.buffNote && <div style={{ fontSize: 7, color: "var(--fnf-success,#78cc45)", fontWeight: 700, marginBottom: 1 }}>⬆ {c.buffNote}</div>}
+        {c.debuffNote && <div style={{ fontSize: 7, color: "var(--fnf-bleed,#ff6060)", fontWeight: 700, marginBottom: 1 }}>⬇ {c.debuffNote}</div>}
+        {c.synTag && <div style={{ fontSize: 7, color: "#e8c8ff", fontWeight: 700, marginBottom: 2, background: "rgba(80,0,120,0.82)", border: "1px solid #c080ff88", borderRadius: "var(--radius-sm,6px)", padding: "1px 4px", display: "inline-block", textShadow: "0 1px 3px rgba(0,0,0,0.9)", letterSpacing: 0.3 }}>✦ {c.synTag}</div>}
+        {(kws.length > 0 || c.shielded) && <div style={{ display: "flex", gap: 2, flexWrap: "wrap", marginBottom: 2 }}>{kws.filter(k => k.name !== "Shield").map((k) => (<span key={k.name} style={{ fontSize: 6, padding: "1px 3px", borderRadius: "var(--radius-pill,999px)", background: `${k.color}cc`, color: "#fff", border: `1px solid ${k.color}ee`, fontWeight: 700, textShadow: "0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.8)" }}>{k.icon}{k.name}</span>))}{c.shielded && <span style={{ fontSize: 6, padding: "1px 3px", borderRadius: "var(--radius-pill,999px)", background: "rgba(40,100,200,0.85)", color: "#fff", border: "1px solid var(--fnf-shield,#60a0ff)cc", fontWeight: 700 }}>♦ SHIELD</span>}</div>}
+        <div style={{ fontFamily: "var(--font-display,'Cinzel',serif)", fontSize: 10, color: "#fff", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textShadow: "0 0 6px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.name}</div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 2 }}>
-          <span style={{ fontSize: 19, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#ff7050", textShadow: "0 0 8px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.currentAtk}</span>
-          <span style={{ fontSize: 19, fontFamily: "'Cinzel',serif", fontWeight: 700, color: pct < 0.4 ? "#e04040" : "#50c060", textShadow: "0 0 8px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.currentHp}</span>
+          <span style={{ fontSize: 19, fontFamily: "var(--font-display,'Cinzel',serif)", fontWeight: 700, color: "var(--fnf-atk,#ff7050)", textShadow: "0 0 8px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.currentAtk}</span>
+          <span style={{ fontSize: 19, fontFamily: "var(--font-display,'Cinzel',serif)", fontWeight: 700, color: pct < 0.4 ? "var(--fnf-hp-low,#e04040)" : "var(--fnf-hp,#50c060)", textShadow: "0 0 8px #000, 0 1px 4px #000, -1px 0 3px #000, 1px 0 3px #000" }}>{c.currentHp}</span>
         </div>
       </div>
       {/* HP bar */}
-      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 4, background: "#050402", zIndex: 4 }}><div style={{ height: "100%", width: `${Math.max(0, pct) * 100}%`, background: pct < 0.25 ? "linear-gradient(90deg,#c02020,#e03030)" : pct < 0.55 ? "linear-gradient(90deg,#c07010,#e09020)" : "linear-gradient(90deg,#28882a,#3ab040)", transition: "width .35s cubic-bezier(0.4,0,0.2,1), background .4s ease", boxShadow: pct < 0.25 ? "0 0 6px #e0303066" : pct < 0.55 ? "0 0 6px #e0902066" : "0 0 6px #3ab04066" }} /></div>
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 4, background: "#050402", zIndex: 4 }}><div style={{ height: "100%", width: `${Math.max(0, pct) * 100}%`, background: pct < 0.25 ? "linear-gradient(90deg,#c02020,var(--fnf-hp-low,#e03030))" : pct < 0.55 ? "linear-gradient(90deg,#c07010,var(--fnf-hp-mid,#e09020))" : "linear-gradient(90deg,#28882a,var(--fnf-hp,#3ab040))", transition: "width .35s var(--ease-in-out,cubic-bezier(0.4,0,0.2,1)), background .4s ease", boxShadow: pct < 0.25 ? "0 0 6px #e0303066" : pct < 0.55 ? "0 0 6px #e0902066" : "0 0 6px #3ab04066" }} /></div>
       {/* Shield glow overlay */}
       {c.shielded && <div style={{ position:"absolute", inset:0, borderRadius:8, border:"2px solid #60a0ffcc", pointerEvents:"none", zIndex:6, animation:"shieldPulse 2s ease-in-out infinite" }} />}
       {/* Champion yellow back glow */}
@@ -1256,14 +1256,14 @@ function HandCard({ card, playable, onClick, onRightClick, onDragStart }) {
         )}
         {/* Bottom: name + stats */}
         <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0 5px 4px", zIndex: 3 }}>
-          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 10, color: "#fff", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textShadow: "0 0 6px #000, 0 1px 4px #000, -1px 0 2px #000, 1px 0 2px #000", lineHeight: 1.2 }}>{card.name}</div>
+          <div style={{ fontFamily: "var(--font-display,'Cinzel',serif)", fontSize: 10, color: "#fff", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textShadow: "0 0 6px #000, 0 1px 4px #000, -1px 0 2px #000, 1px 0 2px #000", lineHeight: 1.2 }}>{card.name}</div>
           {card.atk != null ? (
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
-              <span style={{ fontSize: 14, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#ff7050", textShadow: "0 0 6px #000, 0 1px 4px #000" }}>{card.currentAtk ?? card.atk}</span>
-              <span style={{ fontSize: 14, fontFamily: "'Cinzel',serif", fontWeight: 700, color: "#50c060", textShadow: "0 0 6px #000, 0 1px 4px #000" }}>{card.currentHp ?? card.hp}</span>
+              <span style={{ fontSize: 14, fontFamily: "var(--font-display,'Cinzel',serif)", fontWeight: 700, color: "var(--fnf-atk,#ff7050)", textShadow: "0 0 6px #000, 0 1px 4px #000" }}>{card.currentAtk ?? card.atk}</span>
+              <span style={{ fontSize: 14, fontFamily: "var(--font-display,'Cinzel',serif)", fontWeight: 700, color: "var(--fnf-hp,#50c060)", textShadow: "0 0 6px #000, 0 1px 4px #000" }}>{card.currentHp ?? card.hp}</span>
             </div>
           ) : (
-            <div style={{ fontSize: 7, color: isEnv ? "#40c0e0" : "#d090d0", fontFamily: "'Cinzel',serif", marginTop: 2 }}>{isEnv ? "ENV" : "SPELL"}</div>
+            <div style={{ fontSize: 7, color: isEnv ? "var(--fnf-env,#40c0e0)" : "var(--fnf-spell,#d090d0)", fontFamily: "var(--font-display,'Cinzel',serif)", marginTop: 2 }}>{isEnv ? "ENV" : "SPELL"}</div>
           )}
         </div>
       {/* Shield glow on HandCard */}
@@ -1271,13 +1271,13 @@ function HandCard({ card, playable, onClick, onRightClick, onDragStart }) {
       </div>
       {/* Hover tooltip with full card info */}
       {hov && !dragging && (
-        <div style={{ position: "fixed", top: "auto", bottom: "auto", left: "auto", width: 240, background: "linear-gradient(160deg,#1e1c10,#12100a)", border: `2px solid ${card.border}88`, borderRadius: 12, padding: 14, zIndex: 9999, boxShadow: `0 16px 40px rgba(0,0,0,0.95), 0 0 30px ${card.border}33`, pointerEvents: "none" }}
+        <div style={{ position: "fixed", top: "auto", bottom: "auto", left: "auto", width: 240, background: "linear-gradient(160deg,var(--fnf-bg-elevated,#1e1c10),var(--fnf-bg,#12100a))", border: `2px solid ${card.border}88`, borderRadius: "var(--radius-lg,12px)", padding: 14, zIndex: 9999, boxShadow: `var(--shadow-xl,0 16px 40px rgba(0,0,0,0.95)), 0 0 30px ${card.border}33`, pointerEvents: "none" }}
           ref={el => { if (el) { const rect = el.parentElement?.getBoundingClientRect?.() || {}; const w = el.offsetWidth || 240; const h = el.offsetHeight || 280; const vw = window.innerWidth; const vh = window.innerHeight; el.style.left = Math.max(8, Math.min(vw - w - 8, (rect.left||0) + (rect.width||0)/2 - w/2)) + "px"; const spaceAbove = (rect.top||0) - 12; if (spaceAbove >= h) { el.style.top = "auto"; el.style.bottom = (vh - (rect.top||0) + 12) + "px"; } else { el.style.top = ((rect.bottom||0) + 12) + "px"; el.style.bottom = "auto"; } } }}>
-          <div style={{ fontFamily: "'Cinzel',serif", fontSize: 14, fontWeight: 700, color: "#f0e0c8", marginBottom: 5 }}>{card.name}</div>
-          <div style={{ fontSize: 11, color: card.border, marginBottom: 6, fontFamily: "'Cinzel',serif" }}>{(card.type || "creature").charAt(0).toUpperCase() + (card.type || "").slice(1)} · <span style={{ color: REGION_COLORS[card.region] || card.border }}>{card.region}</span></div>
-          <div style={{ fontSize: 12, color: "#d0c098", lineHeight: 1.65, marginBottom: 6 }}>{card.ability}</div>
-          {card.atk != null && <div style={{ fontSize: 12, color: "#a09060", marginBottom: 3 }}>ATK <span style={{ color: "#ff7050", fontWeight: 700 }}>{card.atk}</span> · HP <span style={{ color: "#50c060", fontWeight: 700 }}>{card.hp}</span></div>}
-          <div style={{ fontSize: 10, fontStyle: "italic", color: "#706040", marginTop: 4, lineHeight:1.5 }}>"{card.flavor}"</div>
+          <div style={{ fontFamily: "var(--font-display,'Cinzel',serif)", fontSize: 14, fontWeight: 700, color: "var(--fnf-text,#f0e0c8)", marginBottom: 5 }}>{card.name}</div>
+          <div style={{ fontSize: 11, color: card.border, marginBottom: 6, fontFamily: "var(--font-display,'Cinzel',serif)" }}>{(card.type || "creature").charAt(0).toUpperCase() + (card.type || "").slice(1)} · <span style={{ color: REGION_COLORS[card.region] || card.border }}>{card.region}</span></div>
+          <div style={{ fontSize: 12, color: "var(--fnf-text-secondary,#d0c098)", lineHeight: 1.65, marginBottom: 6 }}>{card.ability}</div>
+          {card.atk != null && <div style={{ fontSize: 12, color: "var(--fnf-text-muted,#a09060)", marginBottom: 3 }}>ATK <span style={{ color: "var(--fnf-atk,#ff7050)", fontWeight: 700 }}>{card.atk}</span> · HP <span style={{ color: "var(--fnf-hp,#50c060)", fontWeight: 700 }}>{card.hp}</span></div>}
+          <div style={{ fontSize: 10, fontStyle: "italic", color: "var(--fnf-text-dim,#706040)", marginTop: 4, lineHeight:1.5 }}>"{card.flavor}"</div>
           {kws.length > 0 && (
             <div style={{ marginTop: 6, borderTop: "1px solid #2a2010", paddingTop: 5, display: "flex", flexDirection: "column", gap: 3 }}>
               {kws.map(k => (
