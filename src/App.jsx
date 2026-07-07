@@ -3193,7 +3193,7 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
   return (<div style={{ position:"fixed", inset:0, zIndex:600, background:"rgba(2,1,0,0.97)", display:"flex", flexDirection:"column" }}>
     {dbPreview && <CardPreview card={dbPreview} onClose={() => setDbPreview(null)} />}
     {/* Header bar */}
-    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 20px", borderBottom:"2px solid rgba(120,80,220,0.3)", background:"linear-gradient(180deg,#160828,#0c0418)", flexShrink:0, gap:12, flexWrap:"wrap" }}>
+    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"16px 22px", borderBottom:"2px solid rgba(140,90,240,0.35)", background:"linear-gradient(180deg,#1a0c34 0%,#0e0520 100%)", flexShrink:0, gap:12, flexWrap:"wrap", boxShadow:"0 4px 24px rgba(0,0,0,0.7), inset 0 -1px 0 rgba(140,90,240,0.15)" }}>
       <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
         <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:20, color:"#e8c060", margin:0, letterSpacing:2 }}>⚒ {isNew ? "NEW DECK" : `EDIT: ${editDeck.name}`}</h3>
         <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
@@ -3227,10 +3227,13 @@ function DeckBuilderModal({ user, onSave, onClose, editDeck }) {
               <option value="environment">Environments</option>
               <option value="aura">Auras</option>
             </select>
-            <select value={regionFilter} onChange={e=>setRegionFilter(e.target.value)} style={selSty}>
-              <option value="all">All Factions</option>
-              {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
-            </select>
+          </div>
+          <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginBottom:8 }}>
+            {[["all","ALL"], ...REGIONS.map(r=>[r,r])].map(([val,label])=>{
+              const active=regionFilter===val;
+              const col=REGION_COLORS[val]||GLOW[val]||"#a08050";
+              return(<button key={val} onClick={()=>setRegionFilter(val)} style={{ padding:"4px 10px", borderRadius:20, fontFamily:"var(--font-display,'Cinzel',serif)", fontSize:8, fontWeight:700, letterSpacing:0.8, cursor:"pointer", border:active?`1px solid ${col}`:"1px solid rgba(80,50,140,0.2)", background:active?`${col}1e`:"rgba(10,4,24,0.5)", color:active?col:"#504848", boxShadow:active?`0 0 8px ${col}33`:"none", transition:"all .14s" }}>{label==="all"?"ALL":label}</button>);
+            })}
           </div>
           <div style={{ display:"flex", gap:6, alignItems:"center" }}>
             <span style={{ fontFamily:"'Cinzel',serif", fontSize:10, color:"#60504a", letterSpacing:1 }}>SORT:</span>
@@ -4835,9 +4838,10 @@ function MatchmakingScreen({ user, ranked, onMatch, onCancel, onRetry, onFallbac
   const backBtn = (label='CANCEL') => (<button onClick={onCancel} style={{ marginTop:28, padding:'10px 28px', background:'transparent', border:'1px solid #3a2010', borderRadius:8, fontFamily:"'Cinzel',serif", fontSize:11, color:'#806040', cursor:'pointer' }}>{label}</button>);
 
   if (phase === 'found') return (
-    <div style={{ maxWidth:480, margin:'0 auto', padding:'60px 24px', textAlign:'center' }}>
-      <div style={{ fontSize:56, marginBottom:14, animation:'pulse 0.7s ease-in-out infinite' }}>⚔</div>
-      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:26, color:'#e8c060', margin:'0 0 6px', letterSpacing:3 }}>DUEL FOUND</h2>
+    <div style={{ maxWidth:480, margin:'0 auto', padding:'60px 24px', textAlign:'center', position:'relative' }}>
+      <div style={{ position:'absolute', inset:0, borderRadius:20, background:'radial-gradient(ellipse at 50% 30%,rgba(180,60,20,0.12) 0%,transparent 70%)', pointerEvents:'none' }} />
+      <div style={{ fontSize:56, marginBottom:14, animation:'pulse 0.7s ease-in-out infinite', filter:'drop-shadow(0 0 20px rgba(232,100,30,0.6))' }}>⚔</div>
+      <h2 style={{ fontFamily:"'Cinzel',serif", fontSize:26, color:'#e8c060', margin:'0 0 6px', letterSpacing:3, textShadow:'0 0 30px rgba(232,192,96,0.5)' }}>DUEL FOUND</h2>
       <div style={{ fontFamily:"'Cinzel',serif", fontSize:11, color:'#806040', letterSpacing:3, marginBottom:6 }}>CHALLENGER</div>
       <div style={{ fontFamily:"'Cinzel',serif", fontSize:22, color:'#f0e8d8', fontWeight:700, marginBottom:24 }}>{oppName}</div>
       <div style={{ width:64, height:64, borderRadius:'50%', background:`conic-gradient(#e8c060 ${countdown/20*360}deg, rgba(40,20,80,0.7) 0deg)`, margin:'0 auto 22px', display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -4909,9 +4913,10 @@ function MatchmakingScreen({ user, ranked, onMatch, onCancel, onRetry, onFallbac
 
   const nearFallback = queueCountdown <= 5;
   return (
-    <div style={{ maxWidth:480, margin:'0 auto', padding:'60px 24px', textAlign:'center' }}>
+    <div style={{ maxWidth:480, margin:'0 auto', padding:'60px 24px', textAlign:'center', position:'relative' }}>
+      <div style={{ position:'absolute', inset:0, borderRadius:20, background:'radial-gradient(ellipse at 50% 40%,rgba(60,20,120,0.15) 0%,transparent 65%)', pointerEvents:'none' }} />
       {/* Countdown ring */}
-      <div style={{ width:88, height:88, borderRadius:'50%', background:`conic-gradient(#e8c060 ${(queueCountdown/15)*360}deg, rgba(40,20,80,0.7) 0deg)`, margin:'0 auto 24px', display:'flex', alignItems:'center', justifyContent:'center', transition:'background 0.9s linear' }}>
+      <div style={{ width:96, height:96, borderRadius:'50%', background:`conic-gradient(${nearFallback?'#c08030':'#e8c060'} ${(queueCountdown/15)*360}deg, rgba(40,20,80,0.4) 0deg)`, margin:'0 auto 24px', display:'flex', alignItems:'center', justifyContent:'center', transition:'background 0.9s linear', boxShadow:`0 0 28px ${nearFallback?'rgba(180,100,0,0.35)':'rgba(232,192,96,0.25)'}`, filter:`drop-shadow(0 0 8px ${nearFallback?'rgba(200,120,20,0.4)':'rgba(232,192,96,0.3)'})` }}>
         <div style={{ width:70, height:70, borderRadius:'50%', background:'#0e0c08', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:1 }}>
           <span style={{ fontFamily:"'Cinzel',serif", fontSize:22, fontWeight:700, color: nearFallback ? '#c08030' : '#e8c060', lineHeight:1 }}>{queueCountdown}</span>
           <span style={{ fontFamily:"'Cinzel',serif", fontSize:7, color:'#504030', letterSpacing:1 }}>SEC</span>
@@ -6558,10 +6563,10 @@ function CollectionScreen({ user, onUpdateUser, onDeckBuilding, newPlayerMode })
         </div>
       )}
       {/* Header row: title + shards + deck builder + craft toggle */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 12, padding: "16px 20px", background: "linear-gradient(135deg,rgba(20,10,40,0.7),rgba(10,6,24,0.6))", border: "1px solid rgba(100,60,180,0.18)", borderRadius: 12, backdropFilter: "blur(8px)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04), 0 4px 20px rgba(0,0,0,0.5)" }}>
         <div>
-          <h2 style={{ fontFamily: "'Cinzel',serif", fontSize: 24, fontWeight: 700, color: "#e8c060", margin: 0 }}>Collection</h2>
-          <div style={{ fontSize: 11, color: "#806040", marginTop: 3 }}>{owned.length} / {ownablePool.length} cards obtained · <span style={{ color:"#a0c8e0" }}>{user?.shards ?? 0} ⬙ shards</span></div>
+          <h2 style={{ fontFamily: "var(--font-display,'Cinzel',serif)", fontSize: 24, fontWeight: 900, color: "var(--fnf-gold,#e8c060)", margin: 0, letterSpacing: 2, textShadow: "0 0 30px rgba(232,192,96,0.35)" }}>COLLECTION</h2>
+          <div style={{ fontSize: 11, color: "#806040", marginTop: 4 }}><span style={{ color:"#a09070" }}>{owned.length}</span><span style={{ color:"#504030" }}> / {ownablePool.length} obtained</span> · <span style={{ color:"#a0c8e0", fontWeight: 600 }}>{user?.shards ?? 0} ⬙</span><span style={{ color:"#504a38" }}> shards</span></div>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
           {/* Craft Mode Toggle */}
@@ -6585,11 +6590,19 @@ function CollectionScreen({ user, onUpdateUser, onDeckBuilding, newPlayerMode })
           </button>
         </div>
       </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." style={{ flex: 1, minWidth: 120, padding: "8px 12px", background: "#0a0418", border: "1px solid rgba(100,60,180,0.25)", borderRadius: 7, color: "#f0e8d8", fontSize: 12, outline: "none" }} />
-        <select value={regFilter} onChange={(e) => setRegFilter(e.target.value)} style={{ padding: "8px", background: "#0a0418", border: "1px solid rgba(100,60,180,0.25)", borderRadius: 7, color: "#f0e8d8", fontFamily: "'Cinzel',serif", fontSize: 10, outline: "none" }}>
-          <option value="all">All</option>{[...REGIONS, "Bloodpact"].map((r) => (<option key={r} value={r}>{r}</option>))}
-        </select>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search cards..." style={{ flex: 1, minWidth: 160, padding: "8px 12px", background: "rgba(10,4,24,0.8)", border: "1px solid rgba(100,60,180,0.3)", borderRadius: 8, color: "#f0e8d8", fontSize: 12, outline: "none", boxShadow: "inset 0 1px 0 rgba(0,0,0,0.5)" }} />
+      </div>
+      <div style={{ display: "flex", gap: 6, marginBottom: 20, flexWrap: "wrap" }}>
+        {[["all","ALL",null], ...[...REGIONS, "Bloodpact"].map(r=>[r,r,REGION_COLORS[r]||GLOW[r]])].map(([val,label,col])=>{
+          const active = regFilter===val;
+          const accentColor = col || "#a08050";
+          return (
+            <button key={val} onClick={()=>setRegFilter(val)} style={{ padding:"5px 12px", borderRadius:20, fontFamily:"var(--font-display,'Cinzel',serif)", fontSize:9, fontWeight:700, letterSpacing:1, cursor:"pointer", border: active ? `1px solid ${accentColor}` : "1px solid rgba(80,50,140,0.22)", background: active ? `${accentColor}22` : "rgba(10,4,24,0.5)", color: active ? accentColor : "#605040", boxShadow: active ? `0 0 10px ${accentColor}44, inset 0 0 8px ${accentColor}11` : "none", transition:"all .15s ease", textShadow: active ? `0 0 8px ${accentColor}88` : "none" }}>
+              {label==="all"?"ALL FACTIONS":label}
+            </button>
+          );
+        })}
       </div>
       {/* ══ FORGE MODE ══ */}
       {craftMode ? (<>
